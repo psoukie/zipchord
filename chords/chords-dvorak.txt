@@ -1,0 +1,153 @@
+ht	the
+an	and
+ot	to
+fo	of
+ a	a
+in	in
+is	is
+etu	that
+ f	for
+ i	I
+ou	you
+it	it
+ w	with
+no	on
+as	as
+ar	are
+be	be
+esu	this
+aw	was
+av	have
+or	or
+at	at
+nt	not
+ru	your
+fr	from
+ew	we
+by	by
+iw	will
+ac	can
+bu	but
+hty	they
+ an	an
+eh	he
+al	all
+az	has
+fi	if
+eru	their
+ o	one
+do	do
+mo	more
+my	my
+his	his
+os	so
+eht	there
+ab	about
+cj	which
+jn	when
+jt	what
+otu	out
+pu	up
+oru	our
+ho	who
+ao	also
+ad	had
+mt	time
+ms	some
+ouw	would
+er	were
+il	like
+bn	been
+js	just
+hr	her
+en	new
+hot	other
+emu	them
+hs	she
+lp	people
+-eu	these
+ n	no
+eg	get
+hj	how
+em	me
+io	into
+enu	than
+oy	only
+st	its
+ m	most
+ay	may
+ny	any
+am	many
+dm	made
+km	make
+hnt	then
+el	well
+fs	first
+vy	very
+ov	over
+nw	now
+cou	could
+af	after
+ev	even
+bc	because
+su	us
+ai	said
+go	good
+wy	way
+ t	two
+osu	should
+kw	work
+uz	use
+im	I'm
+sy	say
+hm	him
+ g	go
+kn	know
+kt	take
+ry	year
+es	see
+kl	look
+cm	come
+hkt	think
+bk	back
+jnt	want
+gi	give
+dy	day
+nq	question
+cs	second
+fj	why
+cn	cannot
+de	does
+di	did
+cl	call
+ s	s
+ems	seem
+egu	thing
+ y	yes
+'cn	can’t
+dt	different
+jr	where
+eou	though
+htu	through
+rs	sorry
+ 1	Monday
+ 2	Tuesday
+ 3	Wednesday
+ 4	Thursday
+ 5	Friday
+ 6	Saturday
+ 7	Sunday
+mv	move
+dir	direction
+ow	without
+nx	next
+ams	same
+pt	top
+'s	~’s
+.n	~ing
+.t	~tion
+.a	~ation
+.m	~ment
+.l	~ly
+.d	~ed
+'t	~n’t
