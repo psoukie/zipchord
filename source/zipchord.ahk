@@ -10,7 +10,6 @@ global newdelay := 0
 global chentries := 0
 chord := ""
 start := 0
-intro := true
 consecutive := false
 uppercase := false
 
@@ -25,6 +24,10 @@ Gui, Add, Text, vchentries Y+5 w150, 0
 Gui, Add, Button, gEditDict Y+10 w150, &Edit dictionary
 Gui, Add, Edit, vnewdelay Right Y+20 w50, 0
 Gui, Add, Button, Default w80 Y+50, OK
+Menu, Tray, Add, Open Settings, ShowMenu
+Menu, Tray, Default, Open Settings
+Menu, Tray, Tip, ZipChord
+Menu, Tray, Click, 1
 
 RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
 If ErrorLevel==1
@@ -77,21 +80,24 @@ ShowMenu() {
 }
 
 ButtonOK:
-  Gui, Submit
-  if (!SetDelay(newdelay)) {
-    Gui, Show,, ZipChord
-    Return
-  }
+  Gui, Submit, NoHide
+  if (SetDelay(newdelay))
+    CloseMenu()
+  Return
+
 GuiClose:
 GuiEscape:
+  CloseMenu()
+  Return
+
+CloseMenu() {
   Gui, Submit
+  static intro := true
   if (intro) {
     MsgBox ,, ZipChord, % "Press and hold Ctrl-C to define a new chord for the selected text.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
     intro := false
   }
-  Return
-
-Return
+}
 
 KeyDown:
   chord .= SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
@@ -187,7 +193,7 @@ Interrupt:
   Return
 
 SelectDict() {
-  FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Documents (*.txt)
+  FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
   if (dict != "") {
     LoadChords(dict)
     SplitPath chfile, sname
@@ -198,19 +204,19 @@ SelectDict() {
 }
 
 EditDict() {
-  Gui, Submit
   Run notepad.exe %chfile%
+  CloseMenu()
 }
 
 PauseChord:
-  Gui, Submit
+  CloseMenu()
   if (start==-1) {
     start := 0
-    GuiControl Text, Button3, &Pause chording
+    GuiControl Text, Button2, &Pause chording
   }
   else {
     start := -1
-    GuiControl Text, Button3, &Resume chording
+    GuiControl Text, Button2, &Resume chording
   }
   Return
 
