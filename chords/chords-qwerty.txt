@@ -1,0 +1,84 @@
+This is a sample starting dictionary for ZipChord. You can edit existing chords and add your own.
+See https://github.com/psoukie/zipchord for details.
+
+;g	~ing
+;d	~ed
+;s	~s
+;t	~tion
+;a	~ation
+;l	~ly
+th	the
+ a	a
+ an	an
+an	and
+as	as
+or	or
+bu	but
+if	if
+so	so
+al	all
+ o	one
+mo	more
+out	out
+ao	also
+tm	time
+sm	some
+js	just
+ne	new
+odr	other
+pl	people
+ n	no
+dn	than
+oy	only
+to	to
+of	of
+in	in
+ f	for
+ w	with
+on	on
+at	at
+fm	from
+by	by
+ab	about
+up	up
+io	into
+dt	that
+ i	I
+ou	you
+it	it
+ds	this
+ur	your
+we	we
+dy	they
+he	he
+dr	their
+mr	my
+his	his
+the	there
+our	our
+hr	her
+dm	them
+sh	she
+dis	these
+me	me
+wh	which
+wn	when
+wt	what
+wo	who
+ho	how
+is	is
+ar	are
+be	be
+wa	was
+hv	have
+nt	not
+wl	will
+cn	can
+hz	has
+do	do
+hd	had
+wou	would
+er	were
+li	like
+bn	been
+ge	get
