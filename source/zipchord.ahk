@@ -1,3 +1,7 @@
+; ZipChord by Pavel Soukenik
+; Licensed under GPL-3.0
+; See https://github.com/psoukie/zipchord/  
+
 ﻿#NoEnv
 SetWorkingDir %A_ScriptDir%
 
@@ -7,23 +11,25 @@ global chfile := ""
 global chords := {}
 global chdelay := 0
 global newdelay := 0
-global chentries := 0
+global UIdict := "none"
+global UIon := 1
 chord := ""
-start := 0
+global start := 0
 consecutive := false
 uppercase := false
 
-Gui, Font, s12, Segoe UI
-Gui, Add, Text, , Current dictionary:
-Gui, Add, Text, Y+5, Number of chords:
-Gui, Add, Button, gSelectDict Y+10 w150, &Select dictionary
-Gui, Add, Text, Y+20, Chord sensitivity (ms):
-Gui, Add, Button, gPauseChord Y+20 w150, &Pause chording
-Gui, Add, Text, vchfile ym w150, no dictionary
-Gui, Add, Text, vchentries Y+5 w150, 0
-Gui, Add, Button, gEditDict Y+10 w150, &Edit dictionary
-Gui, Add, Edit, vnewdelay Right Y+20 w50, 0
-Gui, Add, Button, Default w80 Y+50, OK
+Gui, Font, s10, Segoe UI
+Gui, Margin, 15, 15
+Gui, Add, GroupBox, w220 h100 Section, Dictionary
+Gui, Add, Text, xp+20 yp+30 w180 vUIdict Center, [file name] (999 chords)
+Gui, Add, Button, gSelectDict Y+10 w80, &Select
+Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
+
+Gui, Add, GroupBox, xs ys+120 w220 h100 Section, Chord recognition
+Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
+Gui, Add, Edit, vnewdelay Right xp+100 yp+0 w40, 99
+Gui, Add, Checkbox, vUIon xp-100 Y+10 Checked%UIon%, E&nabled
+Gui, Add, Button, Default w80 xs+120 ys+120, OK
 Menu, Tray, Add, Open Settings, ShowMenu
 Menu, Tray, Default, Open Settings
 Menu, Tray, Tip, ZipChord
@@ -66,7 +72,7 @@ ShowMenu()
 Return
 
 ~^+c::
-  Sleep 500
+  Sleep 300
   If GetKeyState("c","P")
     ShowMenu()
   Return
@@ -74,15 +80,23 @@ Return
 ShowMenu() {
   GuiControl Text, newdelay, %chdelay%
   SplitPath chfile, sname
-  GuiControl Text, chfile, %sname%
-  GuiControl Text, chentries, % chords.Count()
+  if (start==-1)
+    GuiControl , , UIon, 0
+  else
+    GuiControl , , UIon, 1
+  GuiControl Text, UIdict, % SubStr(sname, 1, StrLen(sname)-4) " (" chords.Count() ")"
   Gui, Show,, ZipChord
 }
 
 ButtonOK:
   Gui, Submit, NoHide
-  if (SetDelay(newdelay))
+  if (SetDelay(newdelay)) {
+      if (UIon)
+        start := 0
+      else
+        start := -1
     CloseMenu()
+  }
   Return
 
 GuiClose:
@@ -124,11 +138,19 @@ KeyUp:
         SendInput {Backspace}
       if (!cons)
         SendInput {Space}
-      if (upper)
-        SendInput % RegExReplace(chords[sorted],"(^.)", "$U1")
+      exp := chords[sorted]
+      if (SubStr(exp, StrLen(exp), 1) == "~") {
+        exp := SubStr(exp, 1, StrLen(exp)-1)
+        pref := true
+      }
       else
-        SendInput % chords[sorted]
-      SendInput {Space}
+        pref := false
+      if (upper)
+        SendInput % RegExReplace(exp,"(^.)", "$U1")
+      else
+        SendInput % exp
+      if (!pref)
+        SendInput {Space}
       consecutive := true
       uppercase := false
     }
@@ -177,7 +199,7 @@ Interrupt:
   Return
 
 ~^c::
-  Sleep 500
+  Sleep 300
   If GetKeyState("c","P") {
     newword := Trim(Clipboard)
     if (!StrLen(newword)) {
@@ -197,8 +219,7 @@ SelectDict() {
   if (dict != "") {
     LoadChords(dict)
     SplitPath chfile, sname
-    GuiControl Text, chfile, %sname%
-    GuiControl Text, chentries, % chords.Count()
+    GuiControl Text, UIdict, % SubStr(sname, 1, StrLen(sname)-4) " (" chords.Count() ")"
   }
   Return
 }
@@ -207,18 +228,6 @@ EditDict() {
   Run notepad.exe %chfile%
   CloseMenu()
 }
-
-PauseChord:
-  CloseMenu()
-  if (start==-1) {
-    start := 0
-    GuiControl Text, Button2, &Pause chording
-  }
-  else {
-    start := -1
-    GuiControl Text, Button2, &Resume chording
-  }
-  Return
 
 RegisterChord(newch, newword, w = false) {
   newch := Arrange(newch)
@@ -230,6 +239,8 @@ RegisterChord(newch, newword, w = false) {
     MsgBox ,, ZipChord, The chord needs to be at least two characters.
     Return false
   }
+  if (SubStr(newword, 1, 1) == "~")
+    newword := "{Backspace}" SubStr(newword, 2)
   chords.Insert(newch, newword)
   if (w)
     FileAppend % "`r`n" newch "`t" newword, %chfile%, UTF-8
@@ -261,6 +272,6 @@ LoadChords(fname) {
   {
     pos := InStr(A_LoopReadLine, A_Tab)
     if (pos)
-      RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), StrReplace(SubStr(A_LoopReadLine, pos+1), "~", "{Backspace}"))
+      RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1))
   }
 }
