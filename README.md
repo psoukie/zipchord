@@ -1,4 +1,4 @@
-# zipchord
+# ZipChord
 ZipChord is a customizable hybrid keyboard input method that augments regular typing with chorded entry.
 
 ## Installation
