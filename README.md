@@ -24,6 +24,7 @@ wn   win
 ths  this
 nw   new
 ```
+Note that if you edit the dictionary file directly while using it, you need to re-select the dictionary from the ZipChord menu for the changes to be loaded.
 
 ## Special Characters
 * **Space bar**: It is possible to use the space bar as part of the chord definition. Simply start the chord with a space.
