@@ -1,9 +1,9 @@
-; ZipChord by Pavel Soukenik
-; Licensed under GPL-3.0
-; See https://github.com/psoukie/zipchord/  
-
 ﻿#NoEnv
 SetWorkingDir %A_ScriptDir%
+
+; ZipChord by Pavel Soukenik
+; Licensed under GPL-3.0
+; See https://github.com/psoukie/zipchord/
 
 keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
 cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
