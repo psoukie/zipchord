@@ -11,6 +11,7 @@ global chfile := ""
 global chords := {}
 global chdelay := 0
 global newdelay := 0
+global mode := 2
 global UIdict := "none"
 global UIon := 1
 chord := ""
@@ -20,16 +21,19 @@ uppercase := false
 
 Gui, Font, s10, Segoe UI
 Gui, Margin, 15, 15
-Gui, Add, GroupBox, w220 h100 Section, Dictionary
-Gui, Add, Text, xp+20 yp+30 w180 vUIdict Center, [file name] (999 chords)
+Gui, Add, GroupBox, w320 h100 Section, Dictionary
+Gui, Add, Text, xp+20 yp+30 w280 vUIdict Center, [file name] (999 chords)
 Gui, Add, Button, gSelectDict Y+10 w80, &Select
 Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
+Gui, Add, Button, gReloadDict xp+100 yp+0 w80, &Reload
 
-Gui, Add, GroupBox, xs ys+120 w220 h100 Section, Chord recognition
+Gui, Add, GroupBox, xs ys+120 w320 h130 Section, Chord recognition
 Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
-Gui, Add, Edit, vnewdelay Right xp+100 yp+0 w40, 99
-Gui, Add, Checkbox, vUIon xp-100 Y+10 Checked%UIon%, E&nabled
-Gui, Add, Button, Default w80 xs+120 ys+120, OK
+Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
+Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
+Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|Chords only|All input
+Gui, Add, Checkbox, vUIon xp-150 Y+10 Checked%UIon%, E&nabled
+Gui, Add, Button, Default w80 xs+120 ys+150, OK
 Menu, Tray, Add, Open Settings, ShowMenu
 Menu, Tray, Default, Open Settings
 Menu, Tray, Tip, ZipChord
@@ -79,12 +83,11 @@ Return
 
 ShowMenu() {
   GuiControl Text, newdelay, %chdelay%
-  SplitPath chfile, sname
+  GuiControl , Choose, UImode, %mode%
   if (start==-1)
     GuiControl , , UIon, 0
   else
     GuiControl , , UIon, 1
-  GuiControl Text, UIdict, % SubStr(sname, 1, StrLen(sname)-4) " (" chords.Count() ")"
   Gui, Show,, ZipChord
 }
 
@@ -97,6 +100,7 @@ ButtonOK:
         start := -1
     CloseMenu()
   }
+  mode := UImode
   Return
 
 GuiClose:
@@ -216,17 +220,13 @@ Interrupt:
 
 SelectDict() {
   FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
-  if (dict != "") {
+  if (dict != "")
     LoadChords(dict)
-    SplitPath chfile, sname
-    GuiControl Text, UIdict, % SubStr(sname, 1, StrLen(sname)-4) " (" chords.Count() ")"
-  }
   Return
 }
 
 EditDict() {
   Run notepad.exe %chfile%
-  CloseMenu()
 }
 
 RegisterChord(newch, newword, w = false) {
@@ -264,6 +264,10 @@ Arrange(raw) {
   Return StrReplace(raw, "`n")
 }
 
+ReloadDict() {
+  LoadChords(chfile)
+}
+
 LoadChords(fname) {
   chfile := fname
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chfile%
@@ -274,4 +278,16 @@ LoadChords(fname) {
     if (pos)
       RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1))
   }
+  ; update UI
+  if StrLen(chfile) > 26
+    filestr := "..." SubStr(chfile, -25)
+  else
+    filestr := chfile
+  filestr .= " (" chords.Count()
+  GuiControl Text, newdelay, %chdelay%
+  if chords.Count()==1
+    filestr .= " chord)"
+  else
+    filestr .= " chords)"
+  GuiControl Text, UIdict, %filestr%
 }
