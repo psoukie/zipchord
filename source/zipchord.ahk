@@ -17,6 +17,7 @@ global UIon := 1
 chord := ""
 global start := 0
 consecutive := false
+space := false
 uppercase := false
 
 Gui, Font, s10, Segoe UI
@@ -42,6 +43,9 @@ Menu, Tray, Click, 1
 RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
 If ErrorLevel==1
   SetDelay(75)
+RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
+If ErrorLevel==1
+  mode := 2
 RegRead chfile, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
 If (ErrorLevel==1 || !FileExist(chfile)) {
   chfile := "chords*.txt"
@@ -93,6 +97,8 @@ ShowMenu() {
 
 ButtonOK:
   Gui, Submit, NoHide
+  mode := UImode
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
   if (SetDelay(newdelay)) {
       if (UIon)
         start := 0
@@ -100,7 +106,6 @@ ButtonOK:
         start := -1
     CloseMenu()
   }
-  mode := UImode
   Return
 
 GuiClose:
@@ -118,30 +123,36 @@ CloseMenu() {
 }
 
 KeyDown:
-  chord .= SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
-  if (start==-1)
-    Return
+  key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
+  chord .= key
   if(StrLen(chord)==2)
     start:= A_TickCount
+  if (mode==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
+    SendInput {Backspace}+%key%
+    uppercase := 1
+  }
   Return
 
 KeyUp:
   key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
+  ch := chord
+  chord := StrReplace(chord, key)
+  st := start
   if (start==-1)
     Return
-  ch := chord
-  chord := ""
-  cons := consecutive
-  upper := uppercase
-  st := start
   start := 0
   if (st && StrLen(ch)>1 && A_TickCount - st > chdelay) {
+    chord := ""
+    cons := consecutive | space
+    upper := uppercase
     sorted := Arrange(ch)
     If (chords.HasKey(sorted)) {
       Loop % StrLen(sorted)
         SendInput {Backspace}
-      if (!cons)
+      if (!cons) {
         SendInput {Space}
+        space := true
+      }
       exp := chords[sorted]
       if (SubStr(exp, StrLen(exp), 1) == "~") {
         exp := SubStr(exp, 1, StrLen(exp)-1)
@@ -149,30 +160,41 @@ KeyUp:
       }
       else
         pref := false
-      if (upper)
+      if (upper && mode>1)
         SendInput % RegExReplace(exp,"(^.)", "$U1")
       else
         SendInput % exp
-      if (!pref)
+      if (!pref) {
         SendInput {Space}
+        space := true
+      }
       consecutive := true
-      uppercase := false
+      uppercase := 0
     }
   }
-  else {
+  else
     if (ch!="") {
-      if (InStr(".,;", key) && consecutive)
-        SendInput {Backspace}{Backspace}%key%{Space}
+      cons2 := consecutive
+      upper2 := uppercase
+      consecutive := false
+      uppercase := 0
+      if (key==" ") {
+        space := true
+        if (upper2)
+          uppercase := upper2
+      }
       else
-        consecutive := false
+        space := false
+      if (InStr(".,;", key)) {
+        if (cons2 && mode>1)
+          SendInput {Backspace}{Backspace}%key%
+        if ((cons2 && mode>1) || mode==3) {
+          SendInput {Space}
+          space := true
+        }
+      }
       if (key==".")
-        uppercase := true
-      else
-        if (uppercase && key!=" ")
-          uppercase := false
-      if (key==" ")
-        consecutive := true
-    }
+        uppercase := 2
   }
   Return
 
@@ -182,14 +204,18 @@ ShiftKeys:
     Return
   if (InStr("1/;", key)) {
     uppercase := true
-    if (consecutive)
-      SendInput {Backspace}{Backspace}+%key%{Space}
-    else
-      consecutive := false
+    if (consecutive && mode>1)
+      SendInput {Backspace}{Backspace}+%key%
+    if (consecutive || mode==3) {
+      SendInput {Space}
+      space := true
+    }
   }
-  else
+  else {
     consecutive := false
-    uppercase:=false
+    uppercase := 0
+    space := false
+  }
   Return
 
 ~Enter::
@@ -215,6 +241,7 @@ Interrupt:
       if ErrorLevel
         Return
     } Until RegisterChord(newch, newword, true)
+    UpdateUI()
   }
   Return
 
@@ -239,12 +266,14 @@ RegisterChord(newch, newword, w = false) {
     MsgBox ,, ZipChord, The chord needs to be at least two characters.
     Return false
   }
-  if (SubStr(newword, 1, 1) == "~")
-    newword := "{Backspace}" SubStr(newword, 2)
-  chords.Insert(newch, newword)
-  if (w)
+  if (w) {
     FileAppend % "`r`n" newch "`t" newword, %chfile%, UTF-8
-  Return true
+  }
+  newword := StrReplace(newword, "~", "{Backspace}")
+  if (SubStr(newword, -10)=="{Backspace}")
+    newword := SubStr(newword, 1, StrLen(newword)-11) "~"
+  chords.Insert(newch, newword)
+  return true
 }
 
 SetDelay(newdelay) {
@@ -278,7 +307,10 @@ LoadChords(fname) {
     if (pos)
       RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1))
   }
-  ; update UI
+  UpdateUI()
+}
+
+UpdateUI() {
   if StrLen(chfile) > 26
     filestr := "..." SubStr(chfile, -25)
   else
