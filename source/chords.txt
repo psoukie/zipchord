@@ -1,4 +1,0 @@
-﻿This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).
-See https://github.com/psoukie/zipchord for details.
-
-dm	demo
