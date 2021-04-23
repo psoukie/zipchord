@@ -2,9 +2,7 @@
 _ZipChord_ is a customizable hybrid keyboard input method that augments regular typing with chorded entry.
 
 ## Installation
-1. Download and save the executable **zipchord.exe** of the latest [release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access.
-2. Optionally, download a dictionary from the dictionaries folder and save it in the same folder to use as a starting point.
-3. Run **zipchord.exe**.
+Download and save the executable **zipchord.exe** of the latest [release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it. (Optionally, download a dictionary from the dictionaries folder to use as a starting point.)
 
 ## Using ZipChord
 Type normally using individual keystrokes in combination with predefined chords of several keys pressed at the same time to enter whole words. _ZipChord_ will add (or remove) spaces as needed to separate words and punctuation, whether they were typed using individual strokes or chords.
