@@ -5,8 +5,8 @@ SetWorkingDir %A_ScriptDir%
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
 
-keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
-cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
+global keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
+global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
 global chfile := ""
 global chords := {}
 global chdelay := 0
@@ -14,84 +14,88 @@ global newdelay := 0
 global mode := 2
 global UIdict := "none"
 global UIon := 1
-chord := ""
 global start := 0
+chord := ""
 consecutive := false
 space := false
 uppercase := false
-
-Gui, Font, s10, Segoe UI
-Gui, Margin, 15, 15
-Gui, Add, GroupBox, w320 h100 Section, Dictionary
-Gui, Add, Text, xp+20 yp+30 w280 vUIdict Center, [file name] (999 chords)
-Gui, Add, Button, gSelectDict Y+10 w80, &Select
-Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
-Gui, Add, Button, gReloadDict xp+100 yp+0 w80, &Reload
-
-Gui, Add, GroupBox, xs ys+120 w320 h130 Section, Chord recognition
-Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
-Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
-Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
-Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|Chords only|All input
-Gui, Add, Checkbox, vUIon xp-150 Y+10 Checked%UIon%, E&nabled
-Gui, Add, Button, Default w80 xs+120 ys+150, OK
-Menu, Tray, Add, Open Settings, ShowMenu
-Menu, Tray, Default, Open Settings
-Menu, Tray, Tip, ZipChord
-Menu, Tray, Click, 1
-
-RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
-If ErrorLevel==1
-  SetDelay(75)
-RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
-If ErrorLevel==1
-  mode := 2
-RegRead chfile, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
-If (ErrorLevel==1 || !FileExist(chfile)) {
-  chfile := "chords*.txt"
-  if FileExist(chfile) {
-    Loop, Files, %chfile%
-      flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-    Sort flist
-    chfile := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-  }
-  else {
-    chfile := "chords.txt"
-    FileAppend % "This is a dictionary for ZipChord: a tab-separated list of chords and corresponding words (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndmn`tdemonstration", %chfile%, UTF-8
-  }
-  chfile := A_ScriptDir "\" chfile
-}
-LoadChords(chfile)
-
-Loop Parse, keys
-{
-  Hotkey, % "~" A_LoopField, KeyDown
-  Hotkey, % "~" A_LoopField " Up", KeyUp
-  Hotkey, % "~+" A_LoopField, ShiftKeys
-}
-Hotkey, % "~Space", KeyDown
-Hotkey, % "~Space Up", KeyUp
-Loop Parse, cursory, |
-{
-  Hotkey, % "~" A_LoopField, Interrupt
-  Hotkey, % "~^" A_LoopField, Interrupt
-}
-ShowMenu()
+Initialize()
 Return
 
 ~^+c::
   Sleep 300
-  If GetKeyState("c","P")
+  if GetKeyState("c","P")
     ShowMenu()
   Return
+
+Initialize() {
+  Gui, Font, s10, Segoe UI
+  Gui, Margin, 15, 15
+  Gui, Add, GroupBox, w320 h100 Section, Dictionary
+  Gui, Add, Text, xp+20 yp+30 w280 vUIdict Center, [file name] (999 chords)
+  Gui, Add, Button, gSelectDict Y+10 w80, &Select
+  Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
+  Gui, Add, Button, gReloadDict xp+100 yp+0 w80, &Reload
+
+  Gui, Add, GroupBox, xs ys+120 w320 h130 Section, Chord recognition
+  Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
+  Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
+  Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
+  Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|Chords only|All input
+  Gui, Add, Checkbox, vUIon xp-150 Y+10 Checked%UIon%, E&nabled
+  Gui, Add, Button, Default w80 xs+120 ys+150, OK
+  Menu, Tray, Add, Open Settings, ShowMenu
+  Menu, Tray, Default, Open Settings
+  Menu, Tray, Tip, ZipChord
+  Menu, Tray, Click, 1
+
+  RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
+  if ErrorLevel
+    SetDelay(75)
+  RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
+  if ErrorLevel
+    mode := 2
+  RegRead chfile, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
+  if (ErrorLevel || !FileExist(chfile)) {
+    errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chfile)
+    chfile := "chords*.txt"
+    if FileExist(chfile) {
+      Loop, Files, %chfile%
+        flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
+      Sort flist
+      chfile := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+      errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", chfile)
+    }
+    else {
+      errmsg .= "ZipChord is going to create a new 'chords.txt' dictionary in its own folder."
+      chfile := "chords.txt"
+      FileAppend % "This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %chfile%, UTF-8
+    }
+    chfile := A_ScriptDir "\" chfile
+    MsgBox ,, ZipChord, %errmsg%
+  }
+  LoadChords(chfile)
+
+  Loop Parse, keys
+  {
+    Hotkey, % "~" A_LoopField, KeyDown
+    Hotkey, % "~" A_LoopField " Up", KeyUp
+    Hotkey, % "~+" A_LoopField, ShiftKeys
+  }
+  Hotkey, % "~Space", KeyDown
+  Hotkey, % "~Space Up", KeyUp
+  Loop Parse, cursory, |
+  {
+    Hotkey, % "~" A_LoopField, Interrupt
+    Hotkey, % "~^" A_LoopField, Interrupt
+  }
+  ShowMenu()
+}
 
 ShowMenu() {
   GuiControl Text, newdelay, %chdelay%
   GuiControl , Choose, UImode, %mode%
-  if (start==-1)
-    GuiControl , , UIon, 0
-  else
-    GuiControl , , UIon, 1
+  GuiControl , , UIon, % (start==-1) ? 0 : 1
   Gui, Show,, ZipChord
 }
 
@@ -99,11 +103,8 @@ ButtonOK:
   Gui, Submit, NoHide
   mode := UImode
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
-  if (SetDelay(newdelay)) {
-      if (UIon)
-        start := 0
-      else
-        start := -1
+  if SetDelay(newdelay) {
+    start := UIon ? 0 : 1
     CloseMenu()
   }
   Return
@@ -116,7 +117,7 @@ GuiEscape:
 CloseMenu() {
   Gui, Submit
   static intro := true
-  if (intro) {
+  if intro {
     MsgBox ,, ZipChord, % "Press and hold Ctrl-C to define a new chord for the selected text.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
     intro := false
   }
@@ -125,7 +126,7 @@ CloseMenu() {
 KeyDown:
   key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
   chord .= key
-  if(StrLen(chord)==2)
+  if (StrLen(chord)==2)
     start:= A_TickCount
   if (mode==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
     SendInput {Backspace}+%key%
@@ -146,7 +147,7 @@ KeyUp:
     cons := consecutive | space
     upper := uppercase
     sorted := Arrange(ch)
-    If (chords.HasKey(sorted)) {
+    if (chords.HasKey(sorted)) {
       Loop % StrLen(sorted)
         SendInput {Backspace}
       if (!cons) {
@@ -230,7 +231,7 @@ Interrupt:
 
 ~^c::
   Sleep 300
-  If GetKeyState("c","P") {
+  if GetKeyState("c","P") {
     newword := Trim(Clipboard)
     if (!StrLen(newword)) {
       MsgBox ,, ZipChord, % "First, select a word you would like to define a chord for, and then press and hold Ctrl+C again."
@@ -256,7 +257,7 @@ EditDict() {
   Run notepad.exe %chfile%
 }
 
-RegisterChord(newch, newword, w = false) {
+RegisterChord(newch, newword, w := false) {
   newch := Arrange(newch)
   if chords.HasKey(newch) {
     MsgBox ,, ZipChord, % "The chord '" newch "' is already in use for '" chords[newch] "'.`nPlease use a different chord for '" newword "'."
@@ -266,9 +267,8 @@ RegisterChord(newch, newword, w = false) {
     MsgBox ,, ZipChord, The chord needs to be at least two characters.
     Return false
   }
-  if (w) {
+  if (w)
     FileAppend % "`r`n" newch "`t" newword, %chfile%, UTF-8
-  }
   newword := StrReplace(newword, "~", "{Backspace}")
   if (SubStr(newword, -10)=="{Backspace}")
     newword := SubStr(newword, 1, StrLen(newword)-11) "~"
@@ -317,9 +317,6 @@ UpdateUI() {
     filestr := chfile
   filestr .= " (" chords.Count()
   GuiControl Text, newdelay, %chdelay%
-  if chords.Count()==1
-    filestr .= " chord)"
-  else
-    filestr .= " chords)"
+  filestr .= (chords.Count()==1) ? " chord)" : " chords)"
   GuiControl Text, UIdict, %filestr%
 }
