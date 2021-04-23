@@ -237,6 +237,11 @@ Interrupt:
       MsgBox ,, ZipChord, % "First, select a word you would like to define a chord for, and then press and hold Ctrl+C again."
       Return
     }
+    For ch, wd in chords
+      if (wd==newword) {
+        MsgBox  ,, ZipChord, % Format("The text '{}' already has the chord {:U} associated with it.", wd, ch)
+        Return
+      }
     Loop {
       InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
       if ErrorLevel
