@@ -1,16 +1,16 @@
 # ZipChord
-_ZipChord_ is a customizable hybrid keyboard input method that augments regular typing with chorded entry.
+_ZipChord_ is a customizable hybrid keyboard input method that augments regular typing with chorded entry. An article [Type Faster and More Comfortably with ZipChord](https://psoukenik.medium.com/type-faster-and-more-comfortably-with-zipchord-fdee71b28392?sk=27b82576a598d900d52ca1f65504cf8f) discusses why this might be useful.  
 
 ## Installation
 Download and save the executable **zipchord.exe** of the latest [release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it. (Optionally, download a dictionary from the dictionaries folder to use as a starting point.)
 
 ## Using ZipChord
-Type normally using individual keystrokes in combination with predefined chords of several keys pressed at the same time to enter whole words. _ZipChord_ will add (or remove) spaces as needed to separate words and punctuation, whether they were typed using individual strokes or chords.
+Type normally using individual keystrokes in combination with predefined chords of several keys pressed at the same time to enter whole words. _ZipChord_ will use smart spaces and capitalization to add (or remove) spaces as needed to separate words whether they were typed using individual strokes or chords and to capitalize words as selected.
 
 To define a new chord, select the word you want to define a chord for, and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or any function keys) and click OK. If the selected text is already in the dictionary, _ZipChord_ will remind you of its chord.
 
 ## Menu Options
-To open the menu, click the _ZipChord_ icon in the Windows tray, or press and hold Ctrl-Shift-C.
+To open the menu, click the _ZipChord_ icon in the Windows tray, or press and hold **Ctrl-Shift-C**.
 
 The dictionary group shows the current dictionary and the number of chords it contains. You can select a different dictionary file, open it for direct editing, and reload the dictionary if changes were made to the file.
 
