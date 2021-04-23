@@ -1,135 +1,173 @@
-ht	the
-an	and
-ot	to
-fo	of
+This is a sample starting dictionary for ZipChord. You can edit existing chords and add your own.
+See https://github.com/psoukie/zipchord for details.
+
+
+Suffixes
+--------
+.s	~s
+'s	~’s
+.n	~ing
+.t	~tion
+.a	~ation
+.m	~ment
+.l	~ly
+.d	~ed
+'t	~n’t
+
+Articles
+--------
+th	the
  a	a
-in	in
-is	is
-etu	that
- f	for
- i	I
-ou	you
-it	it
- w	with
-no	on
-as	as
-ar	are
-be	be
-esu	this
-aw	was
-av	have
-or	or
-at	at
-nt	not
-ru	your
-fr	from
-ew	we
-by	by
-iw	will
-ac	can
-bu	but
-hty	they
  an	an
-eh	he
-al	all
-az	has
+
+Conjunctions
+------------
+an	and
+as	as
+or	or
+bu	but
 fi	if
-eru	their
- o	one
-do	do
-mo	more
-my	my
-his	his
 os	so
-eht	there
+hnt	then
+bc	because
+
+Prepositions
+------------
+to	to
+of	of
+in	in
+ f	for
+ w	with
+on	on
+at	at
+fr	from
+by	by
 ab	about
-cj	which
+up	up
+io	into
+ov	over
+af	after
+wo	without
+
+Pronouns
+--------
+ i	I
+me	me
+my	my
+ou	you
+ur	your
+he	he
+hm	him
+his	his
+sh	she
+hr	her
+it	it
+ts	its
+we	we
+us	us
+our	our
+thy	they
+eur	their
+eum	them
+
+Interrogatives
+--------------
+jc	which
 jn	when
 jt	what
-otu	out
-pu	up
-oru	our
+jr	where
 ho	who
-ao	also
-ad	had
-mt	time
-ms	some
-ouw	would
+jh	how
+jf	why
+
+Verbs
+-----
+is	is
+ar	are
+wa	was
 er	were
-il	like
-bn	been
-js	just
-hr	her
-en	new
-hot	other
-emu	them
-hs	she
-lp	people
--eu	these
- n	no
-eg	get
-hj	how
-em	me
-io	into
-enu	than
-oy	only
-st	its
- m	most
-ay	may
-ny	any
-am	many
-dm	made
-km	make
-hnt	then
-el	well
-fs	first
-vy	very
-ov	over
-nw	now
+be	be
+av	have
+az	has
+ad	had
+nt	not
+ca	can
+do	do
+wi	will
 cou	could
-af	after
-ev	even
-bc	because
-su	us
+wou	would
+sou	should
+li	like
+bn	been
+ge	get
+ay	may
+md	made
+mk	make
 ai	said
-go	good
-wy	way
- t	two
-osu	should
-kw	work
+wk	work
 uz	use
-im	I'm
 sy	say
-hm	him
  g	go
 kn	know
-kt	take
-ry	year
-es	see
-kl	look
+tk	take
+se	see
+lk	look
 cm	come
-hkt	think
-bk	back
+thk	think
 jnt	want
 gi	give
-dy	day
-nq	question
-cs	second
-fj	why
 cn	cannot
 de	does
 di	did
+sem	seem
 cl	call
+aht	thank
+
+Other
+-----
+im	I'm
+eut	that
+eus	this
+eu-	these
+al	all
+ o	one
+mo	more
+hte	there
+out	out
+ao	also
+tm	time
+sm	some
+js	just
+ne	new
+oth	other
+pl	people
+ n	no
+eun	than
+oy	only
+ m	most
+ny	any
+ma	many
+el	well
+fs	first
+vy	very
+nw	now
+ev	even
+go	good
+wy	way
+ t	two
+yr	year
+bk	back
+dy	day
+qn	question
+sc	second
  s	s
-ems	seem
-egu	thing
+eug	thing
  y	yes
-'cn	can’t
+cn'	can’t
 dt	different
-jr	where
 eou	though
-htu	through
-rs	sorry
+thu	through
+sr	sorry
  1	Monday
  2	Tuesday
  3	Wednesday
@@ -139,16 +177,9 @@ rs	sorry
  7	Sunday
 mv	move
 dir	direction
-ow	without
 nx	next
-ams	same
+sam	same
 pt	top
-'s	~’s
-.s	~s
-.n	~ing
-.t	~tion
-.a	~ation
-.m	~ment
-.l	~ly
-.d	~ed
-'t	~n’t
+
+Newly added
+-----------

@@ -1,35 +1,32 @@
 This is a sample starting dictionary for ZipChord. You can edit existing chords and add your own.
 See https://github.com/psoukie/zipchord for details.
 
+Suffixes
+--------
 ;g	~ing
 ;d	~ed
 ;s	~s
 ;t	~tion
 ;a	~ation
 ;l	~ly
+
+Articles
+--------
 th	the
  a	a
  an	an
+
+Conjunctions
+------------
 an	and
 as	as
 or	or
 bu	but
 if	if
 so	so
-al	all
- o	one
-mo	more
-out	out
-ao	also
-tm	time
-sm	some
-js	just
-ne	new
-odr	other
-pl	people
- n	no
-dn	than
-oy	only
+
+Prepositions
+------------
 to	to
 of	of
 in	in
@@ -42,30 +39,17 @@ by	by
 ab	about
 up	up
 io	into
-dt	that
- i	I
-ou	you
-it	it
-ds	this
-ur	your
-we	we
-dy	they
-he	he
-dr	their
-mr	my
-his	his
-the	there
-our	our
-hr	her
-dm	them
-sh	she
-dis	these
-me	me
+
+Interrogatives
+--------------
 wh	which
 wn	when
 wt	what
 wo	who
 ho	how
+
+Verbs
+-----
 is	is
 ar	are
 be	be
@@ -82,3 +66,41 @@ er	were
 li	like
 bn	been
 ge	get
+
+Pronouns
+--------
+ i	I
+ me	me
+ mr	my
+ou	you
+ur	your
+he	he
+his	his
+sh	she
+hr	her
+it	it
+we	we
+our	our
+dy	they
+dr	their
+dm	them
+
+Other
+-----
+al	all
+ o	one
+mo	more
+out	out
+ao	also
+tm	time
+sm	some
+js	just
+ne	new
+odr	other
+pl	people
+dn	than
+oy	only
+dt	that
+ds	this
+the	there
+dis	these
