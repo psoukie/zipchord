@@ -4,6 +4,7 @@ See https://github.com/psoukie/zipchord for details.
 Suffixes
 --------
 ;g	~ing
+;fg	~~ing
 ;d	~ed
 ;s	~s
 ;t	~tion
@@ -97,7 +98,6 @@ sm	some
 js	just
 ne	new
 odr	other
-pl	people
 dn	than
 oy	only
 dt	that
