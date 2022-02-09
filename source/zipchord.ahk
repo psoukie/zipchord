@@ -43,6 +43,8 @@ Initialize() {
   Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
   Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|Chords only|All input
   Gui, Add, Checkbox, vUIon xp-150 Y+10 Checked%UIon%, E&nabled
+  Gui, Font, Underline cBlue
+  Gui, Add, Text, X15 Y+30 gWebsiteLink, v1.4 info
   Gui, Add, Button, Default w80 xs+120 ys+150, OK
   Menu, Tray, Add, Open Settings, ShowMenu
   Menu, Tray, Default, Open Settings
@@ -91,6 +93,10 @@ Initialize() {
   }
   ShowMenu()
 }
+
+WebsiteLink:
+Run https://github.com/psoukie/zipchord/
+return
 
 ShowMenu() {
   GuiControl Text, newdelay, %chdelay%
