@@ -104,7 +104,7 @@ ButtonOK:
   mode := UImode
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
   if SetDelay(newdelay) {
-    start := UIon ? 0 : 1
+    start := UIon ? 0 : -1
     CloseMenu()
   }
   Return
@@ -126,6 +126,8 @@ CloseMenu() {
 KeyDown:
   key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
   chord .= key
+  if (start==-1)
+    Return
   if (StrLen(chord)==2)
     start:= A_TickCount
   if (mode==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
