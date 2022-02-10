@@ -1,6 +1,6 @@
 # ZipChord Keyboard
 
-_ZipChord_ is a customizable hybrid keyboard input method for Windows that augments regular typing with chorded entry. An article [Type Faster and More Comfortably with ZipChord](https://psoukenik.medium.com/type-faster-and-more-comfortably-with-zipchord-fdee71b28392?sk=27b82576a598d900d52ca1f65504cf8f) discusses why this might be useful.  
+_ZipChord_ is a customizable hybrid keyboard input method for Windows that augments regular typing with chorded entry. For a discussion of why that might be useful, see [ZipChord: Hybrid Chorded Keyboard](https://soukie.net/zipchord-hybrid-chorded-keyboard).  
 
 ## Installation
 
