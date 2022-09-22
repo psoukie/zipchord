@@ -1,0 +1,16 @@
+wh    while
+cl    class
+nw    new
+pb    public
+stc   static
+prv   private
+if    interface
+abt   abstract
+vd    void
+exc   Exception
+prt   protected
+dbl   double
+flt   float
+int   int
+inte  Integer
+str   String
