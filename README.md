@@ -26,6 +26,8 @@ The chord recognition option allows you to change the sensitivity of the chord r
 * For chords: Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
 * All input: Spaces are always added after punctuation and words are capitalized even for regular typing.
 
+The "Delete mistyped chords" option automatically removes unrecognized chords. Note that if you tend to type with having multiple keys pressed at the same time for longer than the threshold that triggers the chord recognition, this can result in some intended key presses in your regular typing being deleted. In that case, either do not use this option, or increase the number of milliseconds under Sensitivity.
+
 ## Chord Dictionary
 
 _ZipChord_ uses a separate text file with a dictionary of chords and the full words. _ZipChord_ will remember the last used dictionary. (Note: When you run _ZipChord_ for the first time or the dictionary isn't available, it will either open a chord*.txt file in its working folder or create a new chord.txt.)
