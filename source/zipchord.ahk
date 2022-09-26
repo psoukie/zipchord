@@ -14,7 +14,9 @@ global newdelay := 0
 global mode := 2
 global UIdict := "none"
 global UIon := 1
+global delnonchords := 0
 global start := 0
+global UImode
 chord := ""
 consecutive := false
 space := false
@@ -37,15 +39,17 @@ Initialize() {
   Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
   Gui, Add, Button, gReloadDict xp+100 yp+0 w80, &Reload
 
-  Gui, Add, GroupBox, xs ys+120 w320 h130 Section, Chord recognition
+  Gui, Add, GroupBox, xs ys+120 w320 h170 Section, Chord recognition
   Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
   Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
   Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
   Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|Chords only|All input
-  Gui, Add, Checkbox, vUIon xp-150 Y+10 Checked%UIon%, E&nabled
+  Gui, Add, Checkbox, vdelnonchords xp-150 Y+10 Checked%delnonchords%, &Delete mistyped chords
+  Gui, Add, Checkbox, gUIControlStatus vUIon Y+10 Checked%UIon%, Recognition e&nabled
   Gui, Font, Underline cBlue
-  Gui, Add, Text, X15 Y+30 gWebsiteLink, v1.4 info
-  Gui, Add, Button, Default w80 xs+120 ys+150, OK
+  Gui, Add, Text, X15 Y+30 gWebsiteLink, v1.5 info
+  Gui, Add, Button, Default w80 xs+120 ys+180, OK
+
   Menu, Tray, Add, Open Settings, ShowMenu
   Menu, Tray, Default, Open Settings
   Menu, Tray, Tip, ZipChord
@@ -53,7 +57,8 @@ Initialize() {
 
   RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
   if ErrorLevel
-    SetDelay(75)
+    SetDelay(90)
+  RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
   RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
   if ErrorLevel
     mode := 2
@@ -102,13 +107,23 @@ ShowMenu() {
   GuiControl Text, newdelay, %chdelay%
   GuiControl , Choose, UImode, %mode%
   GuiControl , , UIon, % (start==-1) ? 0 : 1
+  GuiControl , , delnonchords, %delnonchords%
   Gui, Show,, ZipChord
+  UIControlStatus()
+}
+
+UIControlStatus() {
+  GuiControlGet, checked,, UIon
+  GuiControl, Enable%checked%, newdelay
+  GuiControl, Enable%checked%, UImode
+  GuiControl, Enable%checked%, delnonchords
 }
 
 ButtonOK:
   Gui, Submit, NoHide
   mode := UImode
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
   if SetDelay(newdelay) {
     start := UIon ? 0 : -1
     CloseMenu()
@@ -179,6 +194,12 @@ KeyUp:
       }
       consecutive := true
       uppercase := 0
+    }
+    else {
+      if (delnonchords) {
+        Loop % StrLen(sorted)
+          SendInput {Backspace}
+      }
     }
   }
   else
