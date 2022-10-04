@@ -47,7 +47,7 @@ Initialize() {
   Gui, Add, Checkbox, vdelnonchords xp-150 Y+10 Checked%delnonchords%, &Delete mistyped chords
   Gui, Add, Checkbox, gUIControlStatus vUIon Y+10 Checked%UIon%, Recognition e&nabled
   Gui, Font, Underline cBlue
-  Gui, Add, Text, X15 Y+30 gWebsiteLink, v1.5.1 info
+  Gui, Add, Text, X15 Y+30 gWebsiteLink, v1.5.2 info
   Gui, Add, Button, Default w80 xs+120 ys+180, OK
 
   Menu, Tray, Add, Open Settings, ShowMenu
@@ -259,7 +259,7 @@ ShiftKeys:
 
 Interrupt:
   uppercase:=false
-  consecutive:=false
+  consecutive:=true
   Return
 
 ~^c::
