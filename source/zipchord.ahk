@@ -253,6 +253,10 @@ ShiftKeys:
   uppercase := true
   Return
 
+~Shift::
+  uppercase := true
+  Return
+
 Interrupt:
   uppercase:=false
   consecutive:=false
