@@ -10,7 +10,9 @@ global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton
 global chfile := ""
 global chords := {}
 global chdelay := 0
+global outdelay := 0
 global newdelay := 0
+global newoutdelay := 0
 global mode := 2
 global UIdict := "none"
 global UIon := 1
@@ -39,7 +41,11 @@ Initialize() {
   Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
   Gui, Add, Button, gReloadDict xp+100 yp+0 w80, &Reload
 
-  Gui, Add, GroupBox, xs ys+120 w320 h170 Section, Chord recognition
+  Gui, Add, GroupBox, xs ys+120 w320 h70 Section, Output Delay
+  Gui, Add, Text, xp+20 yp+30, Delay &(ms):
+  Gui, Add, Edit, vnewoutdelay Right xp+150 yp+0 w40, 99
+
+  Gui, Add, GroupBox, xs ys+100 w320 h170 Section, Chord recognition
   Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
   Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
   Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
@@ -58,6 +64,9 @@ Initialize() {
   RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
   if ErrorLevel
     SetDelay(90)
+  RegRead outdelay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
+  if ErrorLevel
+    SetOutDelay(0)
   RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
   RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
   if ErrorLevel
@@ -105,6 +114,7 @@ return
 
 ShowMenu() {
   GuiControl Text, newdelay, %chdelay%
+  GuiControl Text, newoutdelay, %outdelay%
   GuiControl , Choose, UImode, %mode%
   GuiControl , , UIon, % (start==-1) ? 0 : 1
   GuiControl , , delnonchords, %delnonchords%
@@ -115,6 +125,7 @@ ShowMenu() {
 UIControlStatus() {
   GuiControlGet, checked,, UIon
   GuiControl, Enable%checked%, newdelay
+  GuiControl, Enable%checked%, newoutdelay
   GuiControl, Enable%checked%, UImode
   GuiControl, Enable%checked%, delnonchords
 }
@@ -125,6 +136,10 @@ ButtonOK:
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
   if SetDelay(newdelay) {
+    start := UIon ? 0 : -1
+    CloseMenu()
+  }
+  if SetOutDelay(newoutdelay) {
     start := UIon ? 0 : -1
     CloseMenu()
   }
@@ -170,6 +185,7 @@ KeyUp:
     cons := consecutive | space
     upper := uppercase
     sorted := Arrange(ch)
+    Sleep outdelay
     if (chords.HasKey(sorted)) {
       Loop % StrLen(sorted)
         SendInput {Backspace}
@@ -325,6 +341,17 @@ SetDelay(newdelay) {
   Return true
 }
 
+SetOutDelay(newoutdelay) {
+  newoutdelay := Round(newoutdelay + 0)
+  if (newoutdelay<0) {
+    MsgBox ,, ZipChord, % "The output delay must be greater than 0"
+    Return false
+  }
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutDelay, %newoutdelay%
+  outdelay := newoutdelay
+  Return true
+}
+
 Arrange(raw) {
   raw := RegExReplace(raw, "(.)", "$1`n")
   Sort raw
@@ -355,6 +382,7 @@ UpdateUI() {
     filestr := chfile
   filestr .= " (" chords.Count()
   GuiControl Text, newdelay, %chdelay%
+  GuiControl Text, newoutdelay, %outdelay%
   filestr .= (chords.Count()==1) ? " chord)" : " chords)"
   GuiControl Text, UIdict, %filestr%
 }
