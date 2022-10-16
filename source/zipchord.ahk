@@ -15,6 +15,7 @@ global newdelay := 0
 global newoutdelay := 0
 global mode := 2
 global UIdict := "none"
+global UIentries := "0"
 global UIon := 1
 global delnonchords := 0
 global start := 0
@@ -35,26 +36,28 @@ Return
 Initialize() {
   Gui, Font, s10, Segoe UI
   Gui, Margin, 15, 15
-  Gui, Add, GroupBox, w320 h100 Section, Dictionary
-  Gui, Add, Text, xp+20 yp+30 w280 vUIdict Center, [file name] (999 chords)
-  Gui, Add, Button, gSelectDict Y+10 w80, &Select
+  Gui, Add, GroupBox, w320 h130 Section, Dictionary
+  Gui, Add, Text, xp+20 yp+30 w280 vUIdict Left, [file name]
+  Gui, Add, Text, xp+10 Y+10 w280 vUIentries Left, (999 chords)
+  Gui, Add, Button, gSelectDict Y+10 w80, &Open
   Gui, Add, Button, gEditDict xp+100 yp+0 w80, &Edit
   Gui, Add, Button, gReloadDict xp+100 yp+0 w80, &Reload
 
-  Gui, Add, GroupBox, xs ys+120 w320 h70 Section, Output Delay
-  Gui, Add, Text, xp+20 yp+30, Delay &(ms):
+  Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
+  Gui, Add, Text, xp+20 yp+30, I&nput delay (ms):
+  Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
+  Gui, Add, Text, xp-150 Y+10, O&utput delay (ms):
   Gui, Add, Edit, vnewoutdelay Right xp+150 yp+0 w40, 99
 
-  Gui, Add, GroupBox, xs ys+100 w320 h170 Section, Chord recognition
-  Gui, Add, Text, xp+20 yp+30, Sensi&tivity (ms):
-  Gui, Add, Edit, vnewdelay Right xp+150 yp+0 w40, 99
-  Gui, Add, Text, xp-150 Y+10, Smart &punctuation:
-  Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|Chords only|All input
+  Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
+  Gui, Add, Text, xp+20 yp+30, Smart &punctuation:
+  Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 yp+0 w130, Off|For chords only|For all input
   Gui, Add, Checkbox, vdelnonchords xp-150 Y+10 Checked%delnonchords%, &Delete mistyped chords
-  Gui, Add, Checkbox, gUIControlStatus vUIon Y+10 Checked%UIon%, Recognition e&nabled
+
+  Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+40 Checked%UIon%, Re&cognition enabled
+  Gui, Add, Button, Default w80 xs+220, OK
   Gui, Font, Underline cBlue
-  Gui, Add, Text, X15 Y+30 gWebsiteLink, v1.5.2 info
-  Gui, Add, Button, Default w80 xs+120 ys+180, OK
+  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.5.5 (updates)
 
   Menu, Tray, Add, Open Settings, ShowMenu
   Menu, Tray, Default, Open Settings
@@ -376,13 +379,14 @@ LoadChords(fname) {
 }
 
 UpdateUI() {
-  if StrLen(chfile) > 26
-    filestr := "..." SubStr(chfile, -25)
+  if StrLen(chfile) > 35
+    filestr := "..." SubStr(chfile, -34)
   else
     filestr := chfile
-  filestr .= " (" chords.Count()
   GuiControl Text, newdelay, %chdelay%
   GuiControl Text, newoutdelay, %outdelay%
-  filestr .= (chords.Count()==1) ? " chord)" : " chords)"
   GuiControl Text, UIdict, %filestr%
+  entriesstr := "(" chords.Count()
+  entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
+  GuiControl Text, UIentries, %entriesstr%
 }
