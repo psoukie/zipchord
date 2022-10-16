@@ -1,6 +1,6 @@
 # ZipChord Keyboard
 
-_ZipChord_ is a customizable hybrid keyboard input method for Windows that augments regular typing with chorded entry. For a discussion of why that might be useful, see [ZipChord: Hybrid Chorded Keyboard](https://soukie.net/zipchord-hybrid-chorded-keyboard).  
+_ZipChord_ is a customizable hybrid keyboard input method for Windows that augments regular typing with chorded entry. For a discussion of why that might be useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
 
 ## Installation
 
@@ -10,23 +10,48 @@ Download and save the executable **zipchord.exe** of the latest [release](https:
 
 ## Using ZipChord
 
-Type normally using individual keystrokes in combination with predefined chords of several keys pressed at the same time to enter whole words. _ZipChord_ will use smart spaces and capitalization to add (or remove) spaces as needed to separate words whether they were typed using individual strokes or chords and to capitalize words as selected.
+Type normally using individual keystrokes in combination with predefined chords (several keys pressed at the same time which type out either whole words or prefixes and suffixes). _ZipChord_ uses smart spaces and capitalization to add (or remove) spaces as needed to separate words, whether they were typed using individual strokes or chords, and to capitalize words as selected.
 
-To define a new chord, select the word you want to define a chord for, and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or any function keys) and click OK. If the selected text is already in the dictionary, _ZipChord_ will remind you of its chord.
+### Defining New Chords
+
+To define a new chord, select the word you want to define a chord for, and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or any function keys) and click OK.
+
+Note that if the selected text is already defined in the chord dictionary, holding Ctrl-C will remind you of its chord.
 
 ## Menu Options
 
-To open the menu, click the _ZipChord_ icon in the Windows tray, or press and hold **Ctrl-Shift-C**.
+To open the menu, click the _ZipChord_ icon in the Windows tray or press and hold **Ctrl-Shift-C** until it appears.
 
-The dictionary group shows the current dictionary and the number of chords it contains. You can select a different dictionary file, open it for direct editing, and reload the dictionary if changes were made to the file.
+### Dictionary
 
-The chord recognition option allows you to change the sensitivity of the chord recognition (the delay before multiple keys held down are treated as a chord) or temporarily disable the chord recognition. It also has three options for smart punctuation:
+The dictionary group shows the currently loaded chord dictionary and the number of chords it contains. You can select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and **Reload** the dictionary when you make changes to the chord file directly in an editor.
 
+Notes:
+* See below for more details about the chord dictionary file and advanced features.
+* When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
+
+### Sensitivity
+
+This group allows you to adjust the sensitivity of the chord recognition and add a delay to the output of the chords. 
+
+**Input delay:** Depending on your regular typing, you might be holding two or more keys pressed at the same time for longer than the threshold that triggers the chord recognition. This can result in some intended key presses in your regular typing being deleted or misinterpreted as chords. In that case, you can increase the number of milliseconds under Input delay.
+
+**Output delay:** In some situations, the window you are typing in might be outputting the chords with some distortions (where keystrokes are replaced incorrectly). In that case, you can try setting the Output delay to 50ms, which can solve the issue.
+
+### Chord Behavior
+
+The Chord Behavior group allows you to change how spaces and punctuation are handled around chords.
+
+**Smart punctuation** offers three options:
 * Off: Spaces and capitalization are never adjusted around punctuation.
-* For chords: Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
-* All input: Spaces are always added after punctuation and words are capitalized even for regular typing.
+* For chords only: Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
+* For all input: Spaces are always added after punctuation and words are capitalized even for regular typing.
 
-The "Delete mistyped chords" option automatically removes unrecognized chords. Note that if you tend to type with having multiple keys pressed at the same time for longer than the threshold that triggers the chord recognition, this can result in some intended key presses in your regular typing being deleted. In that case, either do not use this option, or increase the number of milliseconds under Sensitivity.
+**Delete mistyped chords:** This option allows you to automatically remove unrecognized chords. If you are encountering situations where your intended key presses are being deleted, either do not use this option or increase the number of milliseconds under Input delay.
+
+### Enabling and Disabling the Chords
+
+You can temporarily disable the chord recognition by unchecking the **Recognition enabled** checkbox.
 
 ## Chord Dictionary
 
