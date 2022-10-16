@@ -21,8 +21,7 @@ global delnonchords := 0
 global start := 0
 global UImode
 chord := ""
-consecutive := false
-space := false
+lastentry := 0 ; -1 - entry was interrupted (moved to another place); 0 - last entry was not a chord; 1 - last entry was a chord; 2 - last entry was a space
 uppercase := false
 Initialize()
 Return
@@ -112,7 +111,7 @@ Initialize() {
 }
 
 WebsiteLink:
-Run https://github.com/psoukie/zipchord/
+Run https://github.com/psoukie/zipchord/releases
 return
 
 ShowMenu() {
@@ -185,17 +184,15 @@ KeyUp:
   start := 0
   if (st && StrLen(ch)>1 && A_TickCount - st > chdelay) {
     chord := ""
-    cons := consecutive | space
+    last := lastentry
     upper := uppercase
     sorted := Arrange(ch)
     Sleep outdelay
     if (chords.HasKey(sorted)) {
       Loop % StrLen(sorted)
         SendInput {Backspace}
-      if (!cons) {
+      if (last==0)
         SendInput {Space}
-        space := true
-      }
       exp := chords[sorted]
       if (SubStr(exp, StrLen(exp), 1) == "~") {
         exp := SubStr(exp, 1, StrLen(exp)-1)
@@ -207,11 +204,11 @@ KeyUp:
         SendInput % RegExReplace(exp,"(^.)", "$U1")
       else
         SendInput % exp
+      lastentry := 1
       if (!pref) {
         SendInput {Space}
-        space := true
+        lastentry := 2
       }
-      consecutive := true
       uppercase := 0
     }
     else {
@@ -223,23 +220,21 @@ KeyUp:
   }
   else
     if (ch!="") {
-      cons2 := consecutive
+      last2 := lastentry
       upper2 := uppercase
-      consecutive := false
+      lastentry := 0
       uppercase := 0
       if (key==" ") {
-        space := true
+        lastentry := 2
         if (upper2)
           uppercase := upper2
       }
-      else
-        space := false
       if (InStr(".,;", key)) {
-        if (cons2 && mode>1)
+        if (last2>0 && mode>1)
           SendInput {Backspace}{Backspace}%key%
-        if ((cons2 && mode>1) || mode==3) {
+        if ( (last2>0 && mode>1) || mode==3 ) {
           SendInput {Space}
-          space := true
+          lastentry := 2
         }
       }
       if (key==".")
@@ -249,26 +244,27 @@ KeyUp:
 
 ShiftKeys:
   key := SubStr(A_ThisHotkey, 3, 1)
+  last2 := lastentry
   if (start==-1)
     Return
   if (InStr("1/;", key)) {
-    uppercase := true
-    if (consecutive && mode>1)
+    uppercase := 2
+    lastentry := 0
+    if (last2>0 && mode>1)
       SendInput {Backspace}{Backspace}+%key%
-    if (consecutive || mode==3) {
+    if ( (last2>0 && mode>1) || mode==3 ) {
       SendInput {Space}
-      space := true
+      lastentry := 2
     }
   }
   else {
-    consecutive := false
+    lastentry := 0
     uppercase := 0
-    space := false
   }
   Return
 
 ~Enter::
-  consecutive := true
+  lastentry := -1
   uppercase := true
   Return
 
@@ -277,8 +273,8 @@ ShiftKeys:
   Return
 
 Interrupt:
-  uppercase:=false
-  consecutive:=true
+  lastentry := -1
+  uppercase := false
   Return
 
 ~^c::
