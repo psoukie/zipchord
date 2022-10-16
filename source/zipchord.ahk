@@ -56,7 +56,7 @@ Initialize() {
   Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+40 Checked%UIon%, Re&cognition enabled
   Gui, Add, Button, Default w80 xs+220, OK
   Gui, Font, Underline cBlue
-  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.5.5 (updates)
+  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.6.0 (updates)
 
   Menu, Tray, Add, Open Settings, ShowMenu
   Menu, Tray, Default, Open Settings
