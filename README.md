@@ -85,4 +85,4 @@ The words entered using a chord can include the following special features:
 
 ## Feedback
 
-If you have any feedback, feature requests, or encounter a bug, you can contact me on Twitter at [@pavel_soukenik](https://twitter.com/pavel_soukenik).
+If you have any feedback, feature requests, or encounter a bug, please [file an Issue](https://github.com/psoukie/zipchord/issues). You can contact write to me on Twitter at [@pavel_soukenik](https://twitter.com/pavel_soukenik).
