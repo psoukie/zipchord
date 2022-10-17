@@ -27,7 +27,7 @@ To open the menu, click the _ZipChord_ icon in the Windows tray or press and hol
 The dictionary group shows the currently loaded chord dictionary and the number of chords it contains. You can select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and **Reload** the dictionary when you make changes to the chord file directly in an editor.
 
 Notes:
-* See below for more details about the chord dictionary file and advanced features.
+* See [below](#chord-dictionary) for more details about the chord dictionary file and advanced features.
 * When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
 
 ### Sensitivity
@@ -73,9 +73,9 @@ nw   new
 ```
 Note that if you edit the dictionary file directly in a text editor, you need to click the Reload button from the _ZipChord_ menu for the changes to be loaded.
 
-## Special Characters
+### Special Characters
 
-Chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`"), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Shift, Control, Tab and other function keys cannot be used in a chord.
+Key that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`"), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Shift, Control, Tab and other function keys cannot be used in a chord.
 
 The words entered using a chord can include the following special features:
 
