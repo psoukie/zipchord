@@ -214,7 +214,7 @@ KeyUp:
       lastentry := 1
       if (!pref) {
         SendInput {Space}
-        lastentry := 2
+        lastentry := 3
       }
       uppercase := 0
     }
@@ -232,6 +232,8 @@ KeyUp:
       lastentry := 0
       uppercase := 0
       if (key==" ") {
+        if (last2 == 3)
+          SendInput {Backspace} ; delete any auto-space
         lastentry := 2
         if (upper2)
           uppercase := upper2
@@ -241,7 +243,7 @@ KeyUp:
           SendInput {Backspace}{Backspace}%key%
         if ( (last2>0 && mode>1) || mode==3 ) {
           SendInput {Space}
-          lastentry := 2
+          lastentry := 3
         }
       }
       if (key==".")
@@ -261,7 +263,7 @@ ShiftKeys:
       SendInput {Backspace}{Backspace}+%key%
     if ( (last2>0 && mode>1) || mode==3 ) {
       SendInput {Space}
-      lastentry := 2
+      lastentry := 3
     }
   }
   else {
