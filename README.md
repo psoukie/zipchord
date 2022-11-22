@@ -10,7 +10,9 @@ Download and save the executable **zipchord.exe** of the latest [release](https:
 
 ## Using ZipChord
 
-Type normally using individual keystrokes in combination with predefined chords (several keys pressed at the same time which type out either whole words or prefixes and suffixes). _ZipChord_ uses smart spaces and capitalization to add (or remove) spaces as needed to separate words, whether they were typed using individual strokes or chords, and to capitalize words as selected.
+Type normally using individual keystrokes in combination with predefined chords. Chords are several keys pressed at the same time which type out whole words (or prefixes and suffixes). _ZipChord_ uses smart spaces and capitalization to add (or remove) spaces as needed to separate words, whether they were typed using individual strokes or chords, and to capitalize words.
+
+To use the chord, press the keys that make up the chord simultaneously and release them. You can configure the sensitivity of chord recognition and also the automatic behavior for spaces and capitalization. If you need to capitalize a chorded word manually, press briefly Shift and then press the chord.
 
 ### Defining New Chords
 
@@ -32,7 +34,7 @@ Notes:
 
 ### Sensitivity
 
-This group allows you to adjust the sensitivity of the chord recognition and add a delay to the output of the chords. 
+This group allows you to adjust the sensitivity of the chord recognition and add a delay to the output of the chords.
 
 **Input delay:** Depending on your regular typing, you might be holding two or more keys pressed at the same time for longer than the threshold that triggers the chord recognition. This can result in some intended key presses in your regular typing being deleted or misinterpreted as chords. In that case, you can increase the number of milliseconds under Input delay.
 
@@ -43,7 +45,7 @@ This group allows you to adjust the sensitivity of the chord recognition and add
 The Chord Behavior group allows you to change how spaces and punctuation are handled around chords.
 
 **Smart punctuation** offers three options:
-* Off: Spaces and capitalization are never adjusted around punctuation.
+* Off: Spaces and capitalization are not adjusted around punctuation.
 * For chords only: Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
 * For all input: Spaces are always added after punctuation and words are capitalized even for regular typing.
 
