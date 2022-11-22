@@ -21,7 +21,14 @@ global delnonchords := 0
 global start := 0
 global UImode
 chord := ""
-lastentry := 0 ; -1 - entry was interrupted (moved to another place); 0 - last entry was not a chord; 1 - last entry was a chord; 2 - last entry was a space
+lastentry := 0
+; lastentry values:
+; -1 - entry was interrupted (cursor moved)
+;  0 - not a chord or a space
+;  1 - chord
+;  2 - manually typed space
+;  3 - automatically added space
+
 uppercase := false
 Initialize()
 Return
@@ -56,7 +63,7 @@ Initialize() {
   Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+40 Checked%UIon%, Re&cognition enabled
   Gui, Add, Button, Default w80 xs+220, OK
   Gui, Font, Underline cBlue
-  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.6.0 (updates)
+  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.6.1 (updates)
 
   Menu, Tray, Add, Open Settings, ShowMenu
   Menu, Tray, Default, Open Settings
@@ -156,7 +163,7 @@ CloseMenu() {
   Gui, Submit
   static intro := true
   if intro {
-    MsgBox ,, ZipChord, % "Press and hold Ctrl-C to define a new chord for the selected text.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
+    MsgBox ,, ZipChord, % "Select a word and press and hold Ctrl-C to define a chord for it or to see its existing chord.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
     intro := false
   }
 }
@@ -318,6 +325,10 @@ RegisterChord(newch, newword, w := false) {
   }
   if (StrLen(newch)<2) {
     MsgBox ,, ZipChord, The chord needs to be at least two characters.
+    Return false
+  }
+  if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {
+    MsgBox ,, ZipChord, Each key can be entered only once in the same chord.
     Return false
   }
   if (w)
