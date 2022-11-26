@@ -5,8 +5,22 @@ SetWorkingDir %A_ScriptDir%
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
 
+; Default (US English) keyboard and language settings:
 global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
+global default_terminators := "',-./;=\]" ; keys that can attach to previous output without a space.
+global default_shift_terminators := "',-./0123456789;=\]" ; keys combined with Shift that can attach to previous output without a space.
+global default_openers := "'-/=\]" ; keys that can be followed without a space.
+global default_shift_openers := "',-./23456789;=\]" ; keys combined with Shift that can be followed without a space.
+global default_prefixes := "un|in|dis|inter"   ; will be used to detect normally typed text (regardless of case) so these sequences can be followed by a chord
+
+; Variables holding current keyboard and language settings
 global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
+global terminators := "" ; Sama as above for custom_terminators, etc. for below
+global shift_terminators := ""
+global openers := ""
+global shift_openers := ""
+global prefixes := ""
+
 global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
 global chfile := ""
 global chords := {}
@@ -22,6 +36,7 @@ global delnonchords := 0
 global start := 0
 global UImode
 chord := ""
+shifted := false
 uppercase := false
 lastentry := 0
 /* lastentry values:
@@ -32,16 +47,52 @@ lastentry := 0
  3 - automatically added space
 */
 
-Initialize()
-Return
+; Variables and Constants -- not used yet
+global bOn := 1                 ; ZipChord is enabled
+global bSpaceChords := 2        ; Smart spaces around chords enabled
+global bSpacePunctuation := 4   ; Smart spaces around punctuation enabled
+global bCapitalizeChords := 8   ; Auto capitalize chords
+global bSpacePunctuation := 16  ; Auto capitalize regular typing
 
+global bOutput := 1       ; last output exists (otherwise output flow was interrupted by moving the cursor using cursor keys, mouse click etc.)
+global bSpace := 2        ; last output was a space
+global bAutomated := 4    ; last output was automated (vs. manual entry)
+
+global bSeparateStart := 8  ; output requires a separation before
+global bSeparateEnd := 16  ; output requires a separation after
+global bCapitalize := 32  ; output requires capitalization
+*/
+
+Initialize()
+Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
+
+; An always enabled Ctrl+Shift+C hotkey held long to open ZipChord menu.
 ~^+c::
   Sleep 300
   if GetKeyState("c","P")
     ShowMenu()
   Return
 
+; An always-on Ctrl+C hotkey held long to add a new chord to the dictionary.
+~^c::
+  Sleep 300
+  if GetKeyState("c","P")
+    AddChord()
+  Return
+
+~Enter::
+  lastentry := -1
+  uppercase := true
+  Return
+
+~Shift::
+  uppercase := true
+  Return
+
+; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
+
 Initialize() {
+  ; Prepare UI dialog:
   Gui, Font, s10, Segoe UI
   Gui, Margin, 10, 10
   Gui, Add, GroupBox, w320 h130 Section, Dictionary
@@ -65,13 +116,15 @@ Initialize() {
   Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+40 Checked%UIon%, Re&cognition enabled
   Gui, Add, Button, Default w80 xs+220, OK
   Gui, Font, Underline cBlue
-  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.6.2 (updates)
+  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.6.3 (updates)
 
+  ; Create taskbar tray menu:
   Menu, Tray, Add, Open Settings, ShowMenu
   Menu, Tray, Default, Open Settings
   Menu, Tray, Tip, ZipChord
   Menu, Tray, Click, 1
 
+  ; Attempt to read settings and dictionary from Windows Registry
   RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
   if ErrorLevel
     SetDelays(90, 0)
@@ -85,6 +138,7 @@ Initialize() {
   RegRead chfile, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
   if (ErrorLevel || !FileExist(chfile)) {
     errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chfile)
+    ; If we don't have the dictionary, try other files with the following filename convention instead. (This is useful if the user downloaded ZipChord and a preexisting dictionary and has them in the same folder.)
     chfile := "chords*.txt"
     if FileExist(chfile) {
       Loop, Files, %chfile%
@@ -101,6 +155,7 @@ Initialize() {
     chfile := A_ScriptDir "\" chfile
     MsgBox ,, ZipChord, %errmsg%
   }
+
   LoadChords(chfile)
   WireHotkeys("On")
   ShowMenu()
@@ -173,6 +228,8 @@ CloseMenu() {
   }
 }
 
+; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
+
 KeyDown:
   key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
   chord .= key
@@ -181,6 +238,26 @@ KeyDown:
   if (mode==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
     SendInput {Backspace}+%key%
     uppercase := 1
+  }
+  Return
+
+ShiftKeys:
+  key := SubStr(A_ThisHotkey, 3, 1)
+  ; shifted := true ; will be used in refactor
+  last2 := lastentry
+  if (InStr("1/;", key)) {
+    uppercase := 2
+    lastentry := 0
+    if (last2>0 && mode>1)
+      SendInput {Backspace}{Backspace}+%key%
+    if ( (last2>0 && mode>1) || mode==3 ) {
+      SendInput {Space}
+      lastentry := 3
+    }
+  }
+  else {
+    lastentry := 0
+    uppercase := 0
   }
   Return
 
@@ -252,59 +329,9 @@ KeyUp:
   }
   Return
 
-ShiftKeys:
-  key := SubStr(A_ThisHotkey, 3, 1)
-  last2 := lastentry
-  if (InStr("1/;", key)) {
-    uppercase := 2
-    lastentry := 0
-    if (last2>0 && mode>1)
-      SendInput {Backspace}{Backspace}+%key%
-    if ( (last2>0 && mode>1) || mode==3 ) {
-      SendInput {Space}
-      lastentry := 3
-    }
-  }
-  else {
-    lastentry := 0
-    uppercase := 0
-  }
-  Return
-
-~Enter::
-  lastentry := -1
-  uppercase := true
-  Return
-
-~Shift::
-  uppercase := true
-  Return
-
 Interrupt:
   lastentry := -1
   uppercase := false
-  Return
-
-~^c::
-  Sleep 300
-  if GetKeyState("c","P") {
-    newword := Trim(Clipboard)
-    if (!StrLen(newword)) {
-      MsgBox ,, ZipChord, % "First, select a word you would like to define a chord for, and then press and hold Ctrl+C again."
-      Return
-    }
-    For ch, wd in chords
-      if (wd==newword) {
-        MsgBox  ,, ZipChord, % Format("The text '{}' already has the chord {:U} associated with it.", wd, ch)
-        Return
-      }
-    Loop {
-      InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
-      if ErrorLevel
-        Return
-    } Until RegisterChord(newch, newword, true)
-    UpdateUI()
-  }
   Return
 
 SelectDict() {
@@ -316,6 +343,25 @@ SelectDict() {
 
 EditDict() {
   Run notepad.exe %chfile%
+}
+
+AddChord() {
+  newword := Trim(Clipboard)
+  if (!StrLen(newword)) {
+    MsgBox ,, ZipChord, % "First, select a word you would like to define a chord for, and then press and hold Ctrl+C again."
+    Return
+  }
+  For ch, wd in chords
+    if (wd==newword) {
+      MsgBox  ,, ZipChord, % Format("The text '{}' already has the chord {:U} associated with it.", wd, ch)
+      Return
+    }
+  Loop {
+    InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
+    if ErrorLevel
+      Return
+  } Until RegisterChord(newch, newword, true)
+  UpdateUI()
 }
 
 RegisterChord(newch, newword, w := false) {
