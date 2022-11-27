@@ -4,30 +4,33 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
+global version = "v1.6.3"
 
 ; Default (US English) keyboard and language settings:
 global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
+global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
+
+/*  Preparation for v2
 global default_terminators := "',-./;=\]" ; keys that can attach to previous output without a space.
 global default_shift_terminators := "',-./0123456789;=\]" ; keys combined with Shift that can attach to previous output without a space.
 global default_openers := "'-/=\]" ; keys that can be followed without a space.
 global default_shift_openers := "',-./23456789;=\]" ; keys combined with Shift that can be followed without a space.
 global default_prefixes := "un|in|dis|inter"   ; will be used to detect normally typed text (regardless of case) so these sequences can be followed by a chord
-
 ; Variables holding current keyboard and language settings
-global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
 global terminators := "" ; Sama as above for custom_terminators, etc. for below
 global shift_terminators := ""
 global openers := ""
 global shift_openers := ""
 global prefixes := ""
+*/
 
 global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
-global chfile := ""
-global chords := {}
-global chdelay := 0
-global outdelay := 0
-global newdelay := 0
-global newoutdelay := 0
+global chord_file := ""
+global chords := {} ; holds pairs of chord key combination and their full text
+global chord_delay := 0
+global output_delay := 0
+global UI_chord_delay := 0
+global UI_output_delay := 0
 global mode := 2
 global UIdict := "none"
 global UIentries := "0"
@@ -36,7 +39,6 @@ global delnonchords := 0
 global start := 0
 global UImode
 chord := ""
-shifted := false
 uppercase := false
 lastentry := 0
 /* lastentry values:
@@ -47,7 +49,9 @@ lastentry := 0
  3 - automatically added space
 */
 
-; Variables and Constants -- not used yet
+/*
+; Variables and Constants -- preparation for v2
+; shifted := false
 global bOn := 1                 ; ZipChord is enabled
 global bSpaceChords := 2        ; Smart spaces around chords enabled
 global bSpacePunctuation := 4   ; Smart spaces around punctuation enabled
@@ -104,9 +108,9 @@ Initialize() {
 
   Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
   Gui, Add, Text, xs+20 yp+30, I&nput delay (ms):
-  Gui, Add, Edit, vnewdelay Right xp+150 w40, 99
+  Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
   Gui, Add, Text, xs+20 y+m, O&utput delay (ms):
-  Gui, Add, Edit, vnewoutdelay Right xp+150 w40, 99
+  Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
 
   Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
   Gui, Add, Text, xs+20 yp+30, Smart &punctuation:
@@ -116,7 +120,7 @@ Initialize() {
   Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+40 Checked%UIon%, Re&cognition enabled
   Gui, Add, Button, Default w80 xs+220, OK
   Gui, Font, Underline cBlue
-  Gui, Add, Text, xs Y+10 gWebsiteLink, v1.6.3 (updates)
+  Gui, Add, Text, xs Y+10 gWebsiteLink, %version% (updates)
 
   ; Create taskbar tray menu:
   Menu, Tray, Add, Open Settings, ShowMenu
@@ -125,38 +129,38 @@ Initialize() {
   Menu, Tray, Click, 1
 
   ; Attempt to read settings and dictionary from Windows Registry
-  RegRead chdelay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
+  RegRead chord_delay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
   if ErrorLevel
     SetDelays(90, 0)
-  RegRead outdelay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
+  RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
   if ErrorLevel
     SetDelays(90, 0)
   RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
   RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
   if ErrorLevel
     mode := 2
-  RegRead chfile, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
-  if (ErrorLevel || !FileExist(chfile)) {
-    errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chfile)
+  RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
+  if (ErrorLevel || !FileExist(chord_file)) {
+    errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
     ; If we don't have the dictionary, try other files with the following filename convention instead. (This is useful if the user downloaded ZipChord and a preexisting dictionary and has them in the same folder.)
-    chfile := "chords*.txt"
-    if FileExist(chfile) {
-      Loop, Files, %chfile%
+    chord_file := "chords*.txt"
+    if FileExist(chord_file) {
+      Loop, Files, %chord_file%
         flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
       Sort flist
-      chfile := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-      errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", chfile)
+      chord_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+      errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", chord_file)
     }
     else {
       errmsg .= "ZipChord is going to create a new 'chords.txt' dictionary in its own folder."
-      chfile := "chords.txt"
-      FileAppend % "This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %chfile%, UTF-8
+      chord_file := "chords.txt"
+      FileAppend % "This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %chord_file%, UTF-8
     }
-    chfile := A_ScriptDir "\" chfile
+    chord_file := A_ScriptDir "\" chord_file
     MsgBox ,, ZipChord, %errmsg%
   }
 
-  LoadChords(chfile)
+  LoadChords(chord_file)
   WireHotkeys("On")
   ShowMenu()
 }
@@ -182,8 +186,8 @@ Run https://github.com/psoukie/zipchord/releases
 return
 
 ShowMenu() {
-  GuiControl Text, newdelay, %chdelay%
-  GuiControl Text, newoutdelay, %outdelay%
+  GuiControl Text, UI_chord_delay, %chord_delay%
+  GuiControl Text, UI_output_delay, %output_delay%
   GuiControl , Choose, UImode, %mode%
   GuiControl , , UIon, % (start==-1) ? 0 : 1
   GuiControl , , delnonchords, %delnonchords%
@@ -193,8 +197,8 @@ ShowMenu() {
 
 UIControlStatus() {
   GuiControlGet, checked,, UIon
-  GuiControl, Enable%checked%, newdelay
-  GuiControl, Enable%checked%, newoutdelay
+  GuiControl, Enable%checked%, UI_chord_delay
+  GuiControl, Enable%checked%, UI_output_delay
   GuiControl, Enable%checked%, UImode
   GuiControl, Enable%checked%, delnonchords
 }
@@ -204,7 +208,7 @@ ButtonOK:
   mode := UImode
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
-  if SetDelays(newdelay, newoutdelay) {
+  if SetDelays(UI_chord_delay, UI_output_delay) {
     if (start == -1 && UIon)
       WireHotkeys("On")
     if (start != -1 && !UIon)
@@ -267,12 +271,12 @@ KeyUp:
   chord := StrReplace(chord, key)
   st := start
   start := 0
-  if (st && StrLen(ch)>1 && A_TickCount - st > chdelay) {
+  if (st && StrLen(ch)>1 && A_TickCount - st > chord_delay) {
     chord := ""
     last := lastentry
     upper := uppercase
     sorted := Arrange(ch)
-    Sleep outdelay
+    Sleep output_delay
     if (chords.HasKey(sorted)) {
       Loop % StrLen(sorted)
         SendInput {Backspace}
@@ -303,7 +307,7 @@ KeyUp:
       }
     }
   }
-  else
+  else ; it's not a chord, but it could still be multiple keys being released.
     if (ch!="") {
       last2 := lastentry
       upper2 := uppercase
@@ -342,7 +346,7 @@ SelectDict() {
 }
 
 EditDict() {
-  Run notepad.exe %chfile%
+  Run notepad.exe %chord_file%
 }
 
 AddChord() {
@@ -379,7 +383,7 @@ RegisterChord(newch, newword, w := false) {
     Return false
   }
   if (w)
-    FileAppend % "`r`n" newch "`t" newword, %chfile%, UTF-8
+    FileAppend % "`r`n" newch "`t" newword, %chord_file%, UTF-8
   newword := StrReplace(newword, "~", "{Backspace}")
   if (SubStr(newword, -10)=="{Backspace}")
     newword := SubStr(newword, 1, StrLen(newword)-11) "~"
@@ -387,18 +391,17 @@ RegisterChord(newch, newword, w := false) {
   return true
 }
 
-SetDelays(newdelay, newoutdelay) {
-  newdelay := Round(newdelay + 0)
-  newoutdelay := Round(newoutdelay + 0)
-  if (newdelay<1 || newoutdelay<0) {
-    MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a positive number."
-    Return false
+SetDelays(new_input_delay, new_output_delay) {
+  ; first check we have integers
+  if (RegExMatch(new_input_delay,"^\d+$") && RegExMatch(new_output_delay,"^\d+$")) {
+      chord_delay := new_input_delay + 0
+      RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay, %chord_delay%
+      output_delay := new_output_delay + 0
+      RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutDelay, %output_delay%
+      Return true
   }
-  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay, %newdelay%
-  chdelay := newdelay
-  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutDelay, %newoutdelay%
-  outdelay := newoutdelay
-  Return true
+  MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
+  Return false
 }
 
 Arrange(raw) {
@@ -409,16 +412,16 @@ Arrange(raw) {
 
 ReloadDict() {
   WireHotkeys("Off")
-  LoadChords(chfile)
+  LoadChords(chord_file)
   WireHotkeys("On")
 }
 
-LoadChords(fname) {
-  chfile := fname
-  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chfile%
+LoadChords(file_name) {
+  chord_file := file_name
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chord_file%
   chords := {}
   keys := default_keys
-  Loop, Read, %chfile%
+  Loop, Read, %chord_file%
   {
     pos := InStr(A_LoopReadLine, A_Tab)
     if (pos) {
@@ -432,12 +435,12 @@ LoadChords(fname) {
 }
 
 UpdateUI() {
-  if StrLen(chfile) > 35
-    filestr := "..." SubStr(chfile, -34)
+  if StrLen(chord_file) > 35
+    filestr := "..." SubStr(chord_file, -34)
   else
-    filestr := chfile
-  GuiControl Text, newdelay, %chdelay%
-  GuiControl Text, newoutdelay, %outdelay%
+    filestr := chord_file
+  GuiControl Text, UI_chord_delay, %chord_delay%
+  GuiControl Text, UI_output_delay, %output_delay%
   GuiControl Text, UIdict, %filestr%
   entriesstr := "(" chords.Count()
   entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
