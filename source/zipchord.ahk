@@ -418,6 +418,7 @@ ReloadDict() {
 
 LoadChords(file_name) {
   chord_file := file_name
+  pause_loading := true
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chord_file%
   chords := {}
   keys := default_keys
@@ -428,7 +429,15 @@ LoadChords(file_name) {
       if (SubStr(A_LoopReadLine, 1, pos-1) == "custom_keys")
         keys := Arrange(SubStr(A_LoopReadLine, pos+1))
       else
-        RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1))
+        if (! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
+          if (pause_loading) {
+            MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
+            IfMsgBox Yes
+              pause_loading := false
+            else
+              Break
+          }
+        }
     }
   }
   UpdateUI()
