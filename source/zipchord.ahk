@@ -4,7 +4,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "v1.6.3"
+global version = "1.6.3"
 
 ; Default (US English) keyboard and language settings:
 global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
@@ -26,22 +26,22 @@ global prefixes := ""
 
 global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
 global chord_file := ""
-global chords := {} ; holds pairs of chord key combination and their full text
+global chords := {} ; holds pairs of chord key combinations and their full texts
 global chord_delay := 0
 global output_delay := 0
-global UI_chord_delay := 0
-global UI_output_delay := 0
-global mode := 2
-global UIdict := "none"
-global UIentries := "0"
-global UIon := 1
-global delnonchords := 0
-global start := 0
-global UImode
+global capitalization := 2 ; 0 - no auto-capitalization, 1 - auto-capitalize chords only, 2 - auto-capitalize all typing
+; constants and variable for smart spacing setttings:
+global bBeforeChord := 1
+global bAfterChord := 2
+global bPunctuation := 4
+global spacing := bBeforeChord | bAfterChord
+
+global delnonchords := 0 ; delete typing that triggers chords that are not in dictionary?
+global start := 0 ; maps to UIon for whether the chord recognition is enabled
 chord := ""
 uppercase := false
+prefix := false ; TK: in v2, combine prefix into lastentry
 lastentry := 0
-prefix := false
 /* lastentry values:
 -1 - entry was interrupted (cursor moved)
  0 - not a chord or a space
@@ -49,6 +49,19 @@ prefix := false
  2 - manually typed space
  3 - automatically added space
 */
+
+; variables holding the UI selections -- used by AHK Gui 
+global UI_chord_delay := 0
+global UI_output_delay := 0
+global UI_space_before := 0
+global UI_space_after := 0
+global UI_space_punctuation := 0
+global UIcapitalization
+global UIdict := "none"
+global UIentries := "0"
+global UIon := 1
+global UITabMenu := 0
+
 
 /*
 ; Variables and Constants -- preparation for v2
@@ -99,29 +112,39 @@ Return   ; To prevent execution of any of the following code, except for the alw
 Initialize() {
   ; Prepare UI dialog:
   Gui, Font, s10, Segoe UI
-  Gui, Margin, 10, 10
-  Gui, Add, GroupBox, w320 h130 Section, Dictionary
-  Gui, Add, Text, xs+20 yp+30 w280 vUIdict Left, [file name]
+  Gui, Margin, 15, 15
+  Gui, Add, Tab3, vUITabMenu, Dictionary|Sensitivity|Behavior|About
+  ; Gui, Add, GroupBox, w320 h130 Section, Dictionary
+  Gui, Add, Text, w280 vUIdict Left, [file name]
   Gui, Add, Text, xp+10 y+m w280 vUIentries Left, (999 chords)
   Gui, Add, Button, xs+20 gSelectDict y+m w80, &Open
   Gui, Add, Button, gEditDict xp+100 w80, &Edit
   Gui, Add, Button, gReloadDict xp+100 w80, &Reload
-
-  Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
-  Gui, Add, Text, xs+20 yp+30, I&nput delay (ms):
+  ; Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
+  Gui, Tab, 2
+  Gui, Add, Text, xs+20 y+m, I&nput delay (ms):
   Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
   Gui, Add, Text, xs+20 y+m, O&utput delay (ms):
   Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-
-  Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
-  Gui, Add, Text, xs+20 yp+30, Smart &punctuation:
-  Gui, Add, DropDownList, vUImode Choose%mode% AltSubmit Right xp+150 w130, Off|For chords only|For all input
   Gui, Add, Checkbox, vdelnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
+  ;Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
+  Gui, Tab, 3
+  Gui, Add, GroupBox, w320 h120 Section, Smart spaces
+  ;Gui, Add, Text, xs+20 ys+m +Wrap, When selected, smart spaces are dynamically added and removed as you type to ensure spaces between words, and avoid extra spaces around punctuation and doubled spaces when a manually typed space is combined with an automatic one.
+  Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, &In front of chords
+  Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
+  Gui, Add, Checkbox, vUI_space_punctuation xp y+10, &After punctuation
+  Gui, Add, Text, xs y+30, Auto-&capitalization:
+  Gui, Add, DropDownList, vUIcapitalization Choose%capitalization% AltSubmit Right xp+150 w130, Off|For chords only|For all input
 
-  Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+40 Checked%UIon%, Re&cognition enabled
-  Gui, Add, Button, Default w80 xs+220, OK
+  Gui, Tab
+  Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+m Checked%UIon%, Re&cognition enabled
+  Gui, Add, Button, Default w80 xs+220 y+m, OK
+  Gui, Tab, 4
+  Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
   Gui, Font, Underline cBlue
-  Gui, Add, Text, xs Y+10 gWebsiteLink, %version% (updates)
+  Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
+  Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
 
   ; Create taskbar tray menu:
   Menu, Tray, Add, Open Settings, ShowMenu
@@ -137,9 +160,9 @@ Initialize() {
   if ErrorLevel
     SetDelays(90, 0)
   RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
-  RegRead mode, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
+  RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
   if ErrorLevel
-    mode := 2
+    capitalization := 2
   RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
   if (ErrorLevel || !FileExist(chord_file)) {
     errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
@@ -183,15 +206,23 @@ WireHotkeys(state) {
 }
 
 WebsiteLink:
+Run https://github.com/psoukie/zipchord#readme
+return
+
+ReleaseLink:
 Run https://github.com/psoukie/zipchord/releases
 return
 
 ShowMenu() {
   GuiControl Text, UI_chord_delay, %chord_delay%
   GuiControl Text, UI_output_delay, %output_delay%
-  GuiControl , Choose, UImode, %mode%
+  GuiControl , Choose, UIcapitalization, %capitalization%
+  GuiControl , , UI_space_before, % (spacing & bBeforeChord) ? 1 : 0   
+  GuiControl , , UI_space_after, % (spacing & bAfterChord) ? 1 : 0
+  GuiControl , , UI_space_punctuation, % (spacing & bPunctuation) ? 1 : 0
   GuiControl , , UIon, % (start==-1) ? 0 : 1
   GuiControl , , delnonchords, %delnonchords%
+  GuiControl, Choose, UITabMenu, 1 ; switch to first tab 
   Gui, Show,, ZipChord
   UIControlStatus()
 }
@@ -200,14 +231,14 @@ UIControlStatus() {
   GuiControlGet, checked,, UIon
   GuiControl, Enable%checked%, UI_chord_delay
   GuiControl, Enable%checked%, UI_output_delay
-  GuiControl, Enable%checked%, UImode
+  GuiControl, Enable%checked%, UIcapitalization
   GuiControl, Enable%checked%, delnonchords
 }
 
 ButtonOK:
   Gui, Submit, NoHide
-  mode := UImode
-  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %mode%
+  capitalization := UIcapitalization
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %capitalization%
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
   if SetDelays(UI_chord_delay, UI_output_delay) {
     if (start == -1 && UIon)
@@ -240,7 +271,7 @@ KeyDown:
   chord .= key
   if (StrLen(chord)==2)
     start:= A_TickCount
-  if (mode==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
+  if (capitalization==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
     SendInput {Backspace}+%key%
     uppercase := 1
   }
@@ -253,9 +284,9 @@ ShiftKeys:
   if (InStr("1/;", key)) {
     uppercase := 2
     lastentry := 0
-    if (last2>0 && mode>1 && ! prefix)
+    if (last2>0 && capitalization>1 && ! prefix)
       SendInput {Backspace}{Backspace}+%key%
-    if ( (last2>0 && mode>1) || mode==3 ) {
+    if ( (last2>0 && capitalization>1) || capitalization==3 ) {
       SendInput {Space}
       lastentry := 3
     }
@@ -290,7 +321,7 @@ KeyUp:
       }
       else
         prefix := false
-      if (upper && mode>1)
+      if (upper && capitalization>1)
         SendInput % RegExReplace(exp,"(^.)", "$U1")
       else
         SendInput % exp
@@ -322,9 +353,9 @@ KeyUp:
           uppercase := upper2
       }
       if (InStr(".,;", key)) {
-        if (last2>0 && mode>1 && ! prefix)
+        if (last2>0 && capitalization>1 && ! prefix)
           SendInput {Backspace}{Backspace}%key%
-        if ( (last2>0 && mode>1) || mode==3 ) {
+        if ( (last2>0 && capitalization>1) || capitalization==3 ) {
           SendInput {Space}
           lastentry := 3
         }
