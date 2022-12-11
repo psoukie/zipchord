@@ -41,6 +41,7 @@ global UImode
 chord := ""
 uppercase := false
 lastentry := 0
+prefix := false
 /* lastentry values:
 -1 - entry was interrupted (cursor moved)
  0 - not a chord or a space
@@ -252,7 +253,7 @@ ShiftKeys:
   if (InStr("1/;", key)) {
     uppercase := 2
     lastentry := 0
-    if (last2>0 && mode>1)
+    if (last2>0 && mode>1 && ! prefix)
       SendInput {Backspace}{Backspace}+%key%
     if ( (last2>0 && mode>1) || mode==3 ) {
       SendInput {Space}
@@ -285,16 +286,16 @@ KeyUp:
       exp := chords[sorted]
       if (SubStr(exp, StrLen(exp), 1) == "~") {
         exp := SubStr(exp, 1, StrLen(exp)-1)
-        pref := true
+        prefix := true
       }
       else
-        pref := false
+        prefix := false
       if (upper && mode>1)
         SendInput % RegExReplace(exp,"(^.)", "$U1")
       else
         SendInput % exp
       lastentry := 1
-      if (!pref) {
+      if (!prefix) {
         SendInput {Space}
         lastentry := 3
       }
@@ -321,7 +322,7 @@ KeyUp:
           uppercase := upper2
       }
       if (InStr(".,;", key)) {
-        if (last2>0 && mode>1)
+        if (last2>0 && mode>1 && ! prefix)
           SendInput {Backspace}{Backspace}%key%
         if ( (last2>0 && mode>1) || mode==3 ) {
           SendInput {Space}
