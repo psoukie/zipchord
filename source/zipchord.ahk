@@ -1,4 +1,5 @@
 ﻿#NoEnv
+#SingleInstance Force
 SetWorkingDir %A_ScriptDir%
 
 ; ZipChord by Pavel Soukenik
