@@ -4,7 +4,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.6.3"
+global version = "1.7.0"
 
 ; Default (US English) keyboard and language settings:
 global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
@@ -39,7 +39,7 @@ global spacing := bBeforeChord | bAfterChord
 global delnonchords := 0 ; delete typing that triggers chords that are not in dictionary?
 global start := 0 ; maps to UIon for whether the chord recognition is enabled
 chord := ""
-uppercase := false
+uppercase := 0 ; 0 - no need to uppercase, 1 - uppercase next chord, 2 - don't uppercase
 prefix := false ; TK: in v2, combine prefix into lastentry
 lastentry := 0
 /* lastentry values:
@@ -56,6 +56,7 @@ global UI_output_delay := 0
 global UI_space_before := 0
 global UI_space_after := 0
 global UI_space_punctuation := 0
+global UI_delnonchords := 0
 global UIcapitalization
 global UIdict := "none"
 global UIentries := "0"
@@ -100,11 +101,11 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 ~Enter::
   lastentry := -1
-  uppercase := true
+  uppercase := 2
   Return
 
 ~Shift::
-  uppercase := true
+  uppercase := 1
   Return
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
@@ -126,7 +127,7 @@ Initialize() {
   Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
   Gui, Add, Text, xs+20 y+m, O&utput delay (ms):
   Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-  Gui, Add, Checkbox, vdelnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
+  Gui, Add, Checkbox, vUI_delnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
   ;Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
   Gui, Tab, 3
   Gui, Add, GroupBox, w320 h120 Section, Smart spaces
@@ -160,7 +161,10 @@ Initialize() {
   if ErrorLevel
     SetDelays(90, 0)
   RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
-  RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Punctuation
+  RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
+  if ErrorLevel
+    spacing := bBeforeChord | bAfterChord
+  RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
   if ErrorLevel
     capitalization := 2
   RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
@@ -221,7 +225,7 @@ ShowMenu() {
   GuiControl , , UI_space_after, % (spacing & bAfterChord) ? 1 : 0
   GuiControl , , UI_space_punctuation, % (spacing & bPunctuation) ? 1 : 0
   GuiControl , , UIon, % (start==-1) ? 0 : 1
-  GuiControl , , delnonchords, %delnonchords%
+  GuiControl , , UI_delnonchords, %delnonchords%
   GuiControl, Choose, UITabMenu, 1 ; switch to first tab 
   Gui, Show,, ZipChord
   UIControlStatus()
@@ -231,14 +235,20 @@ UIControlStatus() {
   GuiControlGet, checked,, UIon
   GuiControl, Enable%checked%, UI_chord_delay
   GuiControl, Enable%checked%, UI_output_delay
+  GuiControl, Enable%checked%, UI_space_before
+  GuiControl, Enable%checked%, UI_space_after
+  GuiControl, Enable%checked%, UI_space_punctuation
   GuiControl, Enable%checked%, UIcapitalization
-  GuiControl, Enable%checked%, delnonchords
+  GuiControl, Enable%checked%, UI_delnonchords
 }
 
 ButtonOK:
   Gui, Submit, NoHide
   capitalization := UIcapitalization
-  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Punctuation, %capitalization%
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, %capitalization%
+  spacing := UI_space_before * bBeforeChord + UI_space_after * bAfterChord + UI_space_punctuation * bPunctuation
+  RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, %spacing%
+  delnonchords := UI_delnonchords
   RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
   if SetDelays(UI_chord_delay, UI_output_delay) {
     if (start == -1 && UIon)
@@ -272,21 +282,21 @@ KeyDown:
   if (StrLen(chord)==2)
     start:= A_TickCount
   if (capitalization==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
-    SendInput {Backspace}+%key%
+    SendInput {Backspace}+%key% ; deletes the lowercase and sends Shift+key instead 
     uppercase := 1
   }
   Return
 
 ShiftKeys:
   key := SubStr(A_ThisHotkey, 3, 1)
-  ; shifted := true ; will be used in refactor
+  ; shifted := true ; TK will be used in refactor
   last2 := lastentry
   if (InStr("1/;", key)) {
     uppercase := 2
     lastentry := 0
-    if (last2>0 && capitalization>1 && ! prefix)
+    if (last2==3)
       SendInput {Backspace}{Backspace}+%key%
-    if ( (last2>0 && capitalization>1) || capitalization==3 ) {
+    if ( spacing & bPunctuation ) {
       SendInput {Space}
       lastentry := 3
     }
@@ -312,7 +322,7 @@ KeyUp:
     if (chords.HasKey(sorted)) {
       Loop % StrLen(sorted)
         SendInput {Backspace}
-      if (last==0)
+      if ( last==0 && (spacing & bBeforeChord) )
         SendInput {Space}
       exp := chords[sorted]
       if (SubStr(exp, StrLen(exp), 1) == "~") {
@@ -321,12 +331,14 @@ KeyUp:
       }
       else
         prefix := false
+      if ( ! (spacing & bBeforeChord) )
+        exp := StrReplace(exp, "{Backspace}") ;  remove the initial {Backspace} from suffixes when we are not inserting space before chord.
       if (upper && capitalization>1)
         SendInput % RegExReplace(exp,"(^.)", "$U1")
       else
         SendInput % exp
       lastentry := 1
-      if (!prefix) {
+      if (!prefix && (spacing & bAfterChord) ) {
         SendInput {Space}
         lastentry := 3
       }
@@ -353,9 +365,9 @@ KeyUp:
           uppercase := upper2
       }
       if (InStr(".,;", key)) {
-        if (last2>0 && capitalization>1 && ! prefix)
+        if (last2==3)
           SendInput {Backspace}{Backspace}%key%
-        if ( (last2>0 && capitalization>1) || capitalization==3 ) {
+        if ( spacing & bPunctuation ) {
           SendInput {Space}
           lastentry := 3
         }
@@ -480,8 +492,6 @@ UpdateUI() {
     filestr := "..." SubStr(chord_file, -34)
   else
     filestr := chord_file
-  GuiControl Text, UI_chord_delay, %chord_delay%
-  GuiControl Text, UI_output_delay, %output_delay%
   GuiControl Text, UIdict, %filestr%
   entriesstr := "(" chords.Count()
   entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
