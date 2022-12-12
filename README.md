@@ -52,9 +52,9 @@ This tab allows you to change the typing and chord behavior to adjust how spaces
 - **After punctuation**  
 
 **Auto-capitalization** offers three options:
-- **Off:** Spaces and capitalization are not adjusted around punctuation.
-- **For chords only:** Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
-- **For all input:** Spaces are always added after punctuation and words are capitalized even for regular typing.
+- **Off:** Automatic capitalization is not used. (To manually capitalize a chorded word, briefly press Shift before the chord entry.)
+- **For chords only:** Text is automatically capitalized only for words entered using chords.
+- **For all input:** All text is automatically capitalized even for regular typing.
 
 ### Enabling and Disabling the Chords
 
