@@ -4,9 +4,9 @@ _ZipChord_ is a customizable hybrid keyboard input method for Windows that augme
 
 ## Installation
 
-Download and save the executable **zipchord.exe** of the latest [release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it. (Optionally, download a dictionary from the dictionaries folder to use as a starting point.)
+Download and save the executable **zipchord.exe** of the latest [release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it. You can also download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point.
 
-(Note that _ZipChord_ has not been ported to MacOS because of its dependency on AutoHotKey.)
+Note that _ZipChord_ only works on Windows because of its dependency on AutoHotKey.
 
 ## Using ZipChord
 
@@ -28,7 +28,7 @@ To open the menu, click the _ZipChord_ icon in the Windows tray or press and hol
 
 The dictionary tab shows the currently loaded chord dictionary and the number of chords it contains. You can select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and **Reload** the dictionary when you make changes to the chord file directly in an editor.
 
-Notes:
+**Notes:**
 * See [below](#chord-dictionary) for more details about the chord dictionary file and advanced features.
 * When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
 
@@ -46,20 +46,19 @@ This tab allows you to adjust the sensitivity of the chord recognition, add a de
 
 This tab allows you to change the typing and chord behavior to adjust how spaces and capitalization are handled around chords and punctuation.
 
-**Smart spaces**
-The smart spaces -- when enabled -- ensure correct spacing around chords and punctuation. This means that spaces are added automatically if you haven't typed one manually, but the smart spaces are also dynamically removed if they are followed by punctuation or you type another space manually. Smart spaces can be enabled as follows:
-- In front of chords
-- After chords
-- After punctuation  
+**Smart spaces**: The smart spaces--when enabled--ensure correct spacing around chords and punctuation. This means that spaces are added automatically if you haven't typed one manually, but the smart spaces are also dynamically removed if they are followed by punctuation or you type another space manually. Smart spaces can be enabled as follows:
+- **In front of chords**
+- **After chords**
+- **After punctuation**  
 
 **Auto-capitalization** offers three options:
-- Off: Spaces and capitalization are not adjusted around punctuation.
-- For chords only: Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
-- For all input: Spaces are always added after punctuation and words are capitalized even for regular typing.
+- **Off:** Spaces and capitalization are not adjusted around punctuation.
+- **For chords only:** Spaces are added and words are capitalized only when punctuation precedes or follows chorded entry.
+- **For all input:** Spaces are always added after punctuation and words are capitalized even for regular typing.
 
 ### Enabling and Disabling the Chords
 
-You can temporarily disable the chord recognition by unchecking the **Recognition enabled** checkbox.
+You can temporarily disable the chord recognition by unchecking the **Use chord detection** checkbox.
 
 ## Chord Dictionary
 

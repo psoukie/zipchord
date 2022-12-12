@@ -4,7 +4,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.7.0"
+global version = "1.7.1"
 
 ; Default (US English) keyboard and language settings:
 global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz"
@@ -130,17 +130,17 @@ Initialize() {
   Gui, Add, Checkbox, vUI_delnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
   ;Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
   Gui, Tab, 3
-  Gui, Add, GroupBox, w320 h120 Section, Smart spaces
+  Gui, Add, GroupBox, w290 h120 Section, Smart spaces
   ;Gui, Add, Text, xs+20 ys+m +Wrap, When selected, smart spaces are dynamically added and removed as you type to ensure spaces between words, and avoid extra spaces around punctuation and doubled spaces when a manually typed space is combined with an automatic one.
-  Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, &In front of chords
+  Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
   Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
-  Gui, Add, Checkbox, vUI_space_punctuation xp y+10, &After punctuation
+  Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
   Gui, Add, Text, xs y+30, Auto-&capitalization:
   Gui, Add, DropDownList, vUIcapitalization Choose%capitalization% AltSubmit Right xp+150 w130, Off|For chords only|For all input
 
   Gui, Tab
-  Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+m Checked%UIon%, Re&cognition enabled
-  Gui, Add, Button, Default w80 xs+220 y+m, OK
+  Gui, Add, Checkbox, gUIControlStatus vUIon xs Y+m Checked%UIon%, Use &chord detection
+  Gui, Add, Button, Default w80 xs+220 yp, OK
   Gui, Tab, 4
   Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
   Gui, Font, Underline cBlue
