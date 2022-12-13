@@ -40,9 +40,11 @@ global spacing := bBeforeChord | bAfterChord
 global delnonchords := 0 ; delete typing that triggers chords that are not in dictionary?
 global start := 0 ; maps to UIon for whether the chord recognition is enabled
 chord := ""
+shifted := false ; does the chord entry include a Shift key
 uppercase := 0 ; 0 - no need to uppercase, 1 - uppercase next chord, 2 - don't uppercase
 prefix := false ; TK: in v2, combine prefix into lastentry
 lastentry := 0
+lastoutput := -1
 /* lastentry values:
 -1 - entry was interrupted (cursor moved)
  0 - not a chord or a space
@@ -67,13 +69,6 @@ global UITabMenu := 0
 
 /*
 ; Variables and Constants -- preparation for v2
-; shifted := false
-global bOn := 1                 ; ZipChord is enabled
-global bSpaceChords := 2        ; Smart spaces around chords enabled
-global bSpacePunctuation := 4   ; Smart spaces around punctuation enabled
-global bCapitalizeChords := 8   ; Auto capitalize chords
-global bSpacePunctuation := 16  ; Auto capitalize regular typing
-
 global bOutput := 1       ; last output exists (otherwise output flow was interrupted by moving the cursor using cursor keys, mouse click etc.)
 global bSpace := 2        ; last output was a space
 global bAutomated := 4    ; last output was automated (vs. manual entry)
@@ -198,10 +193,11 @@ WireHotkeys(state) {
   Loop Parse, keys
   {
     Hotkey, % "~" A_LoopField, KeyDown, %state%
+    Hotkey, % "~+" A_LoopField, KeyDown, %state%
     Hotkey, % "~" A_LoopField " Up", KeyUp, %state%
-    Hotkey, % "~+" A_LoopField, ShiftKeys, %state%
   }
   Hotkey, % "~Space", KeyDown, %state%
+  Hotkey, % "~+Space", KeyDown, %state%
   Hotkey, % "~Space Up", KeyUp, %state%
   Loop Parse, cursory, |
   {
@@ -278,45 +274,56 @@ CloseMenu() {
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
 KeyDown:
-  key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
-  chord .= key
+  key := StrReplace(A_ThisHotkey, "Space", " ")
+  last2 := lastentry
+  ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
+  if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
+    shifted := true
+    uppercase := 1
+    key := SubStr(key, 3, 1)
+  }
+  else {
+    shifted := false
+    key := SubStr(key, 2, 1)
+  }
+  chord .= key ; adds to the keys pressed so far, and when we have two simultaneously, we start the clock:
   if (StrLen(chord)==2)
     start:= A_TickCount
-  if (capitalization==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
-    SendInput {Backspace}+%key% ; deletes the lowercase and sends Shift+key instead 
-    uppercase := 1
+  
+  ; categorize the input and adjust the immediate output on the fly:
+  ; TK -- requires a fix when the adjusted output is then turned into a chord (different length of replacement)
+  lastentry := 0
+  if (key==" ") {
+    if (last2 == 3)
+      SendInput {Backspace} ; delete any smart-space
+    lastentry := 2
   }
-  Return
-
-ShiftKeys:
-  key := SubStr(A_ThisHotkey, 3, 1)
-  ; shifted := true ; TK will be used in refactor
-  last2 := lastentry
-  if (InStr("1/;", key)) {
-    uppercase := 2
-    lastentry := 0
+  if ( (! shifted && InStr(".,;", key)) || (shifted && InStr("1/;", key)) ) {  ;  punctuation needing space adjustments
     if (last2==3)
-      SendInput {Backspace}{Backspace}+%key%
+      SendInput {Backspace}{Backspace}%key%
     if ( spacing & bPunctuation ) {
       SendInput {Space}
       lastentry := 3
     }
   }
-  else {
-    lastentry := 0
-    uppercase := 0
+  if (capitalization==3 && uppercase==2 && Asc(key)>96 && Asc(key)<123) {
+    SendInput {Backspace}+%key% ; deletes the lowercase and sends Shift+key instead 
+    uppercase := 1
   }
+  ; set 'uppercase' for punctuation that capitalizes following text 
+  if ( (! shifted && key==".") || (shifted && InStr("1/", key)) )
+    uppercase := 2
   Return
 
 KeyUp:
   key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
   ch := chord
-  chord := StrReplace(chord, key)
+  chord := StrReplace(chord, key) ; removes from the keys pressed so far
   st := start
   start := 0
-  if (st && StrLen(ch)>1 && A_TickCount - st > chord_delay) {
+  if (st && StrLen(ch)>1 && A_TickCount - st > chord_delay) {  ; potential chord was triggered
     chord := ""
-    last := lastentry
+    last := lastoutput
     upper := uppercase
     sorted := Arrange(ch)
     Sleep output_delay
@@ -338,12 +345,13 @@ KeyUp:
         SendInput % RegExReplace(exp,"(^.)", "$U1")
       else
         SendInput % exp
-      lastentry := 1
+      lastoutput := 1
       if (!prefix && (spacing & bAfterChord) ) {
         SendInput {Space}
-        lastentry := 3
+        lastoutput := 3
       }
       uppercase := 0
+      lastentry := lastoutput
     }
     else {
       if (delnonchords) {
@@ -352,30 +360,8 @@ KeyUp:
       }
     }
   }
-  else ; it's not a chord, but it could still be multiple keys being released.
-    if (ch!="") {
-      last2 := lastentry
-      upper2 := uppercase
-      lastentry := 0
-      uppercase := 0
-      if (key==" ") {
-        if (last2 == 3)
-          SendInput {Backspace} ; delete any auto-space
-        lastentry := 2
-        if (upper2)
-          uppercase := upper2
-      }
-      if (InStr(".,;", key)) {
-        if (last2==3)
-          SendInput {Backspace}{Backspace}%key%
-        if ( spacing & bPunctuation ) {
-          SendInput {Space}
-          lastentry := 3
-        }
-      }
-      if (key==".")
-        uppercase := 2
-  }
+  else
+    lastoutput := lastentry ; if there was no potential chord, we set the output to the last input.
   Return
 
 Interrupt:
