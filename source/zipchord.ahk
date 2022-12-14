@@ -14,25 +14,35 @@ global version = "1.7.1"
 
 ; Default (US English) and custom keyboard and language settings:
 
-global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default layout
-global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
+; keys that interrupt the typing flow (not customizable in dictionary file)
 global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
-/*    Preparation for v2
-global default_terminators := "',-./;=\]" ; keys that can attach to previous output without a space.
-global default_shift_terminators := "',-./0123456789;=\]" ; keys combined with Shift that can attach to previous output without a space.
-global default_openers := "'-/=\]" ; keys that can be followed without a space.
-global default_shift_openers := "',-./23456789;=\]" ; keys combined with Shift that can be followed without a space.
-global default_prefixes := "un|in|dis|inter"     ; will be used to detect normally typed text (regardless of case) so these sequences can be followed by a chord
-; Variables holding current keyboard and language settings
-global terminators := "" ; Sama as above for custom_terminators, etc. for below
-global shift_terminators := ""
-global openers := ""
-global shift_openers := ""
-global prefixes := ""
+
+; following are default values based on English keyboard and conventions:
+global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default keyboard layout
+
+/* 
+global default_space_after_keys := ".,;" ; unmodified keys that should be followed by smart space
+global default_space_after_shift_keys := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
+global default_capitalizing_keys := "." ; unmodified keys that capitalize the text that folows them
+global default_capitalizing_shift_keys :="1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
+global default_opener_keys := "'-/=\]" ; unmodified keys that can be followed by a chord without a space.
+global default_opener_shift_keys := "',-./23456789;=\]" ; keys combined with Shift that can be followed by a chord without a space.
 */
+
+; Keyboard is customizable using dictionary file only, and not through UI yet
+global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
+
+; The following are not customizable yet through UI or dictionary
+global space_after_keys := ".,;"  ; unmodified keys that should be followed by smart space
+global space_after_shift_keys := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
+global capitalizing_keys := "." ; unmodified keys that capitalize the text that folows them
+global capitalizing_shift_keys := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
+global opener_keys := "'-/=\]"  ; unmodified keys that can be followed by a chord without a space.
+global opener_shift_keys := "',-./23456789;=\]"  ; keys combined with Shift that can be followed by a chord without a space.
 
 ; Current application settings
 
+global recognition_on := 1 ; maps to UI_on for whether the chord recognition is enabled
 global chord_file := "" ; file name for the dictionary
 global chords := {} ; holds pairs of chord key combinations and their full texts
 global chord_delay := 0
@@ -50,8 +60,13 @@ global SPACE_AFTER_CHORD := 2
 global SPACE_PUNCTUATION := 4
 global spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
 
-global recognition_on := 1 ; maps to UI_on for whether the chord recognition is enabled
-global delnonchords := 0 ; delete typing that triggers chords that are not in dictionary? (it's not boolean so it's easier to store in Windows registry as is)
+global delete_unrecognized := 0 ; delete typing that triggers chords that are not in dictionary?
+
+; Options for recognition - constants (binary) and variable:
+global OPT_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
+global OPT_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
+global OPT_RESTRICT_CHORDS := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
+global options:= 0
 
 ; Processing input and output 
 
@@ -74,7 +89,7 @@ global OUT_SPACE := 2         ; output was a space
 global OUT_PUNCTUATION := 4 ; output was a punctuation
 global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry)
 global OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
-global OUT_PREFIX := 32       ; output is a prefix and doesn't need space in next chord
+global OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
 global OUT_CHORD := OUT_CHARACTER | OUT_AUTOMATIC
 global OUT_SMART_SPACE := OUT_SPACE | OUT_AUTOMATIC
 ; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
@@ -84,13 +99,15 @@ global last_output := OUT_INTERRUPTED  ; last output in the current typing seque
 
 ; variables holding the UI elements and selections -- used by AHK Gui 
 
-global UI_chord_delay := 0
-global UI_output_delay := 0
-global UI_space_before := 0
-global UI_space_after := 0
-global UI_space_punctuation := 0
-global UI_delnonchords := 0
+global UI_chord_delay
+global UI_output_delay
+global UI_space_before
+global UI_space_after
+global UI_space_punctuation
+global UI_delete_unrecognized
 global UI_capitalization
+global UI_allow_shift
+global UI_restrict_chords
 global UI_dict := "none"
 global UI_entries := "0"
 global UI_on := 1
@@ -203,9 +220,9 @@ KeyDown:
     }
 
     ; if it's punctuation needing space adjustments
-    if ( (!shifted && InStr(".,;", key)) || (shifted && InStr("1/;", key)) ) {
+    if ( (!shifted && InStr(space_after_keys, key)) || (shifted && InStr(space_after_shift_keys, key)) ) {
         new_output := OUT_PUNCTUATION
-        if (last_output == OUT_SMART_SPACE) {
+        if ( (last_output & OUT_SMART_SPACE) == OUT_SMART_SPACE) {
             SendInput {Backspace}{Backspace}
             difference |= DIF_REMOVED_SMART_SPACE
             if (shifted)
@@ -231,8 +248,12 @@ KeyDown:
     }
 
     ; set 'uppercase' for punctuation that capitalizes following text 
-    if ( (! shifted && key==".") || (shifted && InStr("1/", key)) )
+    if ( (! shifted && InStr(capitalizing_keys, key)) || (shifted && InStr(capitalizing_shift_keys, key)) )
         new_output |= OUT_CAPITALIZE
+
+    ; mark output that can be followed by another word/chord without a space 
+    if ( (! shifted && InStr(opener_keys, key)) || (shifted && InStr(opener_shift_keys, key)) )
+        new_output |= OUT_PREFIX
 
     last_output := new_output
 Return
@@ -253,14 +274,17 @@ KeyUp:
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord != "") {
         if (InStr(chord, "+")) {
+            ;if Shift is not allowed as a chord key, we just capitalize the chord.
+            if (!(options & OPT_ALLOW_SHIFT)) {
             fixed_output |= OUT_CAPITALIZE
             chord := StrReplace(chord, "+")
+            }
         }
         sorted := Arrange(chord)
         Sleep output_delay
         if (chords.HasKey(sorted)) {
             exp := chords[sorted] ; store the expanded text
-            RemoveRawChord(sorted)
+            
             ; detect and adjust expansion for suffixes and prefixes
             if (SubStr(exp, 1, 1) == "~") {
                 exp := SubStr(exp, 2)
@@ -274,23 +298,29 @@ KeyUp:
             } else {
                 prefix := false
             }
-            OpeningSpace(suffix)
-            ; expanded chord: 
-            if ( NeedsCapitalization() )
-                SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
-            else
-                SendInput % exp
-            last_output := OUT_CHORD
-            ; ending smart space
-            if (prefix) {
-                last_output |= OUT_PREFIX
-            } else if (spacing & SPACE_AFTER_CHORD) {
-                SendInput {Space}
-                last_output := OUT_SMART_SPACE
+
+            ; if we aren't restricted, we print a chord
+            if (suffix || IsUnrestricted()) {
+                RemoveRawChord(sorted)
+                OpeningSpace(suffix)
+                ; expanded chord: 
+                if ( NeedsCapitalization() )
+                    SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
+                else
+                    SendInput % exp
+                last_output := OUT_CHORD
+                ; ending smart space
+                if (prefix) {
+                    last_output |= OUT_PREFIX
+                } else if (spacing & SPACE_AFTER_CHORD) {
+                    SendInput {Space}
+                    last_output := OUT_SMART_SPACE
+                }
             }
+            ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
-            if (delnonchords)
+            if (delete_unrecognized)
                 RemoveRawChord(sorted)
         }
         chord := ""
@@ -303,6 +333,8 @@ Return
 ;remove raw chord output
 RemoveRawChord(output) {
     adj :=0
+    ; we remove any Shift from the chord because that is not a real character
+    output := StrReplace(output, "+")
     if (final_difference & DIF_EXTRA_SPACE)
         adj++
     if (final_difference & DIF_IGNORED_SPACE)
@@ -313,10 +345,22 @@ RemoveRawChord(output) {
         SendInput {Space}
 }
 
+; check we can output chord here
+IsUnrestricted() {
+    ; If we're in unrestricted mode, we're good
+    if (!(options & OPT_RESTRICT_CHORDS))
+        Return true
+    ; If last output was a prefix (meaning chord prefix or a defined opening punctuation), it was interrupted, or it was a space, we can also go ahead.
+    if ( (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
+        Return true
+    Return false
+}
+
+
 ; Handles opening spacing as needed (single-use helper function)
 OpeningSpace(attached) {
     ; if there is a smart space, we remove it for suffixes, and we're done
-    if (fixed_output == OUT_SMART_SPACE) {
+    if ((fixed_output & OUT_SMART_SPACE) == OUT_SMART_SPACE) {
         if (attached)
             SendInput {Backspace}
         Return
@@ -409,7 +453,7 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
 BuildMenu() {
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Dictionary|Sensitivity|Behavior|About
+    Gui, Add, Tab3, vUI_tab, Dictionary|Chord detection|Output|About
     ; Gui, Add, GroupBox, w320 h130 Section, Dictionary
     Gui, Add, Text, w280 vUI_dict Left, [file name]
     Gui, Add, Text, xp+10 y+m w280 vUI_entries Left, (999 chords)
@@ -418,11 +462,11 @@ BuildMenu() {
     Gui, Add, Button, gReloadDict xp+100 w80, &Reload
     ; Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
     Gui, Tab, 2
-    Gui, Add, Text, xs+20 y+m, I&nput delay (ms):
+    Gui, Add, Text, , &Detection delay (ms):
     Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
-    Gui, Add, Text, xs+20 y+m, O&utput delay (ms):
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-    Gui, Add, Checkbox, vUI_delnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
+    Gui, Add, Checkbox, vUI_restrict_chords xs+20 y+m, &Restrict chords while typing
+    Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
+    Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
     Gui, Tab, 3
     Gui, Add, GroupBox, w290 h120 Section, Smart spaces
     ;Gui, Add, Text, xs+20 ys+m +Wrap, When selected, smart spaces are dynamically added and removed as you type to ensure spaces between words, and avoid extra spaces around punctuation and doubled spaces when a manually typed space is combined with an automatic one.
@@ -430,7 +474,9 @@ BuildMenu() {
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
     Gui, Add, Text, xs y+30, Auto-&capitalization:
-    Gui, Add, DropDownList, vUI_capitalization Choose%capitalization% AltSubmit Right xp+150 w130, Off|For chords only|For all input
+    Gui, Add, DropDownList, vUI_capitalization AltSubmit Right xp+150 w130, Off|For chords only|For all input
+    Gui, Add, Text, xs y+m, O&utput delay (ms):
+    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
 
     Gui, Tab
     Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
@@ -451,12 +497,14 @@ BuildMenu() {
 ShowMenu() {
     GuiControl Text, UI_chord_delay, %chord_delay%
     GuiControl Text, UI_output_delay, %output_delay%
+    GuiControl , , UI_allow_shift, % (options & OPT_ALLOW_SHIFT) ? 1 : 0
+    GuiControl , , UI_restrict_chords, % (options & OPT_RESTRICT_CHORDS) ? 1 : 0
+    GuiControl , , UI_delete_unrecognized, % (options & OPT_DELETE_UNRECOGNIZED) ? 1 : 0
     GuiControl , Choose, UI_capitalization, %capitalization%
-    GuiControl , , UI_space_before, % (spacing & SPACE_BEFORE_CHORD) ? 1 : 0     
+    GuiControl , , UI_space_before, % (spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_on, %recognition_on%
-    GuiControl , , UI_delnonchords, %delnonchords%
     GuiControl, Choose, UI_tab, 1 ; switch to first tab 
     EnableDisableControls()
     Gui, Show,, ZipChord
@@ -467,11 +515,13 @@ EnableDisableControls() {
     GuiControlGet, checked,, UI_on
     GuiControl, Enable%checked%, UI_chord_delay
     GuiControl, Enable%checked%, UI_output_delay
+    GuiControl, Enable%checked%, UI_restrict_chords
+    GuiControl, Enable%checked%, UI_allow_shift
     GuiControl, Enable%checked%, UI_space_before
     GuiControl, Enable%checked%, UI_space_after
     GuiControl, Enable%checked%, UI_space_punctuation
     GuiControl, Enable%checked%, UI_capitalization
-    GuiControl, Enable%checked%, UI_delnonchords
+    GuiControl, Enable%checked%, UI_delete_unrecognized
 }
 
 ButtonOK:
@@ -480,8 +530,8 @@ ButtonOK:
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, %capitalization%
     spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, %spacing%
-    delnonchords := UI_delnonchords
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
+    options := UI_delete_unrecognized * OPT_DELETE_UNRECOGNIZED + UI_allow_shift * OPT_ALLOW_SHIFT + UI_restrict_chords * OPT_RESTRICT_CHORDS
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Options, %options%
     if SetDelays(UI_chord_delay, UI_output_delay) {
         if (UI_on && !recognition_on)
             WireHotkeys("On")
@@ -560,7 +610,9 @@ ReadSettings() {
     RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
     if ErrorLevel
         SetDelays(90, 0)
-    RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
+    RegRead options, HKEY_CURRENT_USER\Software\ZipChord, Options
+    if ErrorLevel
+        options := 0
     RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
     if ErrorLevel
         spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
