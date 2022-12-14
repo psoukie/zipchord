@@ -55,8 +55,8 @@ global recognition_on := 1 ; maps to UI_on for whether the chord recognition is 
 
 ; Processing input and output 
 
-chord := "" ; stores the real-time chords (simultanously pressed keys)
-ch := ""    ; chord candidate which qualifies for chord
+buffer := ""   ; stores the sequence of simultanously pressed keys
+chord := ""    ; chord candidate which qualifies for chord
 global start := 0 ; tracks start time of two keys pressed at once
 uppercase := 0 ; 0 - no need to uppercase, 1 - uppercase next chord, 2 - don't uppercase
 prefix := false ; TK: in v2, combine prefix into lastentry
@@ -71,7 +71,7 @@ lastoutput := -1
 */
 
 ; Characteristics of last output: constants (partially binary) and variables
-global bInterrupted := 0   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
+global bInterrupted := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
 global bCharacter := 1     ; output is a character
 global bSpace := 2         ; output was a space
 ; global bPunctuation := 4 ; output was a punctuation -- already defined above so commented out
@@ -116,12 +116,8 @@ Return     ; To prevent execution of any of the following code, except for the a
     Return
 
 ~Enter::
-    lastentry := -1
-    uppercase := 2
-    Return
-
-~Shift::
-    uppercase := 1
+    last_output := bInterrupted | bCapitalize
+    fixed_output := last_output
     Return
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
@@ -219,6 +215,7 @@ WireHotkeys(state) {
         }
         Hotkey, % "~+" A_LoopField, KeyDown, %state%
         Hotkey, % "~" A_LoopField " Up", KeyUp, %state%
+        Hotkey, % "~+" A_LoopField " Up", KeyUp, %state%
     }
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
@@ -303,44 +300,53 @@ KeyDown:
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
     if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
         shifted := true
-        uppercase := 1
         key := SubStr(key, 3, 1)
     } else {
         shifted := false
         key := SubStr(key, 2, 1)
     }
 
-    if (ch != "") {  ; en existing candidate chord is being interrupted
+    if (chord != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
-        ch := ""
-        chord := key
+        chord := ""
+        buffer := key
     } else {
-        chord .= key ; adds to the keys pressed so far
+        buffer .= key ; adds to the keys pressed so far
         ; and when we have two simultaneously, we start the clock for chord recognition sensitivity:
-        if (StrLen(chord)==2)
+        if (StrLen(buffer)==2) {
             start:= A_TickCount
+            if (shifted)
+                buffer .= "+"
+        }
     }
 
     ; Now, we categorize the current output and adjust on the fly as needed:
     ; TK -- requires a fix when the adjusted output is then turned into a chord (different length of replacement)
-    new_output := bCharacter
+    new_output := bCharacter | (last_output & bCapitalize)
 
     ; if it's a space
     if (key==" ") {
-        if (last_output & bSmartSpace)
+        if (last_output & bAutomated & bSmartSpace)
             SendInput {Backspace} ; delete any smart-space
-        new_output := bSpace
+        new_output := new_output & ~bAutomated | bSpace 
+        OutputDebug, % new_output
     }
 
-    ; if it's punctuation needing space adjustments (the first condition is to save execution time)
-    if ( (new_output == bCharacter) && (! shifted && InStr(".,;", key)) || (shifted && InStr("1/;", key)) ) {
-         new_output := bPunctuation
-        if (last_output & bSmartSpace)
-                SendInput {Backspace}{Backspace}%key%
+    ; if it's punctuation needing space adjustments
+    if ( (!shifted && InStr(".,;", key)) || (shifted && InStr("1/;", key)) ) {
+        new_output := bPunctuation
+        if (last_output & bSmartSpace) {
+            SendInput {Backspace}{Backspace}
+            if (shifted)
+                SendInput +%key%
+            else
+                SendInput %key%
+        }
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( spacing & bPunctuation ) {
-             SendInput {Space}
-            new_output := bSmartSpace
+            SendInput {Space}
+            OutputDebug, % "printed Space"
+            new_output := new_output | bSmartSpace
         }
     }
 
@@ -349,7 +355,7 @@ KeyDown:
         if ( capitalization==cAll && (! shifted) && (last_output & bCapitalize) ) {
             cap_key := RegExReplace(key, "(.*)", "$U1")
             SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version
-            new_output := new_output & ~bCapitalize
+            new_output := new_output && ~bCapitalize
         }
     }
 
@@ -363,64 +369,78 @@ KeyDown:
 
 KeyUp:
     Critical
-    tempch := chord
+    tempch := buffer
     st := start
-    chord := ""
+    buffer := ""
     start := 0
-    ; if at least two keys were held at the same time for long enough, let's save our candidate chord
-    if ( st && ch=="" && (A_TickCount - st > chord_delay) ) {
-        ch := tempch ; this is the chord candidate
+    ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
+    if ( st && chord=="" && (A_TickCount - st > chord_delay) ) {
+        chord := tempch ; this is the chord candidate
         start := 0
         Return
     }
-    ; when all keys were lifted (to avoid false triggers in rolls), we check if the chord matches
-    if (ch != "") {
-        last := lastoutput
-        upper := uppercase
-        sorted := Arrange(ch)
+    ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
+    if (chord != "") {
+        if (InStr(chord, "+")) {
+            fixed_output := fixed_output | bCapitalize
+            chord := StrReplace(chord, "+")
+        }
+        sorted := Arrange(chord)
         Sleep output_delay
         if (chords.HasKey(sorted)) {
-            Loop % StrLen(sorted)
+            Loop % StrLen(sorted) ; TK -- this is a bug, needs to account for any smart spacing adjustments in the output as the chord was being typed
                 SendInput {Backspace}
-            if ( last==0 && (spacing & bBeforeChord) )
+            if ( NeedsSpace() )
                 SendInput {Space}
             exp := chords[sorted]
             if (SubStr(exp, StrLen(exp), 1) == "~") {
                 exp := SubStr(exp, 1, StrLen(exp)-1)
                 prefix := true
-            }
-            else
+            } else {
                 prefix := false
+            }
             if ( ! (spacing & bBeforeChord) )
                 exp := StrReplace(exp, "{Backspace}") ;    remove the initial {Backspace} from suffixes when we are not inserting space before chord.
-            if ( upper && (capitalization != cOff) )
+            if ( NeedsCapitalization() )
                 SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
             else
                 SendInput % exp
-            lastoutput := 1
+            last_output := bChord
             if (!prefix && (spacing & bAfterChord) ) {
                 SendInput {Space}
-                lastoutput := 3
+                last_output := bSmartSpace
             }
             uppercase := 0
-            lastentry := lastoutput
         }
         else {
-            if (delnonchords) {
-                Loop % StrLen(sorted)
+            if (delnonchords) { 
+                Loop % StrLen(sorted)  ; TK -- this is a bug, needs to account for any smart spacing adjustments in the output as the chord was being typed -- should use the same function as the one above to be dry
                     SendInput {Backspace}
             }
         }
-        ch := ""
+        chord := ""
     }
-    else
-        lastoutput := lastentry ; if there was no potential chord, we set the output to the last input.
+    fixed_output := last_output ; and this last output is also the last fixed output.
     Return
 
 Interrupt:
     lastentry := -1
     uppercase := false
     Return
+
+NeedsSpace() {
+    if (! (spacing & bBeforeChord))
+        Return False
+    if (fixed_output & bInterrupted || fixed_output & bSpace)
+        Return False
+    Return True
+}
+
+NeedsCapitalization() {
+    if ((fixed_output & bCapitalize) && (capitalization != cOff))
+        Return True
+    Return False
+}
 
 SelectDict() {
     FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
