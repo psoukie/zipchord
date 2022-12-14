@@ -39,49 +39,47 @@ global chord_delay := 0
 global output_delay := 0
 
 ; capitalization setting constants and variable:
-global cOff = 1 ; no auto-capitalization,
-global cChords = 2 ; auto-capitalize chords only
-global cAll = 3 ; auto-capitalize all typing
-global capitalization := cChords
+global CAP_OFF = 1 ; no auto-capitalization,
+global CAP_CHORDS = 2 ; auto-capitalize chords only
+global CAP_ALL = 3 ; auto-capitalize all typing
+global capitalization := CAP_CHORDS
 
 ; smart spacing constants (binary) and variable:
-global bBeforeChord := 1
-global bAfterChord := 2
-global bPunctuation := 4
-global spacing := bBeforeChord | bAfterChord
+global SPACE_BEFORE_CHORD := 1
+global SPACE_AFTER_CHORD := 2
+global SPACE_PUNCTUATION := 4
+global spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
 
-global delnonchords := 0 ; delete typing that triggers chords that are not in dictionary? (it's not boolean so it's easier to store in Windows registry as is)
 global recognition_on := 1 ; maps to UI_on for whether the chord recognition is enabled
+global delnonchords := 0 ; delete typing that triggers chords that are not in dictionary? (it's not boolean so it's easier to store in Windows registry as is)
 
 ; Processing input and output 
 
 buffer := ""   ; stores the sequence of simultanously pressed keys
 chord := ""    ; chord candidate which qualifies for chord
 global start := 0 ; tracks start time of two keys pressed at once
-uppercase := 0 ; 0 - no need to uppercase, 1 - uppercase next chord, 2 - don't uppercase
-prefix := false ; TK: in v2, combine prefix into lastentry
-lastentry := 0
-lastoutput := -1
-/* lastentry values:
--1 - entry was interrupted (cursor moved)
- 0 - not a chord or a space
- 1 - chord
- 2 - manually typed space
- 3 - automatically added space
-*/
+
+; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
+global DIF_NONE := 0
+global DIF_EXTRA_SPACE := 1
+global DIF_REMOVED_SMART_SPACE := 2
+global DIF_IGNORED_SPACE := 4
+global difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
+global final_difference := DIF_NONE
 
 ; Characteristics of last output: constants (partially binary) and variables
-global bInterrupted := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
-global bCharacter := 1     ; output is a character
-global bSpace := 2         ; output was a space
-; global bPunctuation := 4 ; output was a punctuation -- already defined above so commented out
-global bAutomated := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry)
-global bCapitalize := 16   ; output requires capitalization of what follows
-global bChord := bCharacter | bAutomated
-global bSmartSpace := bSpace | bAutomated
+global OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
+global OUT_CHARACTER := 1     ; output is a character
+global OUT_SPACE := 2         ; output was a space
+global OUT_PUNCTUATION := 4 ; output was a punctuation
+global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry)
+global OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
+global OUT_PREFIX := 32       ; output is a prefix and doesn't need space in next chord
+global OUT_CHORD := OUT_CHARACTER | OUT_AUTOMATIC
+global OUT_SMART_SPACE := OUT_SPACE | OUT_AUTOMATIC
 ; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
-global fixed_output := bInterrupted ; fixed output that preceded any typing currently being processed 
-global last_output := bInterrupted  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
+global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
+global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
 ; new_output local variable is used to track the current key / output
 
 ; variables holding the UI elements and selections -- used by AHK Gui 
@@ -100,7 +98,7 @@ global UI_tab := 0
 
 
 Initialize()
-Return     ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
+Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
 ; -------------------
 ;; Permanent Hotkeys
@@ -179,63 +177,65 @@ KeyDown:
     if (chord != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord := ""
-        buffer := key
-    } else {
-        buffer .= key ; adds to the keys pressed so far
-        ; and when we have two simultaneously, we start the clock for chord recognition sensitivity:
-        if (StrLen(buffer)==2) {
-            start:= A_TickCount
-            if (shifted)
-                buffer .= "+"
-        }
     }
 
+    buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
+    ; and when we have two keys, we start the clock for chord recognition sensitivity:
+    if (StrLen(buffer)==2) {
+        start := A_TickCount 
+        if (shifted)
+            buffer .= "+"  ; hack to communicate Shift was pressed
+    }
+
+    if (!start)
+        difference := DIF_NONE   ; a chord is not being formed, so we reset the diff between keys and output.
+
     ; Now, we categorize the current output and adjust on the fly as needed:
-    ; TK -- requires a fix when the adjusted output is then turned into a chord (different length of replacement)
-    new_output := bCharacter | (last_output & bCapitalize)
+    new_output := OUT_CHARACTER | (last_output & OUT_CAPITALIZE)
 
     ; if it's a space
     if (key==" ") {
-        if (last_output & bAutomated & bSmartSpace)
+        if (last_output & OUT_AUTOMATIC & OUT_SMART_SPACE) {
             SendInput {Backspace} ; delete any smart-space
-        new_output := new_output & ~bAutomated | bSpace 
-        OutputDebug, % new_output
+            difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
+        }
+        new_output := new_output & ~OUT_AUTOMATIC | OUT_SPACE 
     }
 
     ; if it's punctuation needing space adjustments
     if ( (!shifted && InStr(".,;", key)) || (shifted && InStr("1/;", key)) ) {
-        new_output := bPunctuation
-        if (last_output & bSmartSpace) {
+        new_output := OUT_PUNCTUATION
+        if (last_output == OUT_SMART_SPACE) {
             SendInput {Backspace}{Backspace}
+            difference |= DIF_REMOVED_SMART_SPACE
             if (shifted)
                 SendInput +%key%
             else
                 SendInput %key%
         }
         ; if smart spacing for punctuation is enabled, insert a smart space
-        if ( spacing & bPunctuation ) {
+        if ( spacing & SPACE_PUNCTUATION ) {
             SendInput {Space}
-            OutputDebug, % "printed Space"
-            new_output := new_output | bSmartSpace
+            difference |= DIF_EXTRA_SPACE
+            new_output |= OUT_SMART_SPACE
         }
     }
 
     ; if it's neither, it should be a regural character, and it might need capitalization
-    if (new_output & bCharacter) {
-        if ( capitalization==cAll && (! shifted) && (last_output & bCapitalize) ) {
+    if (new_output & OUT_CHARACTER) {
+        if ( capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
             cap_key := RegExReplace(key, "(.*)", "$U1")
             SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version
-            new_output := new_output && ~bCapitalize
+            new_output := new_output && ~OUT_CAPITALIZE
         }
     }
 
     ; set 'uppercase' for punctuation that capitalizes following text 
     if ( (! shifted && key==".") || (shifted && InStr("1/", key)) )
-            new_output := new_output | bCapitalize
+        new_output |= OUT_CAPITALIZE
 
     last_output := new_output
-    Return
-
+Return
 
 KeyUp:
     Critical
@@ -246,77 +246,94 @@ KeyUp:
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
     if ( st && chord=="" && (A_TickCount - st > chord_delay) ) {
         chord := tempch ; this is the chord candidate
+        final_difference := difference
         start := 0
         Return
     }
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord != "") {
         if (InStr(chord, "+")) {
-            fixed_output := fixed_output | bCapitalize
+            fixed_output |= OUT_CAPITALIZE
             chord := StrReplace(chord, "+")
         }
         sorted := Arrange(chord)
         Sleep output_delay
         if (chords.HasKey(sorted)) {
-            Loop % StrLen(sorted) ; TK -- this is a bug, needs to account for any smart spacing adjustments in the output as the chord was being typed
-                SendInput {Backspace}
-            if ( NeedsSpace() )
-                SendInput {Space}
-            exp := chords[sorted]
-            if (SubStr(exp, StrLen(exp), 1) == "~") {
+            exp := chords[sorted] ; store the expanded text
+            RemoveRawChord(sorted)
+            ; detect and adjust expansion for suffixes and prefixes
+            if (SubStr(exp, 1, 1) == "~") {
+                exp := SubStr(exp, 2)
+                suffix := true
+            } else {
+                suffix := false
+            }
+             if (SubStr(exp, StrLen(exp), 1) == "~") {
                 exp := SubStr(exp, 1, StrLen(exp)-1)
                 prefix := true
             } else {
                 prefix := false
             }
-            if ( ! (spacing & bBeforeChord) )
-                exp := StrReplace(exp, "{Backspace}") ;    remove the initial {Backspace} from suffixes when we are not inserting space before chord.
+            OpeningSpace(suffix)
+            ; expanded chord: 
             if ( NeedsCapitalization() )
                 SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
             else
                 SendInput % exp
-            last_output := bChord
-            if (!prefix && (spacing & bAfterChord) ) {
+            last_output := OUT_CHORD
+            ; ending smart space
+            if (prefix) {
+                last_output |= OUT_PREFIX
+            } else if (spacing & SPACE_AFTER_CHORD) {
                 SendInput {Space}
-                last_output := bSmartSpace
+                last_output := OUT_SMART_SPACE
             }
-            uppercase := 0
         }
         else {
-            if (delnonchords) { 
-                Loop % StrLen(sorted)  ; TK -- this is a bug, needs to account for any smart spacing adjustments in the output as the chord was being typed -- should use the same function as the one above to be dry
-                    SendInput {Backspace}
-            }
+            if (delnonchords)
+                RemoveRawChord(sorted)
         }
         chord := ""
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
-    Return
-
-Interrupt:
-    last_output := bInterrupted
-    fixed_output := last_output
-Return
-
-Enter_key:
-    last_output := bInterrupted | bCapitalize
-    fixed_output := last_output
 Return
 
 ; Helper functions
 
-; Single-use helper function used for readability
-NeedsSpace() {
-    if (! (spacing & bBeforeChord))
-        Return False
-    if (fixed_output & bInterrupted || fixed_output & bSpace)
-        Return False
-    Return True
+;remove raw chord output
+RemoveRawChord(output) {
+    adj :=0
+    if (final_difference & DIF_EXTRA_SPACE)
+        adj++
+    if (final_difference & DIF_IGNORED_SPACE)
+        adj--
+    Loop % (StrLen(output) + adj)
+        SendInput {Backspace}
+    if (final_difference & DIF_REMOVED_SMART_SPACE)
+        SendInput {Space}
+}
+
+; Handles opening spacing as needed (single-use helper function)
+OpeningSpace(attached) {
+    ; if there is a smart space, we remove it for suffixes, and we're done
+    if (fixed_output == OUT_SMART_SPACE) {
+        if (attached)
+            SendInput {Backspace}
+        Return
+    }
+    ; if adding smart spaces before is disabled, we are done too
+    if (! (spacing & SPACE_BEFORE_CHORD))
+        Return
+    ; and we don't start with a smart space after intrruption, a space, after a prefix, and for suffix
+    if (fixed_output & OUT_INTERRUPTED || fixed_output & OUT_SPACE || fixed_output & OUT_PREFIX || attached)
+        Return
+    ; if we get here, we probably need a space in front of the chord
+    SendInput {Space}
 }
 
 ; Single-use helper function used for readability
 NeedsCapitalization() {
-    if ((fixed_output & bCapitalize) && (capitalization != cOff))
+    if ((fixed_output & OUT_CAPITALIZE) && (capitalization != CAP_OFF))
         Return True
     Return False
 }
@@ -327,6 +344,17 @@ Arrange(raw) {
     Sort raw
     Return StrReplace(raw, "`n")
 }
+
+Interrupt:
+    last_output := OUT_INTERRUPTED
+    fixed_output := last_output
+Return
+
+Enter_key:
+    last_output := OUT_INTERRUPTED | OUT_CAPITALIZE
+    fixed_output := last_output
+Return
+
 
 ; -----------------
 ;;  Adding chords 
@@ -369,9 +397,6 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
     }
     if (write_to_dictionary)
         FileAppend % "`r`n" newch "`t" newword, %chord_file%, UTF-8
-    newword := StrReplace(newword, "~", "{Backspace}")
-    if (SubStr(newword, -10)=="{Backspace}")
-        newword := SubStr(newword, 1, StrLen(newword)-11) "~"
     chords.Insert(newch, newword)
     return true
 }
@@ -427,9 +452,9 @@ ShowMenu() {
     GuiControl Text, UI_chord_delay, %chord_delay%
     GuiControl Text, UI_output_delay, %output_delay%
     GuiControl , Choose, UI_capitalization, %capitalization%
-    GuiControl , , UI_space_before, % (spacing & bBeforeChord) ? 1 : 0     
-    GuiControl , , UI_space_after, % (spacing & bAfterChord) ? 1 : 0
-    GuiControl , , UI_space_punctuation, % (spacing & bPunctuation) ? 1 : 0
+    GuiControl , , UI_space_before, % (spacing & SPACE_BEFORE_CHORD) ? 1 : 0     
+    GuiControl , , UI_space_after, % (spacing & SPACE_AFTER_CHORD) ? 1 : 0
+    GuiControl , , UI_space_punctuation, % (spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_on, %recognition_on%
     GuiControl , , UI_delnonchords, %delnonchords%
     GuiControl, Choose, UI_tab, 1 ; switch to first tab 
@@ -453,7 +478,7 @@ ButtonOK:
     Gui, Submit, NoHide
     capitalization := UI_capitalization
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, %capitalization%
-    spacing := UI_space_before * bBeforeChord + UI_space_after * bAfterChord + UI_space_punctuation * bPunctuation
+    spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, %spacing%
     delnonchords := UI_delnonchords
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
@@ -538,10 +563,10 @@ ReadSettings() {
     RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
     RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
     if ErrorLevel
-        spacing := bBeforeChord | bAfterChord
+        spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
     RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
     if ErrorLevel
-        capitalization := cChords
+        capitalization := CAP_CHORDS
     RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
     if (ErrorLevel || !FileExist(chord_file)) {
         errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
