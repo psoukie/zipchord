@@ -1,5 +1,6 @@
 ﻿#NoEnv
 #SingleInstance Force
+#MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
 
 ; ZipChord by Pavel Soukenik
@@ -296,11 +297,8 @@ CloseMenu() {
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
-global keycount := 0
-
 KeyDown:
     Critical
-    keycount++
     key := StrReplace(A_ThisHotkey, "Space", " ")
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
     if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
@@ -312,12 +310,15 @@ KeyDown:
         key := SubStr(key, 2, 1)
     }
 
-    chord .= key ; adds to the keys pressed so far
-    OutputDebug, % "DOWN " key
-    ; and when we have two simultaneously, we start the clock for chord recognition sensitivity:
-    if (StrLen(chord)==2) {
-        start:= A_TickCount
-        OutputDebug, Starting with %chord%
+    if (ch != "") {  ; en existing candidate chord is being interrupted
+        start := 0
+        ch := ""
+        chord := key
+    } else {
+        chord .= key ; adds to the keys pressed so far
+        ; and when we have two simultaneously, we start the clock for chord recognition sensitivity:
+        if (StrLen(chord)==2)
+            start:= A_TickCount
     }
 
     ; Now, we categorize the current output and adjust on the fly as needed:
@@ -326,15 +327,15 @@ KeyDown:
 
     ; if it's a space
     if (key==" ") {
-        if (last_output == bSmartSpace)
+        if (last_output & bSmartSpace)
             SendInput {Backspace} ; delete any smart-space
         new_output := bSpace
     }
 
     ; if it's punctuation needing space adjustments (the first condition is to save execution time)
     if ( (new_output == bCharacter) && (! shifted && InStr(".,;", key)) || (shifted && InStr("1/;", key)) ) {
-        new_output := bPunctuation
-        if (last_output == bSmartSpace)
+         new_output := bPunctuation
+        if (last_output & bSmartSpace)
                 SendInput {Backspace}{Backspace}%key%
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( spacing & bPunctuation ) {
@@ -362,23 +363,18 @@ KeyDown:
 
 KeyUp:
     Critical
-    keycount--
     tempch := chord
-    key := SubStr(StrReplace(A_ThisHotkey, "Space", " "), 2, 1)
-    OutputDebug, % "UP " key " Keycount: " keycount
+    st := start
+    chord := ""
+    start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord
-    if ( start && ch=="" && (A_TickCount - start > chord_delay) ) {
+    if ( st && ch=="" && (A_TickCount - st > chord_delay) ) {
         ch := tempch ; this is the chord candidate
         start := 0
-        OutputDebug, % "Chord candidate: " ch " Keycount: " keycount
-        keycount := StrLen(ch) ; we will use this to count back until all keys are released
         Return
-    } else {
-    chord := StrReplace(chord, key)
     }
     ; when all keys were lifted (to avoid false triggers in rolls), we check if the chord matches
-    if (keycount == 0 && ch != "") {
-        OutputDebug, % "All lifted, evaluating: " ch
+    if (ch != "") {
         last := lastoutput
         upper := uppercase
         sorted := Arrange(ch)
