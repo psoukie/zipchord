@@ -12,7 +12,7 @@ Note that _ZipChord_ only works on Windows because of its dependency on AutoHotK
 
 Type normally using individual keystrokes in combination with predefined chords. Chords are several keys pressed at the same time which type out whole words (or prefixes and suffixes). _ZipChord_ uses smart spaces and capitalization to add (or remove) spaces as needed to separate words, whether they were typed using individual strokes or chords, and to capitalize words.
 
-To use the chord, press the keys that make up the chord simultaneously and release them. You can configure the sensitivity of chord recognition and also the automatic behavior for spaces and capitalization. If you need to capitalize a chorded word manually, press briefly Shift and then press the chord.
+To use the chord, press the keys that make up the chord simultaneously and release them. You can configure the sensitivity of chord recognition and also the automatic behavior for spaces and capitalization.
 
 ### Defining New Chords
 
@@ -32,17 +32,19 @@ The dictionary tab shows the currently loaded chord dictionary and the number of
 * See [below](#chord-dictionary) for more details about the chord dictionary file and advanced features.
 * When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
 
-### Sensitivity
+### Chord detection
 
-This tab allows you to adjust the sensitivity of the chord recognition, add a delay to the output of the chords, and decide what happens with unrecognized chords. 
+This tab allows you to adjust the sensitivity and rules for the chord recognition. The basic idea behind the chords is that there needs to be a short minimum time that the keys are held together before being released (which is set by the "detection delay").
 
-**Input delay:** Depending on your regular typing, you might be holding two or more keys pressed at the same time for longer than the threshold that triggers the chord recognition. This can result in some intended key presses in your regular typing being deleted or misinterpreted as chords. In that case, you can increase the number of milliseconds under Input delay.
+**Detection delay:** Depending on your regular typing, you might be holding two or more keys pressed at the same time for longer than the threshold that triggers the chord recognition. This can result in some intended key presses in your regular typing being misinterpreted as chords. In that case, you can increase the number of milliseconds under detection delay.
 
-**Output delay:** In some situations, the window you are typing in might be outputting the chords with some distortions (where keystrokes are replaced incorrectly). In that case, you can try setting the Output delay to 50ms, which can solve the issue.
+**Restrict chords while typing:** When this option is on, the keyboard is restricted to normal typing and ignores chords, unless the chord is preceded by a space, permitted punctuation or by moving the cursor. Note that chords defined as suffixes (see below under [Special Characters](#special-characters)) will still be recognized in this mode.
+
+**Allow Shift in chords:** When this option is not checked, Shift key behaves normally (when pressed together with a defined chord, it capitalizes the word). By checking this box, this standard functionality is replaced with the ability to define chords that use Shift as a key in the chord. (It makes Shift work like other standard keys and space bar. Use `+` to represent Shift in chords.)
 
 **Delete mistyped chords:** This option allows you to automatically remove unrecognized chords. If you are encountering situations where your intended key presses are being deleted, either do not use this option or increase the number of milliseconds under Input delay.
 
-### Behavior
+### Output
 
 This tab allows you to change the typing and chord behavior to adjust how spaces and capitalization are handled around chords and punctuation.
 
@@ -52,9 +54,11 @@ This tab allows you to change the typing and chord behavior to adjust how spaces
 - **After punctuation**  
 
 **Auto-capitalization** offers three options:
-- **Off:** Automatic capitalization is not used. (To manually capitalize a chorded word, briefly press Shift before the chord entry.)
+- **Off:** Automatic capitalization is not used. (To manually capitalize a chorded word, press Shift in parallel with the chord entry.)
 - **For chords only:** Text is automatically capitalized only for words entered using chords.
 - **For all input:** All text is automatically capitalized even for regular typing.
+
+**Output delay:** In some situations, the window you are typing in might be outputting the chords with some distortions (where keystrokes are replaced incorrectly). In that case, you can try setting the Output delay to 50ms, which can solve the issue.
 
 ### Enabling and Disabling the Chords
 
@@ -82,7 +86,9 @@ Note that if you edit the dictionary file directly in a text editor, you need to
 
 ### Special Characters
 
-Key that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`"), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Shift, Control, Tab and other function keys cannot be used in a chord.
+Key that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`" (SPACE and lower-case w) to represent a `Space`+`W`), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Control, Tab and other function keys cannot be used in a chord.
+
+The Shift key can be optionally used as part of chords. If this feature is enabled ("Allow Shift in chords" on the "Chord detection" tab), use the character `+` (plus) to represent the Shift key when defining chords within the app, or directly in the dictionary file.
 
 The words entered using a chord can include the following special features:
 
