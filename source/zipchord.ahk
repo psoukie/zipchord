@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.7.1"
+global version = "1.8.0"
 
 ; ------------------
 ;; Global Variables
