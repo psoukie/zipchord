@@ -8,13 +8,13 @@ SetWorkingDir %A_ScriptDir%
 ; See https://github.com/psoukie/zipchord/
 global version = "1.7.1"
 
-; ----------------
-; Global Variables
-; ----------------
+; ------------------
+;; Global Variables
+; ------------------
 
 ; Default (US English) and custom keyboard and language settings:
 
-global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ;;; English default layout
+global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default layout
 global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
 global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
 /*    Preparation for v2
@@ -98,8 +98,13 @@ global UI_entries := "0"
 global UI_on := 1
 global UI_tab := 0
 
+
 Initialize()
 Return     ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
+
+; -------------------
+;; Permanent Hotkeys
+; -------------------
 
 ; An always enabled Ctrl+Shift+C hotkey held long to open ZipChord menu.
 ~^+c::
@@ -115,96 +120,21 @@ Return     ; To prevent execution of any of the following code, except for the a
         AddChord()
     Return
 
-~Enter::
-    last_output := bInterrupted | bCapitalize
-    fixed_output := last_output
-    Return
-
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
+; ---------------------------
+;; Initilization and Wiring
+; ---------------------------
+
 Initialize() {
-    ; Prepare UI dialog:
-    Gui, Font, s10, Segoe UI
-    Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Dictionary|Sensitivity|Behavior|About
-    ; Gui, Add, GroupBox, w320 h130 Section, Dictionary
-    Gui, Add, Text, w280 vUI_dict Left, [file name]
-    Gui, Add, Text, xp+10 y+m w280 vUI_entries Left, (999 chords)
-    Gui, Add, Button, xs+20 gSelectDict y+m w80, &Open
-    Gui, Add, Button, gEditDict xp+100 w80, &Edit
-    Gui, Add, Button, gReloadDict xp+100 w80, &Reload
-    ; Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
-    Gui, Tab, 2
-    Gui, Add, Text, xs+20 y+m, I&nput delay (ms):
-    Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
-    Gui, Add, Text, xs+20 y+m, O&utput delay (ms):
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-    Gui, Add, Checkbox, vUI_delnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
-    ;Gui, Add, GroupBox, xs ys+120 w320 h100 Section, Chord behavior
-    Gui, Tab, 3
-    Gui, Add, GroupBox, w290 h120 Section, Smart spaces
-    ;Gui, Add, Text, xs+20 ys+m +Wrap, When selected, smart spaces are dynamically added and removed as you type to ensure spaces between words, and avoid extra spaces around punctuation and doubled spaces when a manually typed space is combined with an automatic one.
-    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
-    Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
-    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
-    Gui, Add, Text, xs y+30, Auto-&capitalization:
-    Gui, Add, DropDownList, vUI_capitalization Choose%capitalization% AltSubmit Right xp+150 w130, Off|For chords only|For all input
-
-    Gui, Tab
-    Gui, Add, Checkbox, gUIControlStatus vUI_on xs Y+m Checked%UI_on%, Use &chord detection
-    Gui, Add, Button, Default w80 xs+220 yp, OK
-    Gui, Tab, 4
-    Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
-    Gui, Font, Underline cBlue
-    Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
-    Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
-
-    ; Create taskbar tray menu:
-    Menu, Tray, Add, Open Settings, ShowMenu
-    Menu, Tray, Default, Open Settings
-    Menu, Tray, Tip, ZipChord
-    Menu, Tray, Click, 1
-
-    ; Attempt to read settings and dictionary from Windows Registry
-    RegRead chord_delay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
-    if ErrorLevel
-        SetDelays(90, 0)
-    RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
-    if ErrorLevel
-        SetDelays(90, 0)
-    RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
-    RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
-    if ErrorLevel
-        spacing := bBeforeChord | bAfterChord
-    RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
-    if ErrorLevel
-        capitalization := cChords
-    RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
-    if (ErrorLevel || !FileExist(chord_file)) {
-        errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
-        ; If we don't have the dictionary, try other files with the following filename convention instead. (This is useful if the user downloaded ZipChord and a preexisting dictionary and has them in the same folder.)
-        chord_file := "chords*.txt"
-        if FileExist(chord_file) {
-            Loop, Files, %chord_file%
-                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-            Sort flist
-            chord_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", chord_file)
-        }
-        else {
-            errmsg .= "ZipChord is going to create a new 'chords.txt' dictionary in its own folder."
-            chord_file := "chords.txt"
-            FileAppend % "This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %chord_file%, UTF-8
-        }
-        chord_file := A_ScriptDir "\" chord_file
-        MsgBox ,, ZipChord, %errmsg%
-    }
-
+    BuildMenu()
+    ReadSettings()
     LoadChords(chord_file)
     WireHotkeys("On")
     ShowMenu()
 }
 
+; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     Loop Parse, keys
     {
@@ -225,74 +155,14 @@ WireHotkeys(state) {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
-}
-
-WebsiteLink:
-Run https://github.com/psoukie/zipchord#readme
-return
-
-ReleaseLink:
-Run https://github.com/psoukie/zipchord/releases
-return
-
-ShowMenu() {
-    GuiControl Text, UI_chord_delay, %chord_delay%
-    GuiControl Text, UI_output_delay, %output_delay%
-    GuiControl , Choose, UI_capitalization, %capitalization%
-    GuiControl , , UI_space_before, % (spacing & bBeforeChord) ? 1 : 0     
-    GuiControl , , UI_space_after, % (spacing & bAfterChord) ? 1 : 0
-    GuiControl , , UI_space_punctuation, % (spacing & bPunctuation) ? 1 : 0
-    GuiControl , , UI_on, %recognition_on%
-    GuiControl , , UI_delnonchords, %delnonchords%
-    GuiControl, Choose, UI_tab, 1 ; switch to first tab 
-    Gui, Show,, ZipChord
-    UIControlStatus()
-}
-
-UIControlStatus() {
-    GuiControlGet, checked,, UI_on
-    GuiControl, Enable%checked%, UI_chord_delay
-    GuiControl, Enable%checked%, UI_output_delay
-    GuiControl, Enable%checked%, UI_space_before
-    GuiControl, Enable%checked%, UI_space_after
-    GuiControl, Enable%checked%, UI_space_punctuation
-    GuiControl, Enable%checked%, UI_capitalization
-    GuiControl, Enable%checked%, UI_delnonchords
-}
-
-ButtonOK:
-    Gui, Submit, NoHide
-    capitalization := UI_capitalization
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, %capitalization%
-    spacing := UI_space_before * bBeforeChord + UI_space_after * bAfterChord + UI_space_punctuation * bPunctuation
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, %spacing%
-    delnonchords := UI_delnonchords
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
-    if SetDelays(UI_chord_delay, UI_output_delay) {
-        if (UI_on && !recognition_on)
-            WireHotkeys("On")
-        if (recognition_on && !UI_on)
-            WireHotkeys("Off")
-        recognition_on := UI_on
-        CloseMenu()
-    }
-    Return
-
-GuiClose:
-GuiEscape:
-    CloseMenu()
-    Return
-
-CloseMenu() {
-    Gui, Submit
-    static intro := true
-    if intro {
-        MsgBox ,, ZipChord, % "Select a word and press and hold Ctrl-C to define a chord for it or to see its existing chord.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
-        intro := false
-    }
+    Hotkey, % "~Enter", Enter_key, %state%
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
+
+; ------------------
+;; Chord Detection
+; ------------------
 
 KeyDown:
     Critical
@@ -424,10 +294,18 @@ KeyUp:
     Return
 
 Interrupt:
-    lastentry := -1
-    uppercase := false
-    Return
+    last_output := bInterrupted
+    fixed_output := last_output
+Return
 
+Enter_key:
+    last_output := bInterrupted | bCapitalize
+    fixed_output := last_output
+Return
+
+; Helper functions
+
+; Single-use helper function used for readability
 NeedsSpace() {
     if (! (spacing & bBeforeChord))
         Return False
@@ -436,24 +314,25 @@ NeedsSpace() {
     Return True
 }
 
+; Single-use helper function used for readability
 NeedsCapitalization() {
     if ((fixed_output & bCapitalize) && (capitalization != cOff))
         Return True
     Return False
 }
 
-SelectDict() {
-    FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
-    if (dict != "")
-        LoadChords(dict)
-    Return
+; Sort the string alphabetically
+Arrange(raw) {
+    raw := RegExReplace(raw, "(.)", "$1`n")
+    Sort raw
+    Return StrReplace(raw, "`n")
 }
 
-EditDict() {
-    Run notepad.exe %chord_file%
-}
+; -----------------
+;;  Adding chords 
+; -----------------
 
-; Create a new chord for the selected text, and register it in the dictionary
+; Define a new chord for the selected text (or check what it is for existing)
 AddChord() {
     newword := Trim(Clipboard)
     if (!StrLen(newword)) {
@@ -470,10 +349,11 @@ AddChord() {
         if ErrorLevel
             Return
     } Until RegisterChord(newch, newword, true)
-    UpdateUI()
+    UpdateDictionaryUI()
 }
 
-RegisterChord(newch, newword, w := false) {
+; RegisterChord(chord, expanded[, true|false])  Adds a new pair of chord and its expanded text to 'chords' and to the dictionary file
+RegisterChord(newch, newword, write_to_dictionary := false) {
     newch := Arrange(newch)
     if chords.HasKey(newch) {
         MsgBox ,, ZipChord, % "The chord '" newch "' is already in use for '" chords[newch] "'.`nPlease use a different chord for '" newword "'."
@@ -487,7 +367,7 @@ RegisterChord(newch, newword, w := false) {
         MsgBox ,, ZipChord, Each key can be entered only once in the same chord.
         Return false
     }
-    if (w)
+    if (write_to_dictionary)
         FileAppend % "`r`n" newch "`t" newword, %chord_file%, UTF-8
     newword := StrReplace(newword, "~", "{Backspace}")
     if (SubStr(newword, -10)=="{Backspace}")
@@ -496,6 +376,195 @@ RegisterChord(newch, newword, w := false) {
     return true
 }
 
+; ------------------
+;;      GUI
+; ------------------
+
+; Prepare UI
+BuildMenu() {
+    Gui, Font, s10, Segoe UI
+    Gui, Margin, 15, 15
+    Gui, Add, Tab3, vUI_tab, Dictionary|Sensitivity|Behavior|About
+    ; Gui, Add, GroupBox, w320 h130 Section, Dictionary
+    Gui, Add, Text, w280 vUI_dict Left, [file name]
+    Gui, Add, Text, xp+10 y+m w280 vUI_entries Left, (999 chords)
+    Gui, Add, Button, xs+20 gSelectDict y+m w80, &Open
+    Gui, Add, Button, gEditDict xp+100 w80, &Edit
+    Gui, Add, Button, gReloadDict xp+100 w80, &Reload
+    ; Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
+    Gui, Tab, 2
+    Gui, Add, Text, xs+20 y+m, I&nput delay (ms):
+    Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
+    Gui, Add, Text, xs+20 y+m, O&utput delay (ms):
+    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
+    Gui, Add, Checkbox, vUI_delnonchords xs+20 Y+m Checked%delnonchords%, &Delete mistyped chords
+    Gui, Tab, 3
+    Gui, Add, GroupBox, w290 h120 Section, Smart spaces
+    ;Gui, Add, Text, xs+20 ys+m +Wrap, When selected, smart spaces are dynamically added and removed as you type to ensure spaces between words, and avoid extra spaces around punctuation and doubled spaces when a manually typed space is combined with an automatic one.
+    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
+    Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
+    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
+    Gui, Add, Text, xs y+30, Auto-&capitalization:
+    Gui, Add, DropDownList, vUI_capitalization Choose%capitalization% AltSubmit Right xp+150 w130, Off|For chords only|For all input
+
+    Gui, Tab
+    Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
+    Gui, Add, Button, Default w80 xs+220 yp, OK
+    Gui, Tab, 4
+    Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
+    Gui, Font, Underline cBlue
+    Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
+    Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
+
+    ; Create taskbar tray menu:
+    Menu, Tray, Add, Open Settings, ShowMenu
+    Menu, Tray, Default, Open Settings
+    Menu, Tray, Tip, ZipChord
+    Menu, Tray, Click, 1
+}
+
+ShowMenu() {
+    GuiControl Text, UI_chord_delay, %chord_delay%
+    GuiControl Text, UI_output_delay, %output_delay%
+    GuiControl , Choose, UI_capitalization, %capitalization%
+    GuiControl , , UI_space_before, % (spacing & bBeforeChord) ? 1 : 0     
+    GuiControl , , UI_space_after, % (spacing & bAfterChord) ? 1 : 0
+    GuiControl , , UI_space_punctuation, % (spacing & bPunctuation) ? 1 : 0
+    GuiControl , , UI_on, %recognition_on%
+    GuiControl , , UI_delnonchords, %delnonchords%
+    GuiControl, Choose, UI_tab, 1 ; switch to first tab 
+    EnableDisableControls()
+    Gui, Show,, ZipChord
+}
+
+; sets UI controls to enabled/disabled to reflect chord recognition setting 
+EnableDisableControls() {
+    GuiControlGet, checked,, UI_on
+    GuiControl, Enable%checked%, UI_chord_delay
+    GuiControl, Enable%checked%, UI_output_delay
+    GuiControl, Enable%checked%, UI_space_before
+    GuiControl, Enable%checked%, UI_space_after
+    GuiControl, Enable%checked%, UI_space_punctuation
+    GuiControl, Enable%checked%, UI_capitalization
+    GuiControl, Enable%checked%, UI_delnonchords
+}
+
+ButtonOK:
+    Gui, Submit, NoHide
+    capitalization := UI_capitalization
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, %capitalization%
+    spacing := UI_space_before * bBeforeChord + UI_space_after * bAfterChord + UI_space_punctuation * bPunctuation
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, %spacing%
+    delnonchords := UI_delnonchords
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown, %delnonchords%
+    if SetDelays(UI_chord_delay, UI_output_delay) {
+        if (UI_on && !recognition_on)
+            WireHotkeys("On")
+        if (recognition_on && !UI_on)
+            WireHotkeys("Off")
+        recognition_on := UI_on
+        CloseMenu()
+    }
+Return
+
+GuiClose:
+GuiEscape:
+    CloseMenu()
+Return
+
+CloseMenu() {
+    Gui, Submit
+    static intro := true
+    if intro {
+        MsgBox ,, ZipChord, % "Select a word and press and hold Ctrl-C to define a chord for it or to see its existing chord.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
+        intro := false
+    }
+}
+
+WebsiteLink:
+Run https://github.com/psoukie/zipchord#readme
+return
+
+ReleaseLink:
+Run https://github.com/psoukie/zipchord/releases
+return
+
+; Functions supporting UI
+
+; Update UI with dictionary details
+UpdateDictionaryUI() {
+    if StrLen(chord_file) > 35
+        filestr := "..." SubStr(chord_file, -34)
+    else
+        filestr := chord_file
+    GuiControl Text, UI_dict, %filestr%
+    entriesstr := "(" chords.Count()
+    entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
+    GuiControl Text, UI_entries, %entriesstr%
+}
+
+; Run Windows File Selection to open a dictionary
+SelectDict() {
+    FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
+    if (dict != "")
+        LoadChords(dict)
+    Return
+}
+
+; Edit a dictionary in Notepad
+EditDict() {
+    Run notepad.exe %chord_file%
+}
+
+; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
+ReloadDict() {
+    WireHotkeys("Off")
+    LoadChords(chord_file)
+    WireHotkeys("On")
+}
+
+; ---------------------
+;;  Saving and Loading
+; ---------------------
+
+; Read settings from Windows Registry and locate dictionary file
+ReadSettings() {
+    RegRead chord_delay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
+    if ErrorLevel
+        SetDelays(90, 0)
+    RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
+    if ErrorLevel
+        SetDelays(90, 0)
+    RegRead delnonchords, HKEY_CURRENT_USER\Software\ZipChord, DelUnknown
+    RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
+    if ErrorLevel
+        spacing := bBeforeChord | bAfterChord
+    RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
+    if ErrorLevel
+        capitalization := cChords
+    RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
+    if (ErrorLevel || !FileExist(chord_file)) {
+        errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
+        ; If we don't have the dictionary, try other files with the following filename convention instead. (This is useful if the user downloaded ZipChord and a preexisting dictionary and has them in the same folder.)
+        chord_file := "chords*.txt"
+        if FileExist(chord_file) {
+            Loop, Files, %chord_file%
+                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
+            Sort flist
+            chord_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", chord_file)
+        }
+        else {
+            errmsg .= "ZipChord is going to create a new 'chords.txt' dictionary in its own folder."
+            chord_file := "chords.txt"
+            FileAppend % "This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %chord_file%, UTF-8
+        }
+        chord_file := A_ScriptDir "\" chord_file
+        MsgBox ,, ZipChord, %errmsg%
+    }
+}
+
+; Save delay settings
 SetDelays(new_input_delay, new_output_delay) {
     ; first check we have integers
     if (RegExMatch(new_input_delay,"^\d+$") && RegExMatch(new_output_delay,"^\d+$")) {
@@ -509,18 +578,7 @@ SetDelays(new_input_delay, new_output_delay) {
     Return false
 }
 
-Arrange(raw) {
-    raw := RegExReplace(raw, "(.)", "$1`n")
-    Sort raw
-    Return StrReplace(raw, "`n")
-}
-
-ReloadDict() {
-    WireHotkeys("Off")
-    LoadChords(chord_file)
-    WireHotkeys("On")
-}
-
+; Load chords from a dictionary file
 LoadChords(file_name) {
     chord_file := file_name
     pause_loading := true
@@ -545,16 +603,5 @@ LoadChords(file_name) {
                 }
         }
     }
-    UpdateUI()
-}
-
-UpdateUI() {
-    if StrLen(chord_file) > 35
-        filestr := "..." SubStr(chord_file, -34)
-    else
-        filestr := chord_file
-    GuiControl Text, UI_dict, %filestr%
-    entriesstr := "(" chords.Count()
-    entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
-    GuiControl Text, UI_entries, %entriesstr%
+    UpdateDictionaryUI()
 }
