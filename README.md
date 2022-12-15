@@ -28,6 +28,8 @@ To open the menu, click the _ZipChord_ icon in the Windows tray or press and hol
 
 The dictionary tab shows the currently loaded chord dictionary and the number of chords it contains. You can select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and **Reload** the dictionary when you make changes to the chord file directly in an editor.
 
+You can download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point. 
+
 **Notes:**
 * See [below](#chord-dictionary) for more details about the chord dictionary file and advanced features.
 * When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
@@ -76,7 +78,7 @@ Chord dictionaries are text files which define each chord on a separate line. Ea
 
 Blank lines and lines without a tab are ignored and can be used as comments.
 
-_ZipChord_ will notify you if two words are attempting to use the same chord, such as in the following example where two words are using the chord **`W`+`N`**.
+_ZipChord_ will notify you if two words are attempting to use the same chord, such as in the following example where two words are using the chord **`W`** + **`N`**.
 ```
 wn   win
 ths  this
@@ -86,7 +88,7 @@ Note that if you edit the dictionary file directly in a text editor, you need to
 
 ### Special Characters
 
-Key that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`" (SPACE and lower-case w) to represent a `Space`+`W`), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Control, Tab and other function keys cannot be used in a chord.
+Key that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`" (a space and lower-case w) to represent a **`Spacebar`**+**`W`**), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Control, Tab and other function keys cannot be used in a chord.
 
 The Shift key can be optionally used as part of chords. If this feature is enabled ("Allow Shift in chords" on the "Chord detection" tab), use the character `+` (plus) to represent the Shift key when defining chords within the app, or directly in the dictionary file.
 
