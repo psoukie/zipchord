@@ -6,7 +6,7 @@ _ZipChord_ is a customizable hybrid keyboard input method for Windows that augme
 
 Download and save the executable **zipchord.exe** of the [latest stable release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it. You can also download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point.
 
-The [latest version 1.8.0](https://github.com/psoukie/zipchord/releases/tag/v.1.8.0) is a complete rewrite, and is currently a pre-release as there could be some bugs. If you try it, please let me know what you think!
+The [latest version 1.8.0](https://github.com/psoukie/zipchord/releases/tag/v.1.8.0) is a complete rewrite, and is currently a pre-release as there could be some bugs. If you try it, please let me know what you think in the [Discussions](https://github.com/psoukie/zipchord/discussions)!
 
 Note that _ZipChord_ only works on Windows because of its dependency on AutoHotKey.
 
