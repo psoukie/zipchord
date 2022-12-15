@@ -76,7 +76,7 @@ Chord dictionaries are text files which define each chord on a separate line. Ea
 
 Blank lines and lines without a tab are ignored and can be used as comments.
 
-_ZipChord_ will notify you if two words are attempting to use the same chord, such as in the following example where two words are using the chord W N.
+_ZipChord_ will notify you if two words are attempting to use the same chord, such as in the following example where two words are using the chord **`W`+`N`**.
 ```
 wn   win
 ths  this
@@ -92,9 +92,13 @@ The Shift key can be optionally used as part of chords. If this feature is enabl
 
 The words entered using a chord can include the following special features:
 
-- **Suffixes**: To define suffixes that can be entered using a chord and joined to the last word, start the word definition with ~. Example: `;g  ~ing` (pressing **;** and **G** together will add "ing" to the last word). Note that `~~ing` would also remove the last character of the preceding word.
+- **Suffixes**: To define suffixes that can be entered using a chord and joined to the last word, start the word definition with ~. Example: `;g  ~ing` (pressing **`;`** and **`G`** together will add "ing" to the last word).
 - **Prefixes**: For prefixes, place the `~` at the end of the prefix (such as `pre~`). This will ensure there will be no space after the chord.
-- **Special keys**: Other keys can be entered using expressions in curly braces: {Left}, {Right}, {Up}, {Down} for cursor, {Tab} and {Enter} can all be used.
+
+Note that chord detection works for suffixes and all chords will also be detected when they follow a chorded prefix even when the 'Restrict chords while typing' is enabled.
+
+- **Special keys**: Other keys can be entered using expressions in curly braces: {Left}, {Right}, {Up}, {Down} to move the cursor, or {Tab}, {Backspace} and {Enter} can all be used.
+- **Combinations**: You can combine these features for example to create a suffix that also deletes the last letter of the previous word. (In English, this can be useful to modify verbs where you need to drop the last -e. So to write the word "having" using chords, you can use a chord for "have" and then a chord for "ing" that would be expanded to `~{Backspace}ing` -- so it acts as a suffix which removes the last character.)
 
 ## Feedback
 
