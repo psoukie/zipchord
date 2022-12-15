@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.8.0"
+global version = "1.8.1"
 
 ; ------------------
 ;; Global Variables
@@ -242,7 +242,7 @@ KeyDown:
     if (new_output & OUT_CHARACTER) {
         if ( capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
             cap_key := RegExReplace(key, "(.*)", "$U1")
-            SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version
+            SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version.  Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
             new_output := new_output && ~OUT_CAPITALIZE
         }
     }
@@ -305,7 +305,7 @@ KeyUp:
                 OpeningSpace(suffix)
                 ; expanded chord: 
                 if ( NeedsCapitalization() )
-                    SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
+                    SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1") ; Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
                 else
                     SendInput % exp
                 last_output := OUT_CHORD
@@ -586,9 +586,9 @@ SelectDict() {
     Return
 }
 
-; Edit a dictionary in Notepad
+; Edit a dictionary in default editor
 EditDict() {
-    Run notepad.exe %chord_file%
+    Run %chord_file%
 }
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
