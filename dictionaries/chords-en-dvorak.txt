@@ -1,18 +1,19 @@
-This is a sample starting dictionary for ZipChord. You can edit existing chords and add your own.
-See https://github.com/psoukie/zipchord for details.
+This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.
 
+Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.
+
+Note that the category headings are for orientation only, and do not affect the functionality. While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.
+
+See https://github.com/psoukie/zipchord for details.
 
 Suffixes
 --------
+.n	~ing
+.d	~ed
 .s	~s
 's	~’s
-.n	~ing
 .t	~tion
-.a	~ation
-.m	~ment
 .l	~ly
-.d	~ed
-'t	~n’t
 
 Articles
 --------
@@ -180,6 +181,17 @@ dir	direction
 nx	next
 sam	same
 pt	top
+
+Prefixes
+--------
+'r	re~
+'d	de~
+'ds	dis~
+'v	over~
+'n	un~
+'m	mis~
+'o	out~
+'p	pre~
 
 Newly added
 -----------
