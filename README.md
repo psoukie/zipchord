@@ -1,6 +1,12 @@
 # ZipChord Keyboard
 
-_ZipChord_ is a customizable hybrid keyboard input method for Windows that augments regular typing with chorded entry. For a discussion of why that might be useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
+_ZipChord_ is a customizable hybrid keyboard input method for Windows that allows you to seamlessly **combine regular typing with chorded entry**. Chords allow you to type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
+
+Thanks to Zipf's law, even if we used simple chords for only a few dozen words, it would still accelerate a huge amount of our typing. For example, 40% of the text of _The Lord of the Rings_ consists of only 32 words.
+
+_ZipChord_ leverages Zipf's law to make your typing faster and more comfortable by allowing you to use chords for frequent words (or other creative uses) together with regular typing. 
+
+For a more details on why this is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
 
 ## Installation
 
@@ -104,4 +110,4 @@ Note that chord detection works for suffixes and all chords will also be detecte
 
 ## Feedback
 
-If you have any feedback, feature requests, or encounter a bug, please [file an issue](https://github.com/psoukie/zipchord/issues/new). You can contact write to me on Twitter at [@pavel_soukenik](https://twitter.com/pavel_soukenik).
+If you have any questions, feedback, or suggestions, please write a note here in the [Discussions](https://github.com/psoukie/zipchord/discussions). You can also report a bug if you run across anything that seems broken or create a feature suggestion under [Issues](https://github.com/psoukie/zipchord/issues).
