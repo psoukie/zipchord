@@ -212,7 +212,7 @@ KeyDown:
 
     ; if it's a space
     if (key==" ") {
-        if (last_output & OUT_AUTOMATIC & OUT_SMART_SPACE) {
+        if ( (last_output & OUT_SMART_SPACE) == OUT_SMART_SPACE ) {
             SendInput {Backspace} ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
