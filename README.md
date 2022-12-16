@@ -6,7 +6,7 @@ Thanks to Zipf's law, even if we used simple chords for only a few dozen words, 
 
 _ZipChord_ leverages Zipf's law to make your typing faster and more comfortable by allowing you to use chords for frequent words (or other creative uses) together with regular typing. 
 
-For a more details on why this is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
+For more details on why this is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
 
 ## Installation
 
