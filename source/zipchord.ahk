@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -82,16 +82,14 @@ global DIF_IGNORED_SPACE := 4
 global difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
 global final_difference := DIF_NONE
 
-; Characteristics of last output: constants (partially binary) and variables
-global OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
+; Characteristics of last output: constants and variables
 global OUT_CHARACTER := 1     ; output is a character
 global OUT_SPACE := 2         ; output was a space
 global OUT_PUNCTUATION := 4 ; output was a punctuation
-global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry)
+global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
 global OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
 global OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
-global OUT_CHORD := OUT_CHARACTER | OUT_AUTOMATIC
-global OUT_SMART_SPACE := OUT_SPACE | OUT_AUTOMATIC
+global OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
 ; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
 global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
@@ -193,9 +191,9 @@ KeyDown:
     ; Now, we categorize the current output and adjust on the fly as needed:
     new_output := OUT_CHARACTER | (last_output & OUT_CAPITALIZE)
 
-    ; if it's a space
+    ; if the key pressed is a space
     if (key==" ") {
-        if ( (last_output & OUT_SMART_SPACE) == OUT_SMART_SPACE ) {
+        if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. if last output is a smart space
             SendInput {Backspace} ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
@@ -205,7 +203,7 @@ KeyDown:
     ; if it's punctuation needing space adjustments
     if ( (!shifted && InStr(space_after_keys, key)) || (shifted && InStr(space_after_shift_keys, key)) ) {
         new_output := OUT_PUNCTUATION
-        if ( (last_output & OUT_SMART_SPACE) == OUT_SMART_SPACE) {
+        if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             SendInput {Backspace}{Backspace}
             difference |= DIF_REMOVED_SMART_SPACE
             if (shifted)
@@ -217,7 +215,7 @@ KeyDown:
         if ( spacing & SPACE_PUNCTUATION ) {
             SendInput {Space}
             difference |= DIF_EXTRA_SPACE
-            new_output |= OUT_SMART_SPACE
+            new_output |= OUT_SPACE | OUT_AUTOMATIC
         }
     }
 
@@ -294,13 +292,13 @@ KeyUp:
                     else
                         SendInput % "{Text}"exp
                 }
-                last_output := OUT_CHORD
+                last_output := OUT_CHARACTER | OUT_AUTOMATIC  ; i.e. a chord (automated typing)
                 ; ending smart space
                 if (prefix) {
                     last_output |= OUT_PREFIX
                 } else if (spacing & SPACE_AFTER_CHORD) {
                     SendInput {Space}
-                    last_output := OUT_SMART_SPACE
+                    last_output := OUT_SPACE | OUT_AUTOMATIC
                 }
             }
             ; Here, we are not deleting the keys because we assume it was rolled typing.
@@ -346,7 +344,7 @@ IsUnrestricted() {
 ; Handles opening spacing as needed (single-use helper function)
 OpeningSpace(attached) {
     ; if there is a smart space, we remove it for suffixes, and we're done
-    if ((fixed_output & OUT_SMART_SPACE) == OUT_SMART_SPACE) {
+    if ( (fixed_output & OUT_SPACE) && (fixed_output & OUT_AUTOMATIC) ) {
         if (attached)
             SendInput {Backspace}
         Return
