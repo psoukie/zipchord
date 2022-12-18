@@ -2,31 +2,31 @@
 
 _ZipChord_ is a customizable hybrid keyboard input method for Windows that allows you to seamlessly **combine regular typing with chorded entry**. Chords allow you to type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
 
-Thanks to Zipf's law, even if we used simple chords for only a few dozen words, it would still accelerate a huge amount of our typing. For example, 40% of the text of _The Lord of the Rings_ consists of only 32 words.
+Thanks to Zipf's law, even if we used simple chords for only a few dozen words, it would still accelerate a huge amount of our typing. For example, 40% of the text of _The Lord of the Rings_ consists of only 32 words. Unfortunately, I could not find any tool that could reliably detect keyboard shortcuts of more than two keys, and tools dedicated to stenotyping (such as [Plover](http://www.openstenoproject.org/plover/)) by design do not work for regular typing.
 
-_ZipChord_ leverages Zipf's law to make your typing faster and more comfortable by allowing you to use chords for frequent words (or other creative uses) together with regular typing. 
+_ZipChord_ fills this gap and lets you type faster and more comfortably by allowing you to use chords for frequent words (or phrases) together with regular typing.
 
-For more details on why this is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
+For more details on why combining typing and chords is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
 
 ## Installation
 
-Download and save the executable **zipchord.exe** of the [latest stable release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it. You can also download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point.
+Download and save the executable **zipchord.exe** of the [latest release](https://github.com/psoukie/zipchord/releases) in a folder where you have read and write access, and run it.
 
-The [latest version of 1.8](https://github.com/psoukie/zipchord/releases/tag/v.1.8.1) is a complete rewrite, and is currently a pre-release as there could be some bugs. If you try it, please let me know what you think in the [Discussions](https://github.com/psoukie/zipchord/discussions)!
+_ZipChord_ allows you to define your own chords for your own words, but you can download a chord dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point.
 
 Note that _ZipChord_ only works on Windows because of its dependency on AutoHotKey.
 
-## Using ZipChord
+### Defining New Chords
+
+To define a new chord, select the word or text you want to automate as a chord and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or any function keys) and click OK.
+
+Note that if the selected text is already defined in the chord dictionary, holding Ctrl-C will remind you of its chord.
+
+## Typing with ZipChord
 
 Type normally using individual keystrokes in combination with predefined chords. Chords are several keys pressed at the same time which type out whole words (or prefixes and suffixes). _ZipChord_ uses smart spaces and capitalization to add (or remove) spaces as needed to separate words, whether they were typed using individual strokes or chords, and to capitalize words.
 
 To use the chord, press the keys that make up the chord simultaneously and release them. You can configure the sensitivity of chord recognition and also the automatic behavior for spaces and capitalization.
-
-### Defining New Chords
-
-To define a new chord, select the word you want to define a chord for, and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or any function keys) and click OK.
-
-Note that if the selected text is already defined in the chord dictionary, holding Ctrl-C will remind you of its chord.
 
 ## Menu Options
 
@@ -48,7 +48,7 @@ This tab allows you to adjust the sensitivity and rules for the chord recognitio
 
 **Detection delay:** Depending on your regular typing, you might be holding two or more keys pressed at the same time for longer than the threshold that triggers the chord recognition. This can result in some intended key presses in your regular typing being misinterpreted as chords. In that case, you can increase the number of milliseconds under detection delay.
 
-**Restrict chords while typing:** When this option is on, the keyboard is restricted to normal typing and ignores chords, unless the chord is preceded by a space, permitted punctuation or by moving the cursor. Note that chords defined as suffixes (see below under [Special Characters](#special-characters)) will still be recognized in this mode.
+**Restrict chords while typing:** When this option is on, the keyboard is restricted to normal typing and ignores chords, unless the chord is preceded by a space, another chord, permitted punctuation or by moving the cursor. Note that chords defined as suffixes (see below under [Special Characters](#special-characters)) will still be recognized in this mode.
 
 **Allow Shift in chords:** When this option is not checked, Shift key behaves normally (when pressed together with a defined chord, it capitalizes the word). By checking this box, this standard functionality is replaced with the ability to define chords that use Shift as a key in the chord. (It makes Shift work like other standard keys and space bar. Use `+` to represent Shift in chords.)
 
@@ -58,7 +58,7 @@ This tab allows you to adjust the sensitivity and rules for the chord recognitio
 
 This tab allows you to change the typing and chord behavior to adjust how spaces and capitalization are handled around chords and punctuation.
 
-**Smart spaces**: The smart spaces--when enabled--ensure correct spacing around chords and punctuation. This means that spaces are added automatically if you haven't typed one manually, but the smart spaces are also dynamically removed if they are followed by punctuation or you type another space manually. Smart spaces can be enabled as follows:
+**Smart spaces**: The smart spaces--when enabled--ensure correct spacing around chords and punctuation. This means that spaces are added automatically if you haven't typed one manually, but the smart spaces are also dynamically removed if they are followed by punctuation or you type another space manually. Smart spaces can be enabled to be inserted as follows:
 - **In front of chords**
 - **After chords**
 - **After punctuation**  
@@ -112,4 +112,4 @@ Note that chord detection works for suffixes and all chords will also be detecte
 
 ## Feedback
 
-If you have any questions, feedback, or suggestions, please write a note here in the [Discussions](https://github.com/psoukie/zipchord/discussions). You can also report a bug if you run across anything that seems broken or create a feature suggestion under [Issues](https://github.com/psoukie/zipchord/issues).
+If you have any questions, feedback, or suggestions, please write a note in the [Discussions](https://github.com/psoukie/zipchord/discussions). You can also report a bug if you run across anything that seems broken or create a feature suggestion under [Issues](https://github.com/psoukie/zipchord/issues).
