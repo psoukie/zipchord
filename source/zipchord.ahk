@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.8.2"
+global version = "1.8.3"
 
 ; ------------------
 ;; Global Variables
@@ -286,8 +286,8 @@ KeyUp:
                     ; we send any expanded text that includes { as straight directives:
                     SendInput % exp
                 } else {
-                    ; and there rest as {Text} that's capitalized if needed:
-                    if ( NeedsCapitalization() )
+                    ; and there rest as {Text} that gets capitalized if needed:
+                    if ( (fixed_output & OUT_CAPITALIZE) && (capitalization != CAP_OFF) )
                         SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
                     else
                         SendInput % "{Text}"exp
@@ -334,12 +334,11 @@ IsUnrestricted() {
     ; If we're in unrestricted mode, we're good
     if (!(options & OPT_RESTRICT_CHORDS))
         Return true
-    ; If last output was a prefix (meaning chord prefix or a defined opening punctuation), it was interrupted, or it was a space, we can also go ahead.
-    if ( (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
+    ; If last output was automated (smart space or chord), a 'prefix' (which  includes opening punctuation), it was interrupted, or it was a space, we can also go ahead.
+    if ( (fixed_output & OUT_AUTOMATIC) || (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
         Return true
     Return false
 }
-
 
 ; Handles opening spacing as needed (single-use helper function)
 OpeningSpace(attached) {
@@ -357,13 +356,6 @@ OpeningSpace(attached) {
         Return
     ; if we get here, we probably need a space in front of the chord
     SendInput {Space}
-}
-
-; Single-use helper function used for readability
-NeedsCapitalization() {
-    if ((fixed_output & OUT_CAPITALIZE) && (capitalization != CAP_OFF))
-        Return True
-    Return False
 }
 
 ; Sort the string alphabetically
