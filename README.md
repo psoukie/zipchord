@@ -107,7 +107,7 @@ The words entered using a chord can include the following special features:
 
 Note that chord detection works for suffixes and all chords will also be detected when they follow a chorded prefix even when the 'Restrict chords while typing' is enabled.
 
-- **Special keys**: Other keys can be entered using expressions in curly braces: {Left}, {Right}, {Up}, {Down} to move the cursor, or {Tab}, {Backspace} and {Enter} can all be used.
+- **Control keys**: Other keys can be entered using expressions in curly braces: {Left}, {Right}, {Up}, {Down} to move the cursor, or {Tab}, {Backspace} and {Enter} can all be used. When using these control keys (or the character "{"), the expanded text is interpreted using AutoHotkey's modifiers and special keys.
 - **Combinations**: You can combine these features for example to create a suffix that also deletes the last letter of the previous word. (In English, this can be useful to modify verbs where you need to drop the last -e. So to write the word "having" using chords, you can use a chord for "have" and then a chord for "ing" that would be expanded to `~{Backspace}ing` -- so it acts as a suffix which removes the last character.)
 
 ## Feedback
