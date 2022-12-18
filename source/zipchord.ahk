@@ -334,12 +334,11 @@ IsUnrestricted() {
     ; If we're in unrestricted mode, we're good
     if (!(options & OPT_RESTRICT_CHORDS))
         Return true
-    ; If last output was a prefix (meaning chord prefix or a defined opening punctuation), it was interrupted, or it was a space, we can also go ahead.
-    if ( (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
+    ; If last output was automated (smart space or chord), a 'prefix' (which  includes opening punctuation), it was interrupted, or it was a space, we can also go ahead.
+    if ( (fixed_output & OUT_AUTOMATIC) || (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
         Return true
     Return false
 }
-
 
 ; Handles opening spacing as needed (single-use helper function)
 OpeningSpace(attached) {
