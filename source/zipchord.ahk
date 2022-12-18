@@ -286,8 +286,8 @@ KeyUp:
                     ; we send any expanded text that includes { as straight directives:
                     SendInput % exp
                 } else {
-                    ; and there rest as {Text} that's capitalized if needed:
-                    if ( NeedsCapitalization() )
+                    ; and there rest as {Text} that gets capitalized if needed:
+                    if ( (fixed_output & OUT_CAPITALIZE) && (capitalization != CAP_OFF) )
                         SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
                     else
                         SendInput % "{Text}"exp
@@ -356,13 +356,6 @@ OpeningSpace(attached) {
         Return
     ; if we get here, we probably need a space in front of the chord
     SendInput {Space}
-}
-
-; Single-use helper function used for readability
-NeedsCapitalization() {
-    if ((fixed_output & OUT_CAPITALIZE) && (capitalization != CAP_OFF))
-        Return True
-    Return False
 }
 
 ; Sort the string alphabetically
