@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.8.1"
+global version = "1.8.2"
 
 ; ------------------
 ;; Global Variables
@@ -283,8 +283,7 @@ KeyUp:
         sorted := Arrange(chord)
         Sleep output_delay
         if (chords.HasKey(sorted)) {
-            exp := chords[sorted] ; store the expanded text
-            
+            exp := chords[sorted] ; store the expanded text       
             ; detect and adjust expansion for suffixes and prefixes
             if (SubStr(exp, 1, 1) == "~") {
                 exp := SubStr(exp, 2)
@@ -298,16 +297,20 @@ KeyUp:
             } else {
                 prefix := false
             }
-
             ; if we aren't restricted, we print a chord
             if (suffix || IsUnrestricted()) {
                 RemoveRawChord(sorted)
                 OpeningSpace(suffix)
-                ; expanded chord: 
-                if ( NeedsCapitalization() )
-                    SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1") ; Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
-                else
+                if (InStr(exp, "{")) {
+                    ; we send any expanded text that includes { as straight directives:
                     SendInput % exp
+                } else {
+                    ; and there rest as {Text} that's capitalized if needed:
+                    if ( NeedsCapitalization() )
+                        SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
+                    else
+                        SendInput % "{Text}"exp
+                }
                 last_output := OUT_CHORD
                 ; ending smart space
                 if (prefix) {
