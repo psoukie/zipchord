@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -96,23 +96,6 @@ global OUT_SMART_SPACE := OUT_SPACE | OUT_AUTOMATIC
 global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
 ; new_output local variable is used to track the current key / output
-
-; variables holding the UI elements and selections -- used by AHK Gui 
-
-global UI_chord_delay
-global UI_output_delay
-global UI_space_before
-global UI_space_after
-global UI_space_punctuation
-global UI_delete_unrecognized
-global UI_capitalization
-global UI_allow_shift
-global UI_restrict_chords
-global UI_dict := "none"
-global UI_entries := "0"
-global UI_on := 1
-global UI_tab := 0
-
 
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
@@ -451,6 +434,22 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
 ; ------------------
 ;;      GUI
 ; ------------------
+
+; variables holding the UI elements and selections
+
+global UI_chord_delay
+global UI_output_delay
+global UI_space_before
+global UI_space_after
+global UI_space_punctuation
+global UI_delete_unrecognized
+global UI_capitalization
+global UI_allow_shift
+global UI_restrict_chords
+global UI_dict := "none"
+global UI_entries := "0"
+global UI_on := 1
+global UI_tab := 0
 
 ; Prepare UI
 BuildMenu() {
