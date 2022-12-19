@@ -12,13 +12,16 @@ global version = "1.8.3"
 ;; Global Variables
 ; ------------------
 
-; Default (US English) and custom keyboard and language settings:
+; Locale settings (keyboard and language settings) with default values (US English)
+Class localeClass {
+    ; keys that interrupt the typing flow
+    cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
+    ; keys tracked by ZipChord for typing and chords
+    keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default keyboard layout
 
-; keys that interrupt the typing flow (not customizable in dictionary file)
-global cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
-
-; following are default values based on English keyboard and conventions:
-global default_keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default keyboard layout
+}
+default := New localeClass
+locale := New localeClass
 
 /* 
 global default_space_after_keys := ".,;" ; unmodified keys that should be followed by smart space
@@ -28,9 +31,6 @@ global default_capitalizing_shift_keys :="1/"  ; keys that -- when modified by S
 global default_opener_keys := "'-/=\]" ; unmodified keys that can be followed by a chord without a space.
 global default_opener_shift_keys := "',-./23456789;=\]" ; keys combined with Shift that can be followed by a chord without a space.
 */
-
-; Keyboard is customizable using dictionary file only, and not through UI yet
-global keys := "" ; Uses default_keys or custom_keys read from the dictionary file.
 
 ; The following are not customizable yet through UI or dictionary
 global space_after_keys := ".,;"  ; unmodified keys that should be followed by smart space
@@ -132,6 +132,9 @@ Initialize() {
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
+    global locale
+    keys := locale.keys ; for some reason, AHK does not accept locale.keys as variable for Loop Parse
+    cursory := locale.cursory ; same as above
     Loop Parse, keys
     {
         Hotkey, % "~" A_LoopField, KeyDown, %state% UseErrorLevel
@@ -146,7 +149,7 @@ WireHotkeys(state) {
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
-    Loop Parse, cursory, |
+    Loop Parse, cursory , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
@@ -649,17 +652,19 @@ SetDelays(new_input_delay, new_output_delay) {
 
 ; Load chords from a dictionary file
 LoadChords(file_name) {
+    global locale
+    global default
     chord_file := file_name
     pause_loading := true
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chord_file%
     chords := {}
-    keys := default_keys
+    locale.keys := default.keys
     Loop, Read, %chord_file%
     {
         pos := InStr(A_LoopReadLine, A_Tab)
         if (pos) {
             if (SubStr(A_LoopReadLine, 1, pos-1) == "custom_keys")
-                keys := Arrange(SubStr(A_LoopReadLine, pos+1))
+                locale.keys := Arrange(SubStr(A_LoopReadLine, pos+1))
             else
                 if (! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
                     if (pause_loading) {
