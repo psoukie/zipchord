@@ -54,9 +54,6 @@ Class settingsClass {
 ; stores current settings
 global settings := New settingsClass
 
-global delete_unrecognized := 0 ; delete typing that triggers chords that are not in dictionary?
-
-
 ; Processing input and output 
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
@@ -188,7 +185,7 @@ KeyDown:
             SendInput {Backspace} ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
-        new_output := new_output & ~OUT_AUTOMATIC | OUT_SPACE 
+        new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
 
     ; if it's punctuation needing space adjustments
@@ -215,7 +212,7 @@ KeyDown:
         if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
             cap_key := RegExReplace(key, "(.*)", "$U1")
             SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version.  Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
-            new_output := new_output && ~OUT_CAPITALIZE
+            new_output := new_output & ~OUT_CAPITALIZE
         }
     }
 
@@ -295,7 +292,7 @@ KeyUp:
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
-            if (delete_unrecognized)
+            if (settings.chording & CHORD_DELETE_UNRECOGNIZED)
                 RemoveRawChord(sorted)
         }
         chord := ""
