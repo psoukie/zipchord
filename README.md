@@ -16,13 +16,15 @@ _ZipChord_ allows you to define your own chords for your own words, but you can 
 
 Note that _ZipChord_ only works on Windows because of its dependency on AutoHotKey.
 
+## How to Use ZipChord
+
 ### Defining New Chords
 
-To define a new chord, select the word or text you want to automate as a chord and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or any function keys) and click OK.
+To define a new chord, select the word or text you want to automate as a chord and **press and hold Ctrl-C** until a dialog box appears. Next, type the individual keys (without pressing Shift or other modifier keys) and click OK.
 
 Note that if the selected text is already defined in the chord dictionary, holding Ctrl-C will remind you of its chord.
 
-## Typing with ZipChord
+### Typing with Chords
 
 Type normally using individual keystrokes in combination with predefined chords. Chords are several keys pressed at the same time which type out whole words (or prefixes and suffixes). _ZipChord_ uses smart spaces and capitalization to add (or remove) spaces as needed to separate words, whether they were typed using individual strokes or chords, and to capitalize words.
 
