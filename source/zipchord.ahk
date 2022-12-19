@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -16,11 +16,11 @@ global version = "1.8.4"
 Class localeClass {
     all := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
-    space_after := ".,;"  ; unmodified keys that should be followed by smart space
+    space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
     space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
-    capitalizing := "." ; unmodified keys that capitalize the text that folows them
+    capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
     capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-    opening := "'-/=\]"  ; unmodified keys that can be followed by a chord without a space.
+    opening_plain := "'-/=\]"  ; unmodified keys that can be followed by a chord without a space.
     opening_shift := "',-./23456789;=\]"  ; keys combined with Shift that can be followed by a chord without a space.
 }
 ; stores current locale information 
@@ -189,7 +189,7 @@ KeyDown:
     }
 
     ; if it's punctuation needing space adjustments
-    if ( (!shifted && InStr(keys.space_after, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
+    if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
         new_output := OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             SendInput {Backspace}{Backspace}
@@ -217,11 +217,11 @@ KeyDown:
     }
 
     ; set 'uppercase' for punctuation that capitalizes following text 
-    if ( (! shifted && InStr(keys.capitalizing, key)) || (shifted && InStr(keys.capitalizing_shift, key)) )
+    if ( (! shifted && InStr(keys.capitalizing_plain, key)) || (shifted && InStr(keys.capitalizing_shift, key)) )
         new_output |= OUT_CAPITALIZE
 
     ; mark output that can be followed by another word/chord without a space 
-    if ( (! shifted && InStr(keys.opening, key)) || (shifted && InStr(keys.opening_shift, key)) )
+    if ( (! shifted && InStr(keys.opening_plain, key)) || (shifted && InStr(keys.opening_shift, key)) )
         new_output |= OUT_PREFIX
 
     last_output := new_output
