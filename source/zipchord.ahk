@@ -14,61 +14,52 @@ global version = "1.8.3"
 
 ; Locale settings (keyboard and language settings) with default values (US English)
 Class localeClass {
-    ; keys that interrupt the typing flow
-    cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
-    ; keys tracked by ZipChord for typing and chords
-    keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default keyboard layout
+    all := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
+    space_after := ".,;"  ; unmodified keys that should be followed by smart space
+    space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
+    capitalizing := "." ; unmodified keys that capitalize the text that folows them
+    capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
+    opening := "'-/=\]"  ; unmodified keys that can be followed by a chord without a space.
+    opening_shift := "',-./23456789;=\]"  ; keys combined with Shift that can be followed by a chord without a space.
 }
 ; stores current locale information 
-locale := New localeClass
+keys := New localeClass
 
-/* 
-global default_space_after_keys := ".,;" ; unmodified keys that should be followed by smart space
-global default_space_after_shift_keys := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
-global default_capitalizing_keys := "." ; unmodified keys that capitalize the text that folows them
-global default_capitalizing_shift_keys :="1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-global default_opener_keys := "'-/=\]" ; unmodified keys that can be followed by a chord without a space.
-global default_opener_shift_keys := "',-./23456789;=\]" ; keys combined with Shift that can be followed by a chord without a space.
-*/
-
-; The following are not customizable yet through UI or dictionary
-global space_after_keys := ".,;"  ; unmodified keys that should be followed by smart space
-global space_after_shift_keys := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
-global capitalizing_keys := "." ; unmodified keys that capitalize the text that folows them
-global capitalizing_shift_keys := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-global opener_keys := "'-/=\]"  ; unmodified keys that can be followed by a chord without a space.
-global opener_shift_keys := "',-./23456789;=\]"  ; keys combined with Shift that can be followed by a chord without a space.
-
-; Current application settings
-
-global recognition_on := 1 ; maps to UI_on for whether the chord recognition is enabled
-global chord_file := "" ; file name for the dictionary
-global chords := {} ; holds pairs of chord key combinations and their full texts
-global chord_delay := 0
-global output_delay := 0
-
-; capitalization setting constants and variable:
+; capitalization constants
 global CAP_OFF = 1 ; no auto-capitalization,
 global CAP_CHORDS = 2 ; auto-capitalize chords only
 global CAP_ALL = 3 ; auto-capitalize all typing
-global capitalization := CAP_CHORDS
 
-; smart spacing constants (binary) and variable:
+; smart spacing constants
 global SPACE_BEFORE_CHORD := 1
 global SPACE_AFTER_CHORD := 2
 global SPACE_PUNCTUATION := 4
-global spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
+
+; Chord recognition constants
+global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
+global CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
+global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
+
+; Current application settings
+Class settingsClass {
+    detection_enabled := 1 ; maps to UI_on for whether the chord recognition is enabled
+    capitalization := CAP_CHORDS
+    spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD ; smart spacing options 
+    chord_file := "" ; file name for the dictionary
+    chord_delay := 0
+    output_delay := 0
+    chording:= 0 ; Chord recognition options
+}
+; stores current settings
+global settings := New settingsClass
 
 global delete_unrecognized := 0 ; delete typing that triggers chords that are not in dictionary?
 
-; Options for recognition - constants (binary) and variable:
-global OPT_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
-global OPT_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
-global OPT_RESTRICT_CHORDS := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
-global options:= 0
 
 ; Processing input and output 
 
+global chords := {} ; holds pairs of chord key combinations and their full texts
 buffer := ""   ; stores the sequence of simultanously pressed keys
 chord := ""    ; chord candidate which qualifies for chord
 global start := 0 ; tracks start time of two keys pressed at once
@@ -124,15 +115,15 @@ Return   ; To prevent execution of any of the following code, except for the alw
 Initialize() {
     BuildMenu()
     ReadSettings()
-    LoadChords(chord_file)
+    LoadChords(settings.chord_file)
     WireHotkeys("On")
     ShowMenu()
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
-    global locale
-    Loop Parse, % locale.keys
+    global keys
+    Loop Parse, % keys.all
     {
         Hotkey, % "~" A_LoopField, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
@@ -146,7 +137,7 @@ WireHotkeys(state) {
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
-    Loop Parse, % locale.cursory , |
+    Loop Parse, % keys.interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
@@ -201,7 +192,7 @@ KeyDown:
     }
 
     ; if it's punctuation needing space adjustments
-    if ( (!shifted && InStr(space_after_keys, key)) || (shifted && InStr(space_after_shift_keys, key)) ) {
+    if ( (!shifted && InStr(keys.space_after, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
         new_output := OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             SendInput {Backspace}{Backspace}
@@ -212,7 +203,7 @@ KeyDown:
                 SendInput %key%
         }
         ; if smart spacing for punctuation is enabled, insert a smart space
-        if ( spacing & SPACE_PUNCTUATION ) {
+        if ( settings.spacing & SPACE_PUNCTUATION ) {
             SendInput {Space}
             difference |= DIF_EXTRA_SPACE
             new_output |= OUT_SPACE | OUT_AUTOMATIC
@@ -221,7 +212,7 @@ KeyDown:
 
     ; if it's neither, it should be a regural character, and it might need capitalization
     if (new_output & OUT_CHARACTER) {
-        if ( capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
+        if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
             cap_key := RegExReplace(key, "(.*)", "$U1")
             SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version.  Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
             new_output := new_output && ~OUT_CAPITALIZE
@@ -229,11 +220,11 @@ KeyDown:
     }
 
     ; set 'uppercase' for punctuation that capitalizes following text 
-    if ( (! shifted && InStr(capitalizing_keys, key)) || (shifted && InStr(capitalizing_shift_keys, key)) )
+    if ( (! shifted && InStr(keys.capitalizing, key)) || (shifted && InStr(keys.capitalizing_shift, key)) )
         new_output |= OUT_CAPITALIZE
 
     ; mark output that can be followed by another word/chord without a space 
-    if ( (! shifted && InStr(opener_keys, key)) || (shifted && InStr(opener_shift_keys, key)) )
+    if ( (! shifted && InStr(keys.opening, key)) || (shifted && InStr(keys.opening_shift, key)) )
         new_output |= OUT_PREFIX
 
     last_output := new_output
@@ -246,7 +237,7 @@ KeyUp:
     buffer := ""
     start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( st && chord=="" && (A_TickCount - st > chord_delay) ) {
+    if ( st && chord=="" && (A_TickCount - st > settings.chord_delay) ) {
         chord := tempch ; this is the chord candidate
         final_difference := difference
         start := 0
@@ -256,13 +247,13 @@ KeyUp:
     if (chord != "") {
         if (InStr(chord, "+")) {
             ;if Shift is not allowed as a chord key, we just capitalize the chord.
-            if (!(options & OPT_ALLOW_SHIFT)) {
+            if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
             fixed_output |= OUT_CAPITALIZE
             chord := StrReplace(chord, "+")
             }
         }
         sorted := Arrange(chord)
-        Sleep output_delay
+        Sleep settings.output_delay
         if (chords.HasKey(sorted)) {
             exp := chords[sorted] ; store the expanded text       
             ; detect and adjust expansion for suffixes and prefixes
@@ -287,7 +278,7 @@ KeyUp:
                     SendInput % exp
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
-                    if ( (fixed_output & OUT_CAPITALIZE) && (capitalization != CAP_OFF) )
+                    if ( (fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
                         SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
                     else
                         SendInput % "{Text}"exp
@@ -296,7 +287,7 @@ KeyUp:
                 ; ending smart space
                 if (prefix) {
                     last_output |= OUT_PREFIX
-                } else if (spacing & SPACE_AFTER_CHORD) {
+                } else if (settings.spacing & SPACE_AFTER_CHORD) {
                     SendInput {Space}
                     last_output := OUT_SPACE | OUT_AUTOMATIC
                 }
@@ -332,7 +323,7 @@ RemoveRawChord(output) {
 ; check we can output chord here
 IsUnrestricted() {
     ; If we're in unrestricted mode, we're good
-    if (!(options & OPT_RESTRICT_CHORDS))
+    if (!(settings.chording & CHORD_RESTRICT))
         Return true
     ; If last output was automated (smart space or chord), a 'prefix' (which  includes opening punctuation), it was interrupted, or it was a space, we can also go ahead.
     if ( (fixed_output & OUT_AUTOMATIC) || (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
@@ -349,7 +340,7 @@ OpeningSpace(attached) {
         Return
     }
     ; if adding smart spaces before is disabled, we are done too
-    if (! (spacing & SPACE_BEFORE_CHORD))
+    if (! (settings.spacing & SPACE_BEFORE_CHORD))
         Return
     ; and we don't start with a smart space after intrruption, a space, after a prefix, and for suffix
     if (fixed_output & OUT_INTERRUPTED || fixed_output & OUT_SPACE || fixed_output & OUT_PREFIX || attached)
@@ -416,7 +407,7 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
         Return false
     }
     if (write_to_dictionary)
-        FileAppend % "`r`n" newch "`t" newword, %chord_file%, UTF-8
+        FileAppend % "`r`n" newch "`t" newword, % settings.chord_file, UTF-8
     chords.Insert(newch, newword)
     return true
 }
@@ -487,16 +478,16 @@ BuildMenu() {
 }
 
 ShowMenu() {
-    GuiControl Text, UI_chord_delay, %chord_delay%
-    GuiControl Text, UI_output_delay, %output_delay%
-    GuiControl , , UI_allow_shift, % (options & OPT_ALLOW_SHIFT) ? 1 : 0
-    GuiControl , , UI_restrict_chords, % (options & OPT_RESTRICT_CHORDS) ? 1 : 0
-    GuiControl , , UI_delete_unrecognized, % (options & OPT_DELETE_UNRECOGNIZED) ? 1 : 0
-    GuiControl , Choose, UI_capitalization, %capitalization%
-    GuiControl , , UI_space_before, % (spacing & SPACE_BEFORE_CHORD) ? 1 : 0
-    GuiControl , , UI_space_after, % (spacing & SPACE_AFTER_CHORD) ? 1 : 0
-    GuiControl , , UI_space_punctuation, % (spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_on, %recognition_on%
+    GuiControl Text, UI_chord_delay, % settings.chord_delay
+    GuiControl Text, UI_output_delay, % settings.output_delay
+    GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
+    GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
+    GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
+    GuiControl , Choose, UI_capitalization, % settings.capitalization
+    GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
+    GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
+    GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
+    GuiControl , , UI_on, % settings.detection_enabled
     GuiControl, Choose, UI_tab, 1 ; switch to first tab 
     EnableDisableControls()
     Gui, Show,, ZipChord
@@ -518,18 +509,18 @@ EnableDisableControls() {
 
 ButtonOK:
     Gui, Submit, NoHide
-    capitalization := UI_capitalization
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, %capitalization%
-    spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, %spacing%
-    options := UI_delete_unrecognized * OPT_DELETE_UNRECOGNIZED + UI_allow_shift * OPT_ALLOW_SHIFT + UI_restrict_chords * OPT_RESTRICT_CHORDS
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Options, %options%
+    settings.capitalization := UI_capitalization
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, % settings.capitalization
+    settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, % settings.spacing
+    settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Chording, % settings.chording
     if SetDelays(UI_chord_delay, UI_output_delay) {
-        if (UI_on && !recognition_on)
+        if (UI_on && !settings.detection_enabled)
             WireHotkeys("On")
-        if (recognition_on && !UI_on)
+        if (settings.detection_enabled && !UI_on)
             WireHotkeys("Off")
-        recognition_on := UI_on
+        settings.detection_enabled := UI_on
         CloseMenu()
     }
 Return
@@ -560,10 +551,10 @@ return
 
 ; Update UI with dictionary details
 UpdateDictionaryUI() {
-    if StrLen(chord_file) > 35
-        filestr := "..." SubStr(chord_file, -34)
+    if StrLen(settings.chord_file) > 35
+        filestr := "..." SubStr(settings.chord_file, -34)
     else
-        filestr := chord_file
+        filestr := settings.chord_file
     GuiControl Text, UI_dict, %filestr%
     entriesstr := "(" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
@@ -573,20 +564,22 @@ UpdateDictionaryUI() {
 ; Run Windows File Selection to open a dictionary
 SelectDict() {
     FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
-    if (dict != "")
+    if (dict != "") {
+        settings.chord_file := dict
         LoadChords(dict)
+    }
     Return
 }
 
 ; Edit a dictionary in default editor
 EditDict() {
-    Run %chord_file%
+    Run % settings.chord_file
 }
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
 ReloadDict() {
     WireHotkeys("Off")
-    LoadChords(chord_file)
+    LoadChords(settings.chord_file)
     WireHotkeys("On")
 }
 
@@ -602,9 +595,9 @@ ReadSettings() {
     RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
     if ErrorLevel
         SetDelays(90, 0)
-    RegRead options, HKEY_CURRENT_USER\Software\ZipChord, Options
+    RegRead chording, HKEY_CURRENT_USER\Software\ZipChord, Chording
     if ErrorLevel
-        options := 0
+        chording := 0
     RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
     if ErrorLevel
         spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
@@ -616,7 +609,7 @@ ReadSettings() {
         errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
         ; If we don't have the dictionary, try other files with the following filename convention instead. (This is useful if the user downloaded ZipChord and a preexisting dictionary and has them in the same folder.)
         chord_file := "chords*.txt"
-        if FileExist(chord_file) {
+        if FileExist(settings.chord_file) {
             Loop, Files, %chord_file%
                 flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
             Sort flist
@@ -631,16 +624,23 @@ ReadSettings() {
         chord_file := A_ScriptDir "\" chord_file
         MsgBox ,, ZipChord, %errmsg%
     }
+    ; I couldn't find a way to read the values directly into the settings object, so assigning below:
+    settings.chord_delay := chord_delay
+    settings.output_delay := output_delay
+    settings.chording := chording
+    settings.spacing := spacing
+    settings.capitalization := capitalization
+    settings.chord_file := chord_file
 }
 
 ; Save delay settings
 SetDelays(new_input_delay, new_output_delay) {
     ; first check we have integers
     if (RegExMatch(new_input_delay,"^\d+$") && RegExMatch(new_output_delay,"^\d+$")) {
-            chord_delay := new_input_delay + 0
-            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay, %chord_delay%
-            output_delay := new_output_delay + 0
-            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutDelay, %output_delay%
+            settings.chord_delay := new_input_delay + 0
+            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay, % settings.chord_delay
+            settings.output_delay := new_output_delay + 0
+            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutDelay, % settings.output_delay
             Return true
     }
     MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
@@ -649,19 +649,18 @@ SetDelays(new_input_delay, new_output_delay) {
 
 ; Load chords from a dictionary file
 LoadChords(file_name) {
-    global locale
-    default_locale := new localeClass
-    chord_file := file_name
+    global keys
+    default_keys := new localeClass
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % file_name
     pause_loading := true
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chord_file%
     chords := {}
-    locale.keys := default_locale.keys
-    Loop, Read, %chord_file%
+    keys.all := default_keys.all
+    Loop, Read, % file_name
     {
         pos := InStr(A_LoopReadLine, A_Tab)
         if (pos) {
             if (SubStr(A_LoopReadLine, 1, pos-1) == "custom_keys")
-                locale.keys := Arrange(SubStr(A_LoopReadLine, pos+1))
+                keys.all := Arrange(SubStr(A_LoopReadLine, pos+1))
             else
                 if (! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
                     if (pause_loading) {
