@@ -54,9 +54,6 @@ Class settingsClass {
 ; stores current settings
 global settings := New settingsClass
 
-global delete_unrecognized := 0 ; delete typing that triggers chords that are not in dictionary?
-
-
 ; Processing input and output 
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
@@ -295,7 +292,7 @@ KeyUp:
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
-            if (delete_unrecognized)
+            if (settings.chording & CHORD_DELETE_UNRECOGNIZED)
                 RemoveRawChord(sorted)
         }
         chord := ""
