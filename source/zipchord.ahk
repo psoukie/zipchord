@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -628,6 +628,21 @@ ReadSettings() {
     settings.spacing := spacing
     settings.capitalization := capitalization
     settings.chord_file := chord_file
+}
+
+SavePropertiesToIni(object_to_save, ini_section, ini_filename) {
+    For key, value in object_to_save
+        IniWrite %value%, %ini_filename%, %ini_section%, %key%
+}
+
+LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
+    IniRead, properties, %ini_filename%, %ini_section%
+    Loop, Parse, properties, `n
+    {
+        key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
+        value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
+        object_destination[key] := value
+    }
 }
 
 ; Save delay settings
