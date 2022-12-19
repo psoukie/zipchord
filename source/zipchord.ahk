@@ -18,9 +18,8 @@ Class localeClass {
     cursory := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab"
     ; keys tracked by ZipChord for typing and chords
     keys := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; English default keyboard layout
-
 }
-default := New localeClass
+; stores current locale information 
 locale := New localeClass
 
 /* 
@@ -133,9 +132,7 @@ Initialize() {
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global locale
-    keys := locale.keys ; for some reason, AHK does not accept locale.keys as variable for Loop Parse
-    cursory := locale.cursory ; same as above
-    Loop Parse, keys
+    Loop Parse, % locale.keys
     {
         Hotkey, % "~" A_LoopField, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
@@ -149,7 +146,7 @@ WireHotkeys(state) {
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
-    Loop Parse, cursory , |
+    Loop Parse, % locale.cursory , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
@@ -653,12 +650,12 @@ SetDelays(new_input_delay, new_output_delay) {
 ; Load chords from a dictionary file
 LoadChords(file_name) {
     global locale
-    global default
+    default_locale := new localeClass
     chord_file := file_name
     pause_loading := true
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, %chord_file%
     chords := {}
-    locale.keys := default.keys
+    locale.keys := default_locale.keys
     Loop, Read, %chord_file%
     {
         pos := InStr(A_LoopReadLine, A_Tab)
