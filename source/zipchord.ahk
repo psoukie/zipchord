@@ -613,22 +613,24 @@ BuildLocaleGui() {
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, , &Locale name
     Gui, Add, Edit, w160 vUI_loc_name
-    Gui, Add, Text, , &All keys
+    Gui, Add, Text, , &All keys (except dead keys)
     Gui, Add, Edit, w400 vUI_loc_all, ',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz
-    Gui, Add, Text, , Space after (without Shift)
-    Gui, Add, Edit, w300 vUI_loc_space_after_plain
-    Gui, Add, Text, , Space after (with Shift)
-    Gui, Add, Edit, w300 vUI_loc_space_after_shift
-    Gui, Add, Text, , Capitalize after (without Shift)
-    Gui, Add, Edit, w300 vUI_loc_capitalizing_plain
-    Gui, Add, Text, , Capitalize after (with Shift)
-    Gui, Add, Edit, w300 vUI_loc_capitalizing_shift
-    Gui, Add, Text, , Opening punctuation (without Shift)
-    Gui, Add, Edit, w300 vUI_loc_opening_plain
-    Gui, Add, Text, , Opening punctuation (with Shift)
-    Gui, Add, Edit, w300 vUI_loc_opening_shift
-    Gui, Add, Button, w80, Cancel
-    Gui, Add, Button, w80, Save
+    Gui, Font, w700
+    Gui, Add, Text, yp+40, Punctuation
+    Gui, Add, Text, xs+160 yp, Unmodified keys
+    Gui, Add, Text, xs+300 yp, If Shift was pressed
+    Gui, Font, w400
+    Gui, Add, Text, xs, Follow by space
+    Gui, Add, Edit, xs+160 yp w120 vUI_loc_space_after_plain
+    Gui, Add, Edit, xs+300 yp w120 vUI_loc_space_after_shift
+    Gui, Add, Text, xs, Capitalize after
+    Gui, Add, Edit, xs+160 yp w120 vUI_loc_capitalizing_plain
+    Gui, Add, Edit, xs+300 yp w120 vUI_loc_capitalizing_shift
+    Gui, Add, Text, xs, Opening punctuation
+    Gui, Add, Edit, xs+160 yp w120 vUI_loc_opening_plain
+    Gui, Add, Edit, xs+300 yp w120 vUI_loc_opening_shift
+    Gui, Add, Button, xs yp+40 w80, Cancel
+    Gui, Add, Button, xs+300 yp w80, Save
 }
 
 UI_locale_windowButtonSave() {
