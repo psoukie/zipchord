@@ -428,28 +428,31 @@ global UI_dict := "none"
 global UI_entries := "0"
 global UI_on := 1
 global UI_tab := 0
+global UI_language
 
 ; Prepare UI
 BuildMenu() {
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Dictionary|Chord detection|Output|About
-    ; Gui, Add, GroupBox, w320 h130 Section, Dictionary
+    Gui, Add, Tab3, vUI_tab, Chord dictionary|Language settings|Chord detection|Output|About
     Gui, Add, Text, w280 vUI_dict Left, [file name]
     Gui, Add, Text, xp+10 y+m w280 vUI_entries Left, (999 chords)
     Gui, Add, Button, xs+20 gSelectDict y+m w80, &Open
     Gui, Add, Button, gEditDict xp+100 w80, &Edit
     Gui, Add, Button, gReloadDict xp+100 w80, &Reload
-    ; Gui, Add, GroupBox, xs ys+150 w320 h100 Section, Sensitivity
     Gui, Tab, 2
+    Gui, Add, Text, , &Language:
+    Gui, Add, DropDownList, xp+150 w130 vUI_language
+    Gui, Add, Button, xs+20 gNewLocale y+m w120, &Define new
+    Gui, Add, Button, xp+160 gEditLocale w120, &Customize
+    Gui, Tab, 3
     Gui, Add, Text, , &Detection delay (ms):
     Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs+20 y+m, &Restrict chords while typing
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
-    Gui, Tab, 3
+    Gui, Tab, 4
     Gui, Add, GroupBox, w290 h120 Section, Smart spaces
-    ;Gui, Add, Text, xs+20 ys+m +Wrap, When selected, smart spaces are dynamically added and removed as you type to ensure spaces between words, and avoid extra spaces around punctuation and doubled spaces when a manually typed space is combined with an automatic one.
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
@@ -457,11 +460,10 @@ BuildMenu() {
     Gui, Add, DropDownList, vUI_capitalization AltSubmit Right xp+150 w130, Off|For chords only|For all input
     Gui, Add, Text, xs y+m, O&utput delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-
     Gui, Tab
     Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
     Gui, Add, Button, Default w80 xs+220 yp, OK
-    Gui, Tab, 4
+    Gui, Tab, 5
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
     Gui, Font, Underline cBlue
     Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
@@ -485,6 +487,9 @@ ShowMenu() {
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_on, % settings.detection_enabled
+    IniRead, sections, languages.ini
+    GuiControl,, UI_language, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, Choose, UI_language, English US
     GuiControl, Choose, UI_tab, 1 ; switch to first tab 
     EnableDisableControls()
     Gui, Show,, ZipChord
@@ -578,6 +583,14 @@ ReloadDict() {
     WireHotkeys("Off")
     LoadChords(settings.chord_file)
     WireHotkeys("On")
+}
+
+NewLocale(){
+    MsgBox, , , Under construction
+}
+
+EditLocale(){
+    MsgBox, , , Under construction
 }
 
 ; ---------------------
