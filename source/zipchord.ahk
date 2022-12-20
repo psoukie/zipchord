@@ -585,12 +585,56 @@ ReloadDict() {
     WireHotkeys("On")
 }
 
+global UI_locale_window
+global UI_loc_name
+global UI_loc_all
+global UI_loc_interrupts
+global UI_loc_space_after_plain
+global UI_loc_space_after_shift
+global UI_loc_capitalizing_plain
+global UI_loc_capitalizing_shift
+global UI_loc_opening_plain
+global UI_loc_opening_shift
+
 NewLocale(){
-    MsgBox, , , Under construction
+    BuildLocaleGui()
+    Gui, UI_locale_window:Show
 }
 
 EditLocale(){
-    MsgBox, , , Under construction
+    BuildLocaleGui()
+    GuiControl Text, UI_loc_name, English TK
+    Gui, UI_locale_window:Show 
+}
+
+BuildLocaleGui() {
+    Gui, UI_locale_window:New, , Language settings
+    Gui, Margin, 20, 5
+    Gui, Font, s10, Segoe UI
+    Gui, Add, Text, , &Locale name
+    Gui, Add, Edit, w160 vUI_loc_name
+    Gui, Add, Text, , &All keys
+    Gui, Add, Edit, w400 vUI_loc_all, ',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz
+    Gui, Add, Text, , Space after (without Shift)
+    Gui, Add, Edit, w300 vUI_loc_space_after_plain
+    Gui, Add, Text, , Space after (with Shift)
+    Gui, Add, Edit, w300 vUI_loc_space_after_shift
+    Gui, Add, Text, , Capitalize after (without Shift)
+    Gui, Add, Edit, w300 vUI_loc_capitalizing_plain
+    Gui, Add, Text, , Capitalize after (with Shift)
+    Gui, Add, Edit, w300 vUI_loc_capitalizing_shift
+    Gui, Add, Text, , Opening punctuation (without Shift)
+    Gui, Add, Edit, w300 vUI_loc_opening_plain
+    Gui, Add, Text, , Opening punctuation (with Shift)
+    Gui, Add, Edit, w300 vUI_loc_opening_shift
+    Gui, Add, Button, w80, Cancel
+    Gui, Add, Button, w80, Save
+}
+
+UI_locale_windowButtonSave() {
+    Gui, Submit, NoHide
+    MsgBox, , , Magic
+    Gui, Submit
 }
 
 ; ---------------------
