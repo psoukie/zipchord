@@ -6,14 +6,6 @@ Note that the category headings are for orientation only, and do not affect the 
 
 See https://github.com/psoukie/zipchord for details.
 
-Suffixes
---------
-;g	~ing
-;d	~ed
-;s	~s
-'s	~’s
-;t	~tion
-;l	~ly
 
 Articles
 --------
@@ -119,6 +111,15 @@ Prefixes
 'm	mis~
 'o	out~
 'p	pre~
+
+Suffixes
+--------
+;g	~ing
+;d	~ed
+;s	~s
+'s	~’s
+;t	~tion
+;l	~ly
 
 Newly added
 -----------

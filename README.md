@@ -36,7 +36,11 @@ To open the menu, click the _ZipChord_ icon in the Windows tray or press and hol
 
 ### Dictionary
 
-The dictionary tab shows the currently loaded chord dictionary and the number of chords it contains. You can select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and **Reload** the dictionary when you make changes to the chord file directly in an editor.
+The dictionary tab shows the current keyboard and language settings and the currently loaded chord dictionary.
+
+**Keyboard and language** section allows you to modify or create settings for different keyboard layouts and languages. You can define new keyboard and language setting (**New**), delete the selected settings (**Delete**), or modify the selected settings (**Customize**). See [below for details](#keyboard-and-language-settings).
+
+**Chord dictionary** section shows the currently used dictionary and the number of chords that are available. It allows you to select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and reload a dictionary when you make changes to the chord file directly in an editor (**Reload**).
 
 You can download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point. 
 
@@ -44,7 +48,7 @@ You can download a dictionary from the [dictionaries](https://github.com/psoukie
 * See [below](#chord-dictionary) for more details about the chord dictionary file and advanced features.
 * When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
 
-### Chord detection
+### Detection
 
 This tab allows you to adjust the sensitivity and rules for the chord recognition. The basic idea behind the chords is that there needs to be a short minimum time that the keys are held together before being released (which is set by the "detection delay").
 
@@ -71,6 +75,12 @@ This tab allows you to change the typing and chord behavior to adjust how spaces
 - **For all input:** All text is automatically capitalized even for regular typing.
 
 **Output delay:** In some situations, the window you are typing in might be outputting the chords with some distortions (where keystrokes are replaced incorrectly). In that case, you can try setting the Output delay to 50ms, which can solve the issue.
+
+### About
+
+This tab shows you the information about the current version with links to this documentation and latest releases. There is also a checkbox for debugging that can help when submitting bug reports:  
+
+**Log this session (debugging):** When enabled, ZipChord will start store debugging information after you click **OK**. Type the input that exhibits a problem. When you reopen the ZipChord menu, the debugging will stops, and the text file with the debugging info will open.
 
 ### Enabling and Disabling the Chords
 
@@ -111,6 +121,24 @@ Note that chord detection works for suffixes and all chords will also be detecte
 
 - **Control keys**: Other keys can be entered using expressions in curly braces: {Left}, {Right}, {Up}, {Down} to move the cursor, or {Tab}, {Backspace} and {Enter} can all be used. When using these control keys (or the character "{"), the expanded text is interpreted using AutoHotkey's modifiers and special keys.
 - **Combinations**: You can combine these features for example to create a suffix that also deletes the last letter of the previous word. (In English, this can be useful to modify verbs where you need to drop the last -e. So to write the word "having" using chords, you can use a chord for "have" and then a chord for "ing" that would be expanded to `~{Backspace}ing` -- so it acts as a suffix which removes the last character.)
+
+## Keyboard and Language Settings
+
+A separate dialog allows you to create or modify the keyboard and language settings.
+
+**Locale name**: Name the lanugage setting in a way that makes it easy to identify. (The name does not influence the functionality.)
+
+When filling out all the remaining fields:
+* Do not press Shift or other modifier keys when you are entering the keys (even the list of keys under "If Shift was pressed" should be entered _without_ pressing Shift).
+* Do not include dead keys (keys that do not produce a character without pressing the next key).
+* Type all characeters one after another (do not separate by space or comma).
+
+- **All keys**: Enter a list of all the keys that can be typed from this keyboard layout.
+- **Remove space before**: Enter two sets of keys that -- when typed -- should have any preceding smart space removed from the output. For the set of keys "If Shift was pressed," do not press Shift. (Example on English keyboard: To include exclamation point ("!") on this list, input "1" under the If "Shift was pressed" list.)
+- **Follow by space**: List of keys that should be followed by a smart space (when smart spaces are enabled after punctuation).
+- **Capitalize after**: List of keys after which the next word should be capitalized (when automated capitaliation is used).
+
+When you create new settings for the keyboard and language, it is pre-populated with default values for English.  
 
 ## Feedback
 
