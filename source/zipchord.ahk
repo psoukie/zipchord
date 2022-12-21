@@ -49,7 +49,8 @@ Class settingsClass {
     chord_file := "" ; file name for the dictionary
     chord_delay := 0
     output_delay := 0
-    chording:= 0 ; Chord recognition options
+    chording := 0 ; Chord recognition options
+    debugging := false
 }
 ; stores current settings
 global settings := New settingsClass
@@ -81,6 +82,8 @@ global OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by mov
 global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
 ; new_output local variable is used to track the current key / output
+
+global debug := New DebugClass
 
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
@@ -150,8 +153,8 @@ WireHotkeys(state) {
 ; ------------------
 
 KeyDown:
-    Critical
     key := StrReplace(A_ThisHotkey, "Space", " ")
+    debug.Log("Key down -" key "- start")
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
     if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
         shifted := true
@@ -230,10 +233,11 @@ KeyDown:
     }
 
     last_output := new_output
+    debug.Log("Key down -" key "- end")
 Return
 
 KeyUp:
-    Critical
+    debug.Log("Key up - start")
     tempch := buffer
     st := start
     buffer := ""
@@ -242,6 +246,7 @@ KeyUp:
     if ( st && chord=="" && (A_TickCount - st > settings.chord_delay) ) {
         chord := tempch ; this is the chord candidate
         final_difference := difference
+        debug.Log("Key up - early end")
         Return
     }
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
@@ -302,6 +307,7 @@ KeyUp:
         chord := ""
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
+    debug.Log("Key up - end")
 Return
 
 ; Helper functions
@@ -433,6 +439,7 @@ global UI_entries := "0"
 global UI_on := 1
 global UI_tab := 0
 global UI_locale
+global UI_debugging
 
 ; Prepare UI
 BuildMenu() {
@@ -471,6 +478,7 @@ BuildMenu() {
     Gui, Add, Button, Default w80 xs+220 yp, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
+    Gui, Add, Checkbox, vUI_debugging, Log this session (debugging)
     Gui, Font, Underline cBlue
     Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
     Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
@@ -483,6 +491,7 @@ BuildMenu() {
 }
 
 ShowMenu() {
+    debug.Stop()
     GuiControl Text, UI_chord_delay, % settings.chord_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
@@ -493,6 +502,7 @@ ShowMenu() {
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_on, % settings.detection_enabled
+    GuiControl , , UI_debugging, 0
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
     EnableDisableControls()
@@ -538,6 +548,8 @@ ButtonOK:
     else
         WireHotkeys("Off")
     settings.detection_enabled := UI_on
+    if (UI_debugging)
+        debug.Start()
     CloseMenu()
 Return
 
@@ -790,4 +802,37 @@ LoadChords(file_name) {
         }
     }
     UpdateDictionaryUI()
+}
+
+;; Debugging
+; -----------
+
+Class DebugClass {
+    static debug_file := ""
+    Start() {
+        FileDelete, "debug.txt"
+        this.debug_file := FileOpen("debug.txt", "w")
+        this.Write("Please copy the actual text output of your typing below: `n`OUTPUT:`n`nINPUT LOG:`n")        
+        this.Write("Event`tlast`tfixed`tbuffer`tchord`tstart`n")
+    }
+    Log(output) {
+        global buffer
+        global chord
+        if (this.debug_file != "") {
+            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" buffer "`t" chord "`t" start "`n"
+            this.Write(output)
+        }
+    }
+    Write(output) {
+        if (A_Args[1] == "debug-vs")
+            OutputDebug, % output
+        this.debug_file.Write(output)
+    }
+    Stop() {
+        if (this.debug_file != "") {
+            this.debug_file.Close()
+            this.debug_file := ""
+            Run % "debug.txt"
+        }
+    }
 }
