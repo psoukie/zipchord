@@ -154,7 +154,7 @@ WireHotkeys(state) {
 
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
-    debug.Log("Key down -" key "- start")
+    debug.Log("KeyDown " key)
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
     if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
         shifted := true
@@ -175,6 +175,7 @@ KeyDown:
         start := A_TickCount 
         if (shifted)
             buffer .= "+"  ; hack to communicate Shift was pressed
+        debug.Log("Two keys in buffer.")
     }
 
     if (!start)
@@ -233,11 +234,11 @@ KeyDown:
     }
 
     last_output := new_output
-    debug.Log("Key down -" key "- end")
+    debug.Log("/KeyDown: " key)
 Return
 
 KeyUp:
-    debug.Log("Key up - start")
+    debug.Log("KeyUp")
     tempch := buffer
     st := start
     buffer := ""
@@ -246,11 +247,12 @@ KeyUp:
     if ( st && chord=="" && (A_TickCount - st > settings.chord_delay) ) {
         chord := tempch ; this is the chord candidate
         final_difference := difference
-        debug.Log("Key up - early end")
+        debug.Log("/KeyUp-chord")
         Return
     }
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord != "") {
+        debug.Write("Starting chord for: " chord)
         if (InStr(chord, "+")) {
             ;if Shift is not allowed as a chord key, we just capitalize the chord.
             if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
@@ -261,7 +263,8 @@ KeyUp:
         sorted := Arrange(chord)
         Sleep settings.output_delay
         if (chords.HasKey(sorted)) {
-            exp := chords[sorted] ; store the expanded text       
+            exp := chords[sorted] ; store the expanded text
+            debug.Log("Chord for:" exp)
             ; detect and adjust expansion for suffixes and prefixes
             if (SubStr(exp, 1, 1) == "~") {
                 exp := SubStr(exp, 2)
@@ -307,7 +310,7 @@ KeyUp:
         chord := ""
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
-    debug.Log("Key up - end")
+    debug.Log("/KeyUp-fixed")
 Return
 
 ; Helper functions
@@ -810,23 +813,29 @@ LoadChords(file_name) {
 Class DebugClass {
     static debug_file := ""
     Start() {
+        global keys
         FileDelete, "debug.txt"
         this.debug_file := FileOpen("debug.txt", "w")
-        this.Write("Please copy the actual text output of your typing below: `n`OUTPUT:`n`nINPUT LOG:`n")        
-        this.Write("Event`tlast`tfixed`tbuffer`tchord`tstart`n")
+        this.Write("Please copy the actual text output of your typing below:`n`OUTPUT:`n`nZIPCHORD SETTINGS:")
+        For key, value in settings
+            this.Write(key "=" value)
+        this.Write("LOCALE SETTINGS:")
+        For key, value in keys
+            this.Write(key "=" value)
+        this.Write("`nINPUT LOG:`nEvent`tTimestamp`tlast_output`tfixed_output`tbuffer`tchord`tstart")       
     }
     Log(output) {
         global buffer
         global chord
         if (this.debug_file != "") {
-            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" buffer "`t" chord "`t" start "`n"
+            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" buffer "`t" chord "`t" start
             this.Write(output)
         }
     }
     Write(output) {
         if (A_Args[1] == "debug-vs")
-            OutputDebug, % output
-        this.debug_file.Write(output)
+            OutputDebug, % output "`n"
+        this.debug_file.Write(output "`n")
     }
     Stop() {
         if (this.debug_file != "") {
