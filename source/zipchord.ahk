@@ -789,19 +789,14 @@ LoadChords(file_name) {
     Loop, Read, % file_name
     {
         pos := InStr(A_LoopReadLine, A_Tab)
-        if (pos) {
-            if (SubStr(A_LoopReadLine, 1, pos-1) == "custom_keys")
-                keys.all := Arrange(SubStr(A_LoopReadLine, pos+1))
-            else
-                if (! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
-                    if (pause_loading) {
-                        MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
-                        IfMsgBox Yes
-                            pause_loading := false
-                        else
-                            Break
-                    }
-                }
+        if (pos && ! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
+            if (pause_loading) {
+                MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
+                IfMsgBox Yes
+                    pause_loading := false
+                else
+                    Break
+            }
         }
     }
     UpdateDictionaryUI()
