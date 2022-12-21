@@ -14,14 +14,13 @@ global version = "1.8.4"
 
 ; Locale settings (keyboard and language settings) with default values (US English)
 Class localeClass {
-    all := "',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
-    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
+    all := "`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
+    remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
+    remove_space_shift := "1/;',-.235678]=\"  ; keys combined with Shift that delete any smart space before them.
     space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
     space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
     capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
     capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-    opening_plain := "'-/=\]"  ; unmodified keys that can be followed by a chord without a space.
-    opening_shift := "',-./23456789;=\]"  ; keys combined with Shift that can be followed by a chord without a space.
 }
 ; stores current locale information 
 keys := New localeClass
@@ -44,6 +43,7 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 ; Current application settings
 Class settingsClass {
     detection_enabled := 1 ; maps to UI_on for whether the chord recognition is enabled
+    locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD ; smart spacing options 
     chord_file := "" ; file name for the dictionary
@@ -72,7 +72,7 @@ global final_difference := DIF_NONE
 ; Characteristics of last output: constants and variables
 global OUT_CHARACTER := 1     ; output is a character
 global OUT_SPACE := 2         ; output was a space
-global OUT_PUNCTUATION := 4 ; output was a punctuation
+global OUT_PUNCTUATION := 4   ; output was a punctuation
 global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
 global OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
 global OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
@@ -120,6 +120,7 @@ Initialize() {
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
     Loop Parse, % keys.all
     {
         Hotkey, % "~" A_LoopField, KeyDown, %state% UseErrorLevel
@@ -134,7 +135,7 @@ WireHotkeys(state) {
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
-    Loop Parse, % keys.interrupts , |
+    Loop Parse, % interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
@@ -176,7 +177,7 @@ KeyDown:
     if (!start)
         difference := DIF_NONE   ; a chord is not being formed, so we reset the diff between keys and output.
 
-    ; Now, we categorize the current output and adjust on the fly as needed:
+    ; Now, we carry over capitalization and categorize the new output on the fly as needed:
     new_output := OUT_CHARACTER | (last_output & OUT_CAPITALIZE)
 
     ; if the key pressed is a space
@@ -188,9 +189,9 @@ KeyDown:
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
 
-    ; if it's punctuation needing space adjustments
-    if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
-        new_output := OUT_PUNCTUATION
+    ; if it's punctuation that removes a smart space before it 
+    if ( (! shifted && InStr(keys.remove_space_plain, key)) || (shifted && InStr(keys.remove_space_shift, key)) ) {
+        new_output |= OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             SendInput {Backspace}{Backspace}
             difference |= DIF_REMOVED_SMART_SPACE
@@ -199,6 +200,11 @@ KeyDown:
             else
                 SendInput %key%
         }
+    }
+
+    ; if it's punctuation that adds a smart space
+    if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
+        new_output |= OUT_PUNCTUATION
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( settings.spacing & SPACE_PUNCTUATION ) {
             SendInput {Space}
@@ -207,22 +213,21 @@ KeyDown:
         }
     }
 
-    ; if it's neither, it should be a regural character, and it might need capitalization
-    if (new_output & OUT_CHARACTER) {
-        if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
-            cap_key := RegExReplace(key, "(.*)", "$U1")
-            SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version.  Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
-            new_output := new_output & ~OUT_CAPITALIZE
-        }
-    }
-
     ; set 'uppercase' for punctuation that capitalizes following text 
     if ( (! shifted && InStr(keys.capitalizing_plain, key)) || (shifted && InStr(keys.capitalizing_shift, key)) )
         new_output |= OUT_CAPITALIZE
 
-    ; mark output that can be followed by another word/chord without a space 
-    if ( (! shifted && InStr(keys.opening_plain, key)) || (shifted && InStr(keys.opening_shift, key)) )
-        new_output |= OUT_PREFIX
+    ; if it's neither, it should be a regural character, and it might need capitalization
+    if ( !(new_output & OUT_PUNCTUATION) && !(new_output & OUT_SPACE) ) {
+        if (shifted)
+            new_output := new_output & ~OUT_CAPITALIZE ; manually capitalized, so the flag get turned off
+        else
+            if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
+                cap_key := RegExReplace(key, "(.*)", "$U1")
+                SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
+                new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag get turned off
+            }
+    }
 
     last_output := new_output
 Return
@@ -428,31 +433,33 @@ global UI_dict := "none"
 global UI_entries := "0"
 global UI_on := 1
 global UI_tab := 0
-global UI_language
+global UI_locale
 
 ; Prepare UI
 BuildMenu() {
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Chord dictionary|Language settings|Chord detection|Output|About
-    Gui, Add, Text, w280 vUI_dict Left, [file name]
-    Gui, Add, Text, xp+10 y+m w280 vUI_entries Left, (999 chords)
-    Gui, Add, Button, xs+20 gSelectDict y+m w80, &Open
-    Gui, Add, Button, gEditDict xp+100 w80, &Edit
-    Gui, Add, Button, gReloadDict xp+100 w80, &Reload
+    Gui, Add, Tab3, vUI_tab, Dictionary|Detection|Output|About
+    Gui, Add, GroupBox, w310 h110, Keyboard and language
+    Gui, Add, Text, xp+20 yp+30 Section, &Setting:
+    Gui, Add, DropDownList, xs+95 ys w150 vUI_locale
+    Gui, Add, Button, xs w80 gButtonNewLocale, &New
+    Gui, Add, Button, x+m w80 gButtonDeleteLocale, &Delete
+    Gui, Add, Button, x+m w80 gButtonEditLocale, &Customize
+    Gui, Add, GroupBox, xs-20 ym+170 w310 h130, Chord dictionary
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_dict Left, [file name]
+    Gui, Add, Text, xs+10 y+5 w240 vUI_entries Left, (999 chords)
+    Gui, Add, Button, xs Section gButtonSelectDictionary w80, &Open
+    Gui, Add, Button, gButtonEditDictionary ys w80, &Edit
+    Gui, Add, Button, gButtonReloadDictionary ys w80, &Reload
     Gui, Tab, 2
-    Gui, Add, Text, , &Language:
-    Gui, Add, DropDownList, xp+150 w130 vUI_language
-    Gui, Add, Button, xs+20 gNewLocale y+m w120, &Define new
-    Gui, Add, Button, xp+160 gEditLocale w120, &Customize
-    Gui, Tab, 3
-    Gui, Add, Text, , &Detection delay (ms):
+    Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
-    Gui, Add, Checkbox, vUI_restrict_chords xs+20 y+m, &Restrict chords while typing
+    Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
-    Gui, Tab, 4
-    Gui, Add, GroupBox, w290 h120 Section, Smart spaces
+    Gui, Tab, 3
+    Gui, Add, GroupBox, w310 h120 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
@@ -463,7 +470,7 @@ BuildMenu() {
     Gui, Tab
     Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
     Gui, Add, Button, Default w80 xs+220 yp, OK
-    Gui, Tab, 5
+    Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
     Gui, Font, Underline cBlue
     Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
@@ -487,12 +494,16 @@ ShowMenu() {
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_on, % settings.detection_enabled
-    IniRead, sections, languages.ini
-    GuiControl,, UI_language, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, Choose, UI_language, English US
-    GuiControl, Choose, UI_tab, 1 ; switch to first tab 
+    GuiControl, Choose, UI_tab, 1 ; switch to first tab
+    UpdateLocaleInMainUI(settings.locale)
     EnableDisableControls()
     Gui, Show,, ZipChord
+}
+
+UpdateLocaleInMainUI(selected_loc) {
+    IniRead, sections, languages.ini
+    GuiControl, 1:, UI_locale, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, 1:Choose, UI_locale, % selected_loc
 }
 
 ; sets UI controls to enabled/disabled to reflect chord recognition setting 
@@ -511,20 +522,24 @@ EnableDisableControls() {
 
 ButtonOK:
     Gui, Submit, NoHide
+    global keys
+    if (SetDelays(UI_chord_delay, UI_output_delay) == false)
+        Return
     settings.capitalization := UI_capitalization
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, % settings.capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, % settings.spacing
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Chording, % settings.chording
-    if SetDelays(UI_chord_delay, UI_output_delay) {
-        if (UI_on && !settings.detection_enabled)
-            WireHotkeys("On")
-        if (settings.detection_enabled && !UI_on)
-            WireHotkeys("Off")
-        settings.detection_enabled := UI_on
-        CloseMenu()
-    }
+    settings.locale := UI_locale
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Locale, % settings.locale
+    LoadPropertiesFromIni(keys, UI_locale, "languages.ini")
+    if (UI_on)
+        WireHotkeys("On")
+    else
+        WireHotkeys("Off")
+    settings.detection_enabled := UI_on
+    CloseMenu()
 Return
 
 GuiClose:
@@ -543,11 +558,15 @@ CloseMenu() {
 
 WebsiteLink:
 Run https://github.com/psoukie/zipchord#readme
-return
+Return
+
+LocaleLink:
+Run https://github.com/psoukie/zipchord#keyboard-and-language-settings
+Return
 
 ReleaseLink:
 Run https://github.com/psoukie/zipchord/releases
-return
+Return
 
 ; Functions supporting UI
 
@@ -564,7 +583,7 @@ UpdateDictionaryUI() {
 }
 
 ; Run Windows File Selection to open a dictionary
-SelectDict() {
+ButtonSelectDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
@@ -574,77 +593,101 @@ SelectDict() {
 }
 
 ; Edit a dictionary in default editor
-EditDict() {
+ButtonEditDictionary() {
     Run % settings.chord_file
 }
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
-ReloadDict() {
-    WireHotkeys("Off")
+ButtonReloadDictionary() {
     LoadChords(settings.chord_file)
-    WireHotkeys("On")
 }
 
 global UI_locale_window
 global UI_loc_name
 global UI_loc_all
-global UI_loc_interrupts
 global UI_loc_space_after_plain
 global UI_loc_space_after_shift
 global UI_loc_capitalizing_plain
 global UI_loc_capitalizing_shift
-global UI_loc_opening_plain
-global UI_loc_opening_shift
+global UI_loc_remove_space_plain
+global UI_loc_remove_space_shift
 
-NewLocale(){
-    BuildLocaleGui()
-    Gui, UI_locale_window:Show
+ButtonNewLocale(){
+    new_locale := new localeClass
+    BuildLocaleGui("New", new_locale)
 }
 
-EditLocale(){
-    BuildLocaleGui()
-    GuiControl Text, UI_loc_name, English TK
-    Gui, UI_locale_window:Show 
+ButtonDeleteLocale(){
+    Gui, Submit, NoHide ; to get the currently selected UI_locale
+    MsgBox, 4, ZipChord, % "Do you really want to delete the keyboard and language settings for " UI_locale "?"
+    IfMsgBox Yes
+    {
+        IniDelete, languages.ini, %UI_locale%
+        UpdateLocaleInMainUI(1)
+    }
 }
 
-BuildLocaleGui() {
-    Gui, UI_locale_window:New, , Language settings
+ButtonEditLocale(){
+    Gui, Submit, NoHide ; to get the currently selected UI_locale
+    selected_locale := {}
+    LoadPropertiesFromIni(selected_locale, UI_locale, "languages.ini")
+    BuildLocaleGui(UI_locale, selected_locale)
+}
+
+BuildLocaleGui(locale_name, loc_obj) {
+    WireHotkeys("Off")  ; so the user can edit the values without interference
+    Gui, UI_locale_window:New, , Keyboard and language settings
     Gui, Margin, 20, 5
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, , &Locale name
-    Gui, Add, Edit, w160 vUI_loc_name
+    Gui, Add, Edit, w160 r1 vUI_loc_name, % locale_name
     Gui, Add, Text, , &All keys (except dead keys)
-    Gui, Add, Edit, w400 vUI_loc_all, ',-./0123456789;=[\]abcdefghijklmnopqrstuvwxyz
+    Gui, Add, Edit, w400 r1 vUI_loc_all, % loc_obj.all
     Gui, Font, w700
     Gui, Add, Text, yp+40, Punctuation
     Gui, Add, Text, xs+160 yp, Unmodified keys
     Gui, Add, Text, xs+300 yp, If Shift was pressed
     Gui, Font, w400
-    Gui, Add, Text, xs, Follow by space
-    Gui, Add, Edit, xs+160 yp w120 vUI_loc_space_after_plain
-    Gui, Add, Edit, xs+300 yp w120 vUI_loc_space_after_shift
+    Gui, Add, Text, xs, Remove space before
+    Gui, Add, Edit, xs+160 yp w120 r1 vUI_loc_remove_space_plain, % loc_obj.remove_space_plain
+    Gui, Add, Edit, xs+300 yp w120 r1 vUI_loc_remove_space_shift, % loc_obj.remove_space_shift
+    Gui, Add, Text, xs, Follow by a space
+    Gui, Add, Edit, xs+160 yp w120 r1 vUI_loc_space_after_plain, % loc_obj.space_after_plain
+    Gui, Add, Edit, xs+300 yp w120 r1 vUI_loc_space_after_shift, % loc_obj.space_after_shift
     Gui, Add, Text, xs, Capitalize after
-    Gui, Add, Edit, xs+160 yp w120 vUI_loc_capitalizing_plain
-    Gui, Add, Edit, xs+300 yp w120 vUI_loc_capitalizing_shift
-    Gui, Add, Text, xs, Opening punctuation
-    Gui, Add, Edit, xs+160 yp w120 vUI_loc_opening_plain
-    Gui, Add, Edit, xs+300 yp w120 vUI_loc_opening_shift
-    Gui, Add, Button, xs yp+40 w80, Cancel
-    Gui, Add, Button, xs+300 yp w80, Save
+    Gui, Add, Edit, xs+160 yp w120 r1 vUI_loc_capitalizing_plain, % loc_obj.capitalizing_plain
+    Gui, Add, Edit, xs+300 yp w120 r1 vUI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
+    Gui, Add, Button, xs+100 yp+40 w80 gCancel, Cancel
+    Gui, Add, Button, yp x+20 w80 Default, Save
+    Gui, Font, Underline cBlue
+    Gui, Add, Text, xs Y+m gLocaleLink, Help with language settings
+    Gui, UI_locale_window:Show
 }
 
+UI_locale_windowGuiEscape:
+    Gui, Submit
+Return
+
 UI_locale_windowButtonSave() {
+    new_loc := new localeClass
     Gui, Submit, NoHide
-    MsgBox, , , Magic
+    new_loc.all := UI_loc_all
+    new_loc.space_after_plain := UI_loc_space_after_plain
+    new_loc.space_after_shift := UI_loc_space_after_shift
+    new_loc.capitalizing_plain := UI_loc_capitalizing_plain
+    new_loc.capitalizing_shift := UI_loc_capitalizing_shift
+    new_loc.remove_space_plain := UI_loc_remove_space_plain
+    new_loc.remove_space_shift := UI_loc_remove_space_shift
+    SavePropertiesToIni(new_loc, UI_loc_name, "languages.ini")
+    UpdateLocaleInMainUI(UI_loc_name)
     Gui, Submit
 }
 
-; ---------------------
-;;  Saving and Loading
-; ---------------------
-
 ; Read settings from Windows Registry and locate dictionary file
 ReadSettings() {
+    RegRead locale, HKEY_CURRENT_USER\Software\ZipChord, Locale
+    if ErrorLevel
+        locale := "English US"
     RegRead chord_delay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
     if ErrorLevel
         SetDelays(90, 0)
@@ -660,6 +703,8 @@ ReadSettings() {
     RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
     if ErrorLevel
         capitalization := CAP_CHORDS
+    if (!FileExist("languages.ini"))
+       SavePropertiesToIni(keys, "English US", "languages.ini")
     RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
     if (ErrorLevel || !FileExist(chord_file)) {
         errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
@@ -681,6 +726,7 @@ ReadSettings() {
         MsgBox ,, ZipChord, %errmsg%
     }
     ; I couldn't find a way to read the values directly into the settings object, so assigning below:
+    settings.locale := locale
     settings.chord_delay := chord_delay
     settings.output_delay := output_delay
     settings.chording := chording
