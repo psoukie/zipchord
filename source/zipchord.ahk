@@ -242,7 +242,6 @@ KeyUp:
     if ( st && chord=="" && (A_TickCount - st > settings.chord_delay) ) {
         chord := tempch ; this is the chord candidate
         final_difference := difference
-        start := 0
         Return
     }
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
