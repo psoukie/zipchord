@@ -232,12 +232,11 @@ KeyDown:
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag get turned off
             }
     }
-
     last_output := new_output
-    debug.Log("/KeyDown: " key)
 Return
 
 KeyUp:
+    Critical
     debug.Log("KeyUp")
     tempch := buffer
     st := start
@@ -248,11 +247,11 @@ KeyUp:
         chord := tempch ; this is the chord candidate
         final_difference := difference
         debug.Log("/KeyUp-chord")
+        Critical Off
         Return
     }
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord != "") {
-        debug.Write("Starting chord for: " chord)
         if (InStr(chord, "+")) {
             ;if Shift is not allowed as a chord key, we just capitalize the chord.
             if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
@@ -261,7 +260,6 @@ KeyUp:
             }
         }
         sorted := Arrange(chord)
-        Sleep settings.output_delay
         if (chords.HasKey(sorted)) {
             exp := chords[sorted] ; store the expanded text
             debug.Log("Chord for:" exp)
@@ -280,6 +278,9 @@ KeyUp:
             }
             ; if we aren't restricted, we print a chord
             if (suffix || IsUnrestricted()) {
+                if (settings.output_delay)
+                    Sleep settings.output_delay
+                debug.Log("OUTPUTTING")
                 RemoveRawChord(sorted)
                 OpeningSpace(suffix)
                 if (InStr(exp, "{")) {
@@ -301,6 +302,12 @@ KeyUp:
                     last_output := OUT_SPACE | OUT_AUTOMATIC
                 }
             }
+            else {
+                ; output was restricted
+                fixed_output := last_output
+                chord := ""
+                debug.Log("RESTRICTED")
+            }
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
@@ -311,6 +318,7 @@ KeyUp:
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
     debug.Log("/KeyUp-fixed")
+    Critical Off
 Return
 
 ; Helper functions
@@ -369,6 +377,7 @@ Arrange(raw) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
+    debug.Write("Interrupted")
 Return
 
 Enter_key:
@@ -822,7 +831,7 @@ Class DebugClass {
     Log(output) {
         global buffer
         global chord
-        if (this.debug_file != "") {
+        if ( (this.debug_file != "") || (A_Args[1] == "debug-vs") ) {
             output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" buffer "`t" chord "`t" start
             this.Write(output)
         }
@@ -830,7 +839,8 @@ Class DebugClass {
     Write(output) {
         if (A_Args[1] == "debug-vs")
             OutputDebug, % output "`n"
-        this.debug_file.Write(output "`n")
+        if (this.debug_file != "")
+            this.debug_file.Write(output "`n")
     }
     Stop() {
         if (this.debug_file != "") {
