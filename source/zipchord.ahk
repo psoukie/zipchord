@@ -45,7 +45,7 @@ Class settingsClass {
     detection_enabled := 1 ; maps to UI_on for whether the chord recognition is enabled
     locale := "English US"
     capitalization := CAP_CHORDS
-    spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD ; smart spacing options 
+    spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chord_file := "" ; file name for the dictionary
     chord_delay := 0
     output_delay := 0
@@ -113,6 +113,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
+    FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
     BuildMenu()
     ReadSettings()
     LoadChords(settings.chord_file)
@@ -522,7 +523,7 @@ ShowMenu() {
 }
 
 UpdateLocaleInMainUI(selected_loc) {
-    IniRead, sections, languages.ini
+    IniRead, sections, locales.ini
     GuiControl, 1:, UI_locale, % "|" StrReplace(sections, "`n", "|")
     GuiControl, 1:Choose, UI_locale, % selected_loc
 }
@@ -554,7 +555,7 @@ ButtonOK:
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Chording, % settings.chording
     settings.locale := UI_locale
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Locale, % settings.locale
-    LoadPropertiesFromIni(keys, UI_locale, "languages.ini")
+    LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
     if (UI_on)
         WireHotkeys("On")
     else
@@ -645,7 +646,7 @@ ButtonDeleteLocale(){
     MsgBox, 4, ZipChord, % "Do you really want to delete the keyboard and language settings for " UI_locale "?"
     IfMsgBox Yes
     {
-        IniDelete, languages.ini, %UI_locale%
+        IniDelete, locales.ini, %UI_locale%
         UpdateLocaleInMainUI(1)
     }
 }
@@ -653,7 +654,7 @@ ButtonDeleteLocale(){
 ButtonEditLocale(){
     Gui, Submit, NoHide ; to get the currently selected UI_locale
     selected_locale := {}
-    LoadPropertiesFromIni(selected_locale, UI_locale, "languages.ini")
+    LoadPropertiesFromIni(selected_locale, UI_locale, "locales.ini")
     BuildLocaleGui(UI_locale, selected_locale)
 }
 
@@ -701,7 +702,7 @@ UI_locale_windowButtonSave() {
     new_loc.capitalizing_shift := UI_loc_capitalizing_shift
     new_loc.remove_space_plain := UI_loc_remove_space_plain
     new_loc.remove_space_shift := UI_loc_remove_space_shift
-    SavePropertiesToIni(new_loc, UI_loc_name, "languages.ini")
+    SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
     UpdateLocaleInMainUI(UI_loc_name)
     Gui, Submit
 }
@@ -726,14 +727,14 @@ ReadSettings() {
     RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
     if ErrorLevel
         capitalization := CAP_CHORDS
-    if (!FileExist("languages.ini"))
-       SavePropertiesToIni(keys, "English US", "languages.ini")
+    if (!FileExist("locales.ini"))
+       SavePropertiesToIni(keys, "English US", "locales.ini")
     RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
     if (ErrorLevel || !FileExist(chord_file)) {
-        errmsg := ErrorLevel ? "" : Format("The last used dictionary {} could not be found.`n`n", chord_file)
-        ; If we don't have the dictionary, try other files with the following filename convention instead. (This is useful if the user downloaded ZipChord and a preexisting dictionary and has them in the same folder.)
+        errmsg := ErrorLevel ? "" : Format("The last used dictionary '{}' could not be found.`n`n", chord_file)
+        ; If we don't have the dictionary, try opening the first file with chords* structure.
         chord_file := "chords*.txt"
-        if FileExist(settings.chord_file) {
+        if FileExist(chord_file) {
             Loop, Files, %chord_file%
                 flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
             Sort flist
