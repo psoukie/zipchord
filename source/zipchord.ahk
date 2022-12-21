@@ -14,7 +14,7 @@ global version = "1.9.0"
 
 ; Locale settings (keyboard and language settings) with default values (US English)
 Class localeClass {
-    all := "`1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
+    all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
     remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
     remove_space_shift := "1/;',-.235678]=\"  ; keys combined with Shift that delete any smart space before them.
     space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
