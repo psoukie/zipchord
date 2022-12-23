@@ -38,7 +38,7 @@ To open the menu, click the _ZipChord_ icon in the Windows tray or press and hol
 
 The dictionary tab shows the current keyboard and language settings and the currently loaded chord dictionary.
 
-**Keyboard and language** section allows you to modify or create settings for different keyboard layouts and languages. You can define new keyboard and language setting (**New**), delete the selected settings (**Delete**), or modify the selected settings (**Customize**). See [below for details](#keyboard-and-language-settings).
+**Keyboard and language** section allows you to select and modify settings for different keyboard layouts and languages. You can modify or define new keyboard and language setting by clicking the **Customize** button. See [below for details](#keyboard-and-language-settings).
 
 **Chord dictionary** section shows the currently used dictionary and the number of chords that are available. It allows you to select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and reload a dictionary when you make changes to the chord file directly in an editor (**Reload**).
 
@@ -117,7 +117,7 @@ The words entered using a chord can include the following special features:
 - **Suffixes**: To define suffixes that can be entered using a chord and joined to the last word, start the word definition with ~. Example: `;g  ~ing` (pressing **`;`** and **`G`** together will add "ing" to the last word).
 - **Prefixes**: For prefixes, place the `~` at the end of the prefix (such as `pre~`). This will ensure there will be no space after the chord.
 
-Note that chord detection works for suffixes and all chords will also be detected when they follow a chorded prefix even when the 'Restrict chords while typing' is enabled.
+Note that chord detection works for suffixes and all chords will also be detected when they follow a chorded prefix even when the '_Restrict chords while typing_' is enabled.
 
 - **Control keys**: Other keys can be entered using expressions in curly braces: {Left}, {Right}, {Up}, {Down} to move the cursor, or {Tab}, {Backspace} and {Enter} can all be used. When using these control keys (or the character "{"), the expanded text is interpreted using AutoHotkey's modifiers and special keys.
 - **Combinations**: You can combine these features for example to create a suffix that also deletes the last letter of the previous word. (In English, this can be useful to modify verbs where you need to drop the last -e. So to write the word "having" using chords, you can use a chord for "have" and then a chord for "ing" that would be expanded to `~{Backspace}ing` -- so it acts as a suffix which removes the last character.)
@@ -126,19 +126,24 @@ Note that chord detection works for suffixes and all chords will also be detecte
 
 A separate dialog allows you to create or modify the keyboard and language settings.
 
-**Locale name**: Name the lanugage setting in a way that makes it easy to identify. (The name does not influence the functionality.)
+**Locale name**: Name the keyboard and lanugage setting which is currently shown. (The name does not influence the functionality.)
 
-When filling out all the remaining fields:
-* Do not press Shift or other modifier keys when you are entering the keys (even the list of keys under "If Shift was pressed" should be entered _without_ pressing Shift).
+You can use the **Rename** button to rename the selected setting, delete it using the **Delete** button, or use the **New** button to create a new locale setting.
+
+### Locale Settings
+
+The "Locale settings" section on the right side of this window shows the detailed settings of the selected locale. (When you create a new locale setting, this area will be pre-populated with default US English values for new locale settings.)
+
+When filling out the fields in this area:
+* Do not press Shift or other modifier keys when you are entering the keys. Even the list of keys under the _If Shift was pressed_ column should be entered without pressing Shift. For example (on English keyboard), to include an exclamation point (`!`), you would enter "`1`" under the _If Shift was pressed_ column.
 * Do not include dead keys (keys that do not produce a character without pressing the next key).
 * Type all characeters one after another (do not separate by space or comma).
 
 - **All keys**: Enter a list of all the keys that can be typed from this keyboard layout.
-- **Remove space before**: Enter two sets of keys that -- when typed -- should have any preceding smart space removed from the output. For the set of keys "If Shift was pressed," do not press Shift. (Example on English keyboard: To include exclamation point ("!") on this list, input "1" under the If "Shift was pressed" list.)
+- **Remove space before**: Enter two sets of keys that -- when typed -- should have any preceding smart space removed from the output. For the set of keys "If Shift was pressed," do not press Shift.
 - **Follow by space**: List of keys that should be followed by a smart space (when smart spaces are enabled after punctuation).
 - **Capitalize after**: List of keys after which the next word should be capitalized (when automated capitaliation is used).
-
-When you create new settings for the keyboard and language, it is pre-populated with default values for English.  
+- **Other**: Any other keys that should be recognized as punctuation.
 
 ## Feedback
 

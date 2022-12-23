@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.9.0"
+global version = "1.9.2"
 
 ; ------------------
 ;; Global Variables
@@ -16,11 +16,13 @@ global version = "1.9.0"
 Class localeClass {
     all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
     remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
-    remove_space_shift := "1/;',-.235678]=\"  ; keys combined with Shift that delete any smart space before them.
+    remove_space_shift := "1/;'-.235678]=\"  ; keys combined with Shift that delete any smart space before them.
     space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
     space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
     capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
     capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
+    other_plain := "[" ; unmodified keys for other punctuation
+    other_shift := "9,["  ; other punctuation keys when modified by Shift
 }
 ; stores current locale information 
 keys := New localeClass
@@ -96,7 +98,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ~^+c::
     Sleep 300
     if GetKeyState("c","P")
-        ShowMenu()
+        ShowMainDialog()
     Return
 
 ; An always-on Ctrl+C hotkey held long to add a new chord to the dictionary.
@@ -114,11 +116,12 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-    BuildMenu()
     ReadSettings()
+    BuildMainDialog()
+    BuildLocaleDialog()
     LoadChords(settings.chord_file)
     WireHotkeys("On")
-    ShowMenu()
+    ShowMainDialog()
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
@@ -193,6 +196,10 @@ KeyDown:
         }
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
+
+    ; if it's punctuation which doesn't do anything but separates words
+    if ( (! shifted && InStr(keys.other_plain, key)) || (shifted && InStr(keys.other_shift, key)) )
+        new_output |= OUT_PUNCTUATION
 
     ; if it's punctuation that removes a smart space before it 
     if ( (! shifted && InStr(keys.remove_space_plain, key)) || (shifted && InStr(keys.remove_space_shift, key)) ) {
@@ -344,8 +351,8 @@ IsUnrestricted() {
     ; If we're in unrestricted mode, we're good
     if (!(settings.chording & CHORD_RESTRICT))
         Return true
-    ; If last output was automated (smart space or chord), a 'prefix' (which  includes opening punctuation), it was interrupted, or it was a space, we can also go ahead.
-    if ( (fixed_output & OUT_AUTOMATIC) || (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
+    ; If last output was automated (smart space or chord), punctuation, a 'prefix' (which  includes opening punctuation), it was interrupted, or it was a space, we can also go ahead.
+    if ( (fixed_output & OUT_AUTOMATIC) || (fixed_output & OUT_PUNCTUATION) || (fixed_output & OUT_PREFIX) || (fixed_output & OUT_INTERRUPTED) || (fixed_output & OUT_SPACE) )
         Return true
     Return false
 }
@@ -455,17 +462,15 @@ global UI_locale
 global UI_debugging
 
 ; Prepare UI
-BuildMenu() {
+BuildMainDialog() {
+    Gui, UI_main_window:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
     Gui, Add, Tab3, vUI_tab, Dictionary|Detection|Output|About
-    Gui, Add, GroupBox, w310 h110, Keyboard and language
-    Gui, Add, Text, xp+20 yp+30 Section, &Setting:
-    Gui, Add, DropDownList, xs+95 ys w150 vUI_locale
-    Gui, Add, Button, xs w80 gButtonNewLocale, &New
-    Gui, Add, Button, x+m w80 gButtonDeleteLocale, &Delete
-    Gui, Add, Button, x+m w80 gButtonEditLocale, &Customize
-    Gui, Add, GroupBox, xs-20 ym+170 w310 h130, Chord dictionary
+    Gui, Add, GroupBox, w310 h80, Keyboard and language
+    Gui, Add, DropDownList, xp+20 yp+30 Section w150 vUI_locale
+    Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
+    Gui, Add, GroupBox, xs-20 ym+140 w310 h130, Chord dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_dict Left, [file name]
     Gui, Add, Text, xs+10 y+5 w240 vUI_entries Left, (999 chords)
     Gui, Add, Button, xs Section gButtonSelectDictionary w80, &Open
@@ -488,7 +493,7 @@ BuildMenu() {
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
     Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
-    Gui, Add, Button, Default w80 xs+220 yp, OK
+    Gui, Add, Button, Default w80 xs+220 yp gButtonOK, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
     Gui, Add, Checkbox, vUI_debugging, Log this session (debugging)
@@ -497,14 +502,15 @@ BuildMenu() {
     Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
 
     ; Create taskbar tray menu:
-    Menu, Tray, Add, Open Settings, ShowMenu
+    Menu, Tray, Add, Open Settings, ShowMainDialog
     Menu, Tray, Default, Open Settings
     Menu, Tray, Tip, ZipChord
     Menu, Tray, Click, 1
 }
 
-ShowMenu() {
+ShowMainDialog() {
     debug.Stop()
+    Gui, UI_main_window:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
@@ -524,12 +530,14 @@ ShowMenu() {
 
 UpdateLocaleInMainUI(selected_loc) {
     IniRead, sections, locales.ini
-    GuiControl, 1:, UI_locale, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, 1:Choose, UI_locale, % selected_loc
+    Gui, UI_main_window:Default
+    GuiControl, , UI_locale, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, Choose, UI_locale, % selected_loc
 }
 
 ; sets UI controls to enabled/disabled to reflect chord recognition setting 
 EnableDisableControls() {
+    Gui, UI_main_window:Default
     GuiControlGet, checked,, UI_on
     GuiControl, Enable%checked%, UI_input_delay
     GuiControl, Enable%checked%, UI_output_delay
@@ -542,7 +550,7 @@ EnableDisableControls() {
     GuiControl, Enable%checked%, UI_delete_unrecognized
 }
 
-ButtonOK:
+ButtonOK() {
     Gui, Submit, NoHide
     global keys
     if (SetDelays(UI_input_delay, UI_output_delay) == false)
@@ -563,15 +571,18 @@ ButtonOK:
     settings.detection_enabled := UI_on
     if (UI_debugging)
         debug.Start()
-    CloseMenu()
-Return
+    CloseMainDialog()
+}
 
-GuiClose:
-GuiEscape:
-    CloseMenu()
-Return
+UI_main_windowGuiClose() {
+    CloseMainDialog()
+}
+UI_main_windowGuiEscape() {
+    CloseMainDialog()
+}
 
-CloseMenu() {
+CloseMainDialog() {
+    Gui, UI_main_window:Default
     Gui, Submit
     static intro := true
     if intro {
@@ -582,10 +593,6 @@ CloseMenu() {
 
 WebsiteLink:
 Run https://github.com/psoukie/zipchord#readme
-Return
-
-LocaleLink:
-Run https://github.com/psoukie/zipchord#keyboard-and-language-settings
 Return
 
 ReleaseLink:
@@ -600,6 +607,7 @@ UpdateDictionaryUI() {
         filestr := "..." SubStr(settings.chord_file, -34)
     else
         filestr := settings.chord_file
+    Gui, UI_main_window:Default
     GuiControl Text, UI_dict, %filestr%
     entriesstr := "(" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
@@ -626,6 +634,12 @@ ButtonReloadDictionary() {
     LoadChords(settings.chord_file)
 }
 
+ButtonCustomizeLocale() {
+    WireHotkeys("Off")  ; so the user can edit the values without interference
+    Gui, Submit, NoHide ; to get the currently selected UI_locale
+    ShowLocaleDialog(UI_locale)
+}
+
 global UI_locale_window
 global UI_loc_name
 global UI_loc_all
@@ -635,66 +649,125 @@ global UI_loc_capitalizing_plain
 global UI_loc_capitalizing_shift
 global UI_loc_remove_space_plain
 global UI_loc_remove_space_shift
+global UI_loc_other_plain
+global UI_loc_other_shift
 
-ButtonNewLocale(){
-    new_locale := new localeClass
-    BuildLocaleGui("New", new_locale)
-}
-
-ButtonDeleteLocale(){
-    Gui, Submit, NoHide ; to get the currently selected UI_locale
-    MsgBox, 4, ZipChord, % "Do you really want to delete the keyboard and language settings for " UI_locale "?"
-    IfMsgBox Yes
-    {
-        IniDelete, locales.ini, %UI_locale%
-        UpdateLocaleInMainUI(1)
-    }
-}
-
-ButtonEditLocale(){
-    Gui, Submit, NoHide ; to get the currently selected UI_locale
-    selected_locale := {}
-    LoadPropertiesFromIni(selected_locale, UI_locale, "locales.ini")
-    BuildLocaleGui(UI_locale, selected_locale)
-}
-
-BuildLocaleGui(locale_name, loc_obj) {
-    WireHotkeys("Off")  ; so the user can edit the values without interference
+BuildLocaleDialog() {
     Gui, UI_locale_window:New, , Keyboard and language settings
-    Gui, Margin, 20, 5
+    Gui, Margin, 15, 15
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, , &Locale name
-    Gui, Add, Edit, w160 r1 vUI_loc_name, % locale_name
-    Gui, Add, Text, , &All keys (except dead keys)
-    Gui, Add, Edit, w400 r1 vUI_loc_all, % loc_obj.all
-    Gui, Font, w700
+    Gui, Add, Text, Section, &Locale name
+    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI, % locale_name
+    Gui, Add, Button, y+30 w80 gButtonRenameLocale, &Rename
+    Gui, Add, Button, w80 gButtonDeleteLocale, &Delete 
+    Gui, Add, Button, w80 gButtonNewLocale, &New
+    Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
+    Gui, Add, GroupBox, ys h330 w460, Locale settings
+    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except dead keys)
+    Gui, Font, s10, Consolas
+    Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
+    Gui, Font, s10 w700, Segoe UI
     Gui, Add, Text, yp+40, Punctuation
     Gui, Add, Text, xs+160 yp, Unmodified keys
     Gui, Add, Text, xs+300 yp, If Shift was pressed
     Gui, Font, w400
-    Gui, Add, Text, xs, Remove space before
-    Gui, Add, Edit, xs+160 yp w120 r1 vUI_loc_remove_space_plain, % loc_obj.remove_space_plain
-    Gui, Add, Edit, xs+300 yp w120 r1 vUI_loc_remove_space_shift, % loc_obj.remove_space_shift
-    Gui, Add, Text, xs, Follow by a space
-    Gui, Add, Edit, xs+160 yp w120 r1 vUI_loc_space_after_plain, % loc_obj.space_after_plain
-    Gui, Add, Edit, xs+300 yp w120 r1 vUI_loc_space_after_shift, % loc_obj.space_after_shift
-    Gui, Add, Text, xs, Capitalize after
-    Gui, Add, Edit, xs+160 yp w120 r1 vUI_loc_capitalizing_plain, % loc_obj.capitalizing_plain
-    Gui, Add, Edit, xs+300 yp w120 r1 vUI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
-    Gui, Add, Button, xs+100 yp+40 w80 gCancel, Cancel
-    Gui, Add, Button, yp x+20 w80 Default, Save
-    Gui, Font, Underline cBlue
-    Gui, Add, Text, xs Y+m gLocaleLink, Help with language settings
-    Gui, UI_locale_window:Show
+    Gui, Add, Text, xs Section, Remove space before
+    Gui, Add, Text, y+20, Follow by a space
+    Gui, Add, Text, y+20, Capitalize after
+    Gui, Add, Text, y+20, Other
+    Gui, Add, Button, xs+240 yp+40 w100 gButtonSaveLocale, Save Changes
+    Gui, Font, s10, Consolas
+    Gui, Add, Edit, xs+160 ys Section w120 r1 vUI_loc_remove_space_plain
+    Gui, Add, Edit, xs w120 r1 vUI_loc_space_after_plain
+    Gui, Add, Edit, xs w120 r1 vUI_loc_capitalizing_plain
+    Gui, Add, Edit, xs w120 r1 vUI_loc_other_plain
+    Gui, Add, Edit, xs+140 ys Section w120 r1 vUI_loc_remove_space_shift
+    Gui, Add, Edit, xs w120 r1 vUI_loc_space_after_shift
+    Gui, Add, Edit, xs w120 r1 vUI_loc_capitalizing_shift
+    Gui, Add, Edit, xs w120 r1 vUI_loc_other_shift
 }
 
-UI_locale_windowGuiEscape:
-    Gui, Submit
-Return
+; Shows the locale dialog with either: existing locale matching locale_name; newly created locale; or if locale_name is false, the first available locale.  
+ShowLocaleDialog(locale_name) {
+    Gui, UI_locale_window:Default
+    loc_obj := new localeClass
+    IniRead, sections, locales.ini
+    if (locale_name) {
+        ; check if locale_name already exists in INI
+        IniRead, locale_exists, locales.ini, % locale_name, all
+        if (locale_exists == "ERROR") {
+            sections .= "|" locale_name
+            SavePropertiesToIni(loc_obj, locale_name, "locales.ini")
+        } else {
+            LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
+        }
+    } else {
+        locales := StrSplit(sections, "`n", , 1)
+        locale_name := locales[1]
+        OutputDebug, % locale_name
+    }
+    GuiControl, , UI_loc_name, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, Choose, UI_loc_name, % locale_name
+    GuiControl, , UI_loc_all, % loc_obj.all
+    GuiControl, , UI_loc_remove_space_plain, % loc_obj.remove_space_plain
+    GuiControl, , UI_loc_remove_space_shift, % loc_obj.remove_space_shift
+    GuiControl, , UI_loc_space_after_plain, % loc_obj.space_after_plain
+    GuiControl, , UI_loc_space_after_shift, % loc_obj.space_after_shift
+    GuiControl, , UI_loc_capitalizing_plain, % loc_obj.capitalizing_plain
+    GuiControl, , UI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
+    GuiControl, , UI_loc_other_plain, % loc_obj.other_plain
+    GuiControl, , UI_loc_other_shift, % loc_obj.other_shift
+    Gui, Show
+}
 
-UI_locale_windowButtonSave() {
+; when the locale name dropdown changes: 
+ChangeLocaleUI() {
+    Gui, UI_locale_window:Submit
+    ShowLocaleDialog(UI_loc_name)
+}
+
+ButtonNewLocale() {
+    InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
+        if ErrorLevel
+            Return
+    ShowLocaleDialog(new_name)
+}
+
+ButtonDeleteLocale(){
+    MsgBox, 4, ZipChord, % "Do you really want to delete the keyboard and language settings for '" UI_loc_name "'?"
+    IfMsgBox Yes
+    {
+        IniDelete, locales.ini, % UI_loc_name
+        ShowLocaleDialog(false)
+    }
+}
+
+ButtonRenameLocale() {
+    temp_loc := new localeClass
+    InputBox, new_name, ZipChord, % "Enter a new name for the locale '" UI_loc_name "':"
+        if ErrorLevel
+            Return
+    LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
+    IniDelete, locales.ini, % UI_loc_name
+    SavePropertiesToIni(temp_loc, new_name, "locales.ini")
+    ShowLocaleDialog(new_name)
+}
+
+UI_locale_windowGuiClose() {
+    Close_Locale_Window()
+}
+UI_locale_windowGuiEscape() {
+    Close_Locale_Window()
+}
+
+Close_Locale_Window() {
+    Gui, UI_locale_window:Submit
+    UpdateLocaleInMainUI(global UI_loc_name)
+}
+
+ButtonSaveLocale() {
     new_loc := new localeClass
-    Gui, Submit, NoHide
+    Gui, UI_locale_window:Submit, NoHide
     new_loc.all := UI_loc_all
     new_loc.space_after_plain := UI_loc_space_after_plain
     new_loc.space_after_shift := UI_loc_space_after_shift
@@ -702,13 +775,14 @@ UI_locale_windowButtonSave() {
     new_loc.capitalizing_shift := UI_loc_capitalizing_shift
     new_loc.remove_space_plain := UI_loc_remove_space_plain
     new_loc.remove_space_shift := UI_loc_remove_space_shift
+    new_loc.other_plain := UI_loc_other_plain
+    new_loc.other_shift := UI_loc_other_shift
     SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
-    UpdateLocaleInMainUI(UI_loc_name)
-    Gui, Submit
 }
 
 ; Read settings from Windows Registry and locate dictionary file
 ReadSettings() {
+    default_locale := new localeClass
     RegRead locale, HKEY_CURRENT_USER\Software\ZipChord, Locale
     if ErrorLevel
         locale := "English US"
@@ -728,7 +802,7 @@ ReadSettings() {
     if ErrorLevel
         capitalization := CAP_CHORDS
     if (!FileExist("locales.ini"))
-       SavePropertiesToIni(keys, "English US", "locales.ini")
+       SavePropertiesToIni(default_locale, "English US", "locales.ini")
     RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
     if (ErrorLevel || !FileExist(chord_file)) {
         errmsg := ErrorLevel ? "" : Format("The last used dictionary '{}' could not be found.`n`n", chord_file)
@@ -790,12 +864,9 @@ SetDelays(new_input_delay, new_output_delay) {
 
 ; Load chords from a dictionary file
 LoadChords(file_name) {
-    global keys
-    default_keys := new localeClass
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % file_name
     pause_loading := true
     chords := {}
-    keys.all := default_keys.all
     Loop, Read, % file_name
     {
         pos := InStr(A_LoopReadLine, A_Tab)
