@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -555,11 +555,11 @@ ButtonOK:
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Chording, % settings.chording
     settings.locale := UI_locale
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Locale, % settings.locale
+    ; We always want to rewire hotkeys in case the keys have changed.
+    WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
     if (UI_on)
         WireHotkeys("On")
-    else
-        WireHotkeys("Off")
     settings.detection_enabled := UI_on
     if (UI_debugging)
         debug.Start()
