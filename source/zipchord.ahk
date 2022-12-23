@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -47,7 +47,7 @@ Class settingsClass {
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chord_file := "" ; file name for the dictionary
-    chord_delay := 0
+    input_delay := 0
     output_delay := 0
     chording := 0 ; Chord recognition options
     debugging := false
@@ -244,7 +244,7 @@ KeyUp:
     buffer := ""
     start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( st && chord=="" && (A_TickCount - st > settings.chord_delay) ) {
+    if ( st && chord=="" && (A_TickCount - st > settings.input_delay) ) {
         chord := tempch ; this is the chord candidate
         final_difference := difference
         debug.Log("/KeyUp-chord")
@@ -438,7 +438,7 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
 
 ; variables holding the UI elements and selections
 
-global UI_chord_delay
+global UI_input_delay
 global UI_output_delay
 global UI_space_before
 global UI_space_after
@@ -473,7 +473,7 @@ BuildMenu() {
     Gui, Add, Button, gButtonReloadDictionary ys w80, &Reload
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
-    Gui, Add, Edit, vUI_chord_delay Right xp+150 w40, 99
+    Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
@@ -505,7 +505,7 @@ BuildMenu() {
 
 ShowMenu() {
     debug.Stop()
-    GuiControl Text, UI_chord_delay, % settings.chord_delay
+    GuiControl Text, UI_input_delay, % settings.input_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
@@ -531,7 +531,7 @@ UpdateLocaleInMainUI(selected_loc) {
 ; sets UI controls to enabled/disabled to reflect chord recognition setting 
 EnableDisableControls() {
     GuiControlGet, checked,, UI_on
-    GuiControl, Enable%checked%, UI_chord_delay
+    GuiControl, Enable%checked%, UI_input_delay
     GuiControl, Enable%checked%, UI_output_delay
     GuiControl, Enable%checked%, UI_restrict_chords
     GuiControl, Enable%checked%, UI_allow_shift
@@ -545,7 +545,7 @@ EnableDisableControls() {
 ButtonOK:
     Gui, Submit, NoHide
     global keys
-    if (SetDelays(UI_chord_delay, UI_output_delay) == false)
+    if (SetDelays(UI_input_delay, UI_output_delay) == false)
         Return
     settings.capitalization := UI_capitalization
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, % settings.capitalization
@@ -555,11 +555,11 @@ ButtonOK:
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Chording, % settings.chording
     settings.locale := UI_locale
     RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Locale, % settings.locale
+    ; We always want to rewire hotkeys in case the keys have changed.
+    WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
     if (UI_on)
         WireHotkeys("On")
-    else
-        WireHotkeys("Off")
     settings.detection_enabled := UI_on
     if (UI_debugging)
         debug.Start()
@@ -712,12 +712,12 @@ ReadSettings() {
     RegRead locale, HKEY_CURRENT_USER\Software\ZipChord, Locale
     if ErrorLevel
         locale := "English US"
-    RegRead chord_delay, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay
+    RegRead input_delay, HKEY_CURRENT_USER\Software\ZipChord, InputDelay
     if ErrorLevel
-        SetDelays(90, 0)
-    RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutDelay
+        input_delay := 90
+    RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutputDelay
     if ErrorLevel
-        SetDelays(90, 0)
+        output_delay := 0
     RegRead chording, HKEY_CURRENT_USER\Software\ZipChord, Chording
     if ErrorLevel
         chording := 0
@@ -751,7 +751,7 @@ ReadSettings() {
     }
     ; I couldn't find a way to read the values directly into the settings object, so assigning below:
     settings.locale := locale
-    settings.chord_delay := chord_delay
+    settings.input_delay := input_delay
     settings.output_delay := output_delay
     settings.chording := chording
     settings.spacing := spacing
@@ -778,10 +778,10 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
 SetDelays(new_input_delay, new_output_delay) {
     ; first check we have integers
     if (RegExMatch(new_input_delay,"^\d+$") && RegExMatch(new_output_delay,"^\d+$")) {
-            settings.chord_delay := new_input_delay + 0
-            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordDelay, % settings.chord_delay
+            settings.input_delay := new_input_delay + 0
+            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, InputDelay, % settings.input_delay
             settings.output_delay := new_output_delay + 0
-            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutDelay, % settings.output_delay
+            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutputDelay, % settings.output_delay
             Return true
     }
     MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
