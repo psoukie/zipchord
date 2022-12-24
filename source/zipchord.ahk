@@ -414,7 +414,7 @@ AddChord() {
         InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
         if ErrorLevel
             Return
-    } Until RegisterChord(newch, newword, true)
+    } Until RegisterChord("" newch, "" newword, true)  ; force to be interpreted as string
     UpdateDictionaryUI()
 }
 
@@ -433,9 +433,9 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
         MsgBox ,, ZipChord, Each key can be entered only once in the same chord.
         Return false
     }
+    ObjRawSet(chords, newch, newword)
     if (write_to_dictionary)
-        FileAppend % "`r`n" newch "`t" newword, % settings.chord_file, UTF-8
-    chords.Insert(newch, newword)
+        WriteToDictionary(newch, newword, settings.chord_file)
     return true
 }
 
@@ -619,6 +619,7 @@ ButtonSelectDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
+        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % dict
         LoadChords(dict)
     }
     Return
@@ -780,6 +781,10 @@ ButtonSaveLocale() {
     SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
 }
 
+; -----------------------------
+;; File and registry functions
+; -----------------------------
+
 ; Read settings from Windows Registry and locate dictionary file
 ReadSettings() {
     default_locale := new localeClass
@@ -864,13 +869,11 @@ SetDelays(new_input_delay, new_output_delay) {
 
 ; Load chords from a dictionary file
 LoadChords(file_name) {
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % file_name
     pause_loading := true
-    chords := {}
-    Loop, Read, % file_name
+    raw_chords := LoadDictionary(file_name)
+    For chord, text in raw_chords
     {
-        pos := InStr(A_LoopReadLine, A_Tab)
-        if (pos && ! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
+        if (! RegisterChord(chord, text))  {
             if (pause_loading) {
                 MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
                 IfMsgBox Yes
@@ -881,6 +884,22 @@ LoadChords(file_name) {
         }
     }
     UpdateDictionaryUI()
+}
+
+; Load Tab-separated key-value pairs from a file  
+LoadDictionary(file_name) {
+    entries := {}
+    Loop, Read, % file_name
+    {
+        pos := InStr(A_LoopReadLine, A_Tab)
+        if (pos)
+             ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
+    }
+    Return entries
+}
+
+WriteToDictionary(shortcut, word, file_name) {
+    FileAppend % "`r`n" shortcut "`t" word, % file_name, UTF-8
 }
 
 ;; Debugging
