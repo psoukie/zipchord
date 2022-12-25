@@ -44,14 +44,14 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 
 ; Current application settings
 Class settingsClass {
-    detection_enabled := 1 ; maps to UI_on for whether the chord recognition is enabled
+    chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
-    chord_file := "" ; file name for the dictionary
+    chording := 0 ; Chord recognition options
+    chord_file := "" ; file name for the chord dictionary
     input_delay := 0
     output_delay := 0
-    chording := 0 ; Chord recognition options
     debugging := false
 }
 ; stores current settings
@@ -60,7 +60,7 @@ global settings := New settingsClass
 ; Processing input and output 
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
-buffer := ""   ; stores the sequence of simultanously pressed keys
+chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord := ""    ; chord candidate which qualifies for chord
 global start := 0 ; tracks start time of two keys pressed at once
 
@@ -173,13 +173,13 @@ KeyDown:
         chord := ""
     }
 
-    buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
+    chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
-    if (StrLen(buffer)==2) {
+    if (StrLen(chord_buffer)==2) {
         start := A_TickCount 
         if (shifted)
-            buffer .= "+"  ; hack to communicate Shift was pressed
-        debug.Log("Two keys in buffer.")
+            chord_buffer .= "+"  ; hack to communicate Shift was pressed
+        debug.Log("Two keys in chord buffer.")
     }
 
     if (!start)
@@ -246,9 +246,9 @@ Return
 KeyUp:
     Critical
     debug.Log("KeyUp")
-    tempch := buffer
+    tempch := chord_buffer
     st := start
-    buffer := ""
+    chord_buffer := ""
     start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
     if ( st && chord=="" && (A_TickCount - st > settings.input_delay) ) {
@@ -454,9 +454,9 @@ global UI_delete_unrecognized
 global UI_capitalization
 global UI_allow_shift
 global UI_restrict_chords
-global UI_dict := "none"
+global UI_chord_file := "none"
 global UI_entries := "0"
-global UI_on := 1
+global UI_chords_enabled := 1
 global UI_tab := 0
 global UI_locale
 global UI_debugging
@@ -471,11 +471,11 @@ BuildMainDialog() {
     Gui, Add, DropDownList, xp+20 yp+30 Section w150 vUI_locale
     Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
     Gui, Add, GroupBox, xs-20 ym+140 w310 h130, Chord dictionary
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_dict Left, [file name]
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
     Gui, Add, Text, xs+10 y+5 w240 vUI_entries Left, (999 chords)
-    Gui, Add, Button, xs Section gButtonSelectDictionary w80, &Open
-    Gui, Add, Button, gButtonEditDictionary ys w80, &Edit
-    Gui, Add, Button, gButtonReloadDictionary ys w80, &Reload
+    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
+    Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
@@ -492,7 +492,7 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, O&utput delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
-    Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
+    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Y+m Checked%UI_chords_enabled%, Use &chord detection
     Gui, Add, Button, Default w80 xs+220 yp gButtonOK, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
@@ -520,7 +520,7 @@ ShowMainDialog() {
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_on, % settings.detection_enabled
+    GuiControl , , UI_chords_enabled, % settings.chords_enabled
     GuiControl , , UI_debugging, 0
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
@@ -538,7 +538,7 @@ UpdateLocaleInMainUI(selected_loc) {
 ; sets UI controls to enabled/disabled to reflect chord recognition setting 
 EnableDisableControls() {
     Gui, UI_main_window:Default
-    GuiControlGet, checked,, UI_on
+    GuiControlGet, checked,, UI_chords_enabled
     GuiControl, Enable%checked%, UI_input_delay
     GuiControl, Enable%checked%, UI_output_delay
     GuiControl, Enable%checked%, UI_restrict_chords
@@ -566,9 +566,9 @@ ButtonOK() {
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
-    if (UI_on)
+    if (UI_chords_enabled)
         WireHotkeys("On")
-    settings.detection_enabled := UI_on
+    settings.chords_enabled := UI_chords_enabled
     if (UI_debugging)
         debug.Start()
     CloseMainDialog()
@@ -608,14 +608,14 @@ UpdateDictionaryUI() {
     else
         filestr := settings.chord_file
     Gui, UI_main_window:Default
-    GuiControl Text, UI_dict, %filestr%
+    GuiControl Text, UI_chord_file, %filestr%
     entriesstr := "(" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
     GuiControl Text, UI_entries, %entriesstr%
 }
 
 ; Run Windows File Selection to open a dictionary
-ButtonSelectDictionary() {
+BtnSelectChordDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
@@ -626,12 +626,12 @@ ButtonSelectDictionary() {
 }
 
 ; Edit a dictionary in default editor
-ButtonEditDictionary() {
+BtnEditChordDictionary() {
     Run % settings.chord_file
 }
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
-ButtonReloadDictionary() {
+BtnReloadChordDictionary() {
     LoadChords(settings.chord_file)
 }
 
@@ -917,13 +917,13 @@ Class DebugClass {
         this.Write("LOCALE SETTINGS:")
         For key, value in keys
             this.Write(key "=" value)
-        this.Write("`nINPUT LOG:`nEvent`tTimestamp`tlast_output`tfixed_output`tbuffer`tchord`tstart")       
+        this.Write("`nINPUT LOG:`nEvent`tTimestamp`tlast_output`tfixed_output`tchord_buffer`tchord`tstart")       
     }
     Log(output) {
-        global buffer
+        global chord_buffer
         global chord
         if ( (this.debug_file != "") || (A_Args[1] == "debug-vs") ) {
-            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" buffer "`t" chord "`t" start
+            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" chord_buffer "`t" chord "`t" start
             this.Write(output)
         }
     }
