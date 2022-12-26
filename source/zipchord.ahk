@@ -61,7 +61,7 @@ global settings := New settingsClass
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
-chord := ""    ; chord candidate which qualifies for chord
+chord_candidate := ""    ; chord candidate which qualifies for chord
 global start := 0 ; tracks start time of two keys pressed at once
 
 ; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
@@ -168,9 +168,9 @@ KeyDown:
         key := SubStr(key, 2, 1)
     }
 
-    if (chord != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
+    if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
-        chord := ""
+        chord_candidate := ""
     }
 
     chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
@@ -236,7 +236,7 @@ KeyDown:
         else
             if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
                 cap_key := RegExReplace(key, "(.*)", "$U1")
-                SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
+                SendInput % "{Backspace}{Text}" RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag get turned off
             }
     }
@@ -251,35 +251,35 @@ KeyUp:
     chord_buffer := ""
     start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( st && chord=="" && (A_TickCount - st > settings.input_delay) ) {
-        chord := tempch ; this is the chord candidate
+    if ( st && chord_candidate=="" && (A_TickCount - st > settings.input_delay) ) {
+        chord_candidate := tempch ; this is the chord candidate
         final_difference := difference
         debug.Log("/KeyUp-chord")
         Critical Off
         Return
     }
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
-    if (chord != "") {
-        if (InStr(chord, "+")) {
+    if (chord_candidate != "") {
+        if (InStr(chord_candidate, "+")) {
             ;if Shift is not allowed as a chord key, we just capitalize the chord.
             if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
             fixed_output |= OUT_CAPITALIZE
-            chord := StrReplace(chord, "+")
+            chord_candidate := StrReplace(chord_candidate, "+")
             }
         }
-        sorted := Arrange(chord)
-        if (chords.HasKey(sorted)) {
-            exp := chords[sorted] ; store the expanded text
-            debug.Log("Chord for:" exp)
+        chord := Arrange(chord_candidate)
+        if (chords.HasKey(chord)) {
+            expanded := chords[chord] ; store the expanded text
+            debug.Log("Chord for:" expanded)
             ; detect and adjust expansion for suffixes and prefixes
-            if (SubStr(exp, 1, 1) == "~") {
-                exp := SubStr(exp, 2)
+            if (SubStr(expanded, 1, 1) == "~") {
+                expanded := SubStr(expanded, 2)
                 suffix := true
             } else {
                 suffix := false
             }
-             if (SubStr(exp, StrLen(exp), 1) == "~") {
-                exp := SubStr(exp, 1, StrLen(exp)-1)
+             if (SubStr(expanded, StrLen(expanded), 1) == "~") {
+                expanded := SubStr(expanded, 1, StrLen(expanded)-1)
                 prefix := true
             } else {
                 prefix := false
@@ -289,17 +289,17 @@ KeyUp:
                 if (settings.output_delay)
                     Sleep settings.output_delay
                 debug.Log("OUTPUTTING")
-                RemoveRawChord(sorted)
+                RemoveRawChord(chord)
                 OpeningSpace(suffix)
-                if (InStr(exp, "{")) {
+                if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
-                    SendInput % exp
+                    SendInput % expanded
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
                     if ( (fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
-                        SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
+                        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
-                        SendInput % "{Text}"exp
+                        SendInput % "{Text}" expanded
                 }
                 last_output := OUT_CHARACTER | OUT_AUTOMATIC  ; i.e. a chord (automated typing)
                 ; ending smart space
@@ -313,16 +313,16 @@ KeyUp:
             else {
                 ; output was restricted
                 fixed_output := last_output
-                chord := ""
+                chord_candidate := ""
                 debug.Log("RESTRICTED")
             }
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
             if (settings.chording & CHORD_DELETE_UNRECOGNIZED)
-                RemoveRawChord(sorted)
+                RemoveRawChord(chord)
         }
-        chord := ""
+        chord_candidate := ""
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
     debug.Log("/KeyUp-fixed")
