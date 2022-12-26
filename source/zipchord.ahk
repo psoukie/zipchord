@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.9.2"
+global version = "2.0.0-alpha"
 
 ; ------------------
 ;; Global Variables
@@ -45,11 +45,13 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 ; Current application settings
 Class settingsClass {
     chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
+    shorthands_enabled := 1 ; maps to UI_shorthands_enabled for shorthand recognition
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := 0 ; Chord recognition options
     chord_file := "" ; file name for the chord dictionary
+    shorthand_file := "" ; file name for the shorthand dictionary
     input_delay := 0
     output_delay := 0
     debugging := false
@@ -60,8 +62,11 @@ global settings := New settingsClass
 ; Processing input and output 
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
+global shorthands := {} ; as above for shorthands
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
+shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
+
 global start := 0 ; tracks start time of two keys pressed at once
 
 ; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
@@ -116,6 +121,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
+    FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
     ReadSettings()
     BuildMainDialog()
     BuildLocaleDialog()
