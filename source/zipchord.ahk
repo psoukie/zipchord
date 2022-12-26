@@ -6,7 +6,7 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "2.0.0-alpha"
+global version = "2.0.0-alpha.1"
 
 ; ------------------
 ;; Global Variables
@@ -190,7 +190,7 @@ KeyDown:
     }
 
     if (settings.shorthands_enabled) {
-        if (key == " ") {
+        if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key))  ) {
             if (shorthand_buffer != "") {
                 debug.Log("BUFFER " shorthand_buffer)
                 if (shorthands.HasKey(shorthand_buffer)) {
@@ -201,12 +201,15 @@ KeyDown:
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
                         SendInput % "{Text}" expanded
-                    SendInput {Space}
+                    if (shifted)
+                        SendInput +%key%
+                    else
+                        SendInput %key%
                 }
             }
             shorthand_buffer := ""
         } else {
-            if (last_output & OUT_INTERRUPTED)
+            if (last_output & OUT_INTERRUPTED || last_output & OUT_AUTOMATIC)
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
