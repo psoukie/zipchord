@@ -3,3 +3,5 @@ This is a sample starting English-language shorthand dictionary for ZipChord. It
 Sequences of typed keys that trigger the shorthand recognition are separated from the expanded full words by Tab. You can change the shorthands for existing pairs and add your own.
 
 See https://github.com/psoukie/zipchord for details.
+
+tst	test
