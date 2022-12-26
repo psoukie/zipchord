@@ -246,18 +246,18 @@ Return
 KeyUp:
     Critical
     debug.Log("KeyUp")
-    tempch := chord_buffer
-    st := start
-    chord_buffer := ""
-    start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( st && chord_candidate=="" && (A_TickCount - st > settings.input_delay) ) {
-        chord_candidate := tempch ; this is the chord candidate
+    if ( start && chord_candidate == "" && (A_TickCount - start > settings.input_delay) ) {
+        chord_candidate := chord_buffer
         final_difference := difference
+        chord_buffer := ""
+        start := 0
         debug.Log("/KeyUp-chord")
         Critical Off
         Return
     }
+    chord_buffer := ""
+    start := 0
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord_candidate != "") {
         if (InStr(chord_candidate, "+")) {
