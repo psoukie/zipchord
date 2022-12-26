@@ -340,8 +340,8 @@ RemoveRawChord(output) {
         adj++
     if (final_difference & DIF_IGNORED_SPACE)
         adj--
-    Loop % (StrLen(output) + adj)
-        SendInput {Backspace}
+    adj += StrLen(output)
+    SendInput {Backspace %adj%}
     if (final_difference & DIF_REMOVED_SMART_SPACE)
         SendInput {Space}
 }
