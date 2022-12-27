@@ -6,7 +6,8 @@ SetWorkingDir %A_ScriptDir%
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
-global version = "1.9.3"
+
+global version = "2.0.0-alpha.1"
 
 ; ------------------
 ;; Global Variables
@@ -45,11 +46,13 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 ; Current application settings
 Class settingsClass {
     chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
+    shorthands_enabled := 1 ; maps to UI_shorthands_enabled for shorthand recognition
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := 0 ; Chord recognition options
     chord_file := "" ; file name for the chord dictionary
+    shorthand_file := "" ; file name for the shorthand dictionary
     input_delay := 0
     output_delay := 0
     debugging := false
@@ -60,8 +63,11 @@ global settings := New settingsClass
 ; Processing input and output 
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
+global shorthands := {} ; as above for shorthands
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
+shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
+
 global start := 0 ; tracks start time of two keys pressed at once
 
 ; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
@@ -116,9 +122,11 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
+    FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
     ReadSettings()
     BuildMainDialog()
     BuildLocaleDialog()
+    shorthands := LoadDictionary(settings.shorthand_file)
     LoadChords(settings.chord_file)
     WireHotkeys("On")
     ShowMainDialog()
@@ -180,6 +188,33 @@ KeyDown:
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
         debug.Log("Two keys in chord buffer.")
+    }
+
+    if (settings.shorthands_enabled) {
+        if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key))  ) {
+            if (shorthand_buffer != "") {
+                debug.Log("BUFFER " shorthand_buffer)
+                if (shorthands.HasKey(shorthand_buffer)) {
+                    expanded := shorthands[shorthand_buffer] 
+                    adj := StrLen(shorthand_buffer) + 1
+                    SendInput {Backspace %adj%}
+                    if ( (last_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
+                        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
+                    else
+                        SendInput % "{Text}" expanded
+                    if (shifted)
+                        SendInput +%key%
+                    else
+                        SendInput %key%
+                }
+            }
+            shorthand_buffer := ""
+        } else {
+            if (last_output & OUT_INTERRUPTED || last_output & OUT_AUTOMATIC)
+                shorthand_buffer := key
+            else
+                shorthand_buffer .= key
+        }
     }
 
     if (!start)
@@ -454,9 +489,12 @@ global UI_delete_unrecognized
 global UI_capitalization
 global UI_allow_shift
 global UI_restrict_chords
-global UI_chord_file := "none"
-global UI_entries := "0"
+global UI_chord_file
+global UI_shorthand_file
+global UI_chord_entries := "0"
+global UI_shorthand_entries := "0"
 global UI_chords_enabled := 1
+global UI_shorthands_enabled := 1
 global UI_tab := 0
 global UI_locale
 global UI_debugging
@@ -470,12 +508,18 @@ BuildMainDialog() {
     Gui, Add, GroupBox, w310 h80, Keyboard and language
     Gui, Add, DropDownList, xp+20 yp+30 Section w150 vUI_locale
     Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
-    Gui, Add, GroupBox, xs-20 ym+140 w310 h130, Chord dictionary
+    Gui, Add, GroupBox, xs-20 y+40 w310 h130, Chord dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
-    Gui, Add, Text, xs+10 y+5 w240 vUI_entries Left, (999 chords)
+    Gui, Add, Text, xs+10 y+5 w240 vUI_chord_entries Left, (999 chords)
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
     Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
+    Gui, Add, GroupBox, xs-20 y+30 w310 h130, Shorthand dictionary
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
+    Gui, Add, Text, xs+10 y+5 w240 vUI_shorthand_entries Left, (999 shorthands)
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
+    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
+    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, &Reload
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
@@ -611,15 +655,33 @@ UpdateDictionaryUI() {
     GuiControl Text, UI_chord_file, %filestr%
     entriesstr := "(" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
-    GuiControl Text, UI_entries, %entriesstr%
+    GuiControl Text, UI_chord_entries, %entriesstr%
+    if StrLen(settings.shorthand_file) > 35
+        filestr := "..." SubStr(settings.shorthand_file, -34)
+    else
+        filestr := settings.shorthand_file
+    GuiControl Text, UI_shorthand_file, %filestr%
+    entriesstr := "(" shorthands.Count()
+    entriesstr .= (shorthands.Count()==1) ? " shorthand)" : " shorthands)"
+    GuiControl Text, UI_shorthand_entries, %entriesstr%
 }
 
 ; Run Windows File Selection to open a dictionary
 BtnSelectChordDictionary() {
-    FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
+    FileSelectFile dict, , %A_ScriptDir%, Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
         RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % dict
+        LoadChords(dict)
+    }
+    Return
+}
+
+BtnSelectShorthandDictionary() {
+    FileSelectFile dict, , %A_ScriptDir%, Open Shorthand Dictionary, Text files (*.txt)
+    if (dict != "") {
+        settings.shorthand_file := dict
+        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ShorthandFile, % dict
         LoadChords(dict)
     }
     Return
@@ -629,10 +691,17 @@ BtnSelectChordDictionary() {
 BtnEditChordDictionary() {
     Run % settings.chord_file
 }
+BtnEditShorthandDictionary() {
+    Run % settings.shorthand_file
+}
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
 BtnReloadChordDictionary() {
     LoadChords(settings.chord_file)
+}
+BtnReloadShorthandDictionary() {
+    shorthands := LoadDictionary(settings.shorthand_file)
+    UpdateDictionaryUI()
 }
 
 ButtonCustomizeLocale() {
@@ -815,25 +884,13 @@ ReadSettings() {
     if (!FileExist("locales.ini"))
        SavePropertiesToIni(default_locale, "English US", "locales.ini")
     RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
-    if (ErrorLevel || !FileExist(chord_file)) {
-        errmsg := ErrorLevel ? "" : Format("The last used dictionary '{}' could not be found.`n`n", chord_file)
-        ; If we don't have the dictionary, try opening the first file with chords* structure.
-        chord_file := "chords*.txt"
-        if FileExist(chord_file) {
-            Loop, Files, %chord_file%
-                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-            Sort flist
-            chord_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", chord_file)
-        }
-        else {
-            errmsg .= "ZipChord is going to create a new 'chords.txt' dictionary in its own folder."
-            chord_file := "chords.txt"
-            FileAppend % "This is a dictionary for ZipChord. Define chords and corresponding words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %chord_file%, UTF-8
-        }
-        chord_file := A_ScriptDir "\" chord_file
-        MsgBox ,, ZipChord, %errmsg%
-    }
+    if (ErrorLevel)
+        chord_file := "chords-en-starting.txt"
+    CheckDictionaryFileExists(chord_file, "chord")
+    RegRead shorthand_file, HKEY_CURRENT_USER\Software\ZipChord, ShorthandFile
+    if (ErrorLevel)
+        shorthand_file := "shorthands-english-starting.txt"
+    CheckDictionaryFileExists(shorthand_file, "shorthand")
     ; I couldn't find a way to read the values directly into the settings object, so assigning below:
     settings.locale := locale
     settings.input_delay := input_delay
@@ -842,6 +899,29 @@ ReadSettings() {
     settings.spacing := spacing
     settings.capitalization := capitalization
     settings.chord_file := chord_file
+    settings.shorthand_file := shorthand_file
+}
+
+CheckDictionaryFileExists(dictionary_file, dictionary_type) {
+    if (! FileExist(dictionary_file) ) {
+        errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
+        ; If we don't have the dictionary, try opening the first file with a matching naming convention.
+        dictionary_file := dictionary_type "s*.txt"
+        if FileExist(dictionary_file) {
+            Loop, Files, %dictionary_file%
+                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
+            Sort flist
+            dictionary_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", dictionary_file)
+        }
+        else {
+            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in its own folder.", dictionary_type)
+            dictionary_file := dictionary_type "s.txt"
+            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %dictionary_file%, UTF-8
+        }
+        dictionary_file := A_ScriptDir "\" dictionary_file
+        MsgBox ,, ZipChord, %errmsg%
+    }
 }
 
 SavePropertiesToIni(object_to_save, ini_section, ini_filename) {
