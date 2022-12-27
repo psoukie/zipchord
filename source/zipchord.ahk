@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -658,7 +658,7 @@ BuildLocaleDialog() {
     Gui, Margin, 15, 15
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, Section, &Locale name
-    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI, % locale_name
+    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI
     Gui, Add, Button, y+30 w80 gButtonRenameLocale, &Rename
     Gui, Add, Button, w80 gButtonDeleteLocale, &Delete 
     Gui, Add, Button, w80 gButtonNewLocale, &New
@@ -688,24 +688,16 @@ BuildLocaleDialog() {
     Gui, Add, Edit, xs w120 r1 vUI_loc_other_shift
 }
 
-; Shows the locale dialog with either: existing locale matching locale_name; newly created locale; or if locale_name is false, the first available locale.  
+; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.  
 ShowLocaleDialog(locale_name) {
     Gui, UI_locale_window:Default
     loc_obj := new localeClass
     IniRead, sections, locales.ini
     if (locale_name) {
-        ; check if locale_name already exists in INI
-        IniRead, locale_exists, locales.ini, % locale_name, all
-        if (locale_exists == "ERROR") {
-            sections .= "|" locale_name
-            SavePropertiesToIni(loc_obj, locale_name, "locales.ini")
-        } else {
-            LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
-        }
+        LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
     } else {
-        locales := StrSplit(sections, "`n", , 1)
+        locales := StrSplit(sections, "`n")
         locale_name := locales[1]
-        OutputDebug, % locale_name
     }
     GuiControl, , UI_loc_name, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_loc_name, % locale_name
@@ -718,6 +710,7 @@ ShowLocaleDialog(locale_name) {
     GuiControl, , UI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
     GuiControl, , UI_loc_other_plain, % loc_obj.other_plain
     GuiControl, , UI_loc_other_shift, % loc_obj.other_shift
+    Gui Submit, NoHide
     Gui, Show
 }
 
@@ -731,11 +724,18 @@ ButtonNewLocale() {
     InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
         if ErrorLevel
             Return
+    new_loc := New localeClass
+    SavePropertiesToIni(new_loc, new_name, "locales.ini")
     ShowLocaleDialog(new_name)
 }
 
 ButtonDeleteLocale(){
-    MsgBox, 4, ZipChord, % "Do you really want to delete the keyboard and language settings for '" UI_loc_name "'?"
+    IniRead, sections, locales.ini
+    If (! InStr(sections, "`n")) {
+        MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_loc_name)
+        Return
+    }
+    MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", UI_loc_name)
     IfMsgBox Yes
     {
         IniDelete, locales.ini, % UI_loc_name
@@ -745,9 +745,15 @@ ButtonDeleteLocale(){
 
 ButtonRenameLocale() {
     temp_loc := new localeClass
-    InputBox, new_name, ZipChord, % "Enter a new name for the locale '" UI_loc_name "':"
-        if ErrorLevel
-            Return
+    InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_loc_name)
+    if ErrorLevel
+        Return
+    IniRead, locale_exists, locales.ini, % locale_name, all
+    if (locale_exists == "ERROR") {
+        MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
+            IfMsgBox No
+                Return
+    }
     LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
     IniDelete, locales.ini, % UI_loc_name
     SavePropertiesToIni(temp_loc, new_name, "locales.ini")
