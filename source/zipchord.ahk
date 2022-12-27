@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -44,14 +44,14 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 
 ; Current application settings
 Class settingsClass {
-    detection_enabled := 1 ; maps to UI_on for whether the chord recognition is enabled
+    chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
-    chord_file := "" ; file name for the dictionary
+    chording := 0 ; Chord recognition options
+    chord_file := "" ; file name for the chord dictionary
     input_delay := 0
     output_delay := 0
-    chording := 0 ; Chord recognition options
     debugging := false
 }
 ; stores current settings
@@ -60,8 +60,8 @@ global settings := New settingsClass
 ; Processing input and output 
 
 global chords := {} ; holds pairs of chord key combinations and their full texts
-buffer := ""   ; stores the sequence of simultanously pressed keys
-chord := ""    ; chord candidate which qualifies for chord
+chord_buffer := ""   ; stores the sequence of simultanously pressed keys
+chord_candidate := ""    ; chord candidate which qualifies for chord
 global start := 0 ; tracks start time of two keys pressed at once
 
 ; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
@@ -168,18 +168,18 @@ KeyDown:
         key := SubStr(key, 2, 1)
     }
 
-    if (chord != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
+    if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
-        chord := ""
+        chord_candidate := ""
     }
 
-    buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
+    chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
-    if (StrLen(buffer)==2) {
+    if (StrLen(chord_buffer)==2) {
         start := A_TickCount 
         if (shifted)
-            buffer .= "+"  ; hack to communicate Shift was pressed
-        debug.Log("Two keys in buffer.")
+            chord_buffer .= "+"  ; hack to communicate Shift was pressed
+        debug.Log("Two keys in chord buffer.")
     }
 
     if (!start)
@@ -236,7 +236,7 @@ KeyDown:
         else
             if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
                 cap_key := RegExReplace(key, "(.*)", "$U1")
-                SendInput % "{Backspace}{Text}"RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
+                SendInput % "{Backspace}{Text}" RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag get turned off
             }
     }
@@ -246,40 +246,40 @@ Return
 KeyUp:
     Critical
     debug.Log("KeyUp")
-    tempch := buffer
-    st := start
-    buffer := ""
-    start := 0
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( st && chord=="" && (A_TickCount - st > settings.input_delay) ) {
-        chord := tempch ; this is the chord candidate
+    if ( start && chord_candidate == "" && (A_TickCount - start > settings.input_delay) ) {
+        chord_candidate := chord_buffer
         final_difference := difference
+        chord_buffer := ""
+        start := 0
         debug.Log("/KeyUp-chord")
         Critical Off
         Return
     }
+    chord_buffer := ""
+    start := 0
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
-    if (chord != "") {
-        if (InStr(chord, "+")) {
+    if (chord_candidate != "") {
+        if (InStr(chord_candidate, "+")) {
             ;if Shift is not allowed as a chord key, we just capitalize the chord.
             if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
             fixed_output |= OUT_CAPITALIZE
-            chord := StrReplace(chord, "+")
+            chord_candidate := StrReplace(chord_candidate, "+")
             }
         }
-        sorted := Arrange(chord)
-        if (chords.HasKey(sorted)) {
-            exp := chords[sorted] ; store the expanded text
-            debug.Log("Chord for:" exp)
+        chord := Arrange(chord_candidate)
+        if (chords.HasKey(chord)) {
+            expanded := chords[chord] ; store the expanded text
+            debug.Log("Chord for:" expanded)
             ; detect and adjust expansion for suffixes and prefixes
-            if (SubStr(exp, 1, 1) == "~") {
-                exp := SubStr(exp, 2)
+            if (SubStr(expanded, 1, 1) == "~") {
+                expanded := SubStr(expanded, 2)
                 suffix := true
             } else {
                 suffix := false
             }
-             if (SubStr(exp, StrLen(exp), 1) == "~") {
-                exp := SubStr(exp, 1, StrLen(exp)-1)
+             if (SubStr(expanded, StrLen(expanded), 1) == "~") {
+                expanded := SubStr(expanded, 1, StrLen(expanded)-1)
                 prefix := true
             } else {
                 prefix := false
@@ -289,17 +289,17 @@ KeyUp:
                 if (settings.output_delay)
                     Sleep settings.output_delay
                 debug.Log("OUTPUTTING")
-                RemoveRawChord(sorted)
+                RemoveRawChord(chord)
                 OpeningSpace(suffix)
-                if (InStr(exp, "{")) {
+                if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
-                    SendInput % exp
+                    SendInput % expanded
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
                     if ( (fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
-                        SendInput % "{Text}"RegExReplace(exp, "(^.)", "$U1")
+                        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
-                        SendInput % "{Text}"exp
+                        SendInput % "{Text}" expanded
                 }
                 last_output := OUT_CHARACTER | OUT_AUTOMATIC  ; i.e. a chord (automated typing)
                 ; ending smart space
@@ -313,16 +313,16 @@ KeyUp:
             else {
                 ; output was restricted
                 fixed_output := last_output
-                chord := ""
+                chord_candidate := ""
                 debug.Log("RESTRICTED")
             }
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
             if (settings.chording & CHORD_DELETE_UNRECOGNIZED)
-                RemoveRawChord(sorted)
+                RemoveRawChord(chord)
         }
-        chord := ""
+        chord_candidate := ""
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
     debug.Log("/KeyUp-fixed")
@@ -340,8 +340,8 @@ RemoveRawChord(output) {
         adj++
     if (final_difference & DIF_IGNORED_SPACE)
         adj--
-    Loop % (StrLen(output) + adj)
-        SendInput {Backspace}
+    adj += StrLen(output)
+    SendInput {Backspace %adj%}
     if (final_difference & DIF_REMOVED_SMART_SPACE)
         SendInput {Space}
 }
@@ -414,7 +414,7 @@ AddChord() {
         InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
         if ErrorLevel
             Return
-    } Until RegisterChord(newch, newword, true)
+    } Until RegisterChord("" newch, "" newword, true)  ; force to be interpreted as string
     UpdateDictionaryUI()
 }
 
@@ -433,9 +433,9 @@ RegisterChord(newch, newword, write_to_dictionary := false) {
         MsgBox ,, ZipChord, Each key can be entered only once in the same chord.
         Return false
     }
+    ObjRawSet(chords, newch, newword)
     if (write_to_dictionary)
-        FileAppend % "`r`n" newch "`t" newword, % settings.chord_file, UTF-8
-    chords.Insert(newch, newword)
+        WriteToDictionary(newch, newword, settings.chord_file)
     return true
 }
 
@@ -454,9 +454,9 @@ global UI_delete_unrecognized
 global UI_capitalization
 global UI_allow_shift
 global UI_restrict_chords
-global UI_dict := "none"
+global UI_chord_file := "none"
 global UI_entries := "0"
-global UI_on := 1
+global UI_chords_enabled := 1
 global UI_tab := 0
 global UI_locale
 global UI_debugging
@@ -471,11 +471,11 @@ BuildMainDialog() {
     Gui, Add, DropDownList, xp+20 yp+30 Section w150 vUI_locale
     Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
     Gui, Add, GroupBox, xs-20 ym+140 w310 h130, Chord dictionary
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_dict Left, [file name]
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
     Gui, Add, Text, xs+10 y+5 w240 vUI_entries Left, (999 chords)
-    Gui, Add, Button, xs Section gButtonSelectDictionary w80, &Open
-    Gui, Add, Button, gButtonEditDictionary ys w80, &Edit
-    Gui, Add, Button, gButtonReloadDictionary ys w80, &Reload
+    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
+    Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
@@ -492,7 +492,7 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, O&utput delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
-    Gui, Add, Checkbox, gEnableDisableControls vUI_on xs Y+m Checked%UI_on%, Use &chord detection
+    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Y+m Checked%UI_chords_enabled%, Use &chord detection
     Gui, Add, Button, Default w80 xs+220 yp gButtonOK, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
@@ -520,7 +520,7 @@ ShowMainDialog() {
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_on, % settings.detection_enabled
+    GuiControl , , UI_chords_enabled, % settings.chords_enabled
     GuiControl , , UI_debugging, 0
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
@@ -538,7 +538,7 @@ UpdateLocaleInMainUI(selected_loc) {
 ; sets UI controls to enabled/disabled to reflect chord recognition setting 
 EnableDisableControls() {
     Gui, UI_main_window:Default
-    GuiControlGet, checked,, UI_on
+    GuiControlGet, checked,, UI_chords_enabled
     GuiControl, Enable%checked%, UI_input_delay
     GuiControl, Enable%checked%, UI_output_delay
     GuiControl, Enable%checked%, UI_restrict_chords
@@ -566,9 +566,9 @@ ButtonOK() {
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
-    if (UI_on)
+    if (UI_chords_enabled)
         WireHotkeys("On")
-    settings.detection_enabled := UI_on
+    settings.chords_enabled := UI_chords_enabled
     if (UI_debugging)
         debug.Start()
     CloseMainDialog()
@@ -608,29 +608,30 @@ UpdateDictionaryUI() {
     else
         filestr := settings.chord_file
     Gui, UI_main_window:Default
-    GuiControl Text, UI_dict, %filestr%
+    GuiControl Text, UI_chord_file, %filestr%
     entriesstr := "(" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
     GuiControl Text, UI_entries, %entriesstr%
 }
 
 ; Run Windows File Selection to open a dictionary
-ButtonSelectDictionary() {
+BtnSelectChordDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
+        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % dict
         LoadChords(dict)
     }
     Return
 }
 
 ; Edit a dictionary in default editor
-ButtonEditDictionary() {
+BtnEditChordDictionary() {
     Run % settings.chord_file
 }
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
-ButtonReloadDictionary() {
+BtnReloadChordDictionary() {
     LoadChords(settings.chord_file)
 }
 
@@ -657,7 +658,7 @@ BuildLocaleDialog() {
     Gui, Margin, 15, 15
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, Section, &Locale name
-    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI, % locale_name
+    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI
     Gui, Add, Button, y+30 w80 gButtonRenameLocale, &Rename
     Gui, Add, Button, w80 gButtonDeleteLocale, &Delete 
     Gui, Add, Button, w80 gButtonNewLocale, &New
@@ -687,24 +688,16 @@ BuildLocaleDialog() {
     Gui, Add, Edit, xs w120 r1 vUI_loc_other_shift
 }
 
-; Shows the locale dialog with either: existing locale matching locale_name; newly created locale; or if locale_name is false, the first available locale.  
+; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.  
 ShowLocaleDialog(locale_name) {
     Gui, UI_locale_window:Default
     loc_obj := new localeClass
     IniRead, sections, locales.ini
     if (locale_name) {
-        ; check if locale_name already exists in INI
-        IniRead, locale_exists, locales.ini, % locale_name, all
-        if (locale_exists == "ERROR") {
-            sections .= "|" locale_name
-            SavePropertiesToIni(loc_obj, locale_name, "locales.ini")
-        } else {
-            LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
-        }
+        LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
     } else {
-        locales := StrSplit(sections, "`n", , 1)
+        locales := StrSplit(sections, "`n")
         locale_name := locales[1]
-        OutputDebug, % locale_name
     }
     GuiControl, , UI_loc_name, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_loc_name, % locale_name
@@ -717,6 +710,7 @@ ShowLocaleDialog(locale_name) {
     GuiControl, , UI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
     GuiControl, , UI_loc_other_plain, % loc_obj.other_plain
     GuiControl, , UI_loc_other_shift, % loc_obj.other_shift
+    Gui Submit, NoHide
     Gui, Show
 }
 
@@ -730,11 +724,18 @@ ButtonNewLocale() {
     InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
         if ErrorLevel
             Return
+    new_loc := New localeClass
+    SavePropertiesToIni(new_loc, new_name, "locales.ini")
     ShowLocaleDialog(new_name)
 }
 
 ButtonDeleteLocale(){
-    MsgBox, 4, ZipChord, % "Do you really want to delete the keyboard and language settings for '" UI_loc_name "'?"
+    IniRead, sections, locales.ini
+    If (! InStr(sections, "`n")) {
+        MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_loc_name)
+        Return
+    }
+    MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", UI_loc_name)
     IfMsgBox Yes
     {
         IniDelete, locales.ini, % UI_loc_name
@@ -744,9 +745,15 @@ ButtonDeleteLocale(){
 
 ButtonRenameLocale() {
     temp_loc := new localeClass
-    InputBox, new_name, ZipChord, % "Enter a new name for the locale '" UI_loc_name "':"
-        if ErrorLevel
-            Return
+    InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_loc_name)
+    if ErrorLevel
+        Return
+    IniRead, locale_exists, locales.ini, % locale_name, all
+    if (locale_exists == "ERROR") {
+        MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
+            IfMsgBox No
+                Return
+    }
     LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
     IniDelete, locales.ini, % UI_loc_name
     SavePropertiesToIni(temp_loc, new_name, "locales.ini")
@@ -779,6 +786,10 @@ ButtonSaveLocale() {
     new_loc.other_shift := UI_loc_other_shift
     SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
 }
+
+; -----------------------------
+;; File and registry functions
+; -----------------------------
 
 ; Read settings from Windows Registry and locate dictionary file
 ReadSettings() {
@@ -864,13 +875,11 @@ SetDelays(new_input_delay, new_output_delay) {
 
 ; Load chords from a dictionary file
 LoadChords(file_name) {
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % file_name
     pause_loading := true
-    chords := {}
-    Loop, Read, % file_name
+    raw_chords := LoadDictionary(file_name)
+    For chord, text in raw_chords
     {
-        pos := InStr(A_LoopReadLine, A_Tab)
-        if (pos && ! RegisterChord(Arrange(SubStr(A_LoopReadLine, 1, pos-1)), SubStr(A_LoopReadLine, pos+1)) ) {
+        if (! RegisterChord(chord, text))  {
             if (pause_loading) {
                 MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
                 IfMsgBox Yes
@@ -881,6 +890,22 @@ LoadChords(file_name) {
         }
     }
     UpdateDictionaryUI()
+}
+
+; Load Tab-separated key-value pairs from a file  
+LoadDictionary(file_name) {
+    entries := {}
+    Loop, Read, % file_name
+    {
+        pos := InStr(A_LoopReadLine, A_Tab)
+        if (pos)
+             ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
+    }
+    Return entries
+}
+
+WriteToDictionary(shortcut, word, file_name) {
+    FileAppend % "`r`n" shortcut "`t" word, % file_name, UTF-8
 }
 
 ;; Debugging
@@ -898,13 +923,13 @@ Class DebugClass {
         this.Write("LOCALE SETTINGS:")
         For key, value in keys
             this.Write(key "=" value)
-        this.Write("`nINPUT LOG:`nEvent`tTimestamp`tlast_output`tfixed_output`tbuffer`tchord`tstart")       
+        this.Write("`nINPUT LOG:`nEvent`tTimestamp`tlast_output`tfixed_output`tchord_buffer`tchord`tstart")       
     }
     Log(output) {
-        global buffer
+        global chord_buffer
         global chord
         if ( (this.debug_file != "") || (A_Args[1] == "debug-vs") ) {
-            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" buffer "`t" chord "`t" start
+            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" chord_buffer "`t" chord "`t" start
             this.Write(output)
         }
     }
