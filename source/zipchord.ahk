@@ -66,6 +66,7 @@ global shorthands := {} ; as above for shorthands
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
 shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
+capitalize_shorthand := false  ; should the shorthand be capitalized
 
 global start := 0 ; tracks start time of two keys pressed at once
 
@@ -199,10 +200,11 @@ KeyDown:
             if (shorthand_buffer != "") {
                 debug.Log("BUFFER " shorthand_buffer)
                 if (shorthands.HasKey(shorthand_buffer)) {
-                    expanded := shorthands[shorthand_buffer] 
+                    expanded := shorthands[shorthand_buffer]
+                    debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
                     SendInput {Backspace %adj%}
-                    if ( (last_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
+                    if (capitalize_shorthand)
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
                         SendInput % "{Text}" expanded
@@ -218,6 +220,12 @@ KeyDown:
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
+        }
+        if ( (settings.capitalization != CAP_OFF) && (StrLen(shorthand_buffer) == 1) ) {
+            if ( (last_output & OUT_CAPITALIZE) || shifted )
+                capitalize_shorthand := true
+            else
+                capitalize_shorthand := false
         }
     }
 
@@ -309,6 +317,7 @@ KeyUp:
         chord := Arrange(chord_candidate)
         if (chords.HasKey(chord)) {
             expanded := chords[chord] ; store the expanded text
+            shorthand_buffer := ""
             debug.Log("Chord for:" expanded)
             ; detect and adjust expansion for suffixes and prefixes
             if (SubStr(expanded, 1, 1) == "~") {
