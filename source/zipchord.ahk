@@ -933,6 +933,7 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
 ; Load chords from a dictionary file
 LoadChords(file_name) {
     pause_loading := true
+    chords := {}
     raw_chords := LoadDictionary(file_name)
     For chord, text in raw_chords
     {
