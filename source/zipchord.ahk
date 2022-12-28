@@ -28,6 +28,11 @@ Class localeClass {
 ; stores current locale information 
 keys := New localeClass
 
+; affixes constants
+global AFFIX_NONE := 0 ; no prefix or suffix
+global AFFIX_PREFIX := 1 ; expansion is a prefix
+global AFFIX_SUFFIX := 2 ; expansion is a suffix
+
 ; capitalization constants
 global CAP_OFF = 1 ; no auto-capitalization,
 global CAP_CHORDS = 2 ; auto-capitalize chords only
@@ -201,8 +206,11 @@ KeyDown:
                 debug.Log("BUFFER " shorthand_buffer)
                 if (shorthands.HasKey(shorthand_buffer)) {
                     expanded := shorthands[shorthand_buffer]
+                    affixes := ProcessAffixes(expanded)
                     debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
+                    if (affixes & AFFIX_SUFFIX)
+                        adj++
                     SendInput {Backspace %adj%}
                     if (capitalize_shorthand)
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
@@ -212,6 +220,8 @@ KeyDown:
                         SendInput +%key%
                     else
                         SendInput %key%
+                    if (key == " " && (affixes & AFFIX_PREFIX))
+                        SendInput {Backspace}
                 }
             }
             shorthand_buffer := ""
@@ -319,26 +329,14 @@ KeyUp:
             expanded := chords[chord] ; store the expanded text
             shorthand_buffer := ""
             debug.Log("Chord for:" expanded)
-            ; detect and adjust expansion for suffixes and prefixes
-            if (SubStr(expanded, 1, 1) == "~") {
-                expanded := SubStr(expanded, 2)
-                suffix := true
-            } else {
-                suffix := false
-            }
-             if (SubStr(expanded, StrLen(expanded), 1) == "~") {
-                expanded := SubStr(expanded, 1, StrLen(expanded)-1)
-                prefix := true
-            } else {
-                prefix := false
-            }
+            affixes := ProcessAffixes(expanded)
             ; if we aren't restricted, we print a chord
-            if (suffix || IsUnrestricted()) {
+            if ( (affixes & AFFIX_SUFFIX) || IsUnrestricted()) {
                 if (settings.output_delay)
                     Sleep settings.output_delay
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
-                OpeningSpace(suffix)
+                OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
                     SendInput % expanded
@@ -351,7 +349,7 @@ KeyUp:
                 }
                 last_output := OUT_CHARACTER | OUT_AUTOMATIC  ; i.e. a chord (automated typing)
                 ; ending smart space
-                if (prefix) {
+                if (affixes & AFFIX_PREFIX) {
                     last_output |= OUT_PREFIX
                 } else if (settings.spacing & SPACE_AFTER_CHORD) {
                     SendInput {Space}
@@ -378,6 +376,20 @@ KeyUp:
 Return
 
 ; Helper functions
+
+; detect and adjust expansion for suffixes and prefixes
+ProcessAffixes(ByRef phrase) {
+    affixes := AFFIX_NONE
+    if (SubStr(phrase, 1, 1) == "~") {
+        phrase := SubStr(phrase, 2)
+        affixes |= AFFIX_SUFFIX
+    }
+    if (SubStr(phrase, StrLen(phrase), 1) == "~") {
+        phrase := SubStr(phrase, 1, StrLen(phrase)-1)
+        affixes |= AFFIX_PREFIX
+    }
+    Return affixes
+}
 
 ;remove raw chord output
 RemoveRawChord(output) {
