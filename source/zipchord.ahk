@@ -7,7 +7,7 @@ SetWorkingDir %A_ScriptDir%
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
 
-global version = "2.0.0-alpha.1"
+global version = "2.0.0-alpha.2"
 
 ; ------------------
 ;; Global Variables
@@ -881,7 +881,7 @@ ButtonSaveLocale() {
 
 ; Read settings from Windows Registry and locate dictionary file
 LoadSettings() {
-    For key, value in settings
+    For key in settings
     {
         RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
         if (! ErrorLevel)
