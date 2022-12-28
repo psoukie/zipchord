@@ -46,7 +46,7 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 Class settingsClass {
     chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
     locale := "English US"
-    capitalization := CAP_CHORDS
+capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := 0 ; Chord recognition options
     chord_file := "" ; file name for the chord dictionary
@@ -876,6 +876,7 @@ SetDelays(new_input_delay, new_output_delay) {
 ; Load chords from a dictionary file
 LoadChords(file_name) {
     pause_loading := true
+    chords := {}
     raw_chords := LoadDictionary(file_name)
     For chord, text in raw_chords
     {
