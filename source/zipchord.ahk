@@ -206,8 +206,11 @@ KeyDown:
                 debug.Log("BUFFER " shorthand_buffer)
                 if (shorthands.HasKey(shorthand_buffer)) {
                     expanded := shorthands[shorthand_buffer]
+                    affixes := ProcessAffixes(expanded)
                     debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
+                    if (affixes & AFFIX_SUFFIX)
+                        adj++
                     SendInput {Backspace %adj%}
                     if (capitalize_shorthand)
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
@@ -217,6 +220,8 @@ KeyDown:
                         SendInput +%key%
                     else
                         SendInput %key%
+                    if (key == " " && (affixes & AFFIX_PREFIX))
+                        SendInput {Backspace}
                 }
             }
             shorthand_buffer := ""
