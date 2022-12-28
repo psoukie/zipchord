@@ -48,7 +48,7 @@ Class settingsClass {
     chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
     shorthands_enabled := 1 ; maps to UI_shorthands_enabled for shorthand recognition
     locale := "English US"
-capitalization := CAP_CHORDS
+    capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
     chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
