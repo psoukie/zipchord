@@ -50,12 +50,11 @@ Class settingsClass {
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
-    chording := 0 ; Chord recognition options
-    chord_file := "" ; file name for the chord dictionary
-    shorthand_file := "" ; file name for the shorthand dictionary
-    input_delay := 0
+    chording := CHORD_RESTRICT ; Chord recognition options
+    chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
+    shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
+    input_delay := 90
     output_delay := 0
-    debugging := false
 }
 ; stores current settings
 global settings := New settingsClass
@@ -67,6 +66,7 @@ global shorthands := {} ; as above for shorthands
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
 shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
+capitalize_shorthand := false  ; should the shorthand be capitalized
 
 global start := 0 ; tracks start time of two keys pressed at once
 
@@ -123,7 +123,11 @@ Return   ; To prevent execution of any of the following code, except for the alw
 Initialize() {
     FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
     FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
-    ReadSettings()
+    if (!FileExist("locales.ini")) {
+        default_locale := new localeClass
+        SavePropertiesToIni(default_locale, "English US", "locales.ini")
+    }
+    LoadSettings()
     BuildMainDialog()
     BuildLocaleDialog()
     shorthands := LoadDictionary(settings.shorthand_file)
@@ -181,7 +185,8 @@ KeyDown:
         chord_candidate := ""
     }
 
-    chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
+    if (settings.chords_enabled)
+        chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
     if (StrLen(chord_buffer)==2) {
         start := A_TickCount 
@@ -195,10 +200,11 @@ KeyDown:
             if (shorthand_buffer != "") {
                 debug.Log("BUFFER " shorthand_buffer)
                 if (shorthands.HasKey(shorthand_buffer)) {
-                    expanded := shorthands[shorthand_buffer] 
+                    expanded := shorthands[shorthand_buffer]
+                    debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
                     SendInput {Backspace %adj%}
-                    if ( (last_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
+                    if (capitalize_shorthand)
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
                         SendInput % "{Text}" expanded
@@ -214,6 +220,12 @@ KeyDown:
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
+        }
+        if ( (settings.capitalization != CAP_OFF) && (StrLen(shorthand_buffer) == 1) ) {
+            if ( (last_output & OUT_CAPITALIZE) || shifted )
+                capitalize_shorthand := true
+            else
+                capitalize_shorthand := false
         }
     }
 
@@ -305,6 +317,7 @@ KeyUp:
         chord := Arrange(chord_candidate)
         if (chords.HasKey(chord)) {
             expanded := chords[chord] ; store the expanded text
+            shorthand_buffer := ""
             debug.Log("Chord for:" expanded)
             ; detect and adjust expansion for suffixes and prefixes
             if (SubStr(expanded, 1, 1) == "~") {
@@ -504,22 +517,22 @@ BuildMainDialog() {
     Gui, UI_main_window:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Dictionary|Detection|Output|About
-    Gui, Add, GroupBox, w310 h80, Keyboard and language
-    Gui, Add, DropDownList, xp+20 yp+30 Section w150 vUI_locale
+    Gui, Add, Tab3, vUI_tab, Dictionaries|Detection|Output|About
+    Gui, Add, Text, Section, &Keyboard and language
+    Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
-    Gui, Add, GroupBox, xs-20 y+40 w310 h130, Chord dictionary
+    Gui, Add, GroupBox, xs w310 h140 vUI_chord_entries, Chord dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
-    Gui, Add, Text, xs+10 y+5 w240 vUI_chord_entries Left, (999 chords)
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
     Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
-    Gui, Add, GroupBox, xs-20 y+30 w310 h130, Shorthand dictionary
+    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
+    Gui, Add, GroupBox, xs-20 y+30 w310 h130 vUI_shorthand_entries, Shorthand dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
-    Gui, Add, Text, xs+10 y+5 w240 vUI_shorthand_entries Left, (999 shorthands)
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, &Reload
+    Gui, Add, Checkbox, gEnableDisableControls vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
@@ -527,7 +540,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
     Gui, Tab, 3
-    Gui, Add, GroupBox, w310 h120 Section, Smart spaces
+    Gui, Add, GroupBox, w310 h140 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
@@ -536,8 +549,7 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, O&utput delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
-    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Y+m Checked%UI_chords_enabled%, Use &chord detection
-    Gui, Add, Button, Default w80 xs+220 yp gButtonOK, OK
+    Gui, Add, Button, Default w80 xm+240 gButtonOK, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
     Gui, Add, Checkbox, vUI_debugging, Log this session (debugging)
@@ -565,6 +577,8 @@ ShowMainDialog() {
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_chords_enabled, % settings.chords_enabled
+    GuiControl , , UI_shorthands_enabled, % settings.shorthands_enabled
+    ; debugging is always set to disabled
     GuiControl , , UI_debugging, 0
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
@@ -597,22 +611,28 @@ EnableDisableControls() {
 ButtonOK() {
     Gui, Submit, NoHide
     global keys
-    if (SetDelays(UI_input_delay, UI_output_delay) == false)
+    ; gather new settings from UI...
+    if (RegExMatch(UI_input_delay,"^\d+$") && RegExMatch(UI_output_delay,"^\d+$")) {
+            settings.input_delay := UI_input_delay + 0
+            settings.output_delay := UI_output_delay + 0
+    } else {
+        MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
         Return
+    }
     settings.capitalization := UI_capitalization
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Capitalization, % settings.capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Spacing, % settings.spacing
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Chording, % settings.chording
     settings.locale := UI_locale
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, Locale, % settings.locale
+    settings.chords_enabled := UI_chords_enabled
+    settings.shorthands_enabled := UI_shorthands_enabled
+    ; ...and save them to Windows Registry
+    For key, value in settings
+        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
-    if (UI_chords_enabled)
+    if (UI_chords_enabled || UI_shorthands_enabled)
         WireHotkeys("On")
-    settings.chords_enabled := UI_chords_enabled
     if (UI_debugging)
         debug.Start()
     CloseMainDialog()
@@ -647,21 +667,21 @@ Return
 
 ; Update UI with dictionary details
 UpdateDictionaryUI() {
-    if StrLen(settings.chord_file) > 35
+    if StrLen(settings.chord_file) > 40
         filestr := "..." SubStr(settings.chord_file, -34)
     else
         filestr := settings.chord_file
     Gui, UI_main_window:Default
     GuiControl Text, UI_chord_file, %filestr%
-    entriesstr := "(" chords.Count()
+    entriesstr := "Chord dictionary (" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
     GuiControl Text, UI_chord_entries, %entriesstr%
-    if StrLen(settings.shorthand_file) > 35
+    if StrLen(settings.shorthand_file) > 40
         filestr := "..." SubStr(settings.shorthand_file, -34)
     else
         filestr := settings.shorthand_file
     GuiControl Text, UI_shorthand_file, %filestr%
-    entriesstr := "(" shorthands.Count()
+    entriesstr := "Shorthand dictionary (" shorthands.Count()
     entriesstr .= (shorthands.Count()==1) ? " shorthand)" : " shorthands)"
     GuiControl Text, UI_shorthand_entries, %entriesstr%
 }
@@ -671,7 +691,6 @@ BtnSelectChordDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordFile, % dict
         LoadChords(dict)
     }
     Return
@@ -681,8 +700,8 @@ BtnSelectShorthandDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Shorthand Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.shorthand_file := dict
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ShorthandFile, % dict
-        LoadChords(dict)
+        shorthands := LoadDictionary(dict)
+        UpdateDictionaryUI()
     }
     Return
 }
@@ -861,67 +880,39 @@ ButtonSaveLocale() {
 ; -----------------------------
 
 ; Read settings from Windows Registry and locate dictionary file
-ReadSettings() {
-    default_locale := new localeClass
-    RegRead locale, HKEY_CURRENT_USER\Software\ZipChord, Locale
-    if ErrorLevel
-        locale := "English US"
-    RegRead input_delay, HKEY_CURRENT_USER\Software\ZipChord, InputDelay
-    if ErrorLevel
-        input_delay := 90
-    RegRead output_delay, HKEY_CURRENT_USER\Software\ZipChord, OutputDelay
-    if ErrorLevel
-        output_delay := 0
-    RegRead chording, HKEY_CURRENT_USER\Software\ZipChord, Chording
-    if ErrorLevel
-        chording := 0
-    RegRead spacing, HKEY_CURRENT_USER\Software\ZipChord, Spacing
-    if ErrorLevel
-        spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD
-    RegRead capitalization, HKEY_CURRENT_USER\Software\ZipChord, Capitalization
-    if ErrorLevel
-        capitalization := CAP_CHORDS
-    if (!FileExist("locales.ini"))
-       SavePropertiesToIni(default_locale, "English US", "locales.ini")
-    RegRead chord_file, HKEY_CURRENT_USER\Software\ZipChord, ChordFile
-    if (ErrorLevel)
-        chord_file := "chords-en-starting.txt"
-    CheckDictionaryFileExists(chord_file, "chord")
-    RegRead shorthand_file, HKEY_CURRENT_USER\Software\ZipChord, ShorthandFile
-    if (ErrorLevel)
-        shorthand_file := "shorthands-english-starting.txt"
-    CheckDictionaryFileExists(shorthand_file, "shorthand")
-    ; I couldn't find a way to read the values directly into the settings object, so assigning below:
-    settings.locale := locale
-    settings.input_delay := input_delay
-    settings.output_delay := output_delay
-    settings.chording := chording
-    settings.spacing := spacing
-    settings.capitalization := capitalization
-    settings.chord_file := chord_file
-    settings.shorthand_file := shorthand_file
+LoadSettings() {
+    For key, value in settings
+    {
+        RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
+        if (! ErrorLevel)
+            settings[key] := new_value
+    }
+    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
 }
 
 CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     if (! FileExist(dictionary_file) ) {
         errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
         ; If we don't have the dictionary, try opening the first file with a matching naming convention.
-        dictionary_file := dictionary_type "s*.txt"
-        if FileExist(dictionary_file) {
-            Loop, Files, %dictionary_file%
+        new_file := dictionary_type "s*.txt"
+        if FileExist(new_file) {
+            Loop, Files, %new_file%
                 flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
             Sort flist
-            dictionary_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", dictionary_file)
+            new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", new_file)
         }
         else {
             errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in its own folder.", dictionary_type)
-            dictionary_file := dictionary_type "s.txt"
-            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %dictionary_file%, UTF-8
+            new_file := dictionary_type "s.txt"
+            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
         }
-        dictionary_file := A_ScriptDir "\" dictionary_file
+        new_file := A_ScriptDir "\" new_file
         MsgBox ,, ZipChord, %errmsg%
+        Return new_file
     }
+    Return dictionary_file
 }
 
 SavePropertiesToIni(object_to_save, ini_section, ini_filename) {
@@ -937,20 +928,6 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
         value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
         object_destination[key] := value
     }
-}
-
-; Save delay settings
-SetDelays(new_input_delay, new_output_delay) {
-    ; first check we have integers
-    if (RegExMatch(new_input_delay,"^\d+$") && RegExMatch(new_output_delay,"^\d+$")) {
-            settings.input_delay := new_input_delay + 0
-            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, InputDelay, % settings.input_delay
-            settings.output_delay := new_output_delay + 0
-            RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, OutputDelay, % settings.output_delay
-            Return true
-    }
-    MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
-    Return false
 }
 
 ; Load chords from a dictionary file
