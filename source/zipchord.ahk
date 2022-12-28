@@ -181,7 +181,8 @@ KeyDown:
         chord_candidate := ""
     }
 
-    chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
+    if (settings.chords_enabled)
+        chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
     if (StrLen(chord_buffer)==2) {
         start := A_TickCount 
@@ -504,22 +505,22 @@ BuildMainDialog() {
     Gui, UI_main_window:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Dictionary|Detection|Output|About
-    Gui, Add, GroupBox, w310 h80, Keyboard and language
-    Gui, Add, DropDownList, xp+20 yp+30 Section w150 vUI_locale
+    Gui, Add, Tab3, vUI_tab, Dictionaries|Detection|Output|About
+    Gui, Add, Text, Section, &Keyboard and language
+    Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
-    Gui, Add, GroupBox, xs-20 y+40 w310 h130, Chord dictionary
+    Gui, Add, GroupBox, xs w310 h140 vUI_chord_entries, Chord dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
-    Gui, Add, Text, xs+10 y+5 w240 vUI_chord_entries Left, (999 chords)
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
     Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
-    Gui, Add, GroupBox, xs-20 y+30 w310 h130, Shorthand dictionary
+    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
+    Gui, Add, GroupBox, xs-20 y+30 w310 h130 vUI_shorthand_entries, Shorthand dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
-    Gui, Add, Text, xs+10 y+5 w240 vUI_shorthand_entries Left, (999 shorthands)
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, &Reload
+    Gui, Add, Checkbox, gEnableDisableControls vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
@@ -527,7 +528,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
     Gui, Tab, 3
-    Gui, Add, GroupBox, w310 h120 Section, Smart spaces
+    Gui, Add, GroupBox, w310 h140 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
@@ -536,8 +537,7 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, O&utput delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
-    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Y+m Checked%UI_chords_enabled%, Use &chord detection
-    Gui, Add, Button, Default w80 xs+220 yp gButtonOK, OK
+    Gui, Add, Button, Default w80 xm+240 gButtonOK, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
     Gui, Add, Checkbox, vUI_debugging, Log this session (debugging)
@@ -565,6 +565,7 @@ ShowMainDialog() {
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
     GuiControl , , UI_chords_enabled, % settings.chords_enabled
+    GuiControl , , UI_shorthands_enabled, % settings.shorthands_enabled
     GuiControl , , UI_debugging, 0
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
@@ -610,9 +611,12 @@ ButtonOK() {
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
-    if (UI_chords_enabled)
+    if (UI_chords_enabled || UI_shorthands_enabled)
         WireHotkeys("On")
     settings.chords_enabled := UI_chords_enabled
+    settings.shorthands_enabled := UI_shorthands_enabled
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ChordsEnabled, % settings.chords_enabled
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, ShorthandsEnabled, % settings.shorthands_enabled
     if (UI_debugging)
         debug.Start()
     CloseMainDialog()
@@ -647,21 +651,21 @@ Return
 
 ; Update UI with dictionary details
 UpdateDictionaryUI() {
-    if StrLen(settings.chord_file) > 35
+    if StrLen(settings.chord_file) > 40
         filestr := "..." SubStr(settings.chord_file, -34)
     else
         filestr := settings.chord_file
     Gui, UI_main_window:Default
     GuiControl Text, UI_chord_file, %filestr%
-    entriesstr := "(" chords.Count()
+    entriesstr := "Chord dictionary (" chords.Count()
     entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
     GuiControl Text, UI_chord_entries, %entriesstr%
-    if StrLen(settings.shorthand_file) > 35
+    if StrLen(settings.shorthand_file) > 40
         filestr := "..." SubStr(settings.shorthand_file, -34)
     else
         filestr := settings.shorthand_file
     GuiControl Text, UI_shorthand_file, %filestr%
-    entriesstr := "(" shorthands.Count()
+    entriesstr := "Shorthand dictionary (" shorthands.Count()
     entriesstr .= (shorthands.Count()==1) ? " shorthand)" : " shorthands)"
     GuiControl Text, UI_shorthand_entries, %entriesstr%
 }
@@ -863,6 +867,12 @@ ButtonSaveLocale() {
 ; Read settings from Windows Registry and locate dictionary file
 ReadSettings() {
     default_locale := new localeClass
+    RegRead chords_enabled, HKEY_CURRENT_USER\Software\ZipChord, ChordsEnabled
+    if ErrorLevel
+        chords_enabled := 1
+    RegRead shorthands_enabled, HKEY_CURRENT_USER\Software\ZipChord, ShorthandsEnabled
+    if ErrorLevel
+        shorthands_enabled := 1
     RegRead locale, HKEY_CURRENT_USER\Software\ZipChord, Locale
     if ErrorLevel
         locale := "English US"
@@ -892,6 +902,8 @@ ReadSettings() {
         shorthand_file := "shorthands-english-starting.txt"
     CheckDictionaryFileExists(shorthand_file, "shorthand")
     ; I couldn't find a way to read the values directly into the settings object, so assigning below:
+    settings.chords_enabled := chords_enabled
+    settings.shorthands_enabled := shorthands_enabled
     settings.locale := locale
     settings.input_delay := input_delay
     settings.output_delay := output_delay
