@@ -1,0 +1,4394 @@
+This is a sample starting English-language shorthand dictionary for ZipChord. It contains the most frequent English words.
+See https://github.com/psoukie/zipchord for details.
+
+This dictionary is based on the list of 5,000 most frequent English words at https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/A_Frequency_Dictionary_of_Contemporary_American_English) which has 4374 entries after removing duplicates.
+
+The format of this file is as follows: Sequences of typed keys that trigger the shorthand recognition are separated from the expanded full words by Tab. All other lines are ignored by ZipChord. You can change existing shorthands and add your own.
+Note: If you add a shorthand for an existing entry with "(no shorthand)", remove the note in the parantheses, otherwise it will be included in the expanded text.
+
+The logic behind the shortcuts in this dictionary adheres to consistent principles:
+1. If the word is three characters or less, no shorthand is predefined
+2. Doubled consonants (two consonants immediately following each other) are replaced with only one consonant
+3. If the word starts with a vowel, the vowel is retained in the shorthand
+4. All remaining vowels are removed
+5. If the resulting shorthand is already in use or is a word in its own right, no shorthand is predefined
+
+For example, "actually" is defined as "actl", and "career" as "crr" (and slightly trickier: "attitude" is "attd")
+
+Entries by frequency
+--------------------
+
+the (no shorthand)
+be (no shorthand)
+and (no shorthand)
+of (no shorthand)
+a (no shorthand)
+in (no shorthand)
+to (no shorthand)
+hv	have
+it (no shorthand)
+I (no shorthand)
+tht	that
+for (no shorthand)
+you (no shorthand)
+he (no shorthand)
+wth	with
+on (no shorthand)
+do (no shorthand)
+'s (no shorthand)
+say (no shorthand)
+th	they
+ths	this
+but (no shorthand)
+at (no shorthand)
+we (no shorthand)
+his (no shorthand)
+frm	from
+not (no shorthand)
+n't (no shorthand)
+by (no shorthand)
+or (no shorthand)
+she (no shorthand)
+as (no shorthand)
+wht	what
+go (no shorthand)
+thr	their
+wl	will
+who (no shorthand)
+can (no shorthand)
+get (no shorthand)
+if (no shorthand)
+all (no shorthand)
+wld	would
+her (no shorthand)
+mk	make
+abt	about
+my (no shorthand)
+knw	know
+there (no shorthand)
+one (no shorthand)
+up (no shorthand)
+tm	time
+year (no shorthand)
+so (no shorthand)
+thnk	think
+see (no shorthand)
+whch	which
+whn	when
+sm	some
+thm	them
+ppl	people
+tk	take
+me (no shorthand)
+out (no shorthand)
+int	into
+jst	just
+him (no shorthand)
+cm	come
+yr	your
+now (no shorthand)
+cld	could
+thn	than
+lk	like
+othr	other
+then (no shorthand)
+how (no shorthand)
+its (no shorthand)
+two (no shorthand)
+our (no shorthand)
+mr	more
+these (no shorthand)
+wnt	want
+way (no shorthand)
+no (no shorthand)
+look (no shorthand)
+frst	first
+als	also
+new (no shorthand)
+bcs	because
+day (no shorthand)
+use (no shorthand)
+man (no shorthand)
+hr	here
+fnd	find
+gv	give
+thng	thing
+well (no shorthand)
+mn	many
+onl	only
+those (no shorthand)
+tl	tell
+vr	very
+evn	even
+bck	back
+any (no shorthand)
+gd	good
+us (no shorthand)
+thrgh	through
+wmn	woman
+lf	life
+chld	child
+dwn	down
+wrk	work
+aftr	after
+cl	call
+may (no shorthand)
+wrld	world
+ovr	over
+shld	should
+stl	still
+try (no shorthand)
+schl	school
+lst	last
+ask (no shorthand)
+too (no shorthand)
+nd	need
+three (no shorthand)
+fl	feel
+bcm	become
+stt	state
+nvr	never
+btwn	between
+hgh	high
+smthng	something
+rl	really
+mst	most
+anthr	another
+mch	much
+own (no shorthand)
+fml	family
+hs	house
+lv	leave
+put (no shorthand)
+old (no shorthand)
+whl	while
+mean (no shorthand)
+let (no shorthand)
+why (no shorthand)
+prsdnt	president
+kp	keep
+same (no shorthand)
+grt	great
+bgn	begin
+big (no shorthand)
+seem (no shorthand)
+grp	group
+cntr	country
+tlk	talk
+prblm	problem
+whr	where
+trn	turn
+stdnt	student
+evr	every
+hnd	hand
+hlp	help
+agnst	against
+strt	start
+amrcn	American
+prt	part
+shw	show
+mght	might
+sch	such
+plc	place
+agn	again
+ct	city
+cs	case
+few (no shorthand)
+sstm	system
+wk	week
+cmpn	company
+ech	each
+prcnt	percent
+hear (no shorthand)
+drng	during
+qstn	question
+rght	right
+prgrm	program
+run (no shorthand)
+nmbr	number
+sml	small
+gvrnmnt	government
+pl	play
+off (no shorthand)
+mv	move
+alws	always
+nght	night
+blv	believe
+td	today
+hld	hold
+pnt	point
+live (no shorthand)
+hpn	happen
+brng	bring
+nxt	next
+wtht	without
+bfr	before
+lrg	large
+must (no shorthand)
+war (no shorthand)
+hm	home
+undr	under
+rm	room
+fct	fact
+ar	area
+ntnl	national
+wrt	write
+money (no shorthand)
+str	story
+wtr	water
+mthr	mother
+dfrnt	different
+yng	young
+mnth	month
+lot (no shorthand)
+bk	book
+eye (no shorthand)
+std	study
+job (no shorthand)
+knd	kind
+wrd	word
+issue (no shorthand)
+sd	side
+fr	four
+bsns	business
+thgh	though
+hd	head
+far (no shorthand)
+lng	long
+blck	black
+mln	million
+bth	both
+ltl	little
+yes (no shorthand)
+snc	since
+arnd	around
+prvd	provide
+srvc	service
+imprtnt	important
+sit (no shorthand)
+aw	away
+frnd	friend
+hwvr	however
+pwr	power
+yet (no shorthand)
+fthr	father
+hour (no shorthand)
+oftn	often
+untl	until
+pltcl	political
+ln	line
+end (no shorthand)
+stnd	stand
+amng	among
+gm	game
+ever (no shorthand)
+ls	lose
+bad (no shorthand)
+mmbr	member
+mt	meet
+pay (no shorthand)
+law (no shorthand)
+almst	almost
+car (no shorthand)
+ltr	later
+nm	name
+incld	include
+fv	five
+center (no shorthand)
+onc	once
+unvrst	university
+cntn	continue
+least (no shorthand)
+real (no shorthand)
+white (no shorthand)
+chng	change
+set (no shorthand)
+svrl	several
+ago (no shorthand)
+infrmtn	information
+nthng	nothing
+cmnt	community
+bst	best
+id	idea
+ld	lead
+bd	body
+lrn	learn
+kid (no shorthand)
+mnt	minute
+tbl	table
+whthr	whether
+undrstnd	understand
+team (no shorthand)
+wtch	watch
+tgthr	together
+flw	follow
+stp	stop
+fc	face
+anthng	anything
+pblc	public
+scl	social
+alrd	already
+prnt	parent
+spk	speak
+crt	create
+ofc	office
+alw	allow
+lvl	level
+rd	read
+spnd	spend
+prsn	person
+dr	door
+sr	sure
+add (no shorthand)
+street (no shorthand)
+hstr	history
+party (no shorthand)
+grw	grow
+rsn	reason
+mrnng	morning
+opn	open
+wthn	within
+althgh	although
+wlk	walk
+nws	news
+hlth	health
+court (no shorthand)
+frc	force
+erl	early
+hmslf	himself
+air (no shorthand)
+low (no shorthand)
+art (no shorthand)
+rslt	result
+mmnt	moment
+ofr	offer
+rmmbr	remember
+rsrch	research
+engh	enough
+grl	girl
+boy (no shorthand)
+win (no shorthand)
+fd	food
+acrs	across
+guy (no shorthand)
+scnd	second
+abl	able
+twrd	toward
+mb	maybe
+prcs	process
+evrthng	everything
+apr	appear
+age (no shorthand)
+policy (no shorthand)
+cnsdr	consider
+incldng	including
+prbbl	probably
+edctn	education
+love (no shorthand)
+actl	actually
+buy (no shorthand)
+wt	wait
+die (no shorthand)
+hmn	human
+snd	send
+fee (no shorthand)
+expct	expect
+srv	serve
+sns	sense
+tchr	teacher
+mrkt	market
+st	stay
+bld	build
+ntn	nation
+fall (no shorthand)
+oh (no shorthand)
+dth	death
+pln	plan
+intrst	interest
+smn	someone
+exprnc	experience
+cut (no shorthand)
+kl	kill
+bhnd	behind
+rch	reach
+six (no shorthand)
+lcl	local
+rmn	remain
+efct	effect
+sgst	suggest
+cntrl	control
+prhps	perhaps
+rs	raise
+cls	class
+lt	late
+mjr	major
+yh	yeah
+els	else
+ps	pass
+pht	photo
+sl	sell
+thmslvs	themselves
+fld	field
+clg	college
+smtms	sometimes
+frmr	former
+dvlpmnt	development
+rqr	require
+alng	along
+dcd	decide
+scrt	security
+psbl	possible
+efrt	effort
+role (no shorthand)
+btr	better
+rt	rate
+strng	strong
+msc	music
+rprt	report
+ldr	leader
+lght	light
+whole (no shorthand)
+vc	voice
+clr	color
+hrt	heart
+cr	care
+police (no shorthand)
+ecnmc	economic
+wf	wife
+mnd	mind
+fnl	finally
+drg	drug
+less (no shorthand)
+rtrn	return
+acrdng	according
+pull (no shorthand)
+dcsn	decision
+expln	explain
+carry (no shorthand)
+dvlp	develop
+vw	view
+free (no shorthand)
+hp	hope
+drv	drive
+son (no shorthand)
+arm (no shorthand)
+dprtmnt	department
+tr	true
+prc	price
+mltr	military
+fdrl	federal
+brk	break
+actn	action
+vl	value
+thank (no shorthand)
+rltnshp	relationship
+twn	town
+bldng	building
+rcv	receive
+sct	society
+dfrnc	difference
+chrch	church
+full (no shorthand)
+jn	join
+road (no shorthand)
+intrntnl	international
+mdl	model
+pstn	position
+tax (no shorthand)
+drctr	director
+agr	agree
+mtr	matter
+espcl	especially
+form (no shorthand)
+rcrd	record
+spcl	special
+grnd	ground
+whs	whose
+hrd	hard
+pck	pick
+ppr	paper
+ofcl	official
+ssn	season
+wr	wear
+evnt	event
+sprt	support
+spc	space
+plr	player
+evrn	everyone
+cpl	couple
+bs	base
+prjct	project
+prdc	produce
+site (no shorthand)
+sttn	situation
+hit (no shorthand)
+indstr	industry
+hlf	half
+actvt	activity
+eat (no shorthand)
+itslf	itself
+fgr	figure
+cst	cost
+es	easy
+qt	quite
+pctr	picture
+clear (no shorthand)
+cvr	cover
+dscrb	describe
+img	image
+tch	teach
+wall (no shorthand)
+dctr	doctor
+rcnt	recent
+prdct	product
+dt	data
+prctc	practice
+phn	phone
+pc	piece
+crtn	certain
+ethr	either
+oil (no shorthand)
+smpl	simply
+tst	test
+prsnl	personal
+star (no shorthand)
+lnd	land
+thrd	third
+gnrl	general
+cmptr	computer
+movie (no shorthand)
+wrkr	worker
+ctch	catch
+tp	type
+nrth	north
+step (no shorthand)
+atnt	attention
+tchnlg	technology
+orgnztn	organization
+bb	baby
+src	source
+drw	draw
+cause (no shorthand)
+tree (no shorthand)
+flm	film
+chs	choose
+evdnc	evidence
+Rpblcn	Republican
+dfclt	difficult
+century (no shorthand)
+nrl	nearly
+red (no shorthand)
+wndw	window
+prk	park
+prd	period
+cltr	culture
+hair (no shorthand)
+lstn	listen
+chnc	chance
+avlbl	available
+brthr	brother
+smr	summer
+rlz	realize
+prvt	private
+scnc	science
+letter (no shorthand)
+cngrs	congress
+cndtn	condition
+shrt	short
+lkl	likely
+oprtnt	opportunity
+rule (no shorthand)
+chc	choice
+sngl	single
+ptnt	patient
+flr	floor
+trm	term
+mtrl	material
+ml	mile
+admnstrtn	administration
+crs	course
+dfns	defense
+plnt	plant
+enrg	energy
+cmpgn	campaign
+ppltn	population
+fire (no shorthand)
+close (no shorthand)
+dghtr	daughter
+invlv	involve
+hsbnd	husband
+wrng	wrong
+crtnl	certainly
+incrs	increase
+ftr	future
+sth	south
+mdcl	medical
+brd	board
+ann	anyone
+dl	deal
+hsptl	hospital
+rst	rest
+sk	seek
+mslf	myself
+cnt	county
+fght	fight
+sbjct	subject
+rsk	risk
+ordr	order
+wst	west
+ecnm	economy
+qckl	quickly
+thrw	throw
+bed (no shorthand)
+ofcr	officer
+rprsnt	represent
+sn	soon
+top (no shorthand)
+fill (no shorthand)
+athr	author
+pst	past
+upn	upon
+gl	goal
+bhvr	behavior
+drp	drop
+ntr	nature
+agnc	agency
+rcntl	recently
+store (no shorthand)
+frgn	foreign
+crnt	current
+prfrmnc	performance
+bnk	bank
+sound (no shorthand)
+psh	push
+fcs	focus
+rdc	reduce
+nt	note
+fn	fine
+nr	near
+mvmnt	movement
+cmn	common
+bln	billion
+blood (no shorthand)
+pg	page
+cncrn	concern
+pr	poor
+entr	enter
+shr	share
+srs	series
+usl	usually
+ntrl	natural
+hot (no shorthand)
+rc	race
+lngg	language
+rvr	river
+dd	dead
+act (no shorthand)
+sgnfcnt	significant
+rspns	response
+rise (no shorthand)
+decade (no shorthand)
+artcl	article
+thus (no shorthand)
+svn	seven
+sht	shoot
+est	east
+anml	animal
+smlr	similar
+sv	save
+fctr	factor
+central (no shorthand)
+ocr	occur
+cmt	committee
+serious (no shorthand)
+sport (no shorthand)
+lie (no shorthand)
+bnd	beyond
+exctl	exactly
+dspt	despite
+happy (no shorthand)
+eght	eight
+prtct	protect
+list (no shorthand)
+sz	size
+qlt	quality
+prsr	pressure
+acpt	accept
+ready (no shorthand)
+aprch	approach
+sgn	sign
+atck	attack
+indvdl	individual
+crr	career
+answr	answer
+dog (no shorthand)
+md	media
+thght	thought
+whtvr	whatever
+dtrmn	determine
+tlvsn	television
+mtng	meeting
+scn	scene
+scs	success
+prpr	prepare
+idntf	identify
+prs	press
+prtclrl	particularly
+rsrc	resource
+amnt	amount
+arg	argue
+rcgnz	recognize
+trtmnt	treatment
+lft	left
+dgr	degree
+stck	stock
+indct	indicate
+grwth	growth
+simple (no shorthand)
+ablt	ability
+dlr	dollar
+unn	union
+dss	disease
+evrbd	everybody
+wndr	wonder
+elctn	election
+loss (no shorthand)
+box (no shorthand)
+hrslf	herself
+fund (no shorthand)
+ms	miss
+pretty (no shorthand)
+rgn	region
+flng	feeling
+lay (no shorthand)
+trnng	training
+msg	message
+arv	arrive
+stndrd	standard
+otsd	outside
+fail (no shorthand)
+trd	trade
+stf	staff
+bnft	benefit
+chrctr	character
+arm	army
+asctn	association
+oprtn	operation
+prsnt	present
+crm	crime
+cup (no shorthand)
+islnd	island
+anlss	analysis
+chck	check
+phtgrph	photograph
+gls	glass
+frwrd	forward
+athrt	authority
+erth	earth
+stg	stage
+srt	sort
+station (no shorthand)
+clrl	clearly
+cmpr	compare
+indd	indeed
+knwldg	knowledge
+bl	blue
+exmpl	example
+strtg	strategy
+mntn	mountain
+gs	guess
+sstr	sister
+gun (no shorthand)
+vrs	various
+lgh	laugh
+envrnmnt	environment
+dsgn	design
+sun (no shorthand)
+lwr	lawyer
+sex (no shorthand)
+rthr	rather
+artst	artist
+clb	club
+prv	prove
+sctn	section
+skl	skill
+trth	truth
+ok (no shorthand)
+mngr	manager
+exctv	executive
+dstrct	district
+clm	claim
+frgt	forget
+hng	hang
+entire (no shorthand)
+leg (no shorthand)
+envrnmntl	environmental
+estblsh	establish
+dmcrtc	democratic
+rmv	remove
+main (no shorthand)
+prfsr	professor
+fnncl	financial
+enj	enjoy
+ntwrk	network
+dscs	discuss
+final (no shorthand)
+trl	trial
+lgl	legal
+cold (no shorthand)
+abv	above
+rck	rock
+seat (no shorthand)
+wpn	weapon
+sng	song
+exprt	expert
+radio (no shorthand)
+nc	nice
+avd	avoid
+mmr	memory
+mngmnt	management
+chrg	charge
+sprng	spring
+crd	card
+maintain (no shorthand)
+theory (no shorthand)
+vst	visit
+imgn	imagine
+fnsh	finish
+sttmnt	statement
+firm (no shorthand)
+hg	huge
+rspnd	respond
+pplr	popular
+phscl	physical
+trdtnl	traditional
+contain (no shorthand)
+peace (no shorthand)
+grn	green
+thnks	thanks
+Dmcrt	Democrat
+impct	impact
+strctr	structure
+tnght	tonight
+drctn	direction
+fly (no shorthand)
+ont	onto
+kng	king
+rvl	reveal
+cell (no shorthand)
+rlgs	religious
+ball (no shorthand)
+prtclr	particular
+empl	employee
+sdnl	suddenly
+apl	apply
+shk	shake
+cltrl	cultural
+chr	chair
+PM (no shorthand)
+jstc	justice
+dscvr	discover
+msr	measure
+pltcs	politics
+mng	manage
+trt	treat
+yrslf	yourself
+pn	pain
+evnng	evening
+unt	unit
+afct	affect
+prdctn	production
+bit (no shorthand)
+insd	inside
+rng	range
+worry (no shorthand)
+prfrm	perform
+ncsr	necessary
+cnfrnc	conference
+cnddt	candidate
+msm	museum
+spcfc	specific
+thrght	throughout
+hl	hall
+fsh	fish
+trp	trip
+mention (no shorthand)
+edg	edge
+trbl	trouble
+intrvw	interview
+style (no shorthand)
+middle (no shorthand)
+ten (no shorthand)
+wght	weight
+adlt	adult
+drm	dream
+fear (no shorthand)
+drk	dark
+mthd	method
+smbd	somebody
+mgzn	magazine
+rflct	reflect
+heavy (no shorthand)
+sldr	soldier
+prprt	property
+btfl	beautiful
+wrtr	writer
+stuff (no shorthand)
+cmr	camera
+imprv	improve
+shldr	shoulder
+bar (no shorthand)
+htl	hotel
+instd	instead
+hill (no shorthand)
+exst	exist
+sea (no shorthand)
+instttn	institution
+prps	purpose
+ptrn	pattern
+dtl	detail
+mchn	machine
+chlng	challenge
+ownr	owner
+agnt	agent
+tgh	tough
+ahd	ahead
+gnrtn	generation
+cmrcl	commercial
+whm	whom
+srfc	surface
+bdgt	budget
+sntr	senator
+bag (no shorthand)
+rlt	reality
+edtr	editor
+tnd	tend
+adrs	address
+cvl	civil
+dscsn	discussion
+mom (no shorthand)
+vlnc	violence
+ttl	total
+skn	skin
+ht	heat
+cncl	council
+ntc	notice
+bt	beat
+nor (no shorthand)
+mdrn	modern
+vt	vote
+sing (no shorthand)
+cncr	cancer
+fngr	finger
+lake (no shorthand)
+wsh	wish
+mrg	marriage
+vctm	victim
+tsk	task
+yrd	yard
+ktchn	kitchen
+itm	item
+rspnsblt	responsibility
+mth	mouth
+agrmnt	agreement
+atrn	attorney
+cptl	capital
+thrt	threat
+smile (no shorthand)
+gas (no shorthand)
+pstv	positive
+trck	track
+invstmnt	investment
+acnt	account
+rich (no shorthand)
+ctzn	citizen
+adnc	audience
+lady (no shorthand)
+dnr	dinner
+wstrn	western
+dbt	debate
+cnsmr	consumer
+mjrt	majority
+intrstng	interesting
+prvnt	prevent
+trvl	travel
+brn	born
+relate (no shorthand)
+asm	assume
+nn	none
+admt	admit
+frnt	front
+cch	coach
+prtnr	partner
+shot (no shorthand)
+scntst	scientist
+snr	senior
+sfr	suffer
+aln	alone
+clctn	collection
+scsfl	successful
+spch	speech
+evntl	eventually
+key (no shorthand)
+msn	mission
+scr	score
+nwsppr	newspaper
+wnd	wind
+rfrm	reform
+cncrnd	concerned
+prfsnl	professional
+rltn	relation
+trps	troops
+grdn	garden
+acs	access
+pblsh	publish
+rcl	recall
+Svt	Soviet
+sthrn	southern
+snt	senate
+opnn	opinion
+optn	option
+jdg	judge
+orgnl	original
+cstmr	customer
+crtcl	critical
+crnr	corner
+bsc	basic
+incm	income
+drctl	directly
+rls	release
+rstrnt	restaurant
+nghbrhd	neighborhood
+efctv	effective
+lbr	labor
+nbd	nobody
+stare (no shorthand)
+imdtl	immediately
+achv	achieve
+forest (no shorthand)
+dad (no shorthand)
+hurt (no shorthand)
+vd	video
+strk	strike
+sft	safety
+absltl	absolutely
+thrfr	therefore
+frdm	freedom
+vrsn	version
+plane (no shorthand)
+attd	attitude
+sxl	sexual
+rfr	refer
+frsh	fresh
+invlvd	involved
+pwrfl	powerful
+bird (no shorthand)
+touch (no shorthand)
+vrt	variety
+dp	deep
+txt	text
+wd	wide
+crdt	credit
+nine (no shorthand)
+slp	sleep
+invstgtn	investigation
+annc	announce
+cmpltl	completely
+cndct	conduct
+cnflct	conflict
+rplc	replace
+atnd	attend
+prtcpnt	participant
+argmnt	argument
+objct	object
+pls	please
+nclr	nuclear
+sky (no shorthand)
+aftrnn	afternoon
+hndrd	hundred
+encrg	encourage
+prfct	perfect
+psblt	possibility
+Brtsh	British
+exmn	examine
+cnvrstn	conversation
+generally (no shorthand)
+bgnng	beginning
+scrtr	secretary
+bch	beach
+sf	safe
+spirit (no shorthand)
+wknd	weekend
+date (no shorthand)
+dfn	define
+feature (no shorthand)
+glbl	global
+elmnt	element
+atmpt	attempt
+slwl	slowly
+gvrnr	governor
+cncpt	concept
+sorry (no shorthand)
+esl	easily
+btl	battle
+lg	league
+cmp	camp
+intrdc	introduce
+stts	status
+insrnc	insurance
+cmplt	complete
+stick (no shorthand)
+sltn	solution
+web (no shorthand)
+vsn	vision
+stn	stone
+lck	lack
+drvr	driver
+nrml	normal
+truck (no shorthand)
+mnstr	minister
+hndl	handle
+hole (no shorthand)
+fan (no shorthand)
+spt	spot
+crss	crisis
+spsd	supposed
+rfs	refuse
+drnk	drink
+rsrchr	researcher
+trdtn	tradition
+cmnctn	communication
+dstnc	distance
+shp	ship
+gn	gain
+exprs	express
+indpndnt	independent
+ice (no shorthand)
+scale (no shorthand)
+brain (no shorthand)
+wntr	winter
+cmsn	commission
+wood (no shorthand)
+dvsn	division
+spcs	species
+AM (no shorthand)
+roll (no shorthand)
+hide (no shorthand)
+clnt	client
+rsdnt	resident
+cntrct	contract
+gld	gold
+ptntl	potential
+prsnc	presence
+insttt	institute
+scrn	screen
+Chns	Chinese
+hrs	horse
+EErpn	European
+trgt	target
+wlng	willing
+survey (no shorthand)
+intrstd	interested
+chf	chief
+crwd	crowd
+prison (no shorthand)
+trms	terms
+obvsl	obviously
+bss	basis
+aprtmnt	apartment
+farm (no shorthand)
+flght	flight
+shape (no shorthand)
+dmnd	demand
+strngth	strength
+vlg	village
+oprt	operate
+rprtr	reporter
+grd	guard
+obsrv	observe
+dlvr	deliver
+count (no shorthand)
+advntg	advantage
+wild (no shorthand)
+prvs	previous
+avrg	average
+emrg	emerge
+cntrbt	contribute
+ldrshp	leadership
+boat (no shorthand)
+fclt	facility
+ern	earn
+hghl	highly
+vhcl	vehicle
+pnd	pound
+tn	tiny
+undrstndng	understanding
+settle (no shorthand)
+unls	unless
+tmrw	tomorrow
+fndtn	foundation
+qck	quick
+block (no shorthand)
+rdr	reader
+clct	collect
+gst	guest
+lvng	living
+tool (no shorthand)
+prtctn	protection
+fair (no shorthand)
+adtnl	additional
+prmt	promote
+eqpmnt	equipment
+mstl	mostly
+pntng	painting
+feed (no shorthand)
+prncpl	principle
+bwl	bowl
+tchnq	technique
+lmt	limit
+idntt	identity
+title (no shorthand)
+crtc	critic
+srvv	survive
+cry (no shorthand)
+brdr	border
+lift (no shorthand)
+pth	path
+aspct	aspect
+marry (no shorthand)
+shop (no shorthand)
+failure (no shorthand)
+ride (no shorthand)
+rspnsbl	responsible
+gthr	gather
+jmp	jump
+sample (no shorthand)
+afr	affair
+wrth	worth
+fit (no shorthand)
+chrmn	chairman
+lsn	lesson
+Chrstms	Christmas
+insst	insist
+anbd	anybody
+flk	folk
+band (no shorthand)
+ear (no shorthand)
+prcdr	procedure
+asct	associate
+inch	inch
+wrm	warm
+AAfrcn	African
+Frnch	French
+bsbl	baseball
+dmnstrt	demonstrate
+ft	foot
+Chrstn	Christian
+cmpttn	competition
+afrd	afraid
+sprd	spread
+ignr	ignore
+soft (no shorthand)
+anl	annual
+wndrfl	wonderful
+thrtn	threaten
+commit (no shorthand)
+dn	deny
+intlgnc	intelligence
+rglr	regular
+inflnc	influence
+rctn	reaction
+cross (no shorthand)
+mstr	master
+suit (no shorthand)
+blw	blow
+dstr	destroy
+gft	gift
+cf	coffee
+anw	anyway
+blf	belief
+comment (no shorthand)
+aprntl	apparently
+twc	twice
+bckgrnd	background
+qrtr	quarter
+rvw	review
+fth	faith
+spd	speed
+engg	engage
+broad (no shorthand)
+prspctv	perspective
+slghtl	slightly
+grwng	growing
+fnctn	function
+cnstrctn	construction
+egg (no shorthand)
+wv	wave
+female (no shorthand)
+mrdr	murder
+tape (no shorthand)
+burn (no shorthand)
+mns	means
+awr	aware
+mstk	mistake
+quiet (no shorthand)
+cnctn	connection
+sh	shoe
+clths	clothes
+prms	promise
+rlgn	religion
+untd	united
+cntxt	context
+actv	active
+yth	youth
+lctn	location
+nghbr	neighbor
+drs	dress
+IIntrnt	Internet
+ctgr	category
+dngrs	dangerous
+extnd	extend
+cmbn	combine
+coast (no shorthand)
+rltvl	relatively
+bus (no shorthand)
+hey (no shorthand)
+flwng	following
+dpnd	depend
+hell (no shorthand)
+bn	bone
+ck	cook
+drct	direct
+ntv	native
+cool (no shorthand)
+rmnd	remind
+hstrcl	historical
+mrl	moral
+vtr	voter
+aprprt	appropriate
+fms	famous
+hire (no shorthand)
+vctr	victory
+cntct	contact
+fully (no shorthand)
+ngtv	negative
+mdcn	medicine
+prtcpt	participate
+grade (no shorthand)
+estrn	eastern
+spl	supply
+ystrd	yesterday
+fmlr	familiar
+dmcrc	democracy
+pair (no shorthand)
+healthy (no shorthand)
+tie (no shorthand)
+brth	birth
+prgrs	progress
+dmg	damage
+exchng	exchange
+btm	bottom
+daily (no shorthand)
+dcmnt	document
+grand (no shorthand)
+jrnl	journal
+kn	knee
+prmr	primary
+othrws	otherwise
+train (no shorthand)
+grb	grab
+crcl	circle
+lean (no shorthand)
+wn	wine
+mnrt	minority
+flwr	flower
+dvc	device
+IIrq	Iraqi
+plt	plate
+cln	clean
+alv	alive
+actr	actor
+hate (no shorthand)
+exprsn	expression
+below (no shorthand)
+brght	bright
+tour (no shorthand)
+fndng	finding
+exrcs	exercise
+plstc	plastic
+dngr	danger
+nck	neck
+valley (no shorthand)
+acdmc	academic
+aplctn	application
+intnd	intend
+male (no shorthand)
+tall (no shorthand)
+shut (no shorthand)
+lts	lots
+IIndn	Indian
+rspct	respect
+colleague (no shorthand)
+wrtng	writing
+rn	rain
+fst	fast
+ftbl	football
+wlcm	welcome
+dmstc	domestic
+pool (no shorthand)
+ltrtr	literature
+extr	extra
+nrthrn	northern
+dsr	desire
+crprt	corporate
+session (no shorthand)
+sprm	supreme
+studio (no shorthand)
+Russian (no shorthand)
+nod (no shorthand)
+lrnng	learning
+clmb	climb
+imprtnc	importance
+smwhr	somewhere
+expnd	expand
+frth	fourth
+dry (no shorthand)
+dspr	disappear
+abs	abuse
+chckn	chicken
+obtn	obtain
+map (no shorthand)
+crfl	carefully
+incrsngl	increasingly
+grtst	greatest
+cmplx	complex
+mtl	metal
+jr	jury
+swt	sweet
+prpsl	proposal
+impsbl	impossible
+scntfc	scientific
+tckt	ticket
+leaf (no shorthand)
+clsrm	classroom
+srnd	surround
+lnch	lunch
+mnng	meaning
+injr	injury
+invt	invite
+enm	enemy
+rpt	repeat
+br	bear
+lip (no shorthand)
+mayor (no shorthand)
+awrd	award
+cmtmnt	commitment
+cnsqnc	consequence
+instrctn	instruction
+srprs	surprise
+poll (no shorthand)
+fvrt	favorite
+explr	explore
+predict (no shorthand)
+adpt	adopt
+sght	sight
+strm	storm
+assmnt	assessment
+wthr	weather
+pckt	pocket
+aid (no shorthand)
+rdng	reading
+thin (no shorthand)
+soul (no shorthand)
+strange (no shorthand)
+mrd	married
+orgnz	organize
+cnclsn	conclusion
+fuel (no shorthand)
+urbn	urban
+blng	belong
+slt	salt
+farmer (no shorthand)
+strght	straight
+advc	advice
+blnc	balance
+tmprtr	temperature
+empt	empty
+cncld	conclude
+smhw	somehow
+prsdntl	presidential
+prm	prime
+brst	breast
+dsk	desk
+breath (no shorthand)
+thtr	theater
+acknwldg	acknowledge
+theme (no shorthand)
+fat (no shorthand)
+sftwr	software
+sgr	sugar
+edctnl	educational
+thsnd	thousand
+cd	code
+cnct	connect
+ylw	yellow
+instrmnt	instrument
+Jpns	Japanese
+pnl	panel
+lbrr	library
+expnsv	expensive
+emtnl	emotional
+engn	engine
+propose (no shorthand)
+mntl	mental
+difficulty (no shorthand)
+brwn	brown
+bscl	basically
+ring (no shorthand)
+mrk	mark
+lct	locate
+srch	search
+lrgl	largely
+possibly (no shorthand)
+anmr	anymore
+gnrt	generate
+rgnl	regional
+obvs	obvious
+angr	angry
+anlst	analyst
+acdnt	accident
+trnd	trend
+aprnc	appearance
+crntl	currently
+shdw	shadow
+bng	being
+moon (no shorthand)
+brdg	bridge
+rcmnd	recommend
+hrng	hearing
+frt	fruit
+dnc	dance
+shft	shift
+cmfrtbl	comfortable
+strgl	struggle
+rvn	revenue
+notion (no shorthand)
+ok	okay
+pckg	package
+oght	ought
+trfc	traffic
+intrnl	internal
+prfr	prefer
+crw	crew
+prft	profit
+rgltn	regulation
+lnk	link
+thnkng	thinking
+hrdl	hardly
+arprt	airport
+extrml	extremely
+sck	sick
+cptr	capture
+unq	unique
+actual (no shorthand)
+chst	chest
+meal (no shorthand)
+beauty (no shorthand)
+extnt	extent
+dfnd	defend
+vstr	visitor
+dzn	dozen
+dclr	declare
+emrgnc	emergency
+ad (no shorthand)
+truly (no shorthand)
+planet (no shorthand)
+slct	select
+ethnc	ethnic
+ns	nose
+loan (no shorthand)
+csh	cash
+cntrbtn	contribution
+slw	slow
+cntrst	contrast
+bottle (no shorthand)
+launch (no shorthand)
+nvl	novel
+duty (no shorthand)
+root (no shorthand)
+cntnt	content
+cmpnnt	component
+aprct	appreciate
+crcmstnc	circumstance
+tchng	teaching
+paint (no shorthand)
+thck	thick
+cat (no shorthand)
+nthr	neither
+orslvs	ourselves
+crct	correct
+wrn	warn
+cpct	capacity
+cnvntn	convention
+pltcn	politician
+pursue (no shorthand)
+stng	setting
+zn	zone
+pilot (no shorthand)
+ensr	ensure
+ultmtl	ultimately
+wake (no shorthand)
+shirt (no shorthand)
+guide (no shorthand)
+AAIDS	AIDS
+mix (no shorthand)
+slip (no shorthand)
+steal (no shorthand)
+frqntl	frequently
+blm	blame
+sheet (no shorthand)
+estmt	estimate
+rlf	relief
+cmbntn	combination
+invstr	investor
+due (no shorthand)
+slnc	silence
+mnr	manner
+mscl	muscle
+brnch	branch
+chn	chain
+tlphn	telephone
+invstgt	investigate
+Grmn	German
+prcntg	percentage
+otcm	outcome
+estt	estate
+forth (no shorthand)
+strs	stress
+eql	equal
+EEnglsh	English
+wlfr	welfare
+tpcl	typical
+crz	crazy
+excpt	except
+funny (no shorthand)
+meat (no shorthand)
+appeal (no shorthand)
+lngtrm	long-term
+eliminate (no shorthand)
+usd	used
+mtn	motion
+cmpln	complain
+row (no shorthand)
+Jwsh	Jewish
+kck	kick
+snw	snow
+prdcr	producer
+slv	solve
+opstn	opposition
+bsktbl	basketball
+rely (no shorthand)
+cnsrvtv	conservative
+trst	trust
+mrr	mirror
+tnk	tank
+sgnfcntl	significantly
+smwht	somewhat
+atrct	attract
+anwhr	anywhere
+rgm	regime
+fix (no shorthand)
+entrl	entirely
+afford (no shorthand)
+lngth	length
+secret (no shorthand)
+plsr	pleasure
+file (no shorthand)
+tth	tooth
+cnfrm	confirm
+separate (no shorthand)
+gldn	golden
+mnwhl	meanwhile
+chnl	channel
+bdrm	bedroom
+rqrmnt	requirement
+ancnt	ancient
+cvrg	coverage
+trail (no shorthand)
+hst	host
+srgr	surgery
+prcptn	perception
+rr	rare
+era (no shorthand)
+grnt	grant
+ocn	ocean
+srsl	seriously
+cnfdnc	confidence
+asd	aside
+tear (no shorthand)
+jdgmnt	judgment
+indstrl	industrial
+expcttn	expectation
+rsltn	resolution
+cp	copy
+wng	wing
+doubt (no shorthand)
+fun (no shorthand)
+totally (no shorthand)
+pour (no shorthand)
+gndr	gender
+srprsd	surprised
+beer (no shorthand)
+bond (no shorthand)
+plus (no shorthand)
+debt (no shorthand)
+smrt	smart
+terrible (no shorthand)
+wtns	witness
+rfrnc	reference
+vice (no shorthand)
+hero (no shorthand)
+bmb	bomb
+rtng	rating
+busy (no shorthand)
+cite (no shorthand)
+crprtn	corporation
+rprsnttv	representative
+evrwhr	everywhere
+soil (no shorthand)
+hghw	highway
+frame (no shorthand)
+strtch	stretch
+ops	oppose
+Cthlc	Catholic
+cloud (no shorthand)
+intl	initial
+vrbl	variable
+esntl	essential
+imprvmnt	improvement
+opnng	opening
+ncsrl	necessarily
+nrs	nurse
+incdnt	incident
+abrtn	abortion
+dvd	divide
+aim (no shorthand)
+tired (no shorthand)
+careful (no shorthand)
+chp	cheap
+bsd	beside
+aprt	apart
+crmnl	criminal
+employ (no shorthand)
+rsh	rush
+usr	user
+upr	upper
+wnr	winner
+fshn	fashion
+tip (no shorthand)
+apple (no shorthand)
+vast (no shorthand)
+spcfcl	specifically
+lmtd	limited
+enrms	enormous
+holiday (no shorthand)
+eml	e-mail
+emphsz	emphasize
+merely (no shorthand)
+core (no shorthand)
+mtch	match
+lndscp	landscape
+ovrl	overall
+glf	golf
+vrtl	virtually
+route (no shorthand)
+flow (no shorthand)
+fwr	fewer
+cbl	cable
+gt	gate
+proud (no shorthand)
+dsh	dish
+bnth	beneath
+incrsd	increased
+scd	succeed
+brl	barely
+nrw	narrow
+sld	solid
+cntmprr	contemporary
+accuse (no shorthand)
+unfrtntl	unfortunately
+usfl	useful
+noise (no shorthand)
+exps	expose
+mass (no shorthand)
+mltpl	multiple
+vgtbl	vegetable
+seed (no shorthand)
+rjct	reject
+dcln	decline
+exprmnt	experiment
+lgsltn	legislation
+hat (no shorthand)
+msv	massive
+grs	grass
+dfntl	definitely
+clsr	closer
+lbrl	liberal
+stir (no shorthand)
+cptn	captain
+rvltn	revolution
+typically (no shorthand)
+sctr	sector
+aprv	approve
+uncl	uncle
+vlm	volume
+explntn	explanation
+sntnc	sentence
+escp	escape
+unsl	unusual
+dstrbtn	distribution
+rrl	rural
+cast (no shorthand)
+hshld	household
+clbrt	celebrate
+taste (no shorthand)
+chrctrstc	characteristic
+adtn	addition
+acqr	acquire
+clsl	closely
+proper (no shorthand)
+tone (no shorthand)
+tpc	topic
+twrds	towards
+waste (no shorthand)
+wheel (no shorthand)
+athlt	athlete
+cnvnc	convince
+altrntv	alternative
+pepper (no shorthand)
+cream (no shorthand)
+tchncl	technical
+sqr	square
+plenty (no shorthand)
+invst	invest
+rgrd	regard
+intrvntn	intervention
+ilgl	illegal
+lower (no shorthand)
+cmpt	compete
+tlnt	talent
+glt	guilty
+mlk	milk
+hght	height
+asstnc	assistance
+prsnlt	personality
+IIsrl	Israeli
+gay (no shorthand)
+frvr	forever
+ass	assess
+weak (no shorthand)
+cgrt	cigarette
+permit (no shorthand)
+psngr	passenger
+crtcsm	criticism
+twnt	twenty
+hnr	honor
+crtv	creative
+knck	knock
+dspl	display
+cmps	campus
+dfntn	definition
+gr	gray
+sgnl	signal
+wrnng	warning
+phscn	physician
+clmn	column
+intrctn	interaction
+drmtc	dramatic
+rpblc	republic
+prmrl	primarily
+prrt	priority
+achvmnt	achievement
+rqst	request
+wrp	wrap
+engnr	engineer
+rice (no shorthand)
+schlr	scholar
+arln	airline
+expns	expense
+obsrvtn	observation
+gap (no shorthand)
+agnd	agenda
+creation (no shorthand)
+drag (no shorthand)
+sspct	suspect
+fshng	fishing
+bread (no shorthand)
+hi (no shorthand)
+unbl	unable
+scrm	scream
+jrnlst	journalist
+cnstttn	constitution
+lucky (no shorthand)
+exclnt	excellent
+pmnt	payment
+slctn	selection
+lab (no shorthand)
+arst	arrest
+dpl	deeply
+sad (no shorthand)
+chldhd	childhood
+sps	suppose
+frl	fairly
+prsctr	prosecutor
+vlnt	violent
+rcvr	recover
+rf	roof
+amndmnt	amendment
+emtn	emotion
+exstng	existing
+grdt	graduate
+factory (no shorthand)
+schdl	schedule
+avn	avenue
+sprtl	spiritual
+wash (no shorthand)
+plnng	planning
+slf	self
+shout (no shorthand)
+slnt	silent
+brf	brief
+error (no shorthand)
+wdl	widely
+dscrptn	description
+imdt	immediate
+prchs	purchase
+ldng	leading
+funding (no shorthand)
+stlmnt	settlement
+prr	prayer
+inttv	initiative
+cltn	coalition
+cmprsn	comparison
+prtn	portion
+opnnt	opponent
+tnsn	tension
+chptr	chapter
+bthr	bother
+crclm	curriculum
+cnsst	consist
+imgrnt	immigrant
+enbl	enable
+faculty (no shorthand)
+steel (no shorthand)
+dsrt	desert
+ast	asset
+hsng	housing
+trnsfrm	transform
+rgrdng	regarding
+prcv	perceive
+dprsn	depression
+infrm	inform
+frml	formal
+abndn	abandon
+chip (no shorthand)
+dbl	double
+rmnng	remaining
+exstnc	existence
+cheese (no shorthand)
+jnt	joint
+svngs	savings
+prsrv	preserve
+diet (no shorthand)
+trtr	territory
+tea (no shorthand)
+bend (no shorthand)
+arng	arrange
+rslv	resolve
+psg	passage
+lock (no shorthand)
+rsstnc	resistance
+stream (no shorthand)
+slide (no shorthand)
+shrp	sharp
+ccl	cycle
+pose (no shorthand)
+phs	phase
+trnstn	transition
+rdctn	reduction
+ngttn	negotiation
+mnfctrr	manufacturer
+quote (no shorthand)
+dsrv	deserve
+sale (no shorthand)
+lr	layer
+wdng	wedding
+discovery (no shorthand)
+mine (no shorthand)
+acdm	academy
+sand (no shorthand)
+msl	missile
+elct	elect
+clmt	climate
+prtcptn	participation
+knf	knife
+atmsphr	atmosphere
+jk	joke
+urg	urge
+ordnr	ordinary
+vsl	visual
+nmrs	numerous
+ocsn	occasion
+phlsph	philosophy
+suicide (no shorthand)
+shl	shall
+glad (no shorthand)
+gds	goods
+mrvr	moreover
+coat (no shorthand)
+cnsstnt	consistent
+alchl	alcohol
+opst	opposite
+cop (no shorthand)
+unvrs	universe
+breathe (no shorthand)
+prctcl	practical
+thrp	therapy
+racial (no shorthand)
+elswhr	elsewhere
+rarely (no shorthand)
+essentially (no shorthand)
+dscpln	discipline
+rpl	reply
+Mxcn	Mexican
+psn	passion
+tale (no shorthand)
+dst	dust
+ks	kiss
+irn	iron
+indpndnc	independence
+Spnsh	Spanish
+advnc	advance
+pot (no shorthand)
+ptt	potato
+motor (no shorthand)
+pack (no shorthand)
+dmnt	dominate
+mrktng	marketing
+dsstr	disaster
+expsr	exposure
+cmplnt	complaint
+cap (no shorthand)
+cngrsnl	congressional
+jckt	jacket
+intns	intense
+imps	impose
+elctrc	electric
+implmnt	implement
+enfrcmnt	enforcement
+anlz	analyze
+rtr	retire
+dfct	deficit
+emphss	emphasis
+cncntrt	concentrate
+acmplsh	accomplish
+prvsl	previously
+smbl	symbol
+bureau (no shorthand)
+lbrtr	laboratory
+atch	attach
+fndmntl	fundamental
+whnvr	whenever
+arngmnt	arrangement
+invstgtr	investigator
+shck	shock
+adjst	adjust
+emplr	employer
+vsbl	visible
+prst	priest
+vlntr	volunteer
+intrprttn	interpretation
+entrtnmnt	entertainment
+hbt	habit
+ilstrt	illustrate
+equally (no shorthand)
+prspct	prospect
+enhnc	enhance
+svr	severe
+mntr	monitor
+amzng	amazing
+pvrt	poverty
+incrsng	increasing
+boss (no shorthand)
+inspr	inspire
+anger (no shorthand)
+hvl	heavily
+prkng	parking
+print (no shorthand)
+mkr	maker
+invlvmnt	involvement
+qn	queen
+gene (no shorthand)
+vary (no shorthand)
+aprxmtl	approximately
+glr	gallery
+evlt	evaluate
+trnsfr	transfer
+usual (no shorthand)
+mystery (no shorthand)
+entry (no shorthand)
+mood (no shorthand)
+bean (no shorthand)
+objctv	objective
+cpbl	capable
+cnstnt	constant
+sbstnc	substance
+strngl	strongly
+excptn	exception
+cmndr	commander
+spndng	spending
+crucial (no shorthand)
+acr	acre
+wire (no shorthand)
+cmnd	command
+nrvs	nervous
+scld	so-called
+cmpttv	competitive
+AAsn	Asian
+twr	tower
+vtrn	veteran
+crtr	creature
+smk	smoke
+AArb	Arab
+prnc	prince
+alnc	alliance
+trnsprttn	transportation
+luck (no shorthand)
+smptm	symptom
+bury (no shorthand)
+clnc	clinic
+ilnss	illness
+chmpnshp	championship
+prsnr	prisoner
+rpttn	reputation
+edtn	edition
+jc	juice
+sc	sauce
+pk	peak
+cnfrnt	confront
+brkfst	breakfast
+rcgntn	recognition
+smell (no shorthand)
+al	ally
+pure (no shorthand)
+toy (no shorthand)
+slr	salary
+elctrnc	electronic
+bthrm	bathroom
+srl	surely
+pschlgcl	psychological
+evltn	evaluation
+dmnsn	dimension
+personnel (no shorthand)
+blt	belt
+acmpn	accompany
+implctn	implication
+albm	album
+prfctl	perfectly
+jet (no shorthand)
+hello (no shorthand)
+rltv	relative
+tourist (no shorthand)
+phnmnn	phenomenon
+fellow (no shorthand)
+ts	toss
+pblctn	publication
+nrb	nearby
+cnsdrtn	consideration
+holy (no shorthand)
+entrprs	enterprise
+inr	inner
+pray (no shorthand)
+crk	creek
+boot (no shorthand)
+whspr	whisper
+rsst	resist
+jrn	journey
+flg	flag
+dsrdr	disorder
+dsgnr	designer
+ltrl	literally
+aprnt	apparent
+prmnnt	permanent
+angl	angle
+smth	smooth
+unlk	unlike
+tblspn	tablespoon
+cnsltnt	consultant
+twin (no shorthand)
+fvr	favor
+throat (no shorthand)
+cnstrct	construct
+brthd	birthday
+swng	swing
+sprtr	supporter
+tstng	testing
+rsnbl	reasonable
+mail (no shorthand)
+slvr	silver
+rtrmnt	retirement
+snstv	sensitive
+gntlmn	gentleman
+nv	navy
+trrsm	terrorism
+ocsnl	occasionally
+glnc	glance
+obsrvr	observer
+cnstntl	constantly
+bind (no shorthand)
+wet (no shorthand)
+dig (no shorthand)
+quit (no shorthand)
+dgtl	digital
+vs (no shorthand)
+asst	assist
+emplmnt	employment
+sgstn	suggestion
+rpdl	rapidly
+embrc	embrace
+jnr	junior
+stmch	stomach
+extrm	extreme
+recovery (no shorthand)
+ngtt	negotiate
+imprsn	impression
+wg	wage
+ffth	fifth
+FALSE	FALSE
+pnk	pink
+absnc	absence
+agrsv	aggressive
+crn	corn
+mxtr	mixture
+sbstntl	substantial
+grndmthr	grandmother
+qtl	quietly
+jl	jail
+spclst	specialist
+dealer (no shorthand)
+pm	poem
+butter (no shorthand)
+cnvntnl	conventional
+pace (no shorthand)
+intntn	intention
+peer (no shorthand)
+rstr	restore
+wdn	wooden
+crtcz	criticize
+nvrthls	nevertheless
+aprvl	approval
+hstrc	historic
+secure (no shorthand)
+prprtn	preparation
+Ltn	Latin
+lrd	lord
+tspn	teaspoon
+musical (no shorthand)
+wgh	weigh
+pan (no shorthand)
+asr	assure
+vwr	viewer
+ars	arise
+admnstrtr	administrator
+imgrtn	immigration
+hnst	honest
+orgn	origin
+gnt	giant
+dvrst	diversity
+tmt	tomato
+advs	advise
+blgcl	biological
+shell (no shorthand)
+essay (no shorthand)
+hstrn	historian
+dpt	deputy
+efctvl	effectively
+buck (no shorthand)
+tb	tube
+rfg	refugee
+dpth	depth
+flt	flat
+prcsl	precisely
+mad (no shorthand)
+dsblt	disability
+dstrctn	destruction
+asmptn	assumption
+normally (no shorthand)
+angel (no shorthand)
+pop (no shorthand)
+criteria (no shorthand)
+minor (no shorthand)
+crp	crop
+brr	barrier
+asgn	assign
+elmntr	elementary
+vlbl	valuable
+tstmn	testimony
+stk	stake
+cncrt	concert
+lbl	label
+rtn	routine
+wlth	wealth
+gng	gang
+incrprt	incorporate
+brnd	brand
+rcp	recipe
+vctn	vacation
+utlt	utility
+stlt	satellite
+extrrdnr	extraordinary
+ultmt	ultimate
+chmcl	chemical
+advct	advocate
+edctr	educator
+cake (no shorthand)
+phrs	phrase
+yl	yell
+personally (no shorthand)
+rspndnt	respondent
+Plstnn	Palestinian
+clsc	classic
+snp	snap
+via (no shorthand)
+lwst	lawsuit
+instl	install
+swp	sweep
+fstvl	festival
+drft	draft
+hvn	heaven
+swtch	switch
+actvst	activist
+clng	ceiling
+clck	clock
+ant	aunt
+drkns	darkness
+daddy (no shorthand)
+royal (no shorthand)
+advrtsng	advertising
+rgh	rough
+prgnnt	pregnant
+pnlt	penalty
+dstnt	distant
+dvlpng	developing
+yld	yield
+armd	armed
+mchnsm	mechanism
+rnk	rank
+klr	killer
+fnc	fence
+unvrsl	universal
+trr	terror
+wlf	wolf
+anxt	anxiety
+found (no shorthand)
+protein (no shorthand)
+engnrng	engineering
+clthng	clothing
+prcd	proceed
+fbr	fiber
+rct	react
+spn	spin
+rghl	roughly
+drama (no shorthand)
+lbrt	liberty
+ingrdnt	ingredient
+hip (no shorthand)
+prvsn	provision
+brdn	burden
+teen (no shorthand)
+srvvl	survival
+unlkl	unlikely
+IItln	Italian
+chmbr	chamber
+lost (no shorthand)
+cmnct	communicate
+stpd	stupid
+bet (no shorthand)
+Mslm	Muslim
+bell (no shorthand)
+onn	onion
+dsgr	disagree
+encntr	encounter
+cnstttnl	constitutional
+cbnt	cabinet
+rmrkbl	remarkable
+brkn	broken
+latter (no shorthand)
+ovrcm	overcome
+virus (no shorthand)
+strngr	stranger
+retain (no shorthand)
+prz	prize
+string (no shorthand)
+exhbtn	exhibition
+expnsn	expansion
+trmnds	tremendous
+bnch	bunch
+asstnt	assistant
+initially (no shorthand)
+acrt	accurate
+chk	cheek
+indx	index
+ocp	occupy
+gear (no shorthand)
+guarantee (no shorthand)
+chclt	chocolate
+crmn	ceremony
+btn	button
+shpng	shopping
+dispute (no shorthand)
+frntr	furniture
+mrn	marine
+sttstcs	statistics
+OOlmpc	Olympic
+wp	wipe
+spksmn	spokesman
+spr	super
+IIslmc	Islamic
+trnslt	translate
+intrprt	interpret
+tstf	testify
+cprtn	cooperation
+frndl	friendly
+prfl	profile
+pnts	pants
+whrs	whereas
+elt	elite
+port (no shorthand)
+cmplctd	complicated
+csn	cousin
+strtgc	strategic
+trrst	terrorist
+chrt	chart
+drwng	drawing
+gntl	gently
+od	odd
+incntv	incentive
+incnt	innocent
+impl	imply
+stdm	stadium
+scnr	scenario
+shtng	shooting
+blnd	blind
+asmbl	assembly
+wthdrw	withdraw
+strp	strip
+lvr	lover
+mnl	mainly
+arcrft	aircraft
+nwl	newly
+idl	ideal
+drt	dirt
+bndr	boundary
+rsrt	resort
+gntc	genetic
+cncntrtn	concentration
+naturally (no shorthand)
+ministry (no shorthand)
+srprsng	surprising
+advsr	adviser
+rcmndtn	recommendation
+smlrl	similarly
+jstf	justify
+wldlf	wildlife
+bench (no shorthand)
+bullet (no shorthand)
+mode (no shorthand)
+chmpn	champion
+dsms	dismiss
+dck	deck
+lftm	lifetime
+extnsv	extensive
+atrctv	attractive
+politically (no shorthand)
+rglrl	regularly
+raw (no shorthand)
+fault (no shorthand)
+clncl	clinical
+dtct	detect
+cnsdrbl	considerable
+wrkng	working
+prtl	partly
+pltfrm	platform
+rmt	remote
+frtn	fortune
+slave (no shorthand)
+delivery (no shorthand)
+rflctn	reflection
+rlvnt	relevant
+unknwn	unknown
+pause (no shorthand)
+tissue (no shorthand)
+snk	sink
+counter (no shorthand)
+Bbl	Bible
+lcns	license
+trgd	tragedy
+dlg	dialogue
+mutual (no shorthand)
+loose (no shorthand)
+extrnl	external
+pride (no shorthand)
+awrns	awareness
+elctrct	electricity
+dvrs	diverse
+advncd	advanced
+fstr	faster
+onln	online
+aslt	assault
+shrtl	shortly
+fnnc	finance
+originally (no shorthand)
+fndr	founder
+chrctrz	characterize
+prtst	protest
+pole (no shorthand)
+intlctl	intellectual
+cmnst	communist
+infctn	infection
+cntrvrs	controversy
+frz	freeze
+prtrt	portrait
+prf	proof
+stsfctn	satisfaction
+insght	insight
+hdqrtrs	headquarters
+stair (no shorthand)
+crsh	crash
+cnsttt	constitute
+thirty (no shorthand)
+altr	alter
+sdn	sudden
+potentially (no shorthand)
+dirty (no shorthand)
+evlv	evolve
+tngr	teenager
+vltn	violation
+joy (no shorthand)
+pss	possess
+hrcn	hurricane
+ofns	offense
+rlx	relax
+mount (no shorthand)
+treaty (no shorthand)
+prior (no shorthand)
+mmrl	memorial
+estblshmnt	establishment
+tap (no shorthand)
+swm	swim
+prprl	properly
+gulf (no shorthand)
+tng	tongue
+salad (no shorthand)
+shltr	shelter
+crspndnt	correspondent
+intrdctn	introduction
+fnrl	funeral
+ltrr	literary
+cnvrt	convert
+vlt	violate
+rub (no shorthand)
+entrnc	entrance
+epsd	episode
+trnmnt	tournament
+vtl	vital
+stbl	stable
+splt	split
+rprsnttn	representation
+fctn	fiction
+lane (no shorthand)
+dstnctn	distinction
+sgmnt	segment
+cmprhnsv	comprehensive
+cnfdnt	confident
+prominent (no shorthand)
+prsnttn	presentation
+net (no shorthand)
+sqz	squeeze
+tbc	tobacco
+sgnfcnc	significance
+imgntn	imagination
+prtnd	pretend
+mere (no shorthand)
+fade (no shorthand)
+steady (no shorthand)
+nwhr	nowhere
+vrtn	variation
+rdcl	radical
+advntr	adventure
+prfsn	profession
+exctng	exciting
+fate (no shorthand)
+rgrdls	regardless
+load (no shorthand)
+sngr	singer
+dstrbt	distribute
+ton (no shorthand)
+instnc	instance
+afltn	affiliation
+hntng	hunting
+pale (no shorthand)
+pt	poet
+grdl	gradually
+prtnrshp	partnership
+cpblt	capability
+Cndn	Canadian
+tech (no shorthand)
+cmrc	commerce
+grndfthr	grandfather
+bake (no shorthand)
+shlf	shelf
+hn	honey
+rnd	round
+flee (no shorthand)
+adapt (no shorthand)
+buyer (no shorthand)
+dvrc	divorce
+dfnsv	defensive
+bmbng	bombing
+scrd	scared
+gstr	gesture
+ptr	poetry
+rsrv	reserve
+stsf	satisfy
+pltn	pollution
+lwn	lawn
+dpndng	depending
+wsdm	wisdom
+cmfrt	comfort
+plot (no shorthand)
+vlnrbl	vulnerable
+explsn	explosion
+tail (no shorthand)
+dfr	differ
+sstn	sustain
+stblt	stability
+fnts	fantasy
+oblgtn	obligation
+God (no shorthand)
+bike (no shorthand)
+dnng	dining
+cstm	custom
+ill (no shorthand)
+celebrity (no shorthand)
+lthr	leather
+gvn	given
+frmwrk	framework
+owe (no shorthand)
+slght	slight
+tndnc	tendency
+crck	crack
+brfl	briefly
+derive (no shorthand)
+spkr	speaker
+scndl	scandal
+fftn	fifteen
+schm	scheme
+jz	jazz
+eldrl	elderly
+clbrtn	celebration
+evolution (no shorthand)
+fghtr	fighter
+pblcl	publicly
+trc	trace
+rid (no shorthand)
+dtctv	detective
+lmttn	limitation
+bsds	besides
+sp	soup
+ovn	oven
+rpd	rapid
+chase (no shorthand)
+sphstctd	sophisticated
+trb	tribe
+pp	pipe
+deer (no shorthand)
+ilstrtn	illustration
+mhm	mm-hmm
+unfrm	uniform
+trnsmsn	transmission
+strg	storage
+pile (no shorthand)
+srvvr	survivor
+rsmbl	resemble
+incrdbl	incredible
+imprs	impress
+ecnmst	economist
+efcnt	efficient
+fft	fifty
+shd	shade
+opr	opera
+clclt	calculate
+prfrnc	preference
+gdln	guideline
+cnsm	consume
+mntnnc	maintenance
+frmtn	formation
+glv	glove
+schlrshp	scholarship
+edct	educate
+proportion (no shorthand)
+apntmnt	appointment
+cnvctn	conviction
+myth (no shorthand)
+solar (no shorthand)
+vessel (no shorthand)
+wealthy (no shorthand)
+frndshp	friendship
+mmbrshp	membership
+crft	craft
+qlf	qualify
+ernngs	earnings
+aslp	asleep
+prch	porch
+cntrvrsl	controversial
+pnfl	painful
+cngrsmn	congressman
+mm	mama
+infnt	infant
+cow (no shorthand)
+prpsd	proposed
+sfcnt	sufficient
+oak (no shorthand)
+mall (no shorthand)
+pnshmnt	punishment
+hlpfl	helpful
+ongng	ongoing
+admsn	admission
+frqnc	frequency
+ratio (no shorthand)
+delay (no shorthand)
+prvc	privacy
+trick (no shorthand)
+etc (no shorthand)
+circuit (no shorthand)
+mscn	musician
+sue (no shorthand)
+ad	aide
+mdst	modest
+hlcptr	helicopter
+empr	empire
+dtld	detailed
+efcnc	efficiency
+hmr	humor
+snctns	sanctions
+bdl	badly
+tns	tennis
+emsn	emission
+dsprt	desperate
+grlc	garlic
+cntst	contest
+strngthn	strengthen
+dmnstrtn	demonstration
+rstrctn	restriction
+IIrsh	Irish
+hntr	hunter
+stndng	standing
+hndfl	handful
+expld	explode
+prmpt	prompt
+absrb	absorb
+egr	eager
+tmprr	temporary
+cmsnr	commissioner
+diamond (no shorthand)
+curious (no shorthand)
+dfrntl	differently
+rsrvtn	reservation
+dwntwn	downtown
+adjstmnt	adjustment
+cmpstn	composition
+tgr	tiger
+fbrc	fabric
+asrt	assert
+dscrmntn	discrimination
+float (no shorthand)
+math (no shorthand)
+ovrlk	overlook
+crps	corps
+sqnc	sequence
+heel (no shorthand)
+successfully (no shorthand)
+exmntn	examination
+hrzn	horizon
+abslt	absolute
+antcpt	anticipate
+yrs	yours
+dmnnt	dominant
+bull (no shorthand)
+prvntn	prevention
+meter (no shorthand)
+lgtmt	legitimate
+msk	mask
+bite (no shorthand)
+stroke (no shorthand)
+asgnmnt	assignment
+lion (no shorthand)
+rfl	rifle
+brlnt	brilliant
+apnt	appoint
+bm	boom
+nkd	naked
+hngr	hungry
+tght	tight
+flame (no shorthand)
+ecnmcs	economics
+cbn	cabin
+orng	orange
+wander (no shorthand)
+txpr	taxpayer
+rmntc	romantic
+dvt	devote
+infltn	inflation
+frthrmr	furthermore
+pine (no shorthand)
+agrcltr	agriculture
+lgc	legacy
+extnsn	extension
+barrel (no shorthand)
+arvl	arrival
+rgstr	register
+flvr	flavor
+vrss	versus
+flsh	flesh
+sbmt	submit
+grg	garage
+ctn	cotton
+oprtr	operator
+nut (no shorthand)
+blade (no shorthand)
+grlfrnd	girlfriend
+dpndnt	dependent
+crbn	carbon
+hrtg	heritage
+orgnc	organic
+ambsdr	ambassador
+invsn	invasion
+smt	summit
+lfstl	lifestyle
+agrcltrl	agricultural
+shrg	shrug
+cnsl	counsel
+dstngsh	distinguish
+menu (no shorthand)
+awfl	awful
+wound (no shorthand)
+mnfctrng	manufacturing
+cnsmptn	consumption
+prmsn	permission
+twlv	twelve
+ofnsv	offensive
+shwr	shower
+clps	collapse
+undrg	undergo
+cnscsns	consciousness
+frstrtn	frustration
+oprtng	operating
+ease (no shorthand)
+carrier (no shorthand)
+scp	scope
+grain (no shorthand)
+dstnct	distinct
+rnch	ranch
+wrkshp	workshop
+at	auto
+pblshr	publisher
+nrtr	narrator
+brsh	brush
+ban (no shorthand)
+prtr	portray
+fghtng	fighting
+brw	borrow
+seize (no shorthand)
+pschlg	psychology
+sbsqnt	subsequent
+excd	exceed
+klng	killing
+ddln	deadline
+athltc	athletic
+ws	wise
+mdctn	medication
+rptdl	repeatedly
+frqnt	frequent
+rckt	rocket
+fm	fame
+lung (no shorthand)
+dpct	depict
+prsd	persuade
+tnt	tent
+ah (no shorthand)
+mtvtn	motivation
+ods	odds
+worried (no shorthand)
+principal (no shorthand)
+ugl	ugly
+adqt	adequate
+nnthls	nonetheless
+wdsprd	widespread
+trnsfrmtn	transformation
+physically (no shorthand)
+prvdr	provider
+admr	admire
+hdln	headline
+mrcl	miracle
+instttnl	institutional
+hmls	homeless
+imprsv	impressive
+chef (no shorthand)
+tctc	tactic
+msrmnt	measurement
+idntfctn	identification
+prvnc	province
+mdrt	moderate
+cnsnss	consensus
+lovely (no shorthand)
+cmd	comedy
+shore (no shorthand)
+phtgrphr	photographer
+vntr	venture
+cmpttr	competitor
+nmntn	nomination
+cnfsn	confusion
+atrbt	attribute
+hrr	horror
+ornttn	orientation
+wkl	weekly
+lgsltr	legislature
+bskt	basket
+cntnd	continued
+blnkt	blanket
+egl	eagle
+chngng	changing
+mouse (no shorthand)
+ethcs	ethics
+ghst	ghost
+evrd	everyday
+rp	rope
+formula (no shorthand)
+exhbt	exhibit
+nrv	nerve
+cope (no shorthand)
+rnng	running
+pschlgst	psychologist
+acd	acid
+pet (no shorthand)
+ptch	pitch
+ocptn	occupation
+crg	courage
+dft	defeat
+prgnnc	pregnancy
+actrs	actress
+patch (no shorthand)
+mrgn	margin
+rnfrc	reinforce
+clctv	collective
+brck	brick
+scrpt	script
+ckng	cooking
+tnl	tunnel
+concrete (no shorthand)
+rcrt	recruit
+grcr	grocery
+lmn	lemon
+dare (no shorthand)
+exct	exact
+battery (no shorthand)
+srprsngl	surprisingly
+artstc	artistic
+shit (no shorthand)
+indctn	indication
+cookie (no shorthand)
+intnst	intensity
+drmtcl	dramatically
+piano (no shorthand)
+cncrnng	concerning
+lap (no shorthand)
+inqr	inquiry
+dscrs	discourse
+lghtr	laughter
+anvrsr	anniversary
+tlscp	telescope
+swr	swear
+charity (no shorthand)
+clue (no shorthand)
+grv	grave
+nrtv	narrative
+hpthss	hypothesis
+upst	upset
+acptbl	acceptable
+couch (no shorthand)
+dfndnt	defendant
+compose (no shorthand)
+ballot (no shorthand)
+rltd	related
+clstr	cluster
+pie (no shorthand)
+rcrdng	recording
+rail (no shorthand)
+dcrs	decrease
+rape (no shorthand)
+intrpt	interrupt
+archtct	architect
+sgh	sigh
+rmrk	remark
+invnt	invent
+prscrptn	prescription
+rwrd	reward
+sacred (no shorthand)
+organ (no shorthand)
+abrd	abroad
+dvl	devil
+dear (no shorthand)
+sprr	superior
+grtl	greatly
+arpln	airplane
+hbtt	habitat
+coal (no shorthand)
+soccer (no shorthand)
+enttl	entitle
+instrctr	instructor
+intgrt	integrity
+shn	shine
+mss	mess
+nrm	norm
+algtn	allegation
+pill (no shorthand)
+plsd	pleased
+plain (no shorthand)
+inspctr	inspector
+forum (no shorthand)
+pwdr	powder
+sin (no shorthand)
+evdnt	evident
+spnsr	sponsor
+acptnc	acceptance
+prsctn	prosecution
+cgntv	cognitive
+prsdnc	presidency
+mgc	magic
+nrthwst	northwest
+rglt	regulate
+excld	exclude
+clnl	colonial
+rnt	rent
+cvln	civilian
+hrbr	harbor
+estmtd	estimated
+rhthm	rhythm
+mdnght	midnight
+cnslr	counselor
+hghlght	highlight
+palace (no shorthand)
+trdng	trading
+cmpnd	compound
+bare (no shorthand)
+echo (no shorthand)
+integrate (no shorthand)
+slc	slice
+cmbt	combat
+mdm	medium
+log (no shorthand)
+srgn	surgeon
+excs	excuse
+rtl	ritual
+rsgn	resign
+exctd	excited
+lghtl	lightly
+evl	evil
+bitter (no shorthand)
+export (no shorthand)
+clay (no shorthand)
+logic (no shorthand)
+virtue (no shorthand)
+cntnr	container
+qrtrbck	quarterback
+beg (no shorthand)
+slmn	salmon
+greet (no shorthand)
+crv	curve
+mill (no shorthand)
+clst	closet
+intrr	interior
+rod (no shorthand)
+cnd	candy
+rstrct	restrict
+intt	initiate
+rvrs	reverse
+ethcl	ethical
+scndr	secondary
+admnstrtv	administrative
+cnfs	confuse
+ddl	deadly
+pig (no shorthand)
+sbrbn	suburban
+medal (no shorthand)
+receiver (no shorthand)
+gz	gaze
+snake (no shorthand)
+mrch	march
+exprmntl	experimental
+cvlztn	civilization
+clscl	classical
+fold (no shorthand)
+wkns	weakness
+crdr	corridor
+hrsh	harsh
+retail (no shorthand)
+mrtgg	mortgage
+hrdr	harder
+dvlpr	developer
+lgnd	legend
+exctmnt	excitement
+enfrc	enforce
+occasional (no shorthand)
+cwb	cowboy
+mnmm	minimum
+flash (no shorthand)
+rlbl	reliable
+sbrb	suburb
+mlt	melt
+contend (no shorthand)
+pld	plead
+wrtn	written
+flood (no shorthand)
+stm	stem
+invtbl	inevitable
+esnc	essence
+ptchr	pitcher
+sbtl	subtle
+slm	slam
+unmplmnt	unemployment
+trnk	trunk
+prvlg	privilege
+burst (no shorthand)
+archtctr	architecture
+mnthl	monthly
+rndr	render
+mnstrm	mainstream
+frnkl	frankly
+obstcl	obstacle
+mtvt	motivate
+trap (no shorthand)
+drnkng	drinking
+elbw	elbow
+rmr	rumor
+swlw	swallow
+lgsltv	legislative
+lctr	lecture
+jns	jeans
+duck (no shorthand)
+slope (no shorthand)
+tshrt	t-shirt
+inspctn	inspection
+strct	strict
+ovrwhlmng	overwhelming
+assemble (no shorthand)
+msng	missing
+smngl	seemingly
+frd	fraud
+implmnttn	implementation
+hnt	hunt
+bfrnd	boyfriend
+intgrtn	integration
+rat (no shorthand)
+brdcst	broadcast
+Krn	Korean
+nl	nail
+pen (no shorthand)
+cnslt	consult
+cmpnn	companion
+monster (no shorthand)
+nghtmr	nightmare
+bf	beef
+srvng	serving
+glb	globe
+chlstrl	cholesterol
+prlmnt	parliament
+suite (no shorthand)
+cntnng	continuing
+hnc	hence
+lend (no shorthand)
+sxth	sixth
+mud (no shorthand)
+pmp	pump
+flour (no shorthand)
+hstg	hostage
+ownrshp	ownership
+fcltt	facilitate
+bsmnt	basement
+crltn	correlation
+hurry (no shorthand)
+insct	insect
+arn	arena
+drift (no shorthand)
+dmn	domain
+cv	cave
+afrcnamrcn	African-American
+cnsstntl	consistently
+lp	leap
+efctvns	effectiveness
+mxmm	maximum
+array (no shorthand)
+unxpctd	unexpected
+curtain (no shorthand)
+sndwch	sandwich
+pcfl	peaceful
+hmnt	humanity
+prediction (no shorthand)
+Roman (no shorthand)
+idlg	ideology
+rlrd	railroad
+pssn	possession
+hrn	horn
+rplcmnt	replacement
+anncmnt	announcement
+pond (no shorthand)
+frgv	forgive
+bshp	bishop
+uncmfrtbl	uncomfortable
+rip (no shorthand)
+rndm	random
+hrb	herb
+and/r	and/or
+dmp	dump
+guilt (no shorthand)
+ctl	cattle
+strn	strain
+shrf	sheriff
+bhv	behave
+crstl	crystal
+execute (no shorthand)
+wrst	wrist
+mtv	motive
+pntr	painter
+cnvct	convict
+smltnsl	simultaneously
+rcsn	recession
+awt	await
+hlw	hallway
+ds	dose
+endr	endure
+cnslng	counseling
+suck (no shorthand)
+acmdt	accommodate
+traditionally (no shorthand)
+spill (no shorthand)
+fscl	fiscal
+rtrd	retired
+clsd	closed
+gentle (no shorthand)
+sprtn	separation
+wrr	warrior
+cnvncd	convinced
+sthwst	southwest
+drunk (no shorthand)
+otdr	outdoor
+tune (no shorthand)
+hrm	harm
+clth	cloth
+whrvr	wherever
+admnstr	administer
+sprvsr	supervisor
+cmprms	compromise
+grtfl	grateful
+Hspnc	Hispanic
+mndt	mandate
+alrm	alarm
+cruise (no shorthand)
+injure (no shorthand)
+sclptr	sculpture
+drn	drain
+tmpl	temple
+dncr	dancer
+twl	towel
+IIslm	Islam
+cntns	continuous
+gvrn	govern
+crwn	crown
+cntrctr	contractor
+adlscnt	adolescent
+skrt	skirt
+bctr	bacteria
+adptn	adoption
+intlgnt	intelligent
+praise (no shorthand)
+otr	outer
+grip (no shorthand)
+prfnd	profound
+trgr	trigger
+uncrtnt	uncertainty
+drvng	driving
+enthssm	enthusiasm
+cmplxt	complexity
+cafe (no shorthand)
+virtual (no shorthand)
+undrmn	undermine
+unity (no shorthand)
+chaos (no shorthand)
+cmnl	commonly
+endls	endless
+rhtrc	rhetoric
+trait (no shorthand)
+pnsn	pension
+gnn	genuine
+sweat (no shorthand)
+invtn	innovation
+crnc	currency
+forty (no shorthand)
+lb	lobby
+thrtcl	theoretical
+bat (no shorthand)
+mkp	makeup
+plsnt	pleasant
+rbld	rebuild
+hrbl	horrible
+pad (no shorthand)
+sspnd	suspend
+rlv	relieve
+rsm	resume
+rspctvl	respectively
+prmtn	promotion
+tchnlgcl	technological
+glx	galaxy
+altgthr	altogether
+aplgz	apologize
+infrstrctr	infrastructure
+shtl	shuttle
+thmb	thumb
+qstnr	questionnaire
+sdwlk	sidewalk
+bsnsmn	businessman
+weird (no shorthand)
+rdtn	radiation
+frmt	format
+scare (no shorthand)
+bnc	bounce
+doll (no shorthand)
+atrctn	attraction
+ndl	needle
+cntrprt	counterpart
+cnv	convey
+cmpnstn	compensation
+exclsv	exclusive
+twst	twist
+precise (no shorthand)
+sspcn	suspicion
+sthst	southeast
+wlkng	walking
+boost (no shorthand)
+scatter (no shorthand)
+rbl	rebel
+van (no shorthand)
+idntcl	identical
+shm	shame
+dlct	delicate
+OOlmpcs	Olympics
+wdr	wider
+crptn	corruption
+hk	hook
+ltnnt	lieutenant
+firmly (no shorthand)
+strctrl	structural
+invsbl	invisible
+frhd	forehead
+trvlr	traveler
+mnngfl	meaningful
+prvdd	provided
+colony (no shorthand)
+sgntr	signature
+dtbs	database
+clrk	clerk
+ddct	dedicate
+dtrmntn	determination
+anxs	anxious
+sum (no shorthand)
+frzn	frozen
+jrr	juror
+tmng	timing
+pnsh	punish
+crwl	crawl
+cnscs	conscious
+colonel (no shorthand)
+ftns	fitness
+lndng	landing
+dctrn	doctrine
+belly (no shorthand)
+pope (no shorthand)
+thrb	thereby
+historically (no shorthand)
+plf	playoff
+pstr	poster
+acqstn	acquisition
+rsc	rescue
+dprtr	departure
+summary (no shorthand)
+chrnc	chronic
+hndsm	handsome
+hug (no shorthand)
+wow (no shorthand)
+pursuit (no shorthand)
+rsdnc	residence
+loud (no shorthand)
+prmsng	promising
+disk (no shorthand)
+doorway (no shorthand)
+dgnss	diagnosis
+scout (no shorthand)
+cancel (no shorthand)
+amd	amid
+envlp	envelope
+sooner (no shorthand)
+beam (no shorthand)
+rlctnt	reluctant
+spouse (no shorthand)
+fluid (no shorthand)
+ext	exit
+mld	mild
+elctrcl	electrical
+bath (no shorthand)
+dcnt	decent
+ankl	ankle
+trnsctn	transaction
+rprtng	reporting
+pit (no shorthand)
+practically (no shorthand)
+oxgn	oxygen
+rcsm	racism
+fist (no shorthand)
+grbg	garbage
+gtr	guitar
+exprts	expertise
+parade (no shorthand)
+explrtn	exploration
+carve (no shorthand)
+rlm	realm
+rcpnt	recipient
+rsdntl	residential
+bias (no shorthand)
+snlght	sunlight
+lmp	lamp
+donor (no shorthand)
+rpr	repair
+shrpl	sharply
+hers (no shorthand)
+gdnc	guidance
+dplmtc	diplomatic
+prpl	purple
+prncs	princess
+cndl	candle
+gnrs	generous
+ncst	necessity
+tck	tuck
+statue (no shorthand)
+elvtr	elevator
+pplrt	popularity
+indctr	indicator
+entt	entity
+lmb	limb
+bold (no shorthand)
+hstt	hesitate
+strtng	starting
+dmnsh	diminish
+rdl	readily
+elgnt	elegant
+enggmnt	engagement
+rg	rage
+dstntn	destination
+rlstc	realistic
+intnt	intent
+mtphr	metaphor
+atmbl	automobile
+prdctv	productive
+endrs	endorse
+islt	isolate
+confess (no shorthand)
+wldrns	wilderness
+mnmz	minimize
+dgns	diagnose
+hpns	happiness
+spctrm	spectrum
+hint (no shorthand)
+etng	eating
+abstrct	abstract
+rvltnr	revolutionary
+gym (no shorthand)
+dspntd	disappointed
+prtcl	particle
+dnmc	dynamic
+atmtcl	automatically
+dawn (no shorthand)
+rlng	ruling
+mchncl	mechanical
+vtmn	vitamin
+silly (no shorthand)
+artfcl	artificial
+otstndng	outstanding
+peel (no shorthand)
+orl	oral
+o'clck	o'clock
+undrtk	undertake
+lnl	lonely
+srvnt	servant
+indgns	indigenous
+cvc	civic
+fltm	full-time
+cprt	cooperate
+csl	casual
+bhvrl	behavioral
+shrtg	shortage
+rcptn	reception
+ofrng	offering
+huh (no shorthand)
+crdblt	credibility
+chin (no shorthand)
+phscs	physics
+vnsh	vanish
+blend (no shorthand)
+noon (no shorthand)
+precious (no shorthand)
+flp	flip
+scary (no shorthand)
+pz	pizza
+tlt	toilet
+slk	silk
+bid (no shorthand)
+gthrng	gathering
+sftl	softly
+annually (no shorthand)
+sfrng	suffering
+acrc	accuracy
+brkr	broker
+hpfl	hopefully
+dscnd	descend
+tide (no shorthand)
+stmbl	stumble
+verbal (no shorthand)
+clctr	collector
+jdcl	judicial
+brnng	burning
+invntr	inventory
+fool (no shorthand)
+llt	loyalty
+prfrmr	performer
+kit (no shorthand)
+rmnc	romance
+qntt	quantity
+algd	alleged
+thrpst	therapist
+lngtm	longtime
+sntmnt	sentiment
+sdm	sodium
+seal (no shorthand)
+trlr	trailer
+shrd	shared
+eqt	equity
+bnkng	banking
+rdcls	ridiculous
+prcsng	processing
+dlm	dilemma
+qst	quest
+plw	pillow
+lately (no shorthand)
+lsr	laser
+rgd	rigid
+ors	ours
+prhbt	prohibit
+gns	genius
+strtr	starter
+cart (no shorthand)
+Cuban (no shorthand)
+inmt	inmate
+scrfc	sacrifice
+officially (no shorthand)
+slap (no shorthand)
+mstrs	mysterious
+spclz	specialize
+frk	fork
+invttn	invitation
+sail (no shorthand)
+rgltr	regulatory
+cartoon (no shorthand)
+stiff (no shorthand)
+crtrm	courtroom
+imprt	import
+tghtl	tightly
+eqtn	equation
+trsr	treasure
+jaw (no shorthand)
+scan (no shorthand)
+cndmn	condemn
+imprvd	improved
+pckp	pickup
+dgnt	dignity
+insprtn	inspiration
+atmtc	automatic
+mrchnt	merchant
+grk	Greek
+hstl	hostile
+extndd	extended
+hmlnd	homeland
+gsln	gasoline
+grvt	gravity
+thrghl	thoroughly
+bow (no shorthand)
+glory (no shorthand)
+optmstc	optimistic
+srgnt	sergeant
+cslt	casualty
+cncd	concede
+bloody (no shorthand)
+barn (no shorthand)
+dnt	donate
+unite (no shorthand)
+pro (no shorthand)
+fdbck	feedback
+grf	grief
+spite (no shorthand)
+steep (no shorthand)
+prdctvt	productivity
+cncv	conceive
+tndr	tender
+cntnnt	continent
+hrdwr	hardware
+eqp	equip
+wgn	wagon
+otpt	output
+wthdrwl	withdrawal
+eldr	elder
+cg	cage
+cstl	coastal
+ptnc	patience
+shlw	shallow
+erthqk	earthquake
+vtng	voting
+inpt	input
+cnvs	canvas
+click (no shorthand)
+swrd	sword
+mate (no shorthand)
+prtfl	portfolio
+bug (no shorthand)
+rfrgrtr	refrigerator
+nrthst	northeast
+svnth	seventh
+post (no shorthand)
+cmbnd	combined
+alien (no shorthand)
+wlngns	willingness
+hdn	hidden
+acntng	accounting
+sexually (no shorthand)
+chop (no shorthand)
+ptrl	patrol
+smblc	symbolic
+ruin (no shorthand)
+drum (no shorthand)
+opsd	opposed
+sheer (no shorthand)
+idlgcl	ideological
+dscrg	discourage
+cnl	canal
+haul (no shorthand)
+prtctv	protective
+cnsprc	conspiracy
+steam (no shorthand)
+embs	embassy
+tckl	tackle
+trpcl	tropical
+instntl	instantly
+bubble (no shorthand)
+calm (no shorthand)
+sheep (no shorthand)
+accent (no shorthand)
+grsp	grasp
+mdf	modify
+grin (no shorthand)
+txc	toxic
+mxd	mixed
+mgntd	magnitude
+aftrwrd	afterward
+prgrsv	progressive
+mnplt	manipulate
+vcn	vaccine
+mnmnt	monument
+vrdct	verdict
+flxbl	flexible
+dclrtn	declaration
+costume (no shorthand)
+drwr	drawer
+bls	bless
+rack (no shorthand)
+dpr	deeper
+neutral (no shorthand)
+fscntng	fascinating
+terrific (no shorthand)
+smpth	sympathy
+spctclr	spectacular
+ounce (no shorthand)
+rear (no shorthand)
+inn (no shorthand)
+collaboration (no shorthand)
+clp	clip
+instrct	instruct
+sock (no shorthand)
+rider (no shorthand)
+revelation (no shorthand)
+acmplshmnt	accomplishment
+fnt	faint
+spell (no shorthand)
+gspl	gospel
+whale (no shorthand)
+theatre (no shorthand)
+crdntr	coordinator
+tlntd	talented
+alngsd	alongside
+cab (no shorthand)
+isltn	isolation
+costly (no shorthand)
+trgc	tragic
+instnct	instinct
+intmt	intimate
+undrlng	underlying
+inflntl	influential
+pastor (no shorthand)
+prsmbl	presumably
+skp	skip
+elvn	eleven
+tens (no shorthand)
+whvr	whoever
+ancstr	ancestor
+sfl	safely
+nmn	nominee
+extc	exotic
+mnml	minimal
+uncrtn	uncertain
+Persian (no shorthand)
+prntl	parental
+orchstr	orchestra
+treasury (no shorthand)
+tlrt	tolerate
+gln	gallon
+thigh (no shorthand)
+frtntl	fortunately
+ambts	ambitious
+actvl	actively
+flxblt	flexibility
+jar (no shorthand)
+ccn	cocaine
+incredibly (no shorthand)
+cnsqntl	consequently
+dcmntr	documentary
+insrt	insert
+ambtn	ambition
+fnctnl	functional
+bnkrptc	bankruptcy
+rnr	runner
+exctn	execution
+crush (no shorthand)
+buddy (no shorthand)
+wrkplc	workplace
+skull (no shorthand)
+cord (no shorthand)
+fxd	fixed
+eqvlnt	equivalent
+casino (no shorthand)
+rlblt	reliability
+expctd	expected
+boil (no shorthand)
+whp	whip
+dvn	divine
+prpstn	proposition
+cnss	census
+crctn	correction
+diary (no shorthand)
+nst	nest
+sttt	statute
+exm	exam
+mtrpltn	metropolitan
+ntrtn	nutrition
+brz	breeze
+ilsn	illusion
+annms	anonymous
+coup (no shorthand)
+midst (no shorthand)
+edt	edit
+exprncd	experienced
+castle (no shorthand)
+explt	exploit
+jwlr	jewelry
+dbts	diabetes
+trnsltn	translation
+Dtch	Dutch
+irony (no shorthand)
+asctd	associated
+utlz	utilize
+rbt	rabbit
+soap (no shorthand)
+booth (no shorthand)
+imn	immune
+gut (no shorthand)
+aprctn	appreciation
+scrmbl	scramble
+upstrs	upstairs
+pnch	punch
+gross (no shorthand)
+lblt	liability
+acsbl	accessible
+mchnc	mechanic
+ass (no shorthand)
+asthtc	aesthetic
+dessert (no shorthand)
+waist (no shorthand)
+alk	alike
+brv	brave
+loop (no shorthand)
+psng	passing
+partially (no shorthand)
+sttstcl	statistical
+crctl	correctly
+pin (no shorthand)
+prcttnr	practitioner
+encrgng	encouraging
+sndrm	syndrome
+tribal (no shorthand)
+prsst	persist
+trsh	trash
+teenage (no shorthand)
+slfestm	self-esteem
+prlmnr	preliminary
+snst	sunset
+hrsmnt	harassment
+rprtdl	reportedly
+fever (no shorthand)
+pnc	panic
+chrtr	charter
+otlk	outlook
+foster (no shorthand)
+cmprs	comprise
+knwn	known
+Thnksgvng	Thanksgiving
+shrttrm	short-term
+shed (no shorthand)
+cprtv	cooperative
+alley (no shorthand)
+sbsd	subsidy
+sclr	secular
+almnm	aluminum
+clf	cliff
+grm	gram
+otln	outline
+mentally (no shorthand)
+invd	invade
+cnfrnttn	confrontation
+dslv	dissolve
+shy (no shorthand)
+cn	coin
+spcltn	speculation
+crtvt	creativity
+cstd	custody
+intrfr	interfere
+spoon (no shorthand)
+bee (no shorthand)
+rolling (no shorthand)
+intrct	interact
+damn (no shorthand)
+dam (no shorthand)
+unfr	unfair
+smd	someday
+lqd	liquid
+dscls	disclose
+mshrm	mushroom
+dsbld	disabled
+ctlg	catalog
+pblct	publicity
+cmpl	compel
+cease (no shorthand)
+dcrt	decorate
+srndng	surrounding
+exclsvl	exclusively
+bns	bonus
+unprcdntd	unprecedented
+ovrs	oversee
+tchdwn	touchdown
+fdrtn	federation
+agrsn	aggression
+bhlf	behalf
+wlknwn	well-known
+dntn	donation
+dsprtl	desperately
+hghtch	high-tech
+cht	cheat
+audio (no shorthand)
+snstn	sensation
+entrprnr	entrepreneur
+prclm	proclaim
+splr	supplier
+rival (no shorthand)
+rmndr	reminder
+heal (no shorthand)
+beast (no shorthand)
+uncvr	uncover
+mrt	merit
+mmntm	momentum
+stmlt	stimulate
+rtnl	rational
+clmnst	columnist
+pnr	pioneer
+blg	biology
+photography (no shorthand)
+invtv	innovative
+purse (no shorthand)
+frnchs	franchise
+cnsnt	consent
+otft	outfit
+eve (no shorthand)
+spray (no shorthand)
+shv	shove
+fshrmn	fisherman
+snstvt	sensitivity
+crts	courtesy
+stack (no shorthand)
+pork (no shorthand)
+tmmt	teammate
+instnt	instant
+pulse (no shorthand)
+otsdr	outsider
+hlmt	helmet
+ladder (no shorthand)
+opnl	openly
+fierce (no shorthand)
+rqrd	required
+shrnk	shrink
+cute (no shorthand)
+dot (no shorthand)
+wkn	weaken
+fltr	filter
+wrldwd	worldwide
+envsn	envision
+vdtp	videotape
+partial (no shorthand)
+patent (no shorthand)
+tray (no shorthand)
+jngl	jungle
+clsf	classify
+spclt	specialty
+nasty (no shorthand)
+asl	aisle
+grph	graph
+sx	sexy
+dstrb	disturb
+excsv	excessive
+bnkr	banker
+instltn	installation
+swmng	swimming
+plcmnt	placement
+atndnc	attendance
+infrml	informal
+sack (no shorthand)
+eghth	eighth
+premise (no shorthand)
+grill (no shorthand)
+dng	dying
+clrfl	colorful
+hck	hockey
+bckrd	backyard
+collar (no shorthand)
+brthng	breathing
+lgcl	logical
+lghtnng	lightning
+drd	dried
+dscnt	discount
+sole (no shorthand)
+boast (no shorthand)
+tag (no shorthand)
+sblng	sibling
+stv	stove
+trnr	trainer
+vrtcl	vertical
+added (no shorthand)
+mrktplc	marketplace
+cure (no shorthand)
+crst	curiosity
+orgnztnl	organizational
+shrmp	shrimp
+inhrt	inherit
+distract (no shorthand)
+isltd	isolated
+plnr	planner
+spsdl	supposedly
+lkws	likewise
+mnk	monkey
+toll (no shorthand)
+embrsd	embarrassed
+dlbrtl	deliberately
+bccl	bicycle
+stnc	stance
+orbt	orbit
+hrmn	hormone
+dprsd	depressed
+orgnsm	organism
+deploy (no shorthand)
+strctl	strictly
+dm	deem
+ebrw	eyebrow
+legally (no shorthand)
+pzl	puzzle
+icn	icon
+pat (no shorthand)
+clsst	closest
+sneak (no shorthand)
+fleet (no shorthand)
+cnsrvtn	conservation
+sprtv	supportive
+cmprbl	comparable
+txtr	texture
+strkng	striking
+Chrstnt	Christianity
+dip (no shorthand)
+dspntmnt	disappointment
+sleeve (no shorthand)
+socially (no shorthand)
+wheat (no shorthand)
+chnk	chunk
+twthrds	two-thirds
+refuge (no shorthand)
+blnk	blank
+unfld	unfold
+considerably (no shorthand)
+frontier (no shorthand)
+sspcs	suspicious
+cncptn	conception
+feather (no shorthand)
+elphnt	elephant
+txtbk	textbook
+glmps	glimpse
+inevitably (no shorthand)
+trmph	triumph
+plng	plunge
+sphr	sphere
+hunger (no shorthand)
+dnst	density
+cheer (no shorthand)
+blncd	balanced
+protocol (no shorthand)
+legislator (no shorthand)
+auction (no shorthand)
+eqlt	equality
+risky (no shorthand)
+cmtr	cemetery
+bldr	builder
+awk	awake
+rtlr	retailer
+debut (no shorthand)
+tghtn	tighten
+spare (no shorthand)
+cnstrnt	constraint
+cmplnc	compliance
+emrgng	emerging
+elbrt	elaborate
+atp	atop
+chw	chew
+smlrt	similarity
+pncl	pencil
+clcltn	calculation
+tlrnc	tolerance
+astrnmr	astronomer
+blk	bulk
+intrvl	interval
+ntbk	notebook
+gnr	genre
+lklhd	likelihood
+streak (no shorthand)
+rib (no shorthand)
+scnt	scent
+vldt	validity
+steer (no shorthand)
+intct	intact
+shrk	shark
+uh (no shorthand)
+prgrmng	programming
+dmb	dumb
+frmrl	formerly
+sqd	squad
+comply (no shorthand)
+dbrs	debris
+psnt	peasant
+otlt	outlet
+neat (no shorthand)
+vld	valid
+kngdm	kingdom
+sll	solely
+elgbl	eligible
+rgrt	regret
+mncpl	municipal
+dpst	deposit
+trnsprt	transport
+dgh	dough
+lid (no shorthand)
+voluntary (no shorthand)
+jrnlsm	journalism
+impls	impulse
+plcmn	policeman
+objctn	objection
+thrv	thrive
+prvtl	privately
+cling (no shorthand)
+hlfw	halfway
+unhp	unhappy
+rally (no shorthand)
+scrtch	scratch
+robot (no shorthand)
+cnvrsn	conversion
+sprmrkt	supermarket
+blink (no shorthand)
+phlsphcl	philosophical
+hpl	happily
+thread (no shorthand)
+algdl	allegedly
+ash (no shorthand)
+dnmcs	dynamics
+dnl	denial
+riot (no shorthand)
+soar (no shorthand)
+mentor (no shorthand)
+beard (no shorthand)
+wdw	widow
+ofndr	offender
+lndmrk	landmark
+routinely (no shorthand)
+butt (no shorthand)
+frbd	forbid
+mgrtn	migration
+carrot (no shorthand)
+harmony (no shorthand)
+brtl	brutal
+prvl	prevail
+weed (no shorthand)
+exhst	exhaust
+pasta (no shorthand)
+dstnctv	distinctive
+frctn	fraction
+emotionally (no shorthand)
+poke (no shorthand)
+dncng	dancing
+frshmn	freshman
+suitable (no shorthand)
+yngstr	youngster
+slavery (no shorthand)
+balloon (no shorthand)
+opt (no shorthand)
+crwdd	crowded
+liver (no shorthand)
+lstnr	listener
+irncl	ironically
+afrmtv	affirmative
+cmdt	commodity
+fur (no shorthand)
+freely (no shorthand)
+rmvl	removal
+goat (no shorthand)
+shrhldr	shareholder
+expdtn	expedition
+ll	loyal
+cnscnc	conscience
+frgl	fragile
+clndr	calendar
+mnrl	mineral
+cmng	coming
+fare (no shorthand)
+blsng	blessing
+lbrtn	liberation
+steak (no shorthand)
+eclgcl	ecological
+bnn	banana
+stdl	steadily
+blst	blast
+nnprft	nonprofit
+mbl	mobile
+strw	straw
+prjctn	projection
+rbr	rubber
+ovrnght	overnight
+nghbrng	neighboring
+enct	enact
+fvrbl	favorable
+severely (no shorthand)
+dmgrphc	demographic
+terrain (no shorthand)
+explct	explicit
+intgrtd	integrated
+terribly (no shorthand)
+sofa (no shorthand)
+scrw	screw
+shield (no shorthand)
+invntn	invention
+prcvd	perceived
+crl	cruel
+bmbr	bomber
+prvk	provoke
+atnm	autonomy
+pblshng	publishing
+rtrt	retreat
+thlg	theology
+substantially (no shorthand)
+mnsn	mansion
+dvlpmntl	developmental
+onthrd	one-third
+trnsmt	transmit
+cntmplt	contemplate
+athrz	authorize
+mthmtcs	mathematics
+oldfshnd	old-fashioned
+lwmkr	lawmaker
+thrshld	threshold
+radar (no shorthand)
+sldm	seldom
+hdch	headache
+rntl	rental
+spy (no shorthand)
+patron (no shorthand)
+drvw	driveway
+till (no shorthand)
+ovrwhlm	overwhelm
+crdnt	coordinate
+vndr	vendor
+frgmnt	fragment
+hammer (no shorthand)
+smnr	seminar
+avlblt	availability
+peanut (no shorthand)
+fntstc	fantastic
+dprt	depart
+ctg	cottage
+spcf	specify
+frstrt	frustrate
+dstrbng	disturbing
+artfct	artifact
+bsn	basin
+regain (no shorthand)
+grape (no shorthand)
+ego (no shorthand)
+smtm	sometime
+orgnzd	organized
+chrm	charm
+swtr	sweater
+rim (no shorthand)
+speculate (no shorthand)
+dlght	delight
+ftg	fatigue
+dvsttng	devastating
+instrctnl	instructional
+plea (no shorthand)
+trsm	tourism
+wrmth	warmth
+jrsdctn	jurisdiction
+updt	update
+acstn	accusation
+dgrm	diagram
+mdlcls	middle-class
+grdtn	graduation
+sprk	spark
+cnvnnc	convenience
+chl	chill
+ecnmcl	economically
+undrgrdt	undergraduate
+dctt	dictate
+regulator (no shorthand)
+dfndr	defender
+wrkt	workout
+acrtl	accurately
+tile (no shorthand)
+frgnr	foreigner
+imprtntl	importantly
+ctznshp	citizenship
+plz	plaza
+dvs	devise
+prmm	premium
+chmstr	chemistry
+brcrc	bureaucracy
+inhrnt	inherent
+hzrd	hazard
+swl	swell
+bride (no shorthand)
+prcsr	processor
+bckt	bucket
+tmbr	timber
+fmnst	feminist
+tmr	tumor
+aplg	apology
+scrnng	screening
+arw	arrow
+mrkr	marker
+sunny (no shorthand)
+tchncn	technician
+hmwrk	homework
+fog (no shorthand)
+soak (no shorthand)
+mrtlt	mortality
+flying (no shorthand)
+acntblt	accountability
+skld	skilled
+strghtn	straighten
+sprnkl	sprinkle
+cue (no shorthand)
+epdmc	epidemic
+artclt	articulate
+rhblttn	rehabilitation
+dplmt	diplomat
+rbn	ribbon
+trnst	transit
+militia (no shorthand)
+knl	kneel
+seller (no shorthand)
+ftl	fatal
+cmplng	compelling
+wlbng	well-being
+lndr	laundry
+confession (no shorthand)
+twntth	twentieth
+dns	dense
+aclrt	accelerate
+trbt	tribute
+smkng	smoking
+aboard (no shorthand)
+mrbl	marble
+entrtn	entertain
+boring (no shorthand)
+scrtn	scrutiny
+bzr	bizarre
+brgn	bargain
+drwn	drown
+bgrph	biography
+naval (no shorthand)
+ntnwd	nationwide
+skptcl	skeptical
+shrts	shorts
+lns	lens
+spit (no shorthand)
+sxlt	sexuality
+wrhs	warehouse
+prds	paradise
+nmnt	nominate
+dvlpd	developed
+unfrtnt	unfortunate
+grndchld	grandchild
+tnr	tenure
+preach (no shorthand)
+slot (no shorthand)
+strtp	stereotype
+blb	bulb
+weave (no shorthand)
+mrgr	merger
+indqt	inadequate
+elctrncs	electronics
+trim (no shorthand)
