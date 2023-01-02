@@ -1,8 +1,10 @@
-This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.
+﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.
 
-Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.
+Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own. 
 
-Note that the category headings are for orientation only, and do not affect the functionality. While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.
+While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.
+
+Note that the category headings are for orientation only, and do not affect the functionality. For extended characters to work correctly, the dictionary files are saved in UTF-8 encoding with BOM.
 
 See https://github.com/psoukie/zipchord for details.
 

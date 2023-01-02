@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 10
 SetWorkingDir %A_ScriptDir%
@@ -248,6 +248,7 @@ KeyDown:
     ; if the key pressed is a space
     if (key==" ") {
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. if last output is a smart space
+            DelayOutput()
             SendInput {Backspace} ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
@@ -262,6 +263,7 @@ KeyDown:
     if ( (! shifted && InStr(keys.remove_space_plain, key)) || (shifted && InStr(keys.remove_space_shift, key)) ) {
         new_output |= OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
+            DelayOutput()
             SendInput {Backspace}{Backspace}
             difference |= DIF_REMOVED_SMART_SPACE
             if (shifted)
@@ -276,6 +278,7 @@ KeyDown:
         new_output |= OUT_PUNCTUATION
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( settings.spacing & SPACE_PUNCTUATION ) {
+            DelayOutput()
             SendInput {Space}
             difference |= DIF_EXTRA_SPACE
             new_output |= OUT_SPACE | OUT_AUTOMATIC
@@ -292,6 +295,7 @@ KeyDown:
             new_output := new_output & ~OUT_CAPITALIZE ; manually capitalized, so the flag get turned off
         else
             if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
+                DelayOutput()
                 cap_key := RegExReplace(key, "(.*)", "$U1")
                 SendInput % "{Backspace}{Text}" RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag get turned off
@@ -332,8 +336,7 @@ KeyUp:
             affixes := ProcessAffixes(expanded)
             ; if we aren't restricted, we print a chord
             if ( (affixes & AFFIX_SUFFIX) || IsUnrestricted()) {
-                if (settings.output_delay)
-                    Sleep settings.output_delay
+                DelayOutput()
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
                 OpeningSpace(affixes & AFFIX_SUFFIX)
@@ -376,6 +379,12 @@ KeyUp:
 Return
 
 ; Helper functions
+
+; Delay output by defined delay
+DelayOutput() {
+    if (settings.output_delay)
+        Sleep settings.output_delay
+}
 
 ; detect and adjust expansion for suffixes and prefixes
 ProcessAffixes(ByRef phrase) {
