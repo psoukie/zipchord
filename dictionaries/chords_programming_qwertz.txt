@@ -1,4 +1,4 @@
-wh	while
+﻿wh	while
 cl	class
 nw	new
 pb	public
