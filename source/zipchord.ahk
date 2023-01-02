@@ -286,8 +286,7 @@ KeyUp:
             }
             ; if we aren't restricted, we print a chord
             if (suffix || IsUnrestricted()) {
-                if (settings.output_delay)
-                    Sleep settings.output_delay
+                DelayOutput()
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
                 OpeningSpace(suffix)
@@ -330,6 +329,12 @@ KeyUp:
 Return
 
 ; Helper functions
+
+; Delay output by defined delay
+DelayOutput() {
+    if (settings.output_delay)
+        Sleep settings.output_delay
+}
 
 ;remove raw chord output
 RemoveRawChord(output) {
