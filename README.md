@@ -104,7 +104,7 @@ wn   win
 ths  this
 nw   new
 ```
-Note that if you edit the dictionary file directly in a text editor, you need to click the Reload button from the _ZipChord_ menu for the changes to be loaded.
+Note that if you edit the dictionary file directly in a text editor, you need to click the Reload button from the _ZipChord_ menu for the changes to be loaded. For extended characters outside of Latin alphabet to work correctly, the dictionary files need to be saved in UTF-8 encoding with BOM.
 
 ### Special Characters
 
