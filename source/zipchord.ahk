@@ -232,10 +232,8 @@ KeyDown:
     }
 
     ; if the user had ben manually typing a word and completed it (which we know because some non-letter was just typed), we reset the auto-capitalization so we don't capitalize the following word 
-    if ( (fixed_output & OUT_CHARACTER) && ! (new_output & OUT_CHARACTER) ) {
-         debug.write("CRAP Crap... ")
+    if ( (fixed_output & OUT_CHARACTER) && ! (new_output & OUT_CHARACTER) )
          new_output &= ~OUT_CAPITALIZE
-    }
 
     ; set 'uppercase' for punctuation that capitalizes following text 
     if ( (! shifted && InStr(keys.capitalizing_plain, key)) || (shifted && InStr(keys.capitalizing_shift, key)) )
