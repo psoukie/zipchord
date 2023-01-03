@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -104,8 +104,8 @@ Class DictionaryClass {
     _reverse_entries := {}
     ; Public properties and methods
     entries {
-        get {
-            return this._entries.Count()
+        get { 
+            return this._entries.Count() 
         }
     }
     LookUp(shortcut) {
@@ -132,8 +132,10 @@ Class DictionaryClass {
                 ; add reverse entries
                 for shortcut, text in this._entries
                 {
-                    if ( ! InStr(text, " ") )
+                    if ( ! InStr(text, " ") ) {
+                        shortcut := ReplaceWithVariants(shortcut)
                         ObjRawSet(this._reverse_entries, text, shortcut)
+                    }
                 }
             }
         } else {
@@ -200,8 +202,10 @@ Class DictionaryClass {
             Return false
         }
         ObjRawSet(this._entries, newch, newword)
-        if ( ! InStr(newword, " ") )
+        if ( ! InStr(newword, " ") ) {
+            newch_unsorted := ReplaceWithVariants(newch_unsorted, true)
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
+        }
         return true
     }
 }
@@ -355,10 +359,10 @@ KeyDown:
                 if (settings.preferences & PREF_SHOW_SHORTCUTS) {
                     chord_hint := chords.ReverseLookUp(shorthand_buffer)
                     shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
-                    chord_hint := chord_hint ? "Chord:  " chord_hint : "" 
-                    shorthand_hint := shorthand_hint ? "Shorthand:  " shorthand_hint : "" 
+                    chord_hint := chord_hint ? chord_hint : "" 
+                    shorthand_hint := shorthand_hint ? shorthand_hint : "" 
                     if (chord_hint || shorthand_hint)
-                        ShowOSD(shorthand_buffer, chord_hint, shorthand_hint)
+                        ShowHint(shorthand_buffer, chord_hint, shorthand_hint)
                 }
                 ; then, we test if it's a shorthand to be expanded 
                 if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) ) {
@@ -534,7 +538,8 @@ KeyUp:
     Critical Off
 Return
 
-; Helper functions
+;; Helper functions
+; ------------------
 
 ; Delay output by defined delay
 DelayOutput() {
@@ -605,6 +610,18 @@ Arrange(raw) {
     raw := RegExReplace(raw, "(.)", "$1`n")
     Sort raw
     Return StrReplace(raw, "`n")
+}
+
+ReplaceWithVariants(text, enclose_latin_letters:=false) {
+    new_str := text
+    new_str := StrReplace(new_str, "+", Chr(8679))
+    new_str := StrReplace(new_str, " ", Chr(9251))
+    if (enclose_latin_letters) {
+        Loop, 26
+            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(127279 + A_Index))
+        new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ")
+    }
+    Return new_str
 }
 
 Interrupt:
@@ -1079,14 +1096,14 @@ BuildOSD() {
     Gui +LastFound +AlwaysOnTop -Caption +ToolWindow ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
     Gui, Margin, 10, 10
     Gui, Color, %CustomColor%
-    Gui, Font, s32, Segoe UI  ; Set a large font size (32-point).
+    Gui, Font, s32, Consolas  ; Set a large font size (32-point).
     Gui, Add, Text, cLime Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
     Gui, Add, Text, cLime Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
     Gui, Add, Text, cLime Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
     ; Make all pixels of this color transparent and make the text itself translucent (150):
 }
 
-ShowOSD(line1, line2:="", line3 :="") {
+ShowHint(line1, line2:="", line3 :="") {
     UI_OSD_fading := False
     UI_OSD_transparency := 140
     Gui, UI_OSD:Default
@@ -1112,7 +1129,6 @@ HideOSD:
         Gui, Hide
 Return
 
-; -----------------------------
 ;; File and registry functions
 ; -----------------------------
 
