@@ -54,12 +54,13 @@ global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the c
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
+    , PREF_SHOW_SHORTCUTS := 4    ; show tip about re-opening the main dialog and adding chords
 
 ; Current application settings
 Class settingsClass {
     chords_enabled := 1
     shorthands_enabled := 1
-    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
+    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_SHORTCUTS
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
@@ -126,13 +127,14 @@ Class DictionaryClass {
             this._file := filename
             if (this._chorded)
                 this._LoadChords()
-            else
+            else {
                 this._entries := this._LoadEntries()
-            ; add reverse entries
-            for shortcut, text in this._entries
-            {
-                if ( ! InStr(text, " ") )
-                    ObjRawSet(this._reverse_entries, text, shortcut)
+                ; add reverse entries
+                for shortcut, text in this._entries
+                {
+                    if ( ! InStr(text, " ") )
+                        ObjRawSet(this._reverse_entries, text, shortcut)
+                }
             }
         } else {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
@@ -182,8 +184,8 @@ Class DictionaryClass {
         FileAppend % "`r`n" shortcut "`t" word, % this._file, UTF-8
     }
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _RegisterChord(newch, newword) {
-        newch := Arrange(newch)
+    _RegisterChord(newch_unsorted, newword) {
+        newch := Arrange(newch_unsorted)
         if this._entries.HasKey(newch) {
             MsgBox ,, % "ZipChord", % "The chord '" newch "' is already in use for '" this._entries[newch] "'.`nPlease use a different chord for '" newword "'."
             Return false
@@ -197,6 +199,8 @@ Class DictionaryClass {
             Return false
         }
         ObjRawSet(this._entries, newch, newword)
+        if ( ! InStr(newword, " ") )
+            ObjRawSet(this._reverse_entries, newword, newch_unsorted)
         return true
     }
 }
@@ -279,6 +283,7 @@ Initialize() {
     }
     BuildMainDialog()
     BuildLocaleDialog()
+    BuildOSD()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
@@ -342,14 +347,22 @@ KeyDown:
         start := A_TickCount 
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
-        debug.Log("Two keys in chord buffer.")
     }
 
-    if (settings.shorthands_enabled) {
+    if (settings.shorthands_enabled || (settings.preferences & PREF_SHOW_SHORTCUTS) ) {
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key))  ) {
             if (shorthand_buffer != "") {
-                debug.Log("BUFFER " shorthand_buffer)
-                if ( expanded := shorthands.LookUp(shorthand_buffer) ) {
+                ; first, we show a hint for a shortcut, if applicable
+                if (settings.preferences & PREF_SHOW_SHORTCUTS) {
+                    chord_hint := chords.ReverseLookUp(shorthand_buffer)
+                    shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
+                    chord_hint := chord_hint ? "Chord:  " chord_hint : "" 
+                    shorthand_hint := shorthand_hint ? "Shorthand:  " shorthand_hint : "" 
+                    if (chord_hint || shorthand_hint)
+                        ShowOSD(shorthand_buffer, chord_hint, shorthand_hint)
+                }
+                ; then, we test if it's a shorthand to be expanded 
+                if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) ) {
                     affixes := ProcessAffixes(expanded)
                     debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
@@ -369,12 +382,13 @@ KeyDown:
                 }
             }
             shorthand_buffer := ""
-        } else {
+        } else {    ; i.e. it was not the end of the word
             if (last_output & OUT_INTERRUPTED || last_output & OUT_AUTOMATIC)
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
         }
+
         if ( (settings.capitalization != CAP_OFF) && (StrLen(shorthand_buffer) == 1) ) {
             if ( (last_output & OUT_CAPITALIZE) || shifted )
                 capitalize_shorthand := true
@@ -642,6 +656,7 @@ global UI_space_before
 global UI_space_after
 global UI_space_punctuation
 global UI_delete_unrecognized
+global UI_show_tips
 global UI_capitalization
 global UI_allow_shift
 global UI_restrict_chords
@@ -682,6 +697,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
+    Gui, Add, Checkbox, y+30 vUI_show_tips, Show hints for chords and shorthands
     Gui, Tab, 3
     Gui, Add, GroupBox, w310 h140 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
@@ -715,6 +731,7 @@ ShowMainDialog() {
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
     GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
+    GuiControl , , UI_show_tips, % (settings.preferences & PREF_SHOW_SHORTCUTS) ? 1 : 0
     GuiControl , Choose, UI_capitalization, % settings.capitalization
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
@@ -768,6 +785,7 @@ ButtonOK() {
     settings.locale := UI_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
+    settings.preferences := UI_show_tips ? (settings.preferences | PREF_SHOW_SHORTCUTS) : (settings.preferences & ~ PREF_SHOW_SHORTCUTS)
     ; ...and save them to Windows Registry
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
@@ -1048,6 +1066,50 @@ ButtonSaveLocale() {
     new_loc.other_shift := UI_loc_other_shift
     SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
 }
+
+;; Shortcut Hint OSD
+; -------------------
+
+global UI_hint1, UI_hint2, UI_hint3, UI_OSD_transparency, UI_OSD_fading
+
+BuildOSD() {
+    CustomColor := "EEAA99"  ; Can be any kkRGB coEEAA99lor (it will be made transparent below).
+    Gui, UI_OSD:Default
+    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
+    Gui, Margin, 10, 10
+    Gui, Color, %CustomColor%
+    Gui, Font, s32, Segoe UI  ; Set a large font size (32-point).
+    Gui, Add, Text, cLime Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, cLime Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, cLime Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
+    ; Make all pixels of this color transparent and make the text itself translucent (150):
+}
+
+ShowOSD(line1, line2:="", line3 :="") {
+    UI_OSD_fading := False
+    UI_OSD_transparency := 140
+    Gui, UI_OSD:Default
+    Gui, Show, NoActivate, ZipChord_OSD
+    WinSet, TransColor, EEAA99 %UI_OSD_transparency%, ZipChord_OSD
+    GuiControl,, UI_hint1, % line1
+    GuiControl,, UI_hint2, % line2
+    GuiControl,, UI_hint3, % line3
+    SetTimer, HideOSD, -900
+}
+
+HideOSD:
+    UI_OSD_fading := true
+    CustomColor := "EEAA99"
+    Sleep 1000
+    Gui, UI_OSD:Default
+    while(UI_OSD_fading && UI_OSD_transparency) {
+        UI_OSD_transparency -= 10
+        WinSet, TransColor, EEAA99 %UI_OSD_transparency%, ZipChord_OSD
+        Sleep 100
+    }
+    if (UI_OSD_fading)
+        Gui, Hide
+Return
 
 ; -----------------------------
 ;; File and registry functions
