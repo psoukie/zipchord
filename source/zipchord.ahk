@@ -695,11 +695,8 @@ UI_main_windowGuiEscape() {
 CloseMainDialog() {
     Gui, UI_main_window:Default
     Gui, Submit
-    static intro := true
-    if intro {
-        MsgBox ,, ZipChord, % "Select a word and press and hold Ctrl-C to define a chord for it or to see its existing chord.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
-        intro := false
-    }
+    if (settings.preferences & PREF_SHOW_CLOSING_TIP)
+        ShowClosingTipDialog()
 }
 
 WebsiteLink:
@@ -775,6 +772,39 @@ ButtonCustomizeLocale() {
     Gui, Submit, NoHide ; to get the currently selected UI_locale
     ShowLocaleDialog(UI_locale)
 }
+
+;; Closing Tip UI
+
+global UI_dont_show_again := 0
+
+ShowClosingTipDialog() {
+    Gui, UI_closing_tip:New, , % "ZipChord"
+    Gui, Margin, 20, 20
+    Gui, Font, s10, Segoe UI
+    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcut.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
+    Gui, Add, Checkbox, vUI_dont_show_again, % "Do &not show this tip again."
+    Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
+    Gui, Show, w470
+}
+
+BtnCloseTip() {
+    Gui, UI_closing_tip:Submit
+    if (UI_dont_show_again) {
+        settings.preferences &= ~PREF_SHOW_CLOSING_TIP
+        settings.Write()
+    }
+}
+
+UI_closing_tipGuiClose() {
+    Gui, UI_closing_tip:Submit
+}
+UI_closing_tipGuiEscape() {
+    Gui, UI_closing_tip:Submit
+}
+
+
+;; Locale UI
+; -----------
 
 global UI_locale_window
 global UI_loc_name
