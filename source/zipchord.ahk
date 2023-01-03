@@ -63,6 +63,21 @@ Class settingsClass {
     shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
     input_delay := 90
     output_delay := 0
+    ; Read settings from Windows Registry and locate dictionary file
+    Read() {
+        For key in this
+        {
+            RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
+            if (! ErrorLevel)
+                this[key] := new_value
+        }
+        this.chord_file := CheckDictionaryFileExists(this.chord_file, "chord")
+        this.shorthand_file := CheckDictionaryFileExists(this.shorthand_file, "shorthand")
+    }
+    Write() {
+        For key, value in this
+        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
+    }
 }
 ; stores current settings
 global settings := New settingsClass
@@ -135,7 +150,7 @@ Initialize() {
         default_locale := new localeClass
         SavePropertiesToIni(default_locale, "English US", "locales.ini")
     }
-    LoadSettings()
+    settings.Read()
     BuildMainDialog()
     BuildLocaleDialog()
     shorthands := LoadDictionary(settings.shorthand_file)
@@ -650,8 +665,7 @@ ButtonOK() {
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
     ; ...and save them to Windows Registry
-    For key, value in settings
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
+    settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
@@ -902,18 +916,6 @@ ButtonSaveLocale() {
 ; -----------------------------
 ;; File and registry functions
 ; -----------------------------
-
-; Read settings from Windows Registry and locate dictionary file
-LoadSettings() {
-    For key in settings
-    {
-        RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
-        if (! ErrorLevel)
-            settings[key] := new_value
-    }
-    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
-    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-}
 
 CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     if (! FileExist(dictionary_file) ) {
