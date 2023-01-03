@@ -12,9 +12,8 @@ SetWorkingDir %A_ScriptDir%
 
 global version = "2.0.0-alpha.4"
 
-; ------------------
-;; Global Variables
-; ------------------
+;; Classes and Variables
+; -----------------------
 
 ; Locale settings (keyboard and language settings) with default values (US English)
 Class localeClass {
@@ -33,23 +32,23 @@ keys := New localeClass
 
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
-global AFFIX_PREFIX := 1 ; expansion is a prefix
-global AFFIX_SUFFIX := 2 ; expansion is a suffix
+    , AFFIX_PREFIX := 1 ; expansion is a prefix
+    , AFFIX_SUFFIX := 2 ; expansion is a suffix
 
 ; capitalization constants
 global CAP_OFF = 1 ; no auto-capitalization,
-global CAP_CHORDS = 2 ; auto-capitalize chords only
-global CAP_ALL = 3 ; auto-capitalize all typing
+    , CAP_CHORDS = 2 ; auto-capitalize chords only
+    , CAP_ALL = 3 ; auto-capitalize all typing
 
 ; smart spacing constants
 global SPACE_BEFORE_CHORD := 1
-global SPACE_AFTER_CHORD := 2
-global SPACE_PUNCTUATION := 4
+    , SPACE_AFTER_CHORD := 2
+    , SPACE_PUNCTUATION := 4
 
 ; Chord recognition constants
 global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
-global CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
-global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
+    , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
+    , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
 
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
@@ -83,43 +82,44 @@ Class settingsClass {
         RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
     }
 }
-; stores current settings
+
 global settings := New settingsClass
  
 /**
-  * Class for dictionaries. Create the dictionary object with "chorded_keys := true" for it to behave like a dictionary of chords.
+* Class for dictionaries.
+* Initializing:
+*    Create the dictionary object with "chorded_keys := true" for it to behave like a dictionary of chords.
+* Properties:
+*    entries - number of entries in the dictionary
+* Methods:
+*    LookUp(shortcut)     - returns expanded text or false if not found
+*    ReverseLookUp(text)  - returns corresponding shortcut or false if not found
+*    Load([file])         - Reloads the dictionary entries from the current dictionary file or from the specified file
+*    Add(shortcut, text)  - Adds the entry into the dictionary
 */
 Class DictionaryClass {
     _chorded := false
     _file := ""
     _entries := {}
     _reverse_entries := {}
-
+    ; Public properties and methods
     entries {
         get {
             return this._entries.Count()
         }
     }
-
-    __New(chorded_keys := false) {
-        this._chorded := chorded_keys
-    }
-
     LookUp(shortcut) {
         if ( this._entries.HasKey(shortcut) )
             return this._entries[shortcut]
         else
             return false
     }
-
     ReverseLookUp(text) {
         if ( this._reverse_entries.HasKey(text) )
             return this._reverse_entries[text]
         else
             return false
     }
-
-    ; Load([file]) either reloads the dictionary entries from the current dictionary file, or loads them from the specified file
     Load(filename := "") {
         if (filename == "")
             filename := this._file
@@ -140,8 +140,6 @@ Class DictionaryClass {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
         }
     }
-
-    ; Add entry into the dictionary
     Add(shortcut, text) {
         if (this._chorded) {
             if( ! this._RegisterChord(shortcut, text) )
@@ -150,7 +148,7 @@ Class DictionaryClass {
         this._WriteToFile(shortcut, text)
         return True
     }
-
+    ; Private functions
     ; Load chords from a dictionary file
     _LoadChords() {
         pause_loading := true
@@ -219,31 +217,31 @@ global start := 0 ; tracks start time of two keys pressed at once
 
 ; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
 global DIF_NONE := 0
-global DIF_EXTRA_SPACE := 1
-global DIF_REMOVED_SMART_SPACE := 2
-global DIF_IGNORED_SPACE := 4
-global difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
-global final_difference := DIF_NONE
+    , DIF_EXTRA_SPACE := 1
+    , DIF_REMOVED_SMART_SPACE := 2
+    , DIF_IGNORED_SPACE := 4
+    , difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
+    , final_difference := DIF_NONE
 
 ; Characteristics of last output: constants and variables
 global OUT_CHARACTER := 1     ; output is a character
-global OUT_SPACE := 2         ; output was a space
-global OUT_PUNCTUATION := 4   ; output was a punctuation
-global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
-global OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
-global OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
-global OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
+    , OUT_SPACE := 2         ; output was a space
+    , OUT_PUNCTUATION := 4   ; output was a punctuation
+    , OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
+    , OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
+    , OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
+    , OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
+
 ; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
 global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
-; new_output local variable is used to track the current key / output
+; also "new_output" local variable is used to track the current key / output
 
 global debug := New DebugClass
 
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
-; -------------------
 ;; Permanent Hotkeys
 ; -------------------
 
@@ -263,7 +261,6 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
-; ---------------------------
 ;; Initilization and Wiring
 ; ---------------------------
 
@@ -319,7 +316,6 @@ WireHotkeys(state) {
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
-; ------------------
 ;; Chord Detection
 ; ------------------
 
@@ -620,9 +616,8 @@ Enter_key:
 Return
 
 
-; -----------------
-;;  Adding chords 
-; -----------------
+;;  Adding shortcuts 
+; -------------------
 
 ; Define a new chord for the selected text (or check what it is for existing)
 AddChord() {
@@ -644,31 +639,29 @@ AddChord() {
     UpdateDictionaryUI()
 }
 
-; ------------------
 ;;      GUI
 ; ------------------
 
 ; variables holding the UI elements and selections
-
 global UI_input_delay
-global UI_output_delay
-global UI_space_before
-global UI_space_after
-global UI_space_punctuation
-global UI_delete_unrecognized
-global UI_show_tips
-global UI_capitalization
-global UI_allow_shift
-global UI_restrict_chords
-global UI_chord_file
-global UI_shorthand_file
-global UI_chord_entries := "0"
-global UI_shorthand_entries := "0"
-global UI_chords_enabled := 1
-global UI_shorthands_enabled := 1
-global UI_tab := 0
-global UI_locale
-global UI_debugging
+    , UI_output_delay
+    , UI_space_before
+    , UI_space_after
+    , UI_space_punctuation
+    , UI_delete_unrecognized
+    , UI_show_tips
+    , UI_capitalization
+    , UI_allow_shift
+    , UI_restrict_chords
+    , UI_chord_file
+    , UI_shorthand_file
+    , UI_chord_entries := "0"
+    , UI_shorthand_entries := "0"
+    , UI_chords_enabled := 1
+    , UI_shorthands_enabled := 1
+    , UI_tab := 0
+    , UI_locale
+    , UI_debugging
 
 ; Prepare UI
 BuildMainDialog() {
@@ -889,6 +882,7 @@ ButtonCustomizeLocale() {
 }
 
 ;; Closing Tip UI
+; ----------------
 
 global UI_dont_show_again := 0
 
@@ -922,16 +916,16 @@ UI_closing_tipGuiEscape() {
 ; -----------
 
 global UI_locale_window
-global UI_loc_name
-global UI_loc_all
-global UI_loc_space_after_plain
-global UI_loc_space_after_shift
-global UI_loc_capitalizing_plain
-global UI_loc_capitalizing_shift
-global UI_loc_remove_space_plain
-global UI_loc_remove_space_shift
-global UI_loc_other_plain
-global UI_loc_other_shift
+    , UI_loc_name
+    , UI_loc_all
+    , UI_loc_space_after_plain
+    , UI_loc_space_after_shift
+    , UI_loc_capitalizing_plain
+    , UI_loc_capitalizing_shift
+    , UI_loc_remove_space_plain
+    , UI_loc_remove_space_shift
+    , UI_loc_other_plain
+    , UI_loc_other_shift
 
 BuildLocaleDialog() {
     Gui, UI_locale_window:New, , Keyboard and language settings
@@ -1070,7 +1064,11 @@ ButtonSaveLocale() {
 ;; Shortcut Hint OSD
 ; -------------------
 
-global UI_hint1, UI_hint2, UI_hint3, UI_OSD_transparency, UI_OSD_fading
+global UI_hint1
+    , UI_hint2
+    , UI_hint3
+    , UI_OSD_transparency
+    , UI_OSD_fading
 
 BuildOSD() {
     CustomColor := "EEAA99"  ; Can be any kkRGB coEEAA99lor (it will be made transparent below).
@@ -1153,7 +1151,6 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
         object_destination[key] := value
     }
 }
-
 
 ;; Debugging
 ; -----------
