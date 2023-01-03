@@ -51,10 +51,15 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
 global CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
 global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
 
+; Other preferences constants
+global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
+    , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
+
 ; Current application settings
 Class settingsClass {
-    chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
-    shorthands_enabled := 1 ; maps to UI_shorthands_enabled for shorthand recognition
+    chords_enabled := 1
+    shorthands_enabled := 1
+    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
@@ -71,8 +76,6 @@ Class settingsClass {
             if (! ErrorLevel)
                 this[key] := new_value
         }
-        this.chord_file := CheckDictionaryFileExists(this.chord_file, "chord")
-        this.shorthand_file := CheckDictionaryFileExists(this.shorthand_file, "shorthand")
     }
     Write() {
         For key, value in this
@@ -144,13 +147,19 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
-    FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-    FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+    settings.Read()
+    if (settings.preferences & PREF_FIRST_RUN) {
+        settings.preferences &= ~PREF_FIRST_RUN
+        FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
+        FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+    }
+    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    settings.Write()
     if (!FileExist("locales.ini")) {
         default_locale := new localeClass
         SavePropertiesToIni(default_locale, "English US", "locales.ini")
     }
-    settings.Read()
     BuildMainDialog()
     BuildLocaleDialog()
     shorthands := LoadDictionary(settings.shorthand_file)
