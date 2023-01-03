@@ -357,8 +357,10 @@ KeyDown:
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
                 if (settings.preferences & PREF_SHOW_SHORTCUTS) {
-                    chord_hint := chords.ReverseLookUp(shorthand_buffer)
-                    shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
+                    if (settings.chords_enabled)
+                        chord_hint := chords.ReverseLookUp(shorthand_buffer)
+                    if (settings.shorthands_enabled)
+                        shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
                     chord_hint := chord_hint ? chord_hint : "" 
                     shorthand_hint := shorthand_hint ? shorthand_hint : "" 
                     if (chord_hint || shorthand_hint)
@@ -697,13 +699,13 @@ BuildMainDialog() {
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
     Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
-    Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
+    Gui, Add, Checkbox, vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
     Gui, Add, GroupBox, xs-20 y+30 w310 h140 vUI_shorthand_entries, Shorthand dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, &Reload
-    Gui, Add, Checkbox, gEnableDisableControls vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
+    Gui, Add, Checkbox, vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
     Gui, Tab, 2
     Gui, Add, Text, Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
@@ -712,7 +714,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
     Gui, Add, Checkbox, y+30 vUI_show_tips, Show hints for chords and shorthands
     Gui, Tab, 3
-    Gui, Add, GroupBox, w310 h140 Section, Smart spaces
+    Gui, Add, GroupBox, w310 h120 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
@@ -755,7 +757,6 @@ ShowMainDialog() {
     GuiControl , , UI_debugging, 0
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
-    EnableDisableControls()
     Gui, Show,, ZipChord
 }
 
@@ -764,21 +765,6 @@ UpdateLocaleInMainUI(selected_loc) {
     Gui, UI_main_window:Default
     GuiControl, , UI_locale, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_locale, % selected_loc
-}
-
-; sets UI controls to enabled/disabled to reflect chord recognition setting 
-EnableDisableControls() {
-    Gui, UI_main_window:Default
-    GuiControlGet, checked,, UI_chords_enabled
-    GuiControl, Enable%checked%, UI_input_delay
-    GuiControl, Enable%checked%, UI_output_delay
-    GuiControl, Enable%checked%, UI_restrict_chords
-    GuiControl, Enable%checked%, UI_allow_shift
-    GuiControl, Enable%checked%, UI_space_before
-    GuiControl, Enable%checked%, UI_space_after
-    GuiControl, Enable%checked%, UI_space_punctuation
-    GuiControl, Enable%checked%, UI_capitalization
-    GuiControl, Enable%checked%, UI_delete_unrecognized
 }
 
 ButtonOK() {
