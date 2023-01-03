@@ -79,6 +79,7 @@ global OUT_PUNCTUATION := 4   ; output was a punctuation
 global OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
 global OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
 global OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
+global OUT_SPACE_AFTER := 64  ; output is a punctuation that needs a space after it
 global OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
 ; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
 global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
@@ -200,11 +201,11 @@ KeyDown:
 
     ; if it's punctuation which doesn't do anything but separates words
     if ( (! shifted && InStr(keys.other_plain, key)) || (shifted && InStr(keys.other_shift, key)) )
-        new_output |= OUT_PUNCTUATION
+        new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
 
     ; if it's punctuation that removes a smart space before it 
     if ( (! shifted && InStr(keys.remove_space_plain, key)) || (shifted && InStr(keys.remove_space_shift, key)) ) {
-        new_output |= OUT_PUNCTUATION
+        new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             DelayOutput()
             SendInput {Backspace}{Backspace}
@@ -216,16 +217,24 @@ KeyDown:
         }
     }
 
-    ; if it's punctuation that adds a smart space
-    if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
-        new_output |= OUT_PUNCTUATION
+    ; if it's punctuation that should be followed by a space
+     if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
+        new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( settings.spacing & SPACE_PUNCTUATION ) {
             DelayOutput()
             SendInput {Space}
             difference |= DIF_EXTRA_SPACE
             new_output |= OUT_SPACE | OUT_AUTOMATIC
+        } else {
+            new_output |= OUT_SPACE_AFTER ; we might need to add a space before a chord.
         }
+    }
+
+    ; if the user had ben manually typing a word and completed it (which we know because some non-letter was just typed), we reset the auto-capitalization so we don't capitalize the following word 
+    if ( (fixed_output & OUT_CHARACTER) && ! (new_output & OUT_CHARACTER) ) {
+         debug.write("CRAP Crap... ")
+         new_output &= ~OUT_CAPITALIZE
     }
 
     ; set 'uppercase' for punctuation that capitalizes following text 
@@ -241,9 +250,10 @@ KeyDown:
                 DelayOutput()
                 cap_key := RegExReplace(key, "(.*)", "$U1")
                 SendInput % "{Backspace}{Text}" RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
-                new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag get turned off
+                new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag gets turned off
             }
     }
+
     last_output := new_output
 Return
 
@@ -376,6 +386,9 @@ OpeningSpace(attached) {
     }
     ; if adding smart spaces before is disabled, we are done too
     if (! (settings.spacing & SPACE_BEFORE_CHORD))
+        Return
+    ; if the last output was punctuation that does not ask for a space, we are done 
+    if ( (fixed_output & OUT_PUNCTUATION) && ! (fixed_output & OUT_SPACE_AFTER) )
         Return
     ; and we don't start with a smart space after intrruption, a space, after a prefix, and for suffix
     if (fixed_output & OUT_INTERRUPTED || fixed_output & OUT_SPACE || fixed_output & OUT_PREFIX || attached)
