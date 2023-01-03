@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -149,6 +149,9 @@ Class DictionaryClass {
         return True
     }
     ; Private functions
+    __New(chorded_keys := false) {
+        this._chorded := chorded_keys
+    }
     ; Load chords from a dictionary file
     _LoadChords() {
         pause_loading := true
