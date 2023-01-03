@@ -1,6 +1,9 @@
 ﻿#NoEnv
 #SingleInstance Force
-#MaxThreadsPerHotkey 10
+#MaxThreadsPerHotkey 1
+#MaxThreadsBuffer On
+#KeyHistory 0
+ListLines Off
 SetWorkingDir %A_ScriptDir%
 
 ; ZipChord by Pavel Soukenik
