@@ -84,11 +84,128 @@ Class settingsClass {
 }
 ; stores current settings
 global settings := New settingsClass
+ 
+/**
+  * Class for dictionaries. Create the dictionary object with "chorded_keys := true" for it to behave like a dictionary of chords.
+*/
+Class DictionaryClass {
+    _chorded := false
+    _file := ""
+    _entries := {}
+    _reverse_entries := {}
+
+    entries {
+        get {
+            return this._entries.Count()
+        }
+    }
+
+    __New(chorded_keys := false) {
+        this._chorded := chorded_keys
+    }
+
+    LookUp(shortcut) {
+        if ( this._entries.HasKey(shortcut) )
+            return this._entries[shortcut]
+        else
+            return false
+    }
+
+    ReverseLookUp(text) {
+        if ( this._reverse_entries.HasKey(text) )
+            return this._reverse_entries[text]
+        else
+            return false
+    }
+
+    ; Load([file]) either reloads the dictionary entries from the current dictionary file, or loads them from the specified file
+    Load(filename := "") {
+        if (filename == "")
+            filename := this._file
+        if (filename != "") {
+            this._file := filename
+            if (this._chorded)
+                this._LoadChords()
+            else
+                this._entries := this._LoadEntries()
+            ; add reverse entries
+            for shortcut, text in this._entries
+            {
+                if ( ! InStr(text, " ") )
+                    ObjRawSet(this._reverse_entries, text, shortcut)
+            }
+        } else {
+            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
+        }
+    }
+
+    ; Add entry into the dictionary
+    Add(shortcut, text) {
+        if (this._chorded) {
+            if( ! this._RegisterChord(shortcut, text) )
+                return False
+        }
+        this._WriteToFile(shortcut, text)
+        return True
+    }
+
+    ; Load chords from a dictionary file
+    _LoadChords() {
+        pause_loading := true
+        this._entries := {}
+        raw_chords := this._LoadEntries()
+        For chord, text in raw_chords
+        {
+            if (! this._RegisterChord(chord, text))  {
+                if (pause_loading) {
+                    MsgBox, 4, % "ZipChord", % "Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored."
+                    IfMsgBox Yes
+                        pause_loading := false
+                    else
+                        Break
+                }
+            }
+        }
+    }
+    ; Load Tab-separated key-value pairs from a file  
+    _LoadEntries() {
+        entries := {}
+        Loop, Read, % this._file
+        {
+            pos := InStr(A_LoopReadLine, A_Tab)
+            if (pos)
+                ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
+        }
+        Return entries
+    }
+    _WriteToFile(shortcut, word) {
+        FileAppend % "`r`n" shortcut "`t" word, % this._file, UTF-8
+    }
+    ; Adds a new pair of chord and its expanded text directly to 'this._entries'
+    _RegisterChord(newch, newword) {
+        newch := Arrange(newch)
+        if this._entries.HasKey(newch) {
+            MsgBox ,, % "ZipChord", % "The chord '" newch "' is already in use for '" this._entries[newch] "'.`nPlease use a different chord for '" newword "'."
+            Return false
+        }
+        if (StrLen(newch)<2) {
+            MsgBox ,, % "ZipChord", % "The chord for '" newword "' needs to be at least two characters."
+            Return false
+        }
+        if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
+            MsgBox ,, % "ZipChord", % "Each key can be entered only once in the same chord."
+            Return false
+        }
+        ObjRawSet(this._entries, newch, newword)
+        return true
+    }
+}
+
+global chords := New DictionaryClass(true)
+global shorthands := New DictionaryClass
 
 ; Processing input and output 
 
-global chords := {} ; holds pairs of chord key combinations and their full texts
-global shorthands := {} ; as above for shorthands
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
 shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
@@ -162,8 +279,9 @@ Initialize() {
     }
     BuildMainDialog()
     BuildLocaleDialog()
-    shorthands := LoadDictionary(settings.shorthand_file)
-    LoadChords(settings.chord_file)
+    chords.Load(settings.chord_file)
+    shorthands.Load(settings.shorthand_file)
+    UpdateDictionaryUI()
     WireHotkeys("On")
     ShowMainDialog()
 }
@@ -231,8 +349,7 @@ KeyDown:
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key))  ) {
             if (shorthand_buffer != "") {
                 debug.Log("BUFFER " shorthand_buffer)
-                if (shorthands.HasKey(shorthand_buffer)) {
-                    expanded := shorthands[shorthand_buffer]
+                if ( expanded := shorthands.LookUp(shorthand_buffer) ) {
                     affixes := ProcessAffixes(expanded)
                     debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
@@ -356,8 +473,7 @@ KeyUp:
             }
         }
         chord := Arrange(chord_candidate)
-        if (chords.HasKey(chord)) {
-            expanded := chords[chord] ; store the expanded text
+        if ( expanded := chords.LookUp(chord)) {
             shorthand_buffer := ""
             debug.Log("Chord for:" expanded)
             affixes := ProcessAffixes(expanded)
@@ -510,29 +626,8 @@ AddChord() {
         InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
         if ErrorLevel
             Return
-    } Until RegisterChord("" newch, "" newword, true)  ; force to be interpreted as string
+    } Until chords.Add("" newch, "" newword, true)  ; "" forces the values to be interpreted as string
     UpdateDictionaryUI()
-}
-
-; RegisterChord(chord, expanded[, true|false])  Adds a new pair of chord and its expanded text to 'chords' and to the dictionary file
-RegisterChord(newch, newword, write_to_dictionary := false) {
-    newch := Arrange(newch)
-    if chords.HasKey(newch) {
-        MsgBox ,, ZipChord, % "The chord '" newch "' is already in use for '" chords[newch] "'.`nPlease use a different chord for '" newword "'."
-        Return false
-    }
-    if (StrLen(newch)<2) {
-        MsgBox ,, ZipChord, The chord needs to be at least two characters.
-        Return false
-    }
-    if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {
-        MsgBox ,, ZipChord, Each key can be entered only once in the same chord.
-        Return false
-    }
-    ObjRawSet(chords, newch, newword)
-    if (write_to_dictionary)
-        WriteToDictionary(newch, newword, settings.chord_file)
-    return true
 }
 
 ; ------------------
@@ -575,7 +670,7 @@ BuildMainDialog() {
     Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
     Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
-    Gui, Add, GroupBox, xs-20 y+30 w310 h130 vUI_shorthand_entries, Shorthand dictionary
+    Gui, Add, GroupBox, xs-20 y+30 w310 h140 vUI_shorthand_entries, Shorthand dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
@@ -717,16 +812,16 @@ UpdateDictionaryUI() {
         filestr := settings.chord_file
     Gui, UI_main_window:Default
     GuiControl Text, UI_chord_file, %filestr%
-    entriesstr := "Chord dictionary (" chords.Count()
-    entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
+    entriesstr := "Chord dictionary (" chords.entries
+    entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
     GuiControl Text, UI_chord_entries, %entriesstr%
     if StrLen(settings.shorthand_file) > 40
         filestr := "..." SubStr(settings.shorthand_file, -34)
     else
         filestr := settings.shorthand_file
     GuiControl Text, UI_shorthand_file, %filestr%
-    entriesstr := "Shorthand dictionary (" shorthands.Count()
-    entriesstr .= (shorthands.Count()==1) ? " shorthand)" : " shorthands)"
+    entriesstr := "Shorthand dictionary (" shorthands.entries
+    entriesstr .= (shorthands.entries==1) ? " shorthand)" : " shorthands)"
     GuiControl Text, UI_shorthand_entries, %entriesstr%
 }
 
@@ -735,7 +830,8 @@ BtnSelectChordDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
-        LoadChords(dict)
+        chords.Load(dict)
+        UpdateDictionaryUI()
     }
     Return
 }
@@ -744,7 +840,7 @@ BtnSelectShorthandDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Shorthand Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.shorthand_file := dict
-        shorthands := LoadDictionary(dict)
+        shorthands.Load(dict)
         UpdateDictionaryUI()
     }
     Return
@@ -760,10 +856,11 @@ BtnEditShorthandDictionary() {
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
 BtnReloadChordDictionary() {
-    LoadChords(settings.chord_file)
+    chords.Load()
+    UpdateDictionaryUI()
 }
 BtnReloadShorthandDictionary() {
-    shorthands := LoadDictionary(settings.shorthand_file)
+    shorthands.Load()
     UpdateDictionaryUI()
 }
 
@@ -995,41 +1092,6 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
     }
 }
 
-; Load chords from a dictionary file
-LoadChords(file_name) {
-    pause_loading := true
-    chords := {}
-    raw_chords := LoadDictionary(file_name)
-    For chord, text in raw_chords
-    {
-        if (! RegisterChord(chord, text))  {
-            if (pause_loading) {
-                MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
-                IfMsgBox Yes
-                    pause_loading := false
-                else
-                    Break
-            }
-        }
-    }
-    UpdateDictionaryUI()
-}
-
-; Load Tab-separated key-value pairs from a file  
-LoadDictionary(file_name) {
-    entries := {}
-    Loop, Read, % file_name
-    {
-        pos := InStr(A_LoopReadLine, A_Tab)
-        if (pos)
-             ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
-    }
-    Return entries
-}
-
-WriteToDictionary(shortcut, word, file_name) {
-    FileAppend % "`r`n" shortcut "`t" word, % file_name, UTF-8
-}
 
 ;; Debugging
 ; -----------
