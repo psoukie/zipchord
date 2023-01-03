@@ -1,13 +1,16 @@
 ﻿#NoEnv
 #SingleInstance Force
-#MaxThreadsPerHotkey 10
+#MaxThreadsPerHotkey 1
+#MaxThreadsBuffer On
+#KeyHistory 0
+ListLines Off
 SetWorkingDir %A_ScriptDir%
 
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
 
-global version = "2.0.0-alpha.3"
+global version = "2.0.0-alpha.4"
 
 ; ------------------
 ;; Global Variables
@@ -48,10 +51,16 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
 global CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
 global CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
 
+; Other preferences constants
+global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
+    , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
+    , PREF_SHOW_SHORTCUTS := 4    ; show tip about re-opening the main dialog and adding chords
+
 ; Current application settings
 Class settingsClass {
-    chords_enabled := 1 ; maps to UI_chords_enabled for whether the chord recognition is enabled
-    shorthands_enabled := 1 ; maps to UI_shorthands_enabled for shorthand recognition
+    chords_enabled := 1
+    shorthands_enabled := 1
+    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_SHORTCUTS
     locale := "English US"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
@@ -60,14 +69,147 @@ Class settingsClass {
     shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
     input_delay := 90
     output_delay := 0
+    ; Read settings from Windows Registry and locate dictionary file
+    Read() {
+        For key in this
+        {
+            RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
+            if (! ErrorLevel)
+                this[key] := new_value
+        }
+    }
+    Write() {
+        For key, value in this
+        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
+    }
 }
 ; stores current settings
 global settings := New settingsClass
+ 
+/**
+  * Class for dictionaries. Create the dictionary object with "chorded_keys := true" for it to behave like a dictionary of chords.
+*/
+Class DictionaryClass {
+    _chorded := false
+    _file := ""
+    _entries := {}
+    _reverse_entries := {}
+
+    entries {
+        get {
+            return this._entries.Count()
+        }
+    }
+
+    __New(chorded_keys := false) {
+        this._chorded := chorded_keys
+    }
+
+    LookUp(shortcut) {
+        if ( this._entries.HasKey(shortcut) )
+            return this._entries[shortcut]
+        else
+            return false
+    }
+
+    ReverseLookUp(text) {
+        if ( this._reverse_entries.HasKey(text) )
+            return this._reverse_entries[text]
+        else
+            return false
+    }
+
+    ; Load([file]) either reloads the dictionary entries from the current dictionary file, or loads them from the specified file
+    Load(filename := "") {
+        if (filename == "")
+            filename := this._file
+        if (filename != "") {
+            this._file := filename
+            if (this._chorded)
+                this._LoadChords()
+            else {
+                this._entries := this._LoadEntries()
+                ; add reverse entries
+                for shortcut, text in this._entries
+                {
+                    if ( ! InStr(text, " ") )
+                        ObjRawSet(this._reverse_entries, text, shortcut)
+                }
+            }
+        } else {
+            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
+        }
+    }
+
+    ; Add entry into the dictionary
+    Add(shortcut, text) {
+        if (this._chorded) {
+            if( ! this._RegisterChord(shortcut, text) )
+                return False
+        }
+        this._WriteToFile(shortcut, text)
+        return True
+    }
+
+    ; Load chords from a dictionary file
+    _LoadChords() {
+        pause_loading := true
+        this._entries := {}
+        raw_chords := this._LoadEntries()
+        For chord, text in raw_chords
+        {
+            if (! this._RegisterChord(chord, text))  {
+                if (pause_loading) {
+                    MsgBox, 4, % "ZipChord", % "Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored."
+                    IfMsgBox Yes
+                        pause_loading := false
+                    else
+                        Break
+                }
+            }
+        }
+    }
+    ; Load Tab-separated key-value pairs from a file  
+    _LoadEntries() {
+        entries := {}
+        Loop, Read, % this._file
+        {
+            pos := InStr(A_LoopReadLine, A_Tab)
+            if (pos)
+                ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
+        }
+        Return entries
+    }
+    _WriteToFile(shortcut, word) {
+        FileAppend % "`r`n" shortcut "`t" word, % this._file, UTF-8
+    }
+    ; Adds a new pair of chord and its expanded text directly to 'this._entries'
+    _RegisterChord(newch_unsorted, newword) {
+        newch := Arrange(newch_unsorted)
+        if this._entries.HasKey(newch) {
+            MsgBox ,, % "ZipChord", % "The chord '" newch "' is already in use for '" this._entries[newch] "'.`nPlease use a different chord for '" newword "'."
+            Return false
+        }
+        if (StrLen(newch)<2) {
+            MsgBox ,, % "ZipChord", % "The chord for '" newword "' needs to be at least two characters."
+            Return false
+        }
+        if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
+            MsgBox ,, % "ZipChord", % "Each key can be entered only once in the same chord."
+            Return false
+        }
+        ObjRawSet(this._entries, newch, newword)
+        if ( ! InStr(newword, " ") )
+            ObjRawSet(this._reverse_entries, newword, newch_unsorted)
+        return true
+    }
+}
+
+global chords := New DictionaryClass(true)
+global shorthands := New DictionaryClass
 
 ; Processing input and output 
 
-global chords := {} ; holds pairs of chord key combinations and their full texts
-global shorthands := {} ; as above for shorthands
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
 shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
@@ -126,17 +268,25 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
-    FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-    FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+    settings.Read()
+    if (settings.preferences & PREF_FIRST_RUN) {
+        settings.preferences &= ~PREF_FIRST_RUN
+        FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
+        FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+    }
+    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    settings.Write()
     if (!FileExist("locales.ini")) {
         default_locale := new localeClass
         SavePropertiesToIni(default_locale, "English US", "locales.ini")
     }
-    LoadSettings()
     BuildMainDialog()
     BuildLocaleDialog()
-    shorthands := LoadDictionary(settings.shorthand_file)
-    LoadChords(settings.chord_file)
+    BuildOSD()
+    chords.Load(settings.chord_file)
+    shorthands.Load(settings.shorthand_file)
+    UpdateDictionaryUI()
     WireHotkeys("On")
     ShowMainDialog()
 }
@@ -197,15 +347,22 @@ KeyDown:
         start := A_TickCount 
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
-        debug.Log("Two keys in chord buffer.")
     }
 
-    if (settings.shorthands_enabled) {
+    if (settings.shorthands_enabled || (settings.preferences & PREF_SHOW_SHORTCUTS) ) {
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key))  ) {
             if (shorthand_buffer != "") {
-                debug.Log("BUFFER " shorthand_buffer)
-                if (shorthands.HasKey(shorthand_buffer)) {
-                    expanded := shorthands[shorthand_buffer]
+                ; first, we show a hint for a shortcut, if applicable
+                if (settings.preferences & PREF_SHOW_SHORTCUTS) {
+                    chord_hint := chords.ReverseLookUp(shorthand_buffer)
+                    shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
+                    chord_hint := chord_hint ? "Chord:  " chord_hint : "" 
+                    shorthand_hint := shorthand_hint ? "Shorthand:  " shorthand_hint : "" 
+                    if (chord_hint || shorthand_hint)
+                        ShowOSD(shorthand_buffer, chord_hint, shorthand_hint)
+                }
+                ; then, we test if it's a shorthand to be expanded 
+                if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) ) {
                     affixes := ProcessAffixes(expanded)
                     debug.Log("SHORTHAND " expanded)
                     adj := StrLen(shorthand_buffer) + 1
@@ -225,12 +382,13 @@ KeyDown:
                 }
             }
             shorthand_buffer := ""
-        } else {
+        } else {    ; i.e. it was not the end of the word
             if (last_output & OUT_INTERRUPTED || last_output & OUT_AUTOMATIC)
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
         }
+
         if ( (settings.capitalization != CAP_OFF) && (StrLen(shorthand_buffer) == 1) ) {
             if ( (last_output & OUT_CAPITALIZE) || shifted )
                 capitalize_shorthand := true
@@ -329,8 +487,7 @@ KeyUp:
             }
         }
         chord := Arrange(chord_candidate)
-        if (chords.HasKey(chord)) {
-            expanded := chords[chord] ; store the expanded text
+        if ( expanded := chords.LookUp(chord)) {
             shorthand_buffer := ""
             debug.Log("Chord for:" expanded)
             affixes := ProcessAffixes(expanded)
@@ -483,29 +640,8 @@ AddChord() {
         InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
         if ErrorLevel
             Return
-    } Until RegisterChord("" newch, "" newword, true)  ; force to be interpreted as string
+    } Until chords.Add("" newch, "" newword, true)  ; "" forces the values to be interpreted as string
     UpdateDictionaryUI()
-}
-
-; RegisterChord(chord, expanded[, true|false])  Adds a new pair of chord and its expanded text to 'chords' and to the dictionary file
-RegisterChord(newch, newword, write_to_dictionary := false) {
-    newch := Arrange(newch)
-    if chords.HasKey(newch) {
-        MsgBox ,, ZipChord, % "The chord '" newch "' is already in use for '" chords[newch] "'.`nPlease use a different chord for '" newword "'."
-        Return false
-    }
-    if (StrLen(newch)<2) {
-        MsgBox ,, ZipChord, The chord needs to be at least two characters.
-        Return false
-    }
-    if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {
-        MsgBox ,, ZipChord, Each key can be entered only once in the same chord.
-        Return false
-    }
-    ObjRawSet(chords, newch, newword)
-    if (write_to_dictionary)
-        WriteToDictionary(newch, newword, settings.chord_file)
-    return true
 }
 
 ; ------------------
@@ -520,6 +656,7 @@ global UI_space_before
 global UI_space_after
 global UI_space_punctuation
 global UI_delete_unrecognized
+global UI_show_tips
 global UI_capitalization
 global UI_allow_shift
 global UI_restrict_chords
@@ -548,7 +685,7 @@ BuildMainDialog() {
     Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
     Gui, Add, Checkbox, gEnableDisableControls vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
-    Gui, Add, GroupBox, xs-20 y+30 w310 h130 vUI_shorthand_entries, Shorthand dictionary
+    Gui, Add, GroupBox, xs-20 y+30 w310 h140 vUI_shorthand_entries, Shorthand dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
@@ -560,6 +697,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
     Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
+    Gui, Add, Checkbox, y+30 vUI_show_tips, Show hints for chords and shorthands
     Gui, Tab, 3
     Gui, Add, GroupBox, w310 h140 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
@@ -593,6 +731,7 @@ ShowMainDialog() {
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
     GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
+    GuiControl , , UI_show_tips, % (settings.preferences & PREF_SHOW_SHORTCUTS) ? 1 : 0
     GuiControl , Choose, UI_capitalization, % settings.capitalization
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
@@ -646,9 +785,9 @@ ButtonOK() {
     settings.locale := UI_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
+    settings.preferences := UI_show_tips ? (settings.preferences | PREF_SHOW_SHORTCUTS) : (settings.preferences & ~ PREF_SHOW_SHORTCUTS)
     ; ...and save them to Windows Registry
-    For key, value in settings
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
+    settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
@@ -669,11 +808,8 @@ UI_main_windowGuiEscape() {
 CloseMainDialog() {
     Gui, UI_main_window:Default
     Gui, Submit
-    static intro := true
-    if intro {
-        MsgBox ,, ZipChord, % "Select a word and press and hold Ctrl-C to define a chord for it or to see its existing chord.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again."
-        intro := false
-    }
+    if (settings.preferences & PREF_SHOW_CLOSING_TIP)
+        ShowClosingTipDialog()
 }
 
 WebsiteLink:
@@ -694,16 +830,16 @@ UpdateDictionaryUI() {
         filestr := settings.chord_file
     Gui, UI_main_window:Default
     GuiControl Text, UI_chord_file, %filestr%
-    entriesstr := "Chord dictionary (" chords.Count()
-    entriesstr .= (chords.Count()==1) ? " chord)" : " chords)"
+    entriesstr := "Chord dictionary (" chords.entries
+    entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
     GuiControl Text, UI_chord_entries, %entriesstr%
     if StrLen(settings.shorthand_file) > 40
         filestr := "..." SubStr(settings.shorthand_file, -34)
     else
         filestr := settings.shorthand_file
     GuiControl Text, UI_shorthand_file, %filestr%
-    entriesstr := "Shorthand dictionary (" shorthands.Count()
-    entriesstr .= (shorthands.Count()==1) ? " shorthand)" : " shorthands)"
+    entriesstr := "Shorthand dictionary (" shorthands.entries
+    entriesstr .= (shorthands.entries==1) ? " shorthand)" : " shorthands)"
     GuiControl Text, UI_shorthand_entries, %entriesstr%
 }
 
@@ -712,7 +848,8 @@ BtnSelectChordDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
-        LoadChords(dict)
+        chords.Load(dict)
+        UpdateDictionaryUI()
     }
     Return
 }
@@ -721,7 +858,7 @@ BtnSelectShorthandDictionary() {
     FileSelectFile dict, , %A_ScriptDir%, Open Shorthand Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.shorthand_file := dict
-        shorthands := LoadDictionary(dict)
+        shorthands.Load(dict)
         UpdateDictionaryUI()
     }
     Return
@@ -737,10 +874,11 @@ BtnEditShorthandDictionary() {
 
 ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
 BtnReloadChordDictionary() {
-    LoadChords(settings.chord_file)
+    chords.Load()
+    UpdateDictionaryUI()
 }
 BtnReloadShorthandDictionary() {
-    shorthands := LoadDictionary(settings.shorthand_file)
+    shorthands.Load()
     UpdateDictionaryUI()
 }
 
@@ -749,6 +887,39 @@ ButtonCustomizeLocale() {
     Gui, Submit, NoHide ; to get the currently selected UI_locale
     ShowLocaleDialog(UI_locale)
 }
+
+;; Closing Tip UI
+
+global UI_dont_show_again := 0
+
+ShowClosingTipDialog() {
+    Gui, UI_closing_tip:New, , % "ZipChord"
+    Gui, Margin, 20, 20
+    Gui, Font, s10, Segoe UI
+    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcut.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
+    Gui, Add, Checkbox, vUI_dont_show_again, % "Do &not show this tip again."
+    Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
+    Gui, Show, w470
+}
+
+BtnCloseTip() {
+    Gui, UI_closing_tip:Submit
+    if (UI_dont_show_again) {
+        settings.preferences &= ~PREF_SHOW_CLOSING_TIP
+        settings.Write()
+    }
+}
+
+UI_closing_tipGuiClose() {
+    Gui, UI_closing_tip:Submit
+}
+UI_closing_tipGuiEscape() {
+    Gui, UI_closing_tip:Submit
+}
+
+
+;; Locale UI
+; -----------
 
 global UI_locale_window
 global UI_loc_name
@@ -896,21 +1067,53 @@ ButtonSaveLocale() {
     SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
 }
 
+;; Shortcut Hint OSD
+; -------------------
+
+global UI_hint1, UI_hint2, UI_hint3, UI_OSD_transparency, UI_OSD_fading
+
+BuildOSD() {
+    CustomColor := "EEAA99"  ; Can be any kkRGB coEEAA99lor (it will be made transparent below).
+    Gui, UI_OSD:Default
+    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
+    Gui, Margin, 10, 10
+    Gui, Color, %CustomColor%
+    Gui, Font, s32, Segoe UI  ; Set a large font size (32-point).
+    Gui, Add, Text, cLime Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, cLime Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, cLime Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
+    ; Make all pixels of this color transparent and make the text itself translucent (150):
+}
+
+ShowOSD(line1, line2:="", line3 :="") {
+    UI_OSD_fading := False
+    UI_OSD_transparency := 140
+    Gui, UI_OSD:Default
+    Gui, Show, NoActivate, ZipChord_OSD
+    WinSet, TransColor, EEAA99 %UI_OSD_transparency%, ZipChord_OSD
+    GuiControl,, UI_hint1, % line1
+    GuiControl,, UI_hint2, % line2
+    GuiControl,, UI_hint3, % line3
+    SetTimer, HideOSD, -900
+}
+
+HideOSD:
+    UI_OSD_fading := true
+    CustomColor := "EEAA99"
+    Sleep 1000
+    Gui, UI_OSD:Default
+    while(UI_OSD_fading && UI_OSD_transparency) {
+        UI_OSD_transparency -= 10
+        WinSet, TransColor, EEAA99 %UI_OSD_transparency%, ZipChord_OSD
+        Sleep 100
+    }
+    if (UI_OSD_fading)
+        Gui, Hide
+Return
+
 ; -----------------------------
 ;; File and registry functions
 ; -----------------------------
-
-; Read settings from Windows Registry and locate dictionary file
-LoadSettings() {
-    For key in settings
-    {
-        RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
-        if (! ErrorLevel)
-            settings[key] := new_value
-    }
-    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
-    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-}
 
 CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     if (! FileExist(dictionary_file) ) {
@@ -951,41 +1154,6 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
     }
 }
 
-; Load chords from a dictionary file
-LoadChords(file_name) {
-    pause_loading := true
-    chords := {}
-    raw_chords := LoadDictionary(file_name)
-    For chord, text in raw_chords
-    {
-        if (! RegisterChord(chord, text))  {
-            if (pause_loading) {
-                MsgBox, 4, ZipChord, Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored.
-                IfMsgBox Yes
-                    pause_loading := false
-                else
-                    Break
-            }
-        }
-    }
-    UpdateDictionaryUI()
-}
-
-; Load Tab-separated key-value pairs from a file  
-LoadDictionary(file_name) {
-    entries := {}
-    Loop, Read, % file_name
-    {
-        pos := InStr(A_LoopReadLine, A_Tab)
-        if (pos)
-             ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
-    }
-    Return entries
-}
-
-WriteToDictionary(shortcut, word, file_name) {
-    FileAppend % "`r`n" shortcut "`t" word, % file_name, UTF-8
-}
 
 ;; Debugging
 ; -----------
