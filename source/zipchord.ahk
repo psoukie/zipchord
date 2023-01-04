@@ -547,6 +547,7 @@ DelayOutput() {
 }
 
 OutputShorthand(expanded, shorthand_buffer, key) {
+    global capitalize_shorthand ; needs to access this variable
     affixes := ProcessAffixes(expanded)
     debug.Log("SHORTHAND " expanded)
     adj := StrLen(shorthand_buffer) + 1
