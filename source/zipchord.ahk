@@ -102,6 +102,7 @@ Class DictionaryClass {
     _file := ""
     _entries := {}
     _reverse_entries := {}
+    _pause_loading := true
     ; Public properties and methods
     entries {
         get { 
@@ -121,30 +122,19 @@ Class DictionaryClass {
             return false
     }
     Load(filename := "") {
+        this._pause_loading := true
         if (filename == "")
             filename := this._file
         if (filename != "") {
             this._file := filename
-            if (this._chorded)
-                this._LoadChords()
-            else {
-                this._entries := this._LoadEntries()
-                ; add reverse entries
-                for shortcut, text in this._entries
-                {
-                    if ( ! InStr(text, " ") ) {
-                        shortcut := ReplaceWithVariants(shortcut)
-                        ObjRawSet(this._reverse_entries, text, shortcut)
-                    }
-                }
-            }
+            this._LoadChords()
         } else {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
         }
     }
     Add(shortcut, text) {
         if (this._chorded) {
-            if( ! this._RegisterChord(shortcut, text) )
+            if( ! this._RegisterShortcut(shortcut, text) )
                 return False
         }
         this._WriteToFile(shortcut, text)
@@ -156,57 +146,67 @@ Class DictionaryClass {
     }
     ; Load chords from a dictionary file
     _LoadChords() {
-        pause_loading := true
         this._entries := {}
-        raw_chords := this._LoadEntries()
-        For chord, text in raw_chords
+        this._reverse_entries := {}
+        entries := {}
+        Loop, Read, % this._file
         {
-            if (! this._RegisterChord(chord, text))  {
-                if (pause_loading) {
-                    MsgBox, 4, % "ZipChord", % "Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored."
-                    IfMsgBox Yes
-                        pause_loading := false
-                    else
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
+            if (columns[2] && columns[1] != "") {
+                if (! this._RegisterShortcut(columns[1], columns[2]))  {
+                    if this._AskWhetherToStop()
                         Break
                 }
             }
         }
     }
-    ; Load Tab-separated key-value pairs from a file  
-    _LoadEntries() {
-        entries := {}
-        Loop, Read, % this._file
-        {
-            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
-            if (columns[2] && columns[1] != "")
-                ObjRawSet(entries, "" columns[1], "" columns[2])  ; the "" forces the value to be treated as text, even if it's something like " 1"
-        }
-        Return entries
-    }
     _WriteToFile(shortcut, word) {
         FileAppend % "`r`n" shortcut "`t" word, % this._file, UTF-8
     }
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _RegisterChord(newch_unsorted, newword) {
-        newch := Arrange(newch_unsorted)
-        if this._entries.HasKey(newch) {
-            MsgBox ,, % "ZipChord", % "The chord '" newch "' is already in use for '" this._entries[newch] "'.`nPlease use a different chord for '" newword "'."
-            Return false
-        }
-        if (StrLen(newch)<2) {
-            MsgBox ,, % "ZipChord", % "The chord for '" newword "' needs to be at least two characters."
-            Return false
-        }
-        if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
+    _RegisterShortcut(newch_unsorted, newword) {
+        if (this._chorded)
+            newch := Arrange(newch_unsorted)
+        else
+            newch := newch_unsorted
+        if (! this._IsShortcutOK(newch, newword))
+            return false
+        if (this._chorded && StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
             MsgBox ,, % "ZipChord", % "Each key can be entered only once in the same chord."
             Return false
         }
         ObjRawSet(this._entries, newch, newword)
         if ( ! InStr(newword, " ") ) {
-            newch_unsorted := ReplaceWithVariants(newch_unsorted, true)
+            newch_unsorted := ReplaceWithVariants(newch_unsorted, this._chorded)
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
         }
         return true
+    }
+    _IsShortcutOK(shortcut, word) {
+        dest := this._chorded ? "chord" : "shorthand"
+        if (occupied := this.LookUp(shortcut)) {
+            MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, shortcut, occupied, word)
+            Return false
+        }
+        if (StrLen(shortcut)<2) {
+            MsgBox ,, % "ZipChord", % Format("The {1} for '{2}' needs to be at least two characters.", dest, word)
+            Return false
+        }
+        if (word=="") {
+            MsgBox ,, % "ZipChord", % "There is no word being provided for the shortcut."
+            Return false
+        }
+        Return True
+    }
+    _AskWhetherToStop() {
+        if (this._pause_loading) {
+        MsgBox, 4, % "ZipChord", % "Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored."
+        IfMsgBox Yes
+            this._pause_loading := false
+        else
+            Return True
+        }
+        Return False
     }
 }
 
