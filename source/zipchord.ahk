@@ -176,10 +176,8 @@ Class DictionaryClass {
             Return false
         }
         ObjRawSet(this._entries, newch, newword)
-        if ( ! InStr(newword, " ") ) {
-            newch_unsorted := ReplaceWithVariants(newch_unsorted, this._chorded)
+        if ( ! InStr(newword, " ") )
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
-        }
         return true
     }
     _IsShortcutOK(shortcut, word) {
@@ -1172,8 +1170,8 @@ ShowHint(line1, line2:="", line3 :="") {
     Gui, Show, NoActivate, ZipChord_OSD
     WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
     GuiControl,, UI_hint1, % line1
-    GuiControl,, UI_hint2, % line2
-    GuiControl,, UI_hint3, % line3
+    GuiControl,, UI_hint2, % ReplaceWithVariants(line2, true)
+    GuiControl,, UI_hint3, % ReplaceWithVariants(line3)
     SetTimer, HideOSD, -900
 }
 HideOSD:
