@@ -1,129 +1,130 @@
-This is a sample starting English-language shorthand dictionary for ZipChord. It contains the most frequent English words.
+﻿This is a sample starting English-language shorthand dictionary for ZipChord. It contains the most frequent English words.
 See https://github.com/psoukie/zipchord for details.
 
 This dictionary is based on the list of 5,000 most frequent English words at https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/A_Frequency_Dictionary_of_Contemporary_American_English) which has 4374 entries after removing duplicates.
 
-The format of this file is as follows: Sequences of typed keys that trigger the shorthand recognition are separated from the expanded full words by Tab. All other lines are ignored by ZipChord. You can change existing shorthands and add your own.
-Note: If you add a shorthand for an existing entry with "(no shorthand)", remove the note in the parantheses, otherwise it will be included in the expanded text.
+Sequences of typed keys that trigger the shorthand recognition are separated from the expanded full words by Tab. ZipChord ignores lines without Tab, lines starting with Tab (i.e. where the first column is empty), and text in additional columns.
 
-The logic behind the shortcuts in this dictionary adheres to consistent principles:
+You can change existing shorthands and add your own.
+
+To make this shorthand dictionary predictable, these default shortcuts adheres to consistent principles:
 1. If the word is three characters or less, no shorthand is predefined
 2. Doubled consonants (two consonants immediately following each other) are replaced with only one consonant
 3. If the word starts with a vowel, the vowel is retained in the shorthand
 4. All remaining vowels are removed
 5. If the resulting shorthand is already in use or is a word in its own right, no shorthand is predefined
 
-For example, "actually" is defined as "actl", and "career" as "crr" (and slightly trickier: "attitude" is "attd")
+Following these principles, "actually" is defined as "actl", and "career" as "crr" (and slightly trickier: "attitude" is "attd")
 
 Entries by frequency
 --------------------
 
-the (no shorthand)
-be (no shorthand)
-and (no shorthand)
-of (no shorthand)
-a (no shorthand)
-in (no shorthand)
-to (no shorthand)
+	the	(undefined)
+	be	(undefined)
+	and	(undefined)
+	of	(undefined)
+	a	(undefined)
+	in	(undefined)
+	to	(undefined)
 hv	have
-it (no shorthand)
-I (no shorthand)
+	it	(undefined)
+	I	(undefined)
 tht	that
-for (no shorthand)
-you (no shorthand)
-he (no shorthand)
+	for	(undefined)
+	you	(undefined)
+	he	(undefined)
 wth	with
-on (no shorthand)
-do (no shorthand)
-'s (no shorthand)
-say (no shorthand)
+	on	(undefined)
+	do	(undefined)
+	's	(undefined)
+	say	(undefined)
 th	they
 ths	this
-but (no shorthand)
-at (no shorthand)
-we (no shorthand)
-his (no shorthand)
+	but	(undefined)
+	at	(undefined)
+	we	(undefined)
+	his	(undefined)
 frm	from
-not (no shorthand)
-n't (no shorthand)
-by (no shorthand)
-or (no shorthand)
-she (no shorthand)
-as (no shorthand)
+	not	(undefined)
+	n't	(undefined)
+	by	(undefined)
+	or	(undefined)
+	she	(undefined)
+	as	(undefined)
 wht	what
-go (no shorthand)
+	go	(undefined)
 thr	their
 wl	will
-who (no shorthand)
-can (no shorthand)
-get (no shorthand)
-if (no shorthand)
-all (no shorthand)
+	who	(undefined)
+	can	(undefined)
+	get	(undefined)
+	if	(undefined)
+	all	(undefined)
 wld	would
-her (no shorthand)
+	her	(undefined)
 mk	make
 abt	about
-my (no shorthand)
+	my	(undefined)
 knw	know
-there (no shorthand)
-one (no shorthand)
-up (no shorthand)
+	there	(undefined)
+	one	(undefined)
+	up	(undefined)
 tm	time
-year (no shorthand)
-so (no shorthand)
+yr	year
+	so	(undefined)
 thnk	think
-see (no shorthand)
+	see	(undefined)
 whch	which
 whn	when
 sm	some
 thm	them
 ppl	people
 tk	take
-me (no shorthand)
-out (no shorthand)
+	me	(undefined)
+	out	(undefined)
 int	into
 jst	just
-him (no shorthand)
+	him	(undefined)
 cm	come
-yr	your
-now (no shorthand)
+	your	(undefined)
+	now	(undefined)
 cld	could
 thn	than
 lk	like
 othr	other
-then (no shorthand)
-how (no shorthand)
-its (no shorthand)
-two (no shorthand)
-our (no shorthand)
+	then	(undefined)
+	how	(undefined)
+	its	(undefined)
+	two	(undefined)
+	our	(undefined)
 mr	more
-these (no shorthand)
+	these	(undefined)
 wnt	want
-way (no shorthand)
-no (no shorthand)
-look (no shorthand)
+	way	(undefined)
+	no	(undefined)
+	look	(undefined)
 frst	first
 als	also
-new (no shorthand)
+	new	(undefined)
 bcs	because
-day (no shorthand)
-use (no shorthand)
-man (no shorthand)
+	day	(undefined)
+	use	(undefined)
+	man	(undefined)
 hr	here
 fnd	find
 gv	give
 thng	thing
-well (no shorthand)
+	well	(undefined)
 mn	many
 onl	only
-those (no shorthand)
+	those	(undefined)
 tl	tell
 vr	very
 evn	even
 bck	back
-any (no shorthand)
+	any	(undefined)
 gd	good
-us (no shorthand)
+	us	(undefined)
 thrgh	through
 wmn	woman
 lf	life
@@ -132,18 +133,18 @@ dwn	down
 wrk	work
 aftr	after
 cl	call
-may (no shorthand)
+	may	(undefined)
 wrld	world
 ovr	over
 shld	should
 stl	still
-try (no shorthand)
+	try	(undefined)
 schl	school
 lst	last
-ask (no shorthand)
-too (no shorthand)
+	ask	(undefined)
+	too	(undefined)
 nd	need
-three (no shorthand)
+	three	(undefined)
 fl	feel
 bcm	become
 stt	state
@@ -155,23 +156,23 @@ rl	really
 mst	most
 anthr	another
 mch	much
-own (no shorthand)
+	own	(undefined)
 fml	family
 hs	house
 lv	leave
-put (no shorthand)
-old (no shorthand)
+	put	(undefined)
+	old	(undefined)
 whl	while
-mean (no shorthand)
-let (no shorthand)
-why (no shorthand)
+	mean	(undefined)
+	let	(undefined)
+	why	(undefined)
 prsdnt	president
 kp	keep
-same (no shorthand)
+	same	(undefined)
 grt	great
 bgn	begin
-big (no shorthand)
-seem (no shorthand)
+	big	(undefined)
+	seem	(undefined)
 grp	group
 cntr	country
 tlk	talk
@@ -193,23 +194,23 @@ plc	place
 agn	again
 ct	city
 cs	case
-few (no shorthand)
+	few	(undefined)
 sstm	system
 wk	week
 cmpn	company
 ech	each
 prcnt	percent
-hear (no shorthand)
+	hear	(undefined)
 drng	during
 qstn	question
 rght	right
 prgrm	program
-run (no shorthand)
+	run	(undefined)
 nmbr	number
 sml	small
 gvrnmnt	government
 pl	play
-off (no shorthand)
+	off	(undefined)
 mv	move
 alws	always
 nght	night
@@ -217,15 +218,15 @@ blv	believe
 td	today
 hld	hold
 pnt	point
-live (no shorthand)
+	live	(undefined)
 hpn	happen
 brng	bring
 nxt	next
 wtht	without
 bfr	before
 lrg	large
-must (no shorthand)
-war (no shorthand)
+	must	(undefined)
+	war	(undefined)
 hm	home
 undr	under
 rm	room
@@ -233,78 +234,78 @@ fct	fact
 ar	area
 ntnl	national
 wrt	write
-money (no shorthand)
+	money	(undefined)
 str	story
 wtr	water
 mthr	mother
 dfrnt	different
 yng	young
 mnth	month
-lot (no shorthand)
+	lot	(undefined)
 bk	book
-eye (no shorthand)
+	eye	(undefined)
 std	study
-job (no shorthand)
+	job	(undefined)
 knd	kind
 wrd	word
-issue (no shorthand)
+	issue	(undefined)
 sd	side
 fr	four
 bsns	business
 thgh	though
 hd	head
-far (no shorthand)
+	far	(undefined)
 lng	long
 blck	black
 mln	million
 bth	both
 ltl	little
-yes (no shorthand)
+	yes	(undefined)
 snc	since
 arnd	around
 prvd	provide
 srvc	service
 imprtnt	important
-sit (no shorthand)
+	sit	(undefined)
 aw	away
 frnd	friend
 hwvr	however
 pwr	power
-yet (no shorthand)
+	yet	(undefined)
 fthr	father
-hour (no shorthand)
+	hour	(undefined)
 oftn	often
 untl	until
 pltcl	political
 ln	line
-end (no shorthand)
+	end	(undefined)
 stnd	stand
 amng	among
 gm	game
-ever (no shorthand)
+	ever	(undefined)
 ls	lose
-bad (no shorthand)
+	bad	(undefined)
 mmbr	member
 mt	meet
-pay (no shorthand)
-law (no shorthand)
+	pay	(undefined)
+	law	(undefined)
 almst	almost
-car (no shorthand)
+	car	(undefined)
 ltr	later
 nm	name
 incld	include
 fv	five
-center (no shorthand)
+	center	(undefined)
 onc	once
 unvrst	university
 cntn	continue
-least (no shorthand)
-real (no shorthand)
-white (no shorthand)
+	least	(undefined)
+	real	(undefined)
+	white	(undefined)
 chng	change
-set (no shorthand)
+	set	(undefined)
 svrl	several
-ago (no shorthand)
+	ago	(undefined)
 infrmtn	information
 nthng	nothing
 cmnt	community
@@ -313,12 +314,12 @@ id	idea
 ld	lead
 bd	body
 lrn	learn
-kid (no shorthand)
+	kid	(undefined)
 mnt	minute
 tbl	table
 whthr	whether
 undrstnd	understand
-team (no shorthand)
+	team	(undefined)
 wtch	watch
 tgthr	together
 flw	follow
@@ -339,10 +340,10 @@ spnd	spend
 prsn	person
 dr	door
 sr	sure
-add (no shorthand)
-street (no shorthand)
+	add	(undefined)
+	street	(undefined)
 hstr	history
-party (no shorthand)
+	party	(undefined)
 grw	grow
 rsn	reason
 mrnng	morning
@@ -352,13 +353,13 @@ althgh	although
 wlk	walk
 nws	news
 hlth	health
-court (no shorthand)
+	court	(undefined)
 frc	force
 erl	early
 hmslf	himself
-air (no shorthand)
-low (no shorthand)
-art (no shorthand)
+	air	(undefined)
+	low	(undefined)
+	art	(undefined)
 rslt	result
 mmnt	moment
 ofr	offer
@@ -366,11 +367,11 @@ rmmbr	remember
 rsrch	research
 engh	enough
 grl	girl
-boy (no shorthand)
-win (no shorthand)
+	boy	(undefined)
+	win	(undefined)
 fd	food
 acrs	across
-guy (no shorthand)
+	guy	(undefined)
 scnd	second
 abl	able
 twrd	toward
@@ -378,20 +379,20 @@ mb	maybe
 prcs	process
 evrthng	everything
 apr	appear
-age (no shorthand)
-policy (no shorthand)
+	age	(undefined)
+	policy	(undefined)
 cnsdr	consider
 incldng	including
 prbbl	probably
 edctn	education
-love (no shorthand)
+	love	(undefined)
 actl	actually
-buy (no shorthand)
+	buy	(undefined)
 wt	wait
-die (no shorthand)
+	die	(undefined)
 hmn	human
 snd	send
-fee (no shorthand)
+	fee	(undefined)
 expct	expect
 srv	serve
 sns	sense
@@ -400,18 +401,18 @@ mrkt	market
 st	stay
 bld	build
 ntn	nation
-fall (no shorthand)
-oh (no shorthand)
+	fall	(undefined)
+	oh	(undefined)
 dth	death
 pln	plan
 intrst	interest
 smn	someone
 exprnc	experience
-cut (no shorthand)
+	cut	(undefined)
 kl	kill
 bhnd	behind
 rch	reach
-six (no shorthand)
+	six	(undefined)
 lcl	local
 rmn	remain
 efct	effect
@@ -439,7 +440,7 @@ dcd	decide
 scrt	security
 psbl	possible
 efrt	effort
-role (no shorthand)
+	role	(undefined)
 btr	better
 rt	rate
 strng	strong
@@ -447,31 +448,31 @@ msc	music
 rprt	report
 ldr	leader
 lght	light
-whole (no shorthand)
+	whole	(undefined)
 vc	voice
 clr	color
 hrt	heart
 cr	care
-police (no shorthand)
+	police	(undefined)
 ecnmc	economic
 wf	wife
 mnd	mind
 fnl	finally
 drg	drug
-less (no shorthand)
+	less	(undefined)
 rtrn	return
 acrdng	according
-pull (no shorthand)
+	pull	(undefined)
 dcsn	decision
 expln	explain
-carry (no shorthand)
+	carry	(undefined)
 dvlp	develop
 vw	view
-free (no shorthand)
+	free	(undefined)
 hp	hope
 drv	drive
-son (no shorthand)
-arm (no shorthand)
+	son	(undefined)
+	arm	(undefined)
 dprtmnt	department
 tr	true
 prc	price
@@ -480,7 +481,7 @@ fdrl	federal
 brk	break
 actn	action
 vl	value
-thank (no shorthand)
+	thank	(undefined)
 rltnshp	relationship
 twn	town
 bldng	building
@@ -488,18 +489,18 @@ rcv	receive
 sct	society
 dfrnc	difference
 chrch	church
-full (no shorthand)
+	full	(undefined)
 jn	join
-road (no shorthand)
+	road	(undefined)
 intrntnl	international
 mdl	model
 pstn	position
-tax (no shorthand)
+	tax	(undefined)
 drctr	director
 agr	agree
 mtr	matter
 espcl	especially
-form (no shorthand)
+	form	(undefined)
 rcrd	record
 spcl	special
 grnd	ground
@@ -519,25 +520,25 @@ cpl	couple
 bs	base
 prjct	project
 prdc	produce
-site (no shorthand)
+	site	(undefined)
 sttn	situation
-hit (no shorthand)
+	hit	(undefined)
 indstr	industry
 hlf	half
 actvt	activity
-eat (no shorthand)
+	eat	(undefined)
 itslf	itself
 fgr	figure
 cst	cost
 es	easy
 qt	quite
 pctr	picture
-clear (no shorthand)
+	clear	(undefined)
 cvr	cover
 dscrb	describe
 img	image
 tch	teach
-wall (no shorthand)
+	wall	(undefined)
 dctr	doctor
 rcnt	recent
 prdct	product
@@ -547,42 +548,42 @@ phn	phone
 pc	piece
 crtn	certain
 ethr	either
-oil (no shorthand)
+	oil	(undefined)
 smpl	simply
 tst	test
 prsnl	personal
-star (no shorthand)
+	star	(undefined)
 lnd	land
 thrd	third
 gnrl	general
 cmptr	computer
-movie (no shorthand)
+	movie	(undefined)
 wrkr	worker
 ctch	catch
 tp	type
 nrth	north
-step (no shorthand)
+	step	(undefined)
 atnt	attention
 tchnlg	technology
 orgnztn	organization
 bb	baby
 src	source
 drw	draw
-cause (no shorthand)
-tree (no shorthand)
+	cause	(undefined)
+	tree	(undefined)
 flm	film
 chs	choose
 evdnc	evidence
 Rpblcn	Republican
 dfclt	difficult
-century (no shorthand)
+	century	(undefined)
 nrl	nearly
-red (no shorthand)
+	red	(undefined)
 wndw	window
 prk	park
 prd	period
 cltr	culture
-hair (no shorthand)
+	hair	(undefined)
 lstn	listen
 chnc	chance
 avlbl	available
@@ -591,13 +592,13 @@ smr	summer
 rlz	realize
 prvt	private
 scnc	science
-letter (no shorthand)
+	letter	(undefined)
 cngrs	congress
 cndtn	condition
 shrt	short
 lkl	likely
 oprtnt	opportunity
-rule (no shorthand)
+	rule	(undefined)
 chc	choice
 sngl	single
 ptnt	patient
@@ -612,8 +613,8 @@ plnt	plant
 enrg	energy
 cmpgn	campaign
 ppltn	population
-fire (no shorthand)
-close (no shorthand)
+	fire	(undefined)
+	close	(undefined)
 dghtr	daughter
 invlv	involve
 hsbnd	husband
@@ -639,12 +640,12 @@ wst	west
 ecnm	economy
 qckl	quickly
 thrw	throw
-bed (no shorthand)
+	bed	(undefined)
 ofcr	officer
 rprsnt	represent
 sn	soon
-top (no shorthand)
-fill (no shorthand)
+	top	(undefined)
+	fill	(undefined)
 athr	author
 pst	past
 upn	upon
@@ -654,12 +655,12 @@ drp	drop
 ntr	nature
 agnc	agency
 rcntl	recently
-store (no shorthand)
+	store	(undefined)
 frgn	foreign
 crnt	current
 prfrmnc	performance
 bnk	bank
-sound (no shorthand)
+	sound	(undefined)
 psh	push
 fcs	focus
 rdc	reduce
@@ -669,7 +670,7 @@ nr	near
 mvmnt	movement
 cmn	common
 bln	billion
-blood (no shorthand)
+	blood	(undefined)
 pg	page
 cncrn	concern
 pr	poor
@@ -678,18 +679,18 @@ shr	share
 srs	series
 usl	usually
 ntrl	natural
-hot (no shorthand)
+	hot	(undefined)
 rc	race
 lngg	language
 rvr	river
 dd	dead
-act (no shorthand)
+	act	(undefined)
 sgnfcnt	significant
 rspns	response
-rise (no shorthand)
-decade (no shorthand)
+	rise	(undefined)
+	decade	(undefined)
 artcl	article
-thus (no shorthand)
+	thus	(undefined)
 svn	seven
 sht	shoot
 est	east
@@ -697,31 +698,31 @@ anml	animal
 smlr	similar
 sv	save
 fctr	factor
-central (no shorthand)
+	central	(undefined)
 ocr	occur
 cmt	committee
-serious (no shorthand)
-sport (no shorthand)
-lie (no shorthand)
+	serious	(undefined)
+	sport	(undefined)
+	lie	(undefined)
 bnd	beyond
 exctl	exactly
 dspt	despite
-happy (no shorthand)
+	happy	(undefined)
 eght	eight
 prtct	protect
-list (no shorthand)
+	list	(undefined)
 sz	size
 qlt	quality
 prsr	pressure
 acpt	accept
-ready (no shorthand)
+	ready	(undefined)
 aprch	approach
 sgn	sign
 atck	attack
 indvdl	individual
 crr	career
 answr	answer
-dog (no shorthand)
+	dog	(undefined)
 md	media
 thght	thought
 whtvr	whatever
@@ -744,7 +745,7 @@ dgr	degree
 stck	stock
 indct	indicate
 grwth	growth
-simple (no shorthand)
+	simple	(undefined)
 ablt	ability
 dlr	dollar
 unn	union
@@ -752,31 +753,31 @@ dss	disease
 evrbd	everybody
 wndr	wonder
 elctn	election
-loss (no shorthand)
-box (no shorthand)
+	loss	(undefined)
+	box	(undefined)
 hrslf	herself
-fund (no shorthand)
+	fund	(undefined)
 ms	miss
-pretty (no shorthand)
+	pretty	(undefined)
 rgn	region
 flng	feeling
-lay (no shorthand)
+	lay	(undefined)
 trnng	training
 msg	message
 arv	arrive
 stndrd	standard
 otsd	outside
-fail (no shorthand)
+	fail	(undefined)
 trd	trade
 stf	staff
 bnft	benefit
 chrctr	character
-arm	army
+	army	(undefined)
 asctn	association
 oprtn	operation
 prsnt	present
 crm	crime
-cup (no shorthand)
+	cup	(undefined)
 islnd	island
 anlss	analysis
 chck	check
@@ -787,7 +788,7 @@ athrt	authority
 erth	earth
 stg	stage
 srt	sort
-station (no shorthand)
+	station	(undefined)
 clrl	clearly
 cmpr	compare
 indd	indeed
@@ -798,14 +799,14 @@ strtg	strategy
 mntn	mountain
 gs	guess
 sstr	sister
-gun (no shorthand)
+	gun	(undefined)
 vrs	various
 lgh	laugh
 envrnmnt	environment
 dsgn	design
-sun (no shorthand)
+	sun	(undefined)
 lwr	lawyer
-sex (no shorthand)
+	sex	(undefined)
 rthr	rather
 artst	artist
 clb	club
@@ -813,36 +814,36 @@ prv	prove
 sctn	section
 skl	skill
 trth	truth
-ok (no shorthand)
+	ok	(undefined)
 mngr	manager
 exctv	executive
 dstrct	district
 clm	claim
 frgt	forget
 hng	hang
-entire (no shorthand)
-leg (no shorthand)
+	entire	(undefined)
+	leg	(undefined)
 envrnmntl	environmental
 estblsh	establish
 dmcrtc	democratic
 rmv	remove
-main (no shorthand)
+	main	(undefined)
 prfsr	professor
 fnncl	financial
 enj	enjoy
 ntwrk	network
 dscs	discuss
-final (no shorthand)
+	final	(undefined)
 trl	trial
 lgl	legal
-cold (no shorthand)
+	cold	(undefined)
 abv	above
 rck	rock
-seat (no shorthand)
+	seat	(undefined)
 wpn	weapon
 sng	song
 exprt	expert
-radio (no shorthand)
+	radio	(undefined)
 nc	nice
 avd	avoid
 mmr	memory
@@ -850,20 +851,20 @@ mngmnt	management
 chrg	charge
 sprng	spring
 crd	card
-maintain (no shorthand)
-theory (no shorthand)
+	maintain	(undefined)
+	theory	(undefined)
 vst	visit
 imgn	imagine
 fnsh	finish
 sttmnt	statement
-firm (no shorthand)
+	firm	(undefined)
 hg	huge
 rspnd	respond
 pplr	popular
 phscl	physical
 trdtnl	traditional
-contain (no shorthand)
-peace (no shorthand)
+	contain	(undefined)
+	peace	(undefined)
 grn	green
 thnks	thanks
 Dmcrt	Democrat
@@ -871,13 +872,13 @@ impct	impact
 strctr	structure
 tnght	tonight
 drctn	direction
-fly (no shorthand)
+	fly	(undefined)
 ont	onto
 kng	king
 rvl	reveal
-cell (no shorthand)
+	cell	(undefined)
 rlgs	religious
-ball (no shorthand)
+	ball	(undefined)
 prtclr	particular
 empl	employee
 sdnl	suddenly
@@ -885,7 +886,7 @@ apl	apply
 shk	shake
 cltrl	cultural
 chr	chair
-PM (no shorthand)
+	PM	(undefined)
 jstc	justice
 dscvr	discover
 msr	measure
@@ -898,10 +899,10 @@ evnng	evening
 unt	unit
 afct	affect
 prdctn	production
-bit (no shorthand)
+	bit	(undefined)
 insd	inside
 rng	range
-worry (no shorthand)
+	worry	(undefined)
 prfrm	perform
 ncsr	necessary
 cnfrnc	conference
@@ -912,37 +913,37 @@ thrght	throughout
 hl	hall
 fsh	fish
 trp	trip
-mention (no shorthand)
+	mention	(undefined)
 edg	edge
 trbl	trouble
 intrvw	interview
-style (no shorthand)
-middle (no shorthand)
-ten (no shorthand)
+	style	(undefined)
+	middle	(undefined)
+	ten	(undefined)
 wght	weight
 adlt	adult
 drm	dream
-fear (no shorthand)
+	fear	(undefined)
 drk	dark
 mthd	method
 smbd	somebody
 mgzn	magazine
 rflct	reflect
-heavy (no shorthand)
+	heavy	(undefined)
 sldr	soldier
 prprt	property
 btfl	beautiful
 wrtr	writer
-stuff (no shorthand)
+	stuff	(undefined)
 cmr	camera
 imprv	improve
 shldr	shoulder
-bar (no shorthand)
+	bar	(undefined)
 htl	hotel
 instd	instead
-hill (no shorthand)
+	hill	(undefined)
 exst	exist
-sea (no shorthand)
+	sea	(undefined)
 instttn	institution
 prps	purpose
 ptrn	pattern
@@ -959,14 +960,14 @@ whm	whom
 srfc	surface
 bdgt	budget
 sntr	senator
-bag (no shorthand)
+	bag	(undefined)
 rlt	reality
 edtr	editor
 tnd	tend
 adrs	address
 cvl	civil
 dscsn	discussion
-mom (no shorthand)
+	mom	(undefined)
 vlnc	violence
 ttl	total
 skn	skin
@@ -974,13 +975,13 @@ ht	heat
 cncl	council
 ntc	notice
 bt	beat
-nor (no shorthand)
+	nor	(undefined)
 mdrn	modern
 vt	vote
-sing (no shorthand)
+	sing	(undefined)
 cncr	cancer
 fngr	finger
-lake (no shorthand)
+	lake	(undefined)
 wsh	wish
 mrg	marriage
 vctm	victim
@@ -994,16 +995,16 @@ agrmnt	agreement
 atrn	attorney
 cptl	capital
 thrt	threat
-smile (no shorthand)
-gas (no shorthand)
+	smile	(undefined)
+	gas	(undefined)
 pstv	positive
 trck	track
 invstmnt	investment
 acnt	account
-rich (no shorthand)
+	rich	(undefined)
 ctzn	citizen
 adnc	audience
-lady (no shorthand)
+	lady	(undefined)
 dnr	dinner
 wstrn	western
 dbt	debate
@@ -1013,14 +1014,14 @@ intrstng	interesting
 prvnt	prevent
 trvl	travel
 brn	born
-relate (no shorthand)
+	relate	(undefined)
 asm	assume
 nn	none
 admt	admit
 frnt	front
 cch	coach
 prtnr	partner
-shot (no shorthand)
+	shot	(undefined)
 scntst	scientist
 snr	senior
 sfr	suffer
@@ -1029,7 +1030,7 @@ clctn	collection
 scsfl	successful
 spch	speech
 evntl	eventually
-key (no shorthand)
+	key	(undefined)
 msn	mission
 scr	score
 nwsppr	newspaper
@@ -1062,12 +1063,12 @@ nghbrhd	neighborhood
 efctv	effective
 lbr	labor
 nbd	nobody
-stare (no shorthand)
+	stare	(undefined)
 imdtl	immediately
 achv	achieve
-forest (no shorthand)
-dad (no shorthand)
-hurt (no shorthand)
+	forest	(undefined)
+	dad	(undefined)
+	hurt	(undefined)
 vd	video
 strk	strike
 sft	safety
@@ -1075,21 +1076,21 @@ absltl	absolutely
 thrfr	therefore
 frdm	freedom
 vrsn	version
-plane (no shorthand)
+	plane	(undefined)
 attd	attitude
 sxl	sexual
 rfr	refer
 frsh	fresh
 invlvd	involved
 pwrfl	powerful
-bird (no shorthand)
-touch (no shorthand)
+	bird	(undefined)
+	touch	(undefined)
 vrt	variety
 dp	deep
 txt	text
 wd	wide
 crdt	credit
-nine (no shorthand)
+	nine	(undefined)
 slp	sleep
 invstgtn	investigation
 annc	announce
@@ -1103,7 +1104,7 @@ argmnt	argument
 objct	object
 pls	please
 nclr	nuclear
-sky (no shorthand)
+	sky	(undefined)
 aftrnn	afternoon
 hndrd	hundred
 encrg	encourage
@@ -1112,23 +1113,23 @@ psblt	possibility
 Brtsh	British
 exmn	examine
 cnvrstn	conversation
-generally (no shorthand)
+	generally	(undefined)
 bgnng	beginning
 scrtr	secretary
 bch	beach
 sf	safe
-spirit (no shorthand)
+	spirit	(undefined)
 wknd	weekend
-date (no shorthand)
+	date	(undefined)
 dfn	define
-feature (no shorthand)
+	feature	(undefined)
 glbl	global
 elmnt	element
 atmpt	attempt
 slwl	slowly
 gvrnr	governor
 cncpt	concept
-sorry (no shorthand)
+	sorry	(undefined)
 esl	easily
 btl	battle
 lg	league
@@ -1137,19 +1138,19 @@ intrdc	introduce
 stts	status
 insrnc	insurance
 cmplt	complete
-stick (no shorthand)
+	stick	(undefined)
 sltn	solution
-web (no shorthand)
+	web	(undefined)
 vsn	vision
 stn	stone
 lck	lack
 drvr	driver
 nrml	normal
-truck (no shorthand)
+	truck	(undefined)
 mnstr	minister
 hndl	handle
-hole (no shorthand)
-fan (no shorthand)
+	hole	(undefined)
+	fan	(undefined)
 spt	spot
 crss	crisis
 spsd	supposed
@@ -1163,17 +1164,17 @@ shp	ship
 gn	gain
 exprs	express
 indpndnt	independent
-ice (no shorthand)
-scale (no shorthand)
-brain (no shorthand)
+	ice	(undefined)
+	scale	(undefined)
+	brain	(undefined)
 wntr	winter
 cmsn	commission
-wood (no shorthand)
+	wood	(undefined)
 dvsn	division
 spcs	species
-AM (no shorthand)
-roll (no shorthand)
-hide (no shorthand)
+	AM	(undefined)
+	roll	(undefined)
+	hide	(undefined)
 clnt	client
 rsdnt	resident
 cntrct	contract
@@ -1187,18 +1188,18 @@ hrs	horse
 EErpn	European
 trgt	target
 wlng	willing
-survey (no shorthand)
+	survey	(undefined)
 intrstd	interested
 chf	chief
 crwd	crowd
-prison (no shorthand)
+	prison	(undefined)
 trms	terms
 obvsl	obviously
 bss	basis
 aprtmnt	apartment
-farm (no shorthand)
+	farm	(undefined)
 flght	flight
-shape (no shorthand)
+	shape	(undefined)
 dmnd	demand
 strngth	strength
 vlg	village
@@ -1207,15 +1208,15 @@ rprtr	reporter
 grd	guard
 obsrv	observe
 dlvr	deliver
-count (no shorthand)
+	count	(undefined)
 advntg	advantage
-wild (no shorthand)
+	wild	(undefined)
 prvs	previous
 avrg	average
 emrg	emerge
 cntrbt	contribute
 ldrshp	leadership
-boat (no shorthand)
+	boat	(undefined)
 fclt	facility
 ern	earn
 hghl	highly
@@ -1223,60 +1224,60 @@ vhcl	vehicle
 pnd	pound
 tn	tiny
 undrstndng	understanding
-settle (no shorthand)
+	settle	(undefined)
 unls	unless
 tmrw	tomorrow
 fndtn	foundation
 qck	quick
-block (no shorthand)
+	block	(undefined)
 rdr	reader
 clct	collect
 gst	guest
 lvng	living
-tool (no shorthand)
+	tool	(undefined)
 prtctn	protection
-fair (no shorthand)
+	fair	(undefined)
 adtnl	additional
 prmt	promote
 eqpmnt	equipment
 mstl	mostly
 pntng	painting
-feed (no shorthand)
+	feed	(undefined)
 prncpl	principle
 bwl	bowl
 tchnq	technique
 lmt	limit
 idntt	identity
-title (no shorthand)
+	title	(undefined)
 crtc	critic
 srvv	survive
-cry (no shorthand)
+	cry	(undefined)
 brdr	border
-lift (no shorthand)
+	lift	(undefined)
 pth	path
 aspct	aspect
-marry (no shorthand)
-shop (no shorthand)
-failure (no shorthand)
-ride (no shorthand)
+	marry	(undefined)
+	shop	(undefined)
+	failure	(undefined)
+	ride	(undefined)
 rspnsbl	responsible
 gthr	gather
 jmp	jump
-sample (no shorthand)
+	sample	(undefined)
 afr	affair
 wrth	worth
-fit (no shorthand)
+	fit	(undefined)
 chrmn	chairman
 lsn	lesson
 Chrstms	Christmas
 insst	insist
 anbd	anybody
 flk	folk
-band (no shorthand)
-ear (no shorthand)
+	band	(undefined)
+	ear	(undefined)
 prcdr	procedure
 asct	associate
-inch	inch
+	inch	(undefined)
 wrm	warm
 AAfrcn	African
 Frnch	French
@@ -1288,26 +1289,26 @@ cmpttn	competition
 afrd	afraid
 sprd	spread
 ignr	ignore
-soft (no shorthand)
+	soft	(undefined)
 anl	annual
 wndrfl	wonderful
 thrtn	threaten
-commit (no shorthand)
+	commit	(undefined)
 dn	deny
 intlgnc	intelligence
 rglr	regular
 inflnc	influence
 rctn	reaction
-cross (no shorthand)
+	cross	(undefined)
 mstr	master
-suit (no shorthand)
+	suit	(undefined)
 blw	blow
 dstr	destroy
 gft	gift
 cf	coffee
 anw	anyway
 blf	belief
-comment (no shorthand)
+	comment	(undefined)
 aprntl	apparently
 twc	twice
 bckgrnd	background
@@ -1316,22 +1317,22 @@ rvw	review
 fth	faith
 spd	speed
 engg	engage
-broad (no shorthand)
+	broad	(undefined)
 prspctv	perspective
 slghtl	slightly
 grwng	growing
 fnctn	function
 cnstrctn	construction
-egg (no shorthand)
+	egg	(undefined)
 wv	wave
-female (no shorthand)
+	female	(undefined)
 mrdr	murder
-tape (no shorthand)
-burn (no shorthand)
+	tape	(undefined)
+	burn	(undefined)
 mns	means
 awr	aware
 mstk	mistake
-quiet (no shorthand)
+	quiet	(undefined)
 cnctn	connection
 sh	shoe
 clths	clothes
@@ -1349,56 +1350,56 @@ ctgr	category
 dngrs	dangerous
 extnd	extend
 cmbn	combine
-coast (no shorthand)
+	coast	(undefined)
 rltvl	relatively
-bus (no shorthand)
-hey (no shorthand)
+	bus	(undefined)
+	hey	(undefined)
 flwng	following
 dpnd	depend
-hell (no shorthand)
+	hell	(undefined)
 bn	bone
 ck	cook
 drct	direct
 ntv	native
-cool (no shorthand)
+	cool	(undefined)
 rmnd	remind
 hstrcl	historical
 mrl	moral
 vtr	voter
 aprprt	appropriate
 fms	famous
-hire (no shorthand)
+	hire	(undefined)
 vctr	victory
 cntct	contact
-fully (no shorthand)
+	fully	(undefined)
 ngtv	negative
 mdcn	medicine
 prtcpt	participate
-grade (no shorthand)
+	grade	(undefined)
 estrn	eastern
 spl	supply
 ystrd	yesterday
 fmlr	familiar
 dmcrc	democracy
-pair (no shorthand)
-healthy (no shorthand)
-tie (no shorthand)
+	pair	(undefined)
+	healthy	(undefined)
+	tie	(undefined)
 brth	birth
 prgrs	progress
 dmg	damage
 exchng	exchange
 btm	bottom
-daily (no shorthand)
+	daily	(undefined)
 dcmnt	document
-grand (no shorthand)
+	grand	(undefined)
 jrnl	journal
 kn	knee
 prmr	primary
 othrws	otherwise
-train (no shorthand)
+	train	(undefined)
 grb	grab
 crcl	circle
-lean (no shorthand)
+	lean	(undefined)
 wn	wine
 mnrt	minority
 flwr	flower
@@ -1408,56 +1409,56 @@ plt	plate
 cln	clean
 alv	alive
 actr	actor
-hate (no shorthand)
+	hate	(undefined)
 exprsn	expression
-below (no shorthand)
+	below	(undefined)
 brght	bright
-tour (no shorthand)
+	tour	(undefined)
 fndng	finding
 exrcs	exercise
 plstc	plastic
 dngr	danger
 nck	neck
-valley (no shorthand)
+	valley	(undefined)
 acdmc	academic
 aplctn	application
 intnd	intend
-male (no shorthand)
-tall (no shorthand)
-shut (no shorthand)
+	male	(undefined)
+	tall	(undefined)
+	shut	(undefined)
 lts	lots
 IIndn	Indian
 rspct	respect
-colleague (no shorthand)
+	colleague	(undefined)
 wrtng	writing
 rn	rain
 fst	fast
 ftbl	football
 wlcm	welcome
 dmstc	domestic
-pool (no shorthand)
+	pool	(undefined)
 ltrtr	literature
 extr	extra
 nrthrn	northern
 dsr	desire
 crprt	corporate
-session (no shorthand)
+	session	(undefined)
 sprm	supreme
-studio (no shorthand)
-Russian (no shorthand)
-nod (no shorthand)
+	studio	(undefined)
+	Russian	(undefined)
+	nod	(undefined)
 lrnng	learning
 clmb	climb
 imprtnc	importance
 smwhr	somewhere
 expnd	expand
 frth	fourth
-dry (no shorthand)
+	dry	(undefined)
 dspr	disappear
 abs	abuse
 chckn	chicken
 obtn	obtain
-map (no shorthand)
+	map	(undefined)
 crfl	carefully
 incrsngl	increasingly
 grtst	greatest
@@ -1469,7 +1470,7 @@ prpsl	proposal
 impsbl	impossible
 scntfc	scientific
 tckt	ticket
-leaf (no shorthand)
+	leaf	(undefined)
 clsrm	classroom
 srnd	surround
 lnch	lunch
@@ -1479,36 +1480,36 @@ invt	invite
 enm	enemy
 rpt	repeat
 br	bear
-lip (no shorthand)
-mayor (no shorthand)
+	lip	(undefined)
+	mayor	(undefined)
 awrd	award
 cmtmnt	commitment
 cnsqnc	consequence
 instrctn	instruction
 srprs	surprise
-poll (no shorthand)
+	poll	(undefined)
 fvrt	favorite
 explr	explore
-predict (no shorthand)
+	predict	(undefined)
 adpt	adopt
 sght	sight
 strm	storm
 assmnt	assessment
 wthr	weather
 pckt	pocket
-aid (no shorthand)
+	aid	(undefined)
 rdng	reading
-thin (no shorthand)
-soul (no shorthand)
-strange (no shorthand)
+	thin	(undefined)
+	soul	(undefined)
+	strange	(undefined)
 mrd	married
 orgnz	organize
 cnclsn	conclusion
-fuel (no shorthand)
+	fuel	(undefined)
 urbn	urban
 blng	belong
 slt	salt
-farmer (no shorthand)
+	farmer	(undefined)
 strght	straight
 advc	advice
 blnc	balance
@@ -1520,11 +1521,11 @@ prsdntl	presidential
 prm	prime
 brst	breast
 dsk	desk
-breath (no shorthand)
+	breath	(undefined)
 thtr	theater
 acknwldg	acknowledge
-theme (no shorthand)
-fat (no shorthand)
+	theme	(undefined)
+	fat	(undefined)
 sftwr	software
 sgr	sugar
 edctnl	educational
@@ -1539,17 +1540,17 @@ lbrr	library
 expnsv	expensive
 emtnl	emotional
 engn	engine
-propose (no shorthand)
+	propose	(undefined)
 mntl	mental
-difficulty (no shorthand)
+	difficulty	(undefined)
 brwn	brown
 bscl	basically
-ring (no shorthand)
+	ring	(undefined)
 mrk	mark
 lct	locate
 srch	search
 lrgl	largely
-possibly (no shorthand)
+	possibly	(undefined)
 anmr	anymore
 gnrt	generate
 rgnl	regional
@@ -1562,7 +1563,7 @@ aprnc	appearance
 crntl	currently
 shdw	shadow
 bng	being
-moon (no shorthand)
+	moon	(undefined)
 brdg	bridge
 rcmnd	recommend
 hrng	hearing
@@ -1572,8 +1573,8 @@ shft	shift
 cmfrtbl	comfortable
 strgl	struggle
 rvn	revenue
-notion (no shorthand)
-ok	okay
+	notion	(undefined)
+	okay	(undefined)
 pckg	package
 oght	ought
 trfc	traffic
@@ -1590,40 +1591,40 @@ extrml	extremely
 sck	sick
 cptr	capture
 unq	unique
-actual (no shorthand)
+	actual	(undefined)
 chst	chest
-meal (no shorthand)
-beauty (no shorthand)
+	meal	(undefined)
+	beauty	(undefined)
 extnt	extent
 dfnd	defend
 vstr	visitor
 dzn	dozen
 dclr	declare
 emrgnc	emergency
-ad (no shorthand)
-truly (no shorthand)
-planet (no shorthand)
+	ad	(undefined)
+	truly	(undefined)
+	planet	(undefined)
 slct	select
 ethnc	ethnic
 ns	nose
-loan (no shorthand)
+	loan	(undefined)
 csh	cash
 cntrbtn	contribution
 slw	slow
 cntrst	contrast
-bottle (no shorthand)
-launch (no shorthand)
+	bottle	(undefined)
+	launch	(undefined)
 nvl	novel
-duty (no shorthand)
-root (no shorthand)
+	duty	(undefined)
+	root	(undefined)
 cntnt	content
 cmpnnt	component
 aprct	appreciate
 crcmstnc	circumstance
 tchng	teaching
-paint (no shorthand)
+	paint	(undefined)
 thck	thick
-cat (no shorthand)
+	cat	(undefined)
 nthr	neither
 orslvs	ourselves
 crct	correct
@@ -1631,27 +1632,27 @@ wrn	warn
 cpct	capacity
 cnvntn	convention
 pltcn	politician
-pursue (no shorthand)
+	pursue	(undefined)
 stng	setting
 zn	zone
-pilot (no shorthand)
+	pilot	(undefined)
 ensr	ensure
 ultmtl	ultimately
-wake (no shorthand)
-shirt (no shorthand)
-guide (no shorthand)
+	wake	(undefined)
+	shirt	(undefined)
+	guide	(undefined)
 AAIDS	AIDS
-mix (no shorthand)
-slip (no shorthand)
-steal (no shorthand)
+	mix	(undefined)
+	slip	(undefined)
+	steal	(undefined)
 frqntl	frequently
 blm	blame
-sheet (no shorthand)
+	sheet	(undefined)
 estmt	estimate
 rlf	relief
 cmbntn	combination
 invstr	investor
-due (no shorthand)
+	due	(undefined)
 slnc	silence
 mnr	manner
 mscl	muscle
@@ -1663,7 +1664,7 @@ Grmn	German
 prcntg	percentage
 otcm	outcome
 estt	estate
-forth (no shorthand)
+	forth	(undefined)
 strs	stress
 eql	equal
 EEnglsh	English
@@ -1671,15 +1672,15 @@ wlfr	welfare
 tpcl	typical
 crz	crazy
 excpt	except
-funny (no shorthand)
-meat (no shorthand)
-appeal (no shorthand)
+	funny	(undefined)
+	meat	(undefined)
+	appeal	(undefined)
 lngtrm	long-term
-eliminate (no shorthand)
+	eliminate	(undefined)
 usd	used
 mtn	motion
 cmpln	complain
-row (no shorthand)
+	row	(undefined)
 Jwsh	Jewish
 kck	kick
 snw	snow
@@ -1687,7 +1688,7 @@ prdcr	producer
 slv	solve
 opstn	opposition
 bsktbl	basketball
-rely (no shorthand)
+	rely	(undefined)
 cnsrvtv	conservative
 trst	trust
 mrr	mirror
@@ -1697,16 +1698,16 @@ smwht	somewhat
 atrct	attract
 anwhr	anywhere
 rgm	regime
-fix (no shorthand)
+	fix	(undefined)
 entrl	entirely
-afford (no shorthand)
+	afford	(undefined)
 lngth	length
-secret (no shorthand)
+	secret	(undefined)
 plsr	pleasure
-file (no shorthand)
+	file	(undefined)
 tth	tooth
 cnfrm	confirm
-separate (no shorthand)
+	separate	(undefined)
 gldn	golden
 mnwhl	meanwhile
 chnl	channel
@@ -1714,54 +1715,54 @@ bdrm	bedroom
 rqrmnt	requirement
 ancnt	ancient
 cvrg	coverage
-trail (no shorthand)
+	trail	(undefined)
 hst	host
 srgr	surgery
 prcptn	perception
 rr	rare
-era (no shorthand)
+	era	(undefined)
 grnt	grant
 ocn	ocean
 srsl	seriously
 cnfdnc	confidence
 asd	aside
-tear (no shorthand)
+	tear	(undefined)
 jdgmnt	judgment
 indstrl	industrial
 expcttn	expectation
 rsltn	resolution
 cp	copy
 wng	wing
-doubt (no shorthand)
-fun (no shorthand)
-totally (no shorthand)
-pour (no shorthand)
+	doubt	(undefined)
+	fun	(undefined)
+	totally	(undefined)
+	pour	(undefined)
 gndr	gender
 srprsd	surprised
-beer (no shorthand)
-bond (no shorthand)
-plus (no shorthand)
-debt (no shorthand)
+	beer	(undefined)
+	bond	(undefined)
+	plus	(undefined)
+	debt	(undefined)
 smrt	smart
-terrible (no shorthand)
+	terrible	(undefined)
 wtns	witness
 rfrnc	reference
-vice (no shorthand)
-hero (no shorthand)
+	vice	(undefined)
+	hero	(undefined)
 bmb	bomb
 rtng	rating
-busy (no shorthand)
-cite (no shorthand)
+	busy	(undefined)
+	cite	(undefined)
 crprtn	corporation
 rprsnttv	representative
 evrwhr	everywhere
-soil (no shorthand)
+	soil	(undefined)
 hghw	highway
-frame (no shorthand)
+	frame	(undefined)
 strtch	stretch
 ops	oppose
 Cthlc	Catholic
-cloud (no shorthand)
+	cloud	(undefined)
 intl	initial
 vrbl	variable
 esntl	essential
@@ -1772,41 +1773,41 @@ nrs	nurse
 incdnt	incident
 abrtn	abortion
 dvd	divide
-aim (no shorthand)
-tired (no shorthand)
-careful (no shorthand)
+	aim	(undefined)
+	tired	(undefined)
+	careful	(undefined)
 chp	cheap
 bsd	beside
 aprt	apart
 crmnl	criminal
-employ (no shorthand)
+	employ	(undefined)
 rsh	rush
 usr	user
 upr	upper
 wnr	winner
 fshn	fashion
-tip (no shorthand)
-apple (no shorthand)
-vast (no shorthand)
+	tip	(undefined)
+	apple	(undefined)
+	vast	(undefined)
 spcfcl	specifically
 lmtd	limited
 enrms	enormous
-holiday (no shorthand)
+	holiday	(undefined)
 eml	e-mail
 emphsz	emphasize
-merely (no shorthand)
-core (no shorthand)
+	merely	(undefined)
+	core	(undefined)
 mtch	match
 lndscp	landscape
 ovrl	overall
 glf	golf
 vrtl	virtually
-route (no shorthand)
-flow (no shorthand)
+	route	(undefined)
+	flow	(undefined)
 fwr	fewer
 cbl	cable
 gt	gate
-proud (no shorthand)
+	proud	(undefined)
 dsh	dish
 bnth	beneath
 incrsd	increased
@@ -1815,29 +1816,29 @@ brl	barely
 nrw	narrow
 sld	solid
 cntmprr	contemporary
-accuse (no shorthand)
+	accuse	(undefined)
 unfrtntl	unfortunately
 usfl	useful
-noise (no shorthand)
+	noise	(undefined)
 exps	expose
-mass (no shorthand)
+	mass	(undefined)
 mltpl	multiple
 vgtbl	vegetable
-seed (no shorthand)
+	seed	(undefined)
 rjct	reject
 dcln	decline
 exprmnt	experiment
 lgsltn	legislation
-hat (no shorthand)
+	hat	(undefined)
 msv	massive
 grs	grass
 dfntl	definitely
 clsr	closer
 lbrl	liberal
-stir (no shorthand)
+	stir	(undefined)
 cptn	captain
 rvltn	revolution
-typically (no shorthand)
+	typically	(undefined)
 sctr	sector
 aprv	approve
 uncl	uncle
@@ -1848,33 +1849,33 @@ escp	escape
 unsl	unusual
 dstrbtn	distribution
 rrl	rural
-cast (no shorthand)
+	cast	(undefined)
 hshld	household
 clbrt	celebrate
-taste (no shorthand)
+	taste	(undefined)
 chrctrstc	characteristic
 adtn	addition
 acqr	acquire
 clsl	closely
-proper (no shorthand)
-tone (no shorthand)
+	proper	(undefined)
+	tone	(undefined)
 tpc	topic
 twrds	towards
-waste (no shorthand)
-wheel (no shorthand)
+	waste	(undefined)
+	wheel	(undefined)
 athlt	athlete
 cnvnc	convince
 altrntv	alternative
-pepper (no shorthand)
-cream (no shorthand)
+	pepper	(undefined)
+	cream	(undefined)
 tchncl	technical
 sqr	square
-plenty (no shorthand)
+	plenty	(undefined)
 invst	invest
 rgrd	regard
 intrvntn	intervention
 ilgl	illegal
-lower (no shorthand)
+	lower	(undefined)
 cmpt	compete
 tlnt	talent
 glt	guilty
@@ -1883,12 +1884,12 @@ hght	height
 asstnc	assistance
 prsnlt	personality
 IIsrl	Israeli
-gay (no shorthand)
+	gay	(undefined)
 frvr	forever
-ass	assess
-weak (no shorthand)
+	assess	(undefined)
+	weak	(undefined)
 cgrt	cigarette
-permit (no shorthand)
+	permit	(undefined)
 psngr	passenger
 crtcsm	criticism
 twnt	twenty
@@ -1912,31 +1913,31 @@ achvmnt	achievement
 rqst	request
 wrp	wrap
 engnr	engineer
-rice (no shorthand)
+	rice	(undefined)
 schlr	scholar
 arln	airline
 expns	expense
 obsrvtn	observation
-gap (no shorthand)
+	gap	(undefined)
 agnd	agenda
-creation (no shorthand)
-drag (no shorthand)
+	creation	(undefined)
+	drag	(undefined)
 sspct	suspect
 fshng	fishing
-bread (no shorthand)
-hi (no shorthand)
+	bread	(undefined)
+	hi	(undefined)
 unbl	unable
 scrm	scream
 jrnlst	journalist
 cnstttn	constitution
-lucky (no shorthand)
+	lucky	(undefined)
 exclnt	excellent
 pmnt	payment
 slctn	selection
-lab (no shorthand)
+	lab	(undefined)
 arst	arrest
 dpl	deeply
-sad (no shorthand)
+	sad	(undefined)
 chldhd	childhood
 sps	suppose
 frl	fairly
@@ -1948,23 +1949,23 @@ amndmnt	amendment
 emtn	emotion
 exstng	existing
 grdt	graduate
-factory (no shorthand)
+	factory	(undefined)
 schdl	schedule
 avn	avenue
 sprtl	spiritual
-wash (no shorthand)
+	wash	(undefined)
 plnng	planning
 slf	self
-shout (no shorthand)
+	shout	(undefined)
 slnt	silent
 brf	brief
-error (no shorthand)
+	error	(undefined)
 wdl	widely
 dscrptn	description
 imdt	immediate
 prchs	purchase
 ldng	leading
-funding (no shorthand)
+	funding	(undefined)
 stlmnt	settlement
 prr	prayer
 inttv	initiative
@@ -1979,8 +1980,8 @@ crclm	curriculum
 cnsst	consist
 imgrnt	immigrant
 enbl	enable
-faculty (no shorthand)
-steel (no shorthand)
+	faculty	(undefined)
+	steel	(undefined)
 dsrt	desert
 ast	asset
 hsng	housing
@@ -1991,42 +1992,42 @@ dprsn	depression
 infrm	inform
 frml	formal
 abndn	abandon
-chip (no shorthand)
+	chip	(undefined)
 dbl	double
 rmnng	remaining
 exstnc	existence
-cheese (no shorthand)
+	cheese	(undefined)
 jnt	joint
 svngs	savings
 prsrv	preserve
-diet (no shorthand)
+	diet	(undefined)
 trtr	territory
-tea (no shorthand)
-bend (no shorthand)
+	tea	(undefined)
+	bend	(undefined)
 arng	arrange
 rslv	resolve
 psg	passage
-lock (no shorthand)
+	lock	(undefined)
 rsstnc	resistance
-stream (no shorthand)
-slide (no shorthand)
+	stream	(undefined)
+	slide	(undefined)
 shrp	sharp
 ccl	cycle
-pose (no shorthand)
+	pose	(undefined)
 phs	phase
 trnstn	transition
 rdctn	reduction
 ngttn	negotiation
 mnfctrr	manufacturer
-quote (no shorthand)
+	quote	(undefined)
 dsrv	deserve
-sale (no shorthand)
+	sale	(undefined)
 lr	layer
 wdng	wedding
-discovery (no shorthand)
-mine (no shorthand)
+	discovery	(undefined)
+	mine	(undefined)
 acdm	academy
-sand (no shorthand)
+	sand	(undefined)
 msl	missile
 elct	elect
 clmt	climate
@@ -2040,45 +2041,45 @@ vsl	visual
 nmrs	numerous
 ocsn	occasion
 phlsph	philosophy
-suicide (no shorthand)
+	suicide	(undefined)
 shl	shall
-glad (no shorthand)
+	glad	(undefined)
 gds	goods
 mrvr	moreover
-coat (no shorthand)
+	coat	(undefined)
 cnsstnt	consistent
 alchl	alcohol
 opst	opposite
-cop (no shorthand)
+	cop	(undefined)
 unvrs	universe
-breathe (no shorthand)
+	breathe	(undefined)
 prctcl	practical
 thrp	therapy
-racial (no shorthand)
+	racial	(undefined)
 elswhr	elsewhere
-rarely (no shorthand)
-essentially (no shorthand)
+	rarely	(undefined)
+	essentially	(undefined)
 dscpln	discipline
 rpl	reply
 Mxcn	Mexican
 psn	passion
-tale (no shorthand)
+	tale	(undefined)
 dst	dust
 ks	kiss
 irn	iron
 indpndnc	independence
 Spnsh	Spanish
 advnc	advance
-pot (no shorthand)
+	pot	(undefined)
 ptt	potato
-motor (no shorthand)
-pack (no shorthand)
+	motor	(undefined)
+	pack	(undefined)
 dmnt	dominate
 mrktng	marketing
 dsstr	disaster
 expsr	exposure
 cmplnt	complaint
-cap (no shorthand)
+	cap	(undefined)
 cngrsnl	congressional
 jckt	jacket
 intns	intense
@@ -2094,7 +2095,7 @@ cncntrt	concentrate
 acmplsh	accomplish
 prvsl	previously
 smbl	symbol
-bureau (no shorthand)
+	bureau	(undefined)
 lbrtr	laboratory
 atch	attach
 fndmntl	fundamental
@@ -2111,7 +2112,7 @@ intrprttn	interpretation
 entrtnmnt	entertainment
 hbt	habit
 ilstrt	illustrate
-equally (no shorthand)
+	equally	(undefined)
 prspct	prospect
 enhnc	enhance
 svr	severe
@@ -2119,26 +2120,26 @@ mntr	monitor
 amzng	amazing
 pvrt	poverty
 incrsng	increasing
-boss (no shorthand)
+	boss	(undefined)
 inspr	inspire
-anger (no shorthand)
+	anger	(undefined)
 hvl	heavily
 prkng	parking
-print (no shorthand)
+	print	(undefined)
 mkr	maker
 invlvmnt	involvement
 qn	queen
-gene (no shorthand)
-vary (no shorthand)
+	gene	(undefined)
+	vary	(undefined)
 aprxmtl	approximately
 glr	gallery
 evlt	evaluate
 trnsfr	transfer
-usual (no shorthand)
-mystery (no shorthand)
-entry (no shorthand)
-mood (no shorthand)
-bean (no shorthand)
+	usual	(undefined)
+	mystery	(undefined)
+	entry	(undefined)
+	mood	(undefined)
+	bean	(undefined)
 objctv	objective
 cpbl	capable
 cnstnt	constant
@@ -2147,9 +2148,9 @@ strngl	strongly
 excptn	exception
 cmndr	commander
 spndng	spending
-crucial (no shorthand)
+	crucial	(undefined)
 acr	acre
-wire (no shorthand)
+	wire	(undefined)
 cmnd	command
 nrvs	nervous
 scld	so-called
@@ -2163,9 +2164,9 @@ AArb	Arab
 prnc	prince
 alnc	alliance
 trnsprttn	transportation
-luck (no shorthand)
+	luck	(undefined)
 smptm	symptom
-bury (no shorthand)
+	bury	(undefined)
 clnc	clinic
 ilnss	illness
 chmpnshp	championship
@@ -2178,10 +2179,10 @@ pk	peak
 cnfrnt	confront
 brkfst	breakfast
 rcgntn	recognition
-smell (no shorthand)
+	smell	(undefined)
 al	ally
-pure (no shorthand)
-toy (no shorthand)
+	pure	(undefined)
+	toy	(undefined)
 slr	salary
 elctrnc	electronic
 bthrm	bathroom
@@ -2189,28 +2190,28 @@ srl	surely
 pschlgcl	psychological
 evltn	evaluation
 dmnsn	dimension
-personnel (no shorthand)
+	personnel	(undefined)
 blt	belt
 acmpn	accompany
 implctn	implication
 albm	album
 prfctl	perfectly
-jet (no shorthand)
-hello (no shorthand)
+	jet	(undefined)
+	hello	(undefined)
 rltv	relative
-tourist (no shorthand)
+	tourist	(undefined)
 phnmnn	phenomenon
-fellow (no shorthand)
+	fellow	(undefined)
 ts	toss
 pblctn	publication
 nrb	nearby
 cnsdrtn	consideration
-holy (no shorthand)
+	holy	(undefined)
 entrprs	enterprise
 inr	inner
-pray (no shorthand)
+	pray	(undefined)
 crk	creek
-boot (no shorthand)
+	boot	(undefined)
 whspr	whisper
 rsst	resist
 jrn	journey
@@ -2225,16 +2226,16 @@ smth	smooth
 unlk	unlike
 tblspn	tablespoon
 cnsltnt	consultant
-twin (no shorthand)
+	twin	(undefined)
 fvr	favor
-throat (no shorthand)
+	throat	(undefined)
 cnstrct	construct
 brthd	birthday
 swng	swing
 sprtr	supporter
 tstng	testing
 rsnbl	reasonable
-mail (no shorthand)
+	mail	(undefined)
 slvr	silver
 rtrmnt	retirement
 snstv	sensitive
@@ -2245,12 +2246,12 @@ ocsnl	occasionally
 glnc	glance
 obsrvr	observer
 cnstntl	constantly
-bind (no shorthand)
-wet (no shorthand)
-dig (no shorthand)
-quit (no shorthand)
+	bind	(undefined)
+	wet	(undefined)
+	dig	(undefined)
+	quit	(undefined)
 dgtl	digital
-vs (no shorthand)
+	vs	(undefined)
 asst	assist
 emplmnt	employment
 sgstn	suggestion
@@ -2259,7 +2260,7 @@ embrc	embrace
 jnr	junior
 stmch	stomach
 extrm	extreme
-recovery (no shorthand)
+	recovery	(undefined)
 ngtt	negotiate
 imprsn	impression
 wg	wage
@@ -2275,27 +2276,27 @@ grndmthr	grandmother
 qtl	quietly
 jl	jail
 spclst	specialist
-dealer (no shorthand)
-pm	poem
-butter (no shorthand)
+	dealer	(undefined)
+	poem	(undefined)
+	butter	(undefined)
 cnvntnl	conventional
-pace (no shorthand)
+	pace	(undefined)
 intntn	intention
-peer (no shorthand)
+	peer	(undefined)
 rstr	restore
 wdn	wooden
 crtcz	criticize
 nvrthls	nevertheless
 aprvl	approval
 hstrc	historic
-secure (no shorthand)
+	secure	(undefined)
 prprtn	preparation
 Ltn	Latin
 lrd	lord
 tspn	teaspoon
-musical (no shorthand)
+	musical	(undefined)
 wgh	weigh
-pan (no shorthand)
+	pan	(undefined)
 asr	assure
 vwr	viewer
 ars	arise
@@ -2308,26 +2309,26 @@ dvrst	diversity
 tmt	tomato
 advs	advise
 blgcl	biological
-shell (no shorthand)
-essay (no shorthand)
+	shell	(undefined)
+	essay	(undefined)
 hstrn	historian
 dpt	deputy
 efctvl	effectively
-buck (no shorthand)
+	buck	(undefined)
 tb	tube
 rfg	refugee
 dpth	depth
 flt	flat
 prcsl	precisely
-mad (no shorthand)
+	mad	(undefined)
 dsblt	disability
 dstrctn	destruction
 asmptn	assumption
-normally (no shorthand)
-angel (no shorthand)
-pop (no shorthand)
-criteria (no shorthand)
-minor (no shorthand)
+	normally	(undefined)
+	angel	(undefined)
+	pop	(undefined)
+	criteria	(undefined)
+	minor	(undefined)
 crp	crop
 brr	barrier
 asgn	assign
@@ -2351,15 +2352,15 @@ ultmt	ultimate
 chmcl	chemical
 advct	advocate
 edctr	educator
-cake (no shorthand)
+	cake	(undefined)
 phrs	phrase
 yl	yell
-personally (no shorthand)
+	personally	(undefined)
 rspndnt	respondent
 Plstnn	Palestinian
 clsc	classic
 snp	snap
-via (no shorthand)
+	via	(undefined)
 lwst	lawsuit
 instl	install
 swp	sweep
@@ -2372,8 +2373,8 @@ clng	ceiling
 clck	clock
 ant	aunt
 drkns	darkness
-daddy (no shorthand)
-royal (no shorthand)
+	daddy	(undefined)
+	royal	(undefined)
 advrtsng	advertising
 rgh	rough
 prgnnt	pregnant
@@ -2390,8 +2391,8 @@ unvrsl	universal
 trr	terror
 wlf	wolf
 anxt	anxiety
-found (no shorthand)
-protein (no shorthand)
+	found	(undefined)
+	protein	(undefined)
 engnrng	engineering
 clthng	clothing
 prcd	proceed
@@ -2399,23 +2400,23 @@ fbr	fiber
 rct	react
 spn	spin
 rghl	roughly
-drama (no shorthand)
+	drama	(undefined)
 lbrt	liberty
 ingrdnt	ingredient
-hip (no shorthand)
+	hip	(undefined)
 prvsn	provision
 brdn	burden
-teen (no shorthand)
+	teen	(undefined)
 srvvl	survival
 unlkl	unlikely
 IItln	Italian
 chmbr	chamber
-lost (no shorthand)
+	lost	(undefined)
 cmnct	communicate
 stpd	stupid
-bet (no shorthand)
+	bet	(undefined)
 Mslm	Muslim
-bell (no shorthand)
+	bell	(undefined)
 onn	onion
 dsgr	disagree
 encntr	encounter
@@ -2423,30 +2424,30 @@ cnstttnl	constitutional
 cbnt	cabinet
 rmrkbl	remarkable
 brkn	broken
-latter (no shorthand)
+	latter	(undefined)
 ovrcm	overcome
-virus (no shorthand)
+	virus	(undefined)
 strngr	stranger
-retain (no shorthand)
+	retain	(undefined)
 prz	prize
-string (no shorthand)
+	string	(undefined)
 exhbtn	exhibition
 expnsn	expansion
 trmnds	tremendous
 bnch	bunch
 asstnt	assistant
-initially (no shorthand)
+	initially	(undefined)
 acrt	accurate
 chk	cheek
 indx	index
 ocp	occupy
-gear (no shorthand)
-guarantee (no shorthand)
+	gear	(undefined)
+	guarantee	(undefined)
 chclt	chocolate
 crmn	ceremony
 btn	button
 shpng	shopping
-dispute (no shorthand)
+	dispute	(undefined)
 frntr	furniture
 mrn	marine
 sttstcs	statistics
@@ -2464,7 +2465,7 @@ prfl	profile
 pnts	pants
 whrs	whereas
 elt	elite
-port (no shorthand)
+	port	(undefined)
 cmplctd	complicated
 csn	cousin
 strtgc	strategic
@@ -2493,27 +2494,27 @@ bndr	boundary
 rsrt	resort
 gntc	genetic
 cncntrtn	concentration
-naturally (no shorthand)
-ministry (no shorthand)
+	naturally	(undefined)
+	ministry	(undefined)
 srprsng	surprising
 advsr	adviser
 rcmndtn	recommendation
 smlrl	similarly
 jstf	justify
 wldlf	wildlife
-bench (no shorthand)
-bullet (no shorthand)
-mode (no shorthand)
+	bench	(undefined)
+	bullet	(undefined)
+	mode	(undefined)
 chmpn	champion
 dsms	dismiss
 dck	deck
 lftm	lifetime
 extnsv	extensive
 atrctv	attractive
-politically (no shorthand)
+	politically	(undefined)
 rglrl	regularly
-raw (no shorthand)
-fault (no shorthand)
+	raw	(undefined)
+	fault	(undefined)
 clncl	clinical
 dtct	detect
 cnsdrbl	considerable
@@ -2522,23 +2523,23 @@ prtl	partly
 pltfrm	platform
 rmt	remote
 frtn	fortune
-slave (no shorthand)
-delivery (no shorthand)
+	slave	(undefined)
+	delivery	(undefined)
 rflctn	reflection
 rlvnt	relevant
 unknwn	unknown
-pause (no shorthand)
-tissue (no shorthand)
+	pause	(undefined)
+	tissue	(undefined)
 snk	sink
-counter (no shorthand)
+	counter	(undefined)
 Bbl	Bible
 lcns	license
 trgd	tragedy
 dlg	dialogue
-mutual (no shorthand)
-loose (no shorthand)
+	mutual	(undefined)
+	loose	(undefined)
 extrnl	external
-pride (no shorthand)
+	pride	(undefined)
 awrns	awareness
 elctrct	electricity
 dvrs	diverse
@@ -2548,11 +2549,11 @@ onln	online
 aslt	assault
 shrtl	shortly
 fnnc	finance
-originally (no shorthand)
+	originally	(undefined)
 fndr	founder
 chrctrz	characterize
 prtst	protest
-pole (no shorthand)
+	pole	(undefined)
 intlctl	intellectual
 cmnst	communist
 infctn	infection
@@ -2563,33 +2564,33 @@ prf	proof
 stsfctn	satisfaction
 insght	insight
 hdqrtrs	headquarters
-stair (no shorthand)
+	stair	(undefined)
 crsh	crash
 cnsttt	constitute
-thirty (no shorthand)
+	thirty	(undefined)
 altr	alter
 sdn	sudden
-potentially (no shorthand)
-dirty (no shorthand)
+	potentially	(undefined)
+	dirty	(undefined)
 evlv	evolve
 tngr	teenager
 vltn	violation
-joy (no shorthand)
+	joy	(undefined)
 pss	possess
 hrcn	hurricane
 ofns	offense
 rlx	relax
-mount (no shorthand)
-treaty (no shorthand)
-prior (no shorthand)
+	mount	(undefined)
+	treaty	(undefined)
+	prior	(undefined)
 mmrl	memorial
 estblshmnt	establishment
-tap (no shorthand)
+	tap	(undefined)
 swm	swim
 prprl	properly
-gulf (no shorthand)
+	gulf	(undefined)
 tng	tongue
-salad (no shorthand)
+	salad	(undefined)
 shltr	shelter
 crspndnt	correspondent
 intrdctn	introduction
@@ -2597,7 +2598,7 @@ fnrl	funeral
 ltrr	literary
 cnvrt	convert
 vlt	violate
-rub (no shorthand)
+	rub	(undefined)
 entrnc	entrance
 epsd	episode
 trnmnt	tournament
@@ -2606,53 +2607,53 @@ stbl	stable
 splt	split
 rprsnttn	representation
 fctn	fiction
-lane (no shorthand)
+	lane	(undefined)
 dstnctn	distinction
 sgmnt	segment
 cmprhnsv	comprehensive
 cnfdnt	confident
-prominent (no shorthand)
+	prominent	(undefined)
 prsnttn	presentation
-net (no shorthand)
+	net	(undefined)
 sqz	squeeze
 tbc	tobacco
 sgnfcnc	significance
 imgntn	imagination
 prtnd	pretend
-mere (no shorthand)
-fade (no shorthand)
-steady (no shorthand)
+	mere	(undefined)
+	fade	(undefined)
+	steady	(undefined)
 nwhr	nowhere
 vrtn	variation
 rdcl	radical
 advntr	adventure
 prfsn	profession
 exctng	exciting
-fate (no shorthand)
+	fate	(undefined)
 rgrdls	regardless
-load (no shorthand)
+	load	(undefined)
 sngr	singer
 dstrbt	distribute
-ton (no shorthand)
+	ton	(undefined)
 instnc	instance
 afltn	affiliation
 hntng	hunting
-pale (no shorthand)
+	pale	(undefined)
 pt	poet
 grdl	gradually
 prtnrshp	partnership
 cpblt	capability
 Cndn	Canadian
-tech (no shorthand)
+	tech	(undefined)
 cmrc	commerce
 grndfthr	grandfather
-bake (no shorthand)
+	bake	(undefined)
 shlf	shelf
 hn	honey
 rnd	round
-flee (no shorthand)
-adapt (no shorthand)
-buyer (no shorthand)
+	flee	(undefined)
+	adapt	(undefined)
+	buyer	(undefined)
 dvrc	divorce
 dfnsv	defensive
 bmbng	bombing
@@ -2666,30 +2667,30 @@ lwn	lawn
 dpndng	depending
 wsdm	wisdom
 cmfrt	comfort
-plot (no shorthand)
+	plot	(undefined)
 vlnrbl	vulnerable
 explsn	explosion
-tail (no shorthand)
+	tail	(undefined)
 dfr	differ
 sstn	sustain
 stblt	stability
 fnts	fantasy
 oblgtn	obligation
-God (no shorthand)
-bike (no shorthand)
+	God	(undefined)
+	bike	(undefined)
 dnng	dining
 cstm	custom
-ill (no shorthand)
-celebrity (no shorthand)
+	ill	(undefined)
+	celebrity	(undefined)
 lthr	leather
 gvn	given
 frmwrk	framework
-owe (no shorthand)
+	owe	(undefined)
 slght	slight
 tndnc	tendency
 crck	crack
 brfl	briefly
-derive (no shorthand)
+	derive	(undefined)
 spkr	speaker
 scndl	scandal
 fftn	fifteen
@@ -2697,28 +2698,28 @@ schm	scheme
 jz	jazz
 eldrl	elderly
 clbrtn	celebration
-evolution (no shorthand)
+	evolution	(undefined)
 fghtr	fighter
 pblcl	publicly
 trc	trace
-rid (no shorthand)
+	rid	(undefined)
 dtctv	detective
 lmttn	limitation
 bsds	besides
 sp	soup
 ovn	oven
 rpd	rapid
-chase (no shorthand)
+	chase	(undefined)
 sphstctd	sophisticated
 trb	tribe
 pp	pipe
-deer (no shorthand)
+	deer	(undefined)
 ilstrtn	illustration
 mhm	mm-hmm
 unfrm	uniform
 trnsmsn	transmission
 strg	storage
-pile (no shorthand)
+	pile	(undefined)
 srvvr	survivor
 rsmbl	resemble
 incrdbl	incredible
@@ -2737,13 +2738,13 @@ frmtn	formation
 glv	glove
 schlrshp	scholarship
 edct	educate
-proportion (no shorthand)
+	proportion	(undefined)
 apntmnt	appointment
 cnvctn	conviction
-myth (no shorthand)
-solar (no shorthand)
-vessel (no shorthand)
-wealthy (no shorthand)
+	myth	(undefined)
+	solar	(undefined)
+	vessel	(undefined)
+	wealthy	(undefined)
 frndshp	friendship
 mmbrshp	membership
 crft	craft
@@ -2756,25 +2757,25 @@ pnfl	painful
 cngrsmn	congressman
 mm	mama
 infnt	infant
-cow (no shorthand)
+	cow	(undefined)
 prpsd	proposed
 sfcnt	sufficient
-oak (no shorthand)
-mall (no shorthand)
+	oak	(undefined)
+	mall	(undefined)
 pnshmnt	punishment
 hlpfl	helpful
 ongng	ongoing
 admsn	admission
 frqnc	frequency
-ratio (no shorthand)
-delay (no shorthand)
+	ratio	(undefined)
+	delay	(undefined)
 prvc	privacy
-trick (no shorthand)
-etc (no shorthand)
-circuit (no shorthand)
+	trick	(undefined)
+	etc	(undefined)
+	circuit	(undefined)
 mscn	musician
-sue (no shorthand)
-ad	aide
+	sue	(undefined)
+	aide	(undefined)
 mdst	modest
 hlcptr	helicopter
 empr	empire
@@ -2801,8 +2802,8 @@ absrb	absorb
 egr	eager
 tmprr	temporary
 cmsnr	commissioner
-diamond (no shorthand)
-curious (no shorthand)
+	diamond	(undefined)
+	curious	(undefined)
 dfrntl	differently
 rsrvtn	reservation
 dwntwn	downtown
@@ -2812,28 +2813,28 @@ tgr	tiger
 fbrc	fabric
 asrt	assert
 dscrmntn	discrimination
-float (no shorthand)
-math (no shorthand)
+	float	(undefined)
+	math	(undefined)
 ovrlk	overlook
 crps	corps
 sqnc	sequence
-heel (no shorthand)
-successfully (no shorthand)
+	heel	(undefined)
+	successfully	(undefined)
 exmntn	examination
 hrzn	horizon
 abslt	absolute
 antcpt	anticipate
 yrs	yours
 dmnnt	dominant
-bull (no shorthand)
+	bull	(undefined)
 prvntn	prevention
-meter (no shorthand)
+	meter	(undefined)
 lgtmt	legitimate
 msk	mask
-bite (no shorthand)
-stroke (no shorthand)
+	bite	(undefined)
+	stroke	(undefined)
 asgnmnt	assignment
-lion (no shorthand)
+	lion	(undefined)
 rfl	rifle
 brlnt	brilliant
 apnt	appoint
@@ -2841,21 +2842,21 @@ bm	boom
 nkd	naked
 hngr	hungry
 tght	tight
-flame (no shorthand)
+	flame	(undefined)
 ecnmcs	economics
 cbn	cabin
 orng	orange
-wander (no shorthand)
+	wander	(undefined)
 txpr	taxpayer
 rmntc	romantic
 dvt	devote
 infltn	inflation
 frthrmr	furthermore
-pine (no shorthand)
+	pine	(undefined)
 agrcltr	agriculture
 lgc	legacy
 extnsn	extension
-barrel (no shorthand)
+	barrel	(undefined)
 arvl	arrival
 rgstr	register
 flvr	flavor
@@ -2865,8 +2866,8 @@ sbmt	submit
 grg	garage
 ctn	cotton
 oprtr	operator
-nut (no shorthand)
-blade (no shorthand)
+	nut	(undefined)
+	blade	(undefined)
 grlfrnd	girlfriend
 dpndnt	dependent
 crbn	carbon
@@ -2880,9 +2881,9 @@ agrcltrl	agricultural
 shrg	shrug
 cnsl	counsel
 dstngsh	distinguish
-menu (no shorthand)
+	menu	(undefined)
 awfl	awful
-wound (no shorthand)
+	wound	(undefined)
 mnfctrng	manufacturing
 cnsmptn	consumption
 prmsn	permission
@@ -2894,22 +2895,22 @@ undrg	undergo
 cnscsns	consciousness
 frstrtn	frustration
 oprtng	operating
-ease (no shorthand)
-carrier (no shorthand)
+	ease	(undefined)
+	carrier	(undefined)
 scp	scope
-grain (no shorthand)
+	grain	(undefined)
 dstnct	distinct
 rnch	ranch
 wrkshp	workshop
-at	auto
+	auto	(undefined)
 pblshr	publisher
 nrtr	narrator
 brsh	brush
-ban (no shorthand)
+	ban	(undefined)
 prtr	portray
 fghtng	fighting
 brw	borrow
-seize (no shorthand)
+	seize	(undefined)
 pschlg	psychology
 sbsqnt	subsequent
 excd	exceed
@@ -2922,21 +2923,21 @@ rptdl	repeatedly
 frqnt	frequent
 rckt	rocket
 fm	fame
-lung (no shorthand)
+	lung	(undefined)
 dpct	depict
 prsd	persuade
 tnt	tent
-ah (no shorthand)
+	ah	(undefined)
 mtvtn	motivation
 ods	odds
-worried (no shorthand)
-principal (no shorthand)
+	worried	(undefined)
+	principal	(undefined)
 ugl	ugly
 adqt	adequate
 nnthls	nonetheless
 wdsprd	widespread
 trnsfrmtn	transformation
-physically (no shorthand)
+	physically	(undefined)
 prvdr	provider
 admr	admire
 hdln	headline
@@ -2944,16 +2945,16 @@ mrcl	miracle
 instttnl	institutional
 hmls	homeless
 imprsv	impressive
-chef (no shorthand)
+	chef	(undefined)
 tctc	tactic
 msrmnt	measurement
 idntfctn	identification
 prvnc	province
 mdrt	moderate
 cnsnss	consensus
-lovely (no shorthand)
+	lovely	(undefined)
 cmd	comedy
-shore (no shorthand)
+	shore	(undefined)
 phtgrphr	photographer
 vntr	venture
 cmpttr	competitor
@@ -2969,26 +2970,26 @@ cntnd	continued
 blnkt	blanket
 egl	eagle
 chngng	changing
-mouse (no shorthand)
+	mouse	(undefined)
 ethcs	ethics
 ghst	ghost
 evrd	everyday
 rp	rope
-formula (no shorthand)
+	formula	(undefined)
 exhbt	exhibit
 nrv	nerve
-cope (no shorthand)
+	cope	(undefined)
 rnng	running
 pschlgst	psychologist
 acd	acid
-pet (no shorthand)
+	pet	(undefined)
 ptch	pitch
 ocptn	occupation
 crg	courage
 dft	defeat
 prgnnc	pregnancy
 actrs	actress
-patch (no shorthand)
+	patch	(undefined)
 mrgn	margin
 rnfrc	reinforce
 clctv	collective
@@ -2996,47 +2997,47 @@ brck	brick
 scrpt	script
 ckng	cooking
 tnl	tunnel
-concrete (no shorthand)
+	concrete	(undefined)
 rcrt	recruit
 grcr	grocery
 lmn	lemon
-dare (no shorthand)
+	dare	(undefined)
 exct	exact
-battery (no shorthand)
+	battery	(undefined)
 srprsngl	surprisingly
 artstc	artistic
-shit (no shorthand)
+	shit	(undefined)
 indctn	indication
-cookie (no shorthand)
+	cookie	(undefined)
 intnst	intensity
 drmtcl	dramatically
-piano (no shorthand)
+	piano	(undefined)
 cncrnng	concerning
-lap (no shorthand)
+	lap	(undefined)
 inqr	inquiry
 dscrs	discourse
 lghtr	laughter
 anvrsr	anniversary
 tlscp	telescope
 swr	swear
-charity (no shorthand)
-clue (no shorthand)
+	charity	(undefined)
+	clue	(undefined)
 grv	grave
 nrtv	narrative
 hpthss	hypothesis
 upst	upset
 acptbl	acceptable
-couch (no shorthand)
+	couch	(undefined)
 dfndnt	defendant
-compose (no shorthand)
-ballot (no shorthand)
+	compose	(undefined)
+	ballot	(undefined)
 rltd	related
 clstr	cluster
-pie (no shorthand)
+	pie	(undefined)
 rcrdng	recording
-rail (no shorthand)
+	rail	(undefined)
 dcrs	decrease
-rape (no shorthand)
+	rape	(undefined)
 intrpt	interrupt
 archtct	architect
 sgh	sigh
@@ -3044,17 +3045,17 @@ rmrk	remark
 invnt	invent
 prscrptn	prescription
 rwrd	reward
-sacred (no shorthand)
-organ (no shorthand)
+	sacred	(undefined)
+	organ	(undefined)
 abrd	abroad
 dvl	devil
-dear (no shorthand)
+	dear	(undefined)
 sprr	superior
 grtl	greatly
 arpln	airplane
 hbtt	habitat
-coal (no shorthand)
-soccer (no shorthand)
+	coal	(undefined)
+	soccer	(undefined)
 enttl	entitle
 instrctr	instructor
 intgrt	integrity
@@ -3062,13 +3063,13 @@ shn	shine
 mss	mess
 nrm	norm
 algtn	allegation
-pill (no shorthand)
+	pill	(undefined)
 plsd	pleased
-plain (no shorthand)
+	plain	(undefined)
 inspctr	inspector
-forum (no shorthand)
+	forum	(undefined)
 pwdr	powder
-sin (no shorthand)
+	sin	(undefined)
 evdnt	evident
 spnsr	sponsor
 acptnc	acceptance
@@ -3088,16 +3089,16 @@ rhthm	rhythm
 mdnght	midnight
 cnslr	counselor
 hghlght	highlight
-palace (no shorthand)
+	palace	(undefined)
 trdng	trading
 cmpnd	compound
-bare (no shorthand)
-echo (no shorthand)
-integrate (no shorthand)
+	bare	(undefined)
+	echo	(undefined)
+	integrate	(undefined)
 slc	slice
 cmbt	combat
 mdm	medium
-log (no shorthand)
+	log	(undefined)
 srgn	surgeon
 excs	excuse
 rtl	ritual
@@ -3105,21 +3106,21 @@ rsgn	resign
 exctd	excited
 lghtl	lightly
 evl	evil
-bitter (no shorthand)
-export (no shorthand)
-clay (no shorthand)
-logic (no shorthand)
-virtue (no shorthand)
+	bitter	(undefined)
+	export	(undefined)
+	clay	(undefined)
+	logic	(undefined)
+	virtue	(undefined)
 cntnr	container
 qrtrbck	quarterback
-beg (no shorthand)
+	beg	(undefined)
 slmn	salmon
-greet (no shorthand)
+	greet	(undefined)
 crv	curve
-mill (no shorthand)
+	mill	(undefined)
 clst	closet
 intrr	interior
-rod (no shorthand)
+	rod	(undefined)
 cnd	candy
 rstrct	restrict
 intt	initiate
@@ -3129,38 +3130,38 @@ scndr	secondary
 admnstrtv	administrative
 cnfs	confuse
 ddl	deadly
-pig (no shorthand)
+	pig	(undefined)
 sbrbn	suburban
-medal (no shorthand)
-receiver (no shorthand)
+	medal	(undefined)
+	receiver	(undefined)
 gz	gaze
-snake (no shorthand)
+	snake	(undefined)
 mrch	march
 exprmntl	experimental
 cvlztn	civilization
 clscl	classical
-fold (no shorthand)
+	fold	(undefined)
 wkns	weakness
 crdr	corridor
 hrsh	harsh
-retail (no shorthand)
+	retail	(undefined)
 mrtgg	mortgage
 hrdr	harder
 dvlpr	developer
 lgnd	legend
 exctmnt	excitement
 enfrc	enforce
-occasional (no shorthand)
+	occasional	(undefined)
 cwb	cowboy
 mnmm	minimum
-flash (no shorthand)
+	flash	(undefined)
 rlbl	reliable
 sbrb	suburb
 mlt	melt
-contend (no shorthand)
+	contend	(undefined)
 pld	plead
 wrtn	written
-flood (no shorthand)
+	flood	(undefined)
 stm	stem
 invtbl	inevitable
 esnc	essence
@@ -3170,7 +3171,7 @@ slm	slam
 unmplmnt	unemployment
 trnk	trunk
 prvlg	privilege
-burst (no shorthand)
+	burst	(undefined)
 archtctr	architecture
 mnthl	monthly
 rndr	render
@@ -3178,7 +3179,7 @@ mnstrm	mainstream
 frnkl	frankly
 obstcl	obstacle
 mtvt	motivate
-trap (no shorthand)
+	trap	(undefined)
 drnkng	drinking
 elbw	elbow
 rmr	rumor
@@ -3186,13 +3187,13 @@ swlw	swallow
 lgsltv	legislative
 lctr	lecture
 jns	jeans
-duck (no shorthand)
-slope (no shorthand)
+	duck	(undefined)
+	slope	(undefined)
 tshrt	t-shirt
 inspctn	inspection
 strct	strict
 ovrwhlmng	overwhelming
-assemble (no shorthand)
+	assemble	(undefined)
 msng	missing
 smngl	seemingly
 frd	fraud
@@ -3200,37 +3201,37 @@ implmnttn	implementation
 hnt	hunt
 bfrnd	boyfriend
 intgrtn	integration
-rat (no shorthand)
+	rat	(undefined)
 brdcst	broadcast
 Krn	Korean
 nl	nail
-pen (no shorthand)
+	pen	(undefined)
 cnslt	consult
 cmpnn	companion
-monster (no shorthand)
+	monster	(undefined)
 nghtmr	nightmare
 bf	beef
 srvng	serving
 glb	globe
 chlstrl	cholesterol
 prlmnt	parliament
-suite (no shorthand)
+	suite	(undefined)
 cntnng	continuing
 hnc	hence
-lend (no shorthand)
+	lend	(undefined)
 sxth	sixth
-mud (no shorthand)
+	mud	(undefined)
 pmp	pump
-flour (no shorthand)
+	flour	(undefined)
 hstg	hostage
 ownrshp	ownership
 fcltt	facilitate
 bsmnt	basement
 crltn	correlation
-hurry (no shorthand)
+	hurry	(undefined)
 insct	insect
 arn	arena
-drift (no shorthand)
+	drift	(undefined)
 dmn	domain
 cv	cave
 afrcnamrcn	African-American
@@ -3238,36 +3239,36 @@ cnsstntl	consistently
 lp	leap
 efctvns	effectiveness
 mxmm	maximum
-array (no shorthand)
+	array	(undefined)
 unxpctd	unexpected
-curtain (no shorthand)
+	curtain	(undefined)
 sndwch	sandwich
 pcfl	peaceful
 hmnt	humanity
-prediction (no shorthand)
-Roman (no shorthand)
+	prediction	(undefined)
+	Roman	(undefined)
 idlg	ideology
 rlrd	railroad
 pssn	possession
 hrn	horn
 rplcmnt	replacement
 anncmnt	announcement
-pond (no shorthand)
+	pond	(undefined)
 frgv	forgive
 bshp	bishop
 uncmfrtbl	uncomfortable
-rip (no shorthand)
+	rip	(undefined)
 rndm	random
 hrb	herb
 and/r	and/or
 dmp	dump
-guilt (no shorthand)
+	guilt	(undefined)
 ctl	cattle
 strn	strain
 shrf	sheriff
 bhv	behave
 crstl	crystal
-execute (no shorthand)
+	execute	(undefined)
 wrst	wrist
 mtv	motive
 pntr	painter
@@ -3279,21 +3280,21 @@ hlw	hallway
 ds	dose
 endr	endure
 cnslng	counseling
-suck (no shorthand)
+	suck	(undefined)
 acmdt	accommodate
-traditionally (no shorthand)
-spill (no shorthand)
+	traditionally	(undefined)
+	spill	(undefined)
 fscl	fiscal
 rtrd	retired
 clsd	closed
-gentle (no shorthand)
+	gentle	(undefined)
 sprtn	separation
 wrr	warrior
 cnvncd	convinced
 sthwst	southwest
-drunk (no shorthand)
+	drunk	(undefined)
 otdr	outdoor
-tune (no shorthand)
+	tune	(undefined)
 hrm	harm
 clth	cloth
 whrvr	wherever
@@ -3304,8 +3305,8 @@ grtfl	grateful
 Hspnc	Hispanic
 mndt	mandate
 alrm	alarm
-cruise (no shorthand)
-injure (no shorthand)
+	cruise	(undefined)
+	injure	(undefined)
 sclptr	sculpture
 drn	drain
 tmpl	temple
@@ -3321,38 +3322,38 @@ skrt	skirt
 bctr	bacteria
 adptn	adoption
 intlgnt	intelligent
-praise (no shorthand)
+	praise	(undefined)
 otr	outer
-grip (no shorthand)
+	grip	(undefined)
 prfnd	profound
 trgr	trigger
 uncrtnt	uncertainty
 drvng	driving
 enthssm	enthusiasm
 cmplxt	complexity
-cafe (no shorthand)
-virtual (no shorthand)
+	cafe	(undefined)
+	virtual	(undefined)
 undrmn	undermine
-unity (no shorthand)
-chaos (no shorthand)
+	unity	(undefined)
+	chaos	(undefined)
 cmnl	commonly
 endls	endless
 rhtrc	rhetoric
-trait (no shorthand)
+	trait	(undefined)
 pnsn	pension
 gnn	genuine
-sweat (no shorthand)
+	sweat	(undefined)
 invtn	innovation
 crnc	currency
-forty (no shorthand)
+	forty	(undefined)
 lb	lobby
 thrtcl	theoretical
-bat (no shorthand)
+	bat	(undefined)
 mkp	makeup
 plsnt	pleasant
 rbld	rebuild
 hrbl	horrible
-pad (no shorthand)
+	pad	(undefined)
 sspnd	suspend
 rlv	relieve
 rsm	resume
@@ -3368,12 +3369,12 @@ thmb	thumb
 qstnr	questionnaire
 sdwlk	sidewalk
 bsnsmn	businessman
-weird (no shorthand)
+	weird	(undefined)
 rdtn	radiation
 frmt	format
-scare (no shorthand)
+	scare	(undefined)
 bnc	bounce
-doll (no shorthand)
+	doll	(undefined)
 atrctn	attraction
 ndl	needle
 cntrprt	counterpart
@@ -3381,14 +3382,14 @@ cnv	convey
 cmpnstn	compensation
 exclsv	exclusive
 twst	twist
-precise (no shorthand)
+	precise	(undefined)
 sspcn	suspicion
 sthst	southeast
 wlkng	walking
-boost (no shorthand)
-scatter (no shorthand)
+	boost	(undefined)
+	scatter	(undefined)
 rbl	rebel
-van (no shorthand)
+	van	(undefined)
 idntcl	identical
 shm	shame
 dlct	delicate
@@ -3397,90 +3398,90 @@ wdr	wider
 crptn	corruption
 hk	hook
 ltnnt	lieutenant
-firmly (no shorthand)
+	firmly	(undefined)
 strctrl	structural
 invsbl	invisible
 frhd	forehead
 trvlr	traveler
 mnngfl	meaningful
 prvdd	provided
-colony (no shorthand)
+	colony	(undefined)
 sgntr	signature
 dtbs	database
 clrk	clerk
 ddct	dedicate
 dtrmntn	determination
 anxs	anxious
-sum (no shorthand)
+	sum	(undefined)
 frzn	frozen
 jrr	juror
 tmng	timing
 pnsh	punish
 crwl	crawl
 cnscs	conscious
-colonel (no shorthand)
+	colonel	(undefined)
 ftns	fitness
 lndng	landing
 dctrn	doctrine
-belly (no shorthand)
-pope (no shorthand)
+	belly	(undefined)
+	pope	(undefined)
 thrb	thereby
-historically (no shorthand)
+	historically	(undefined)
 plf	playoff
 pstr	poster
 acqstn	acquisition
 rsc	rescue
 dprtr	departure
-summary (no shorthand)
+	summary	(undefined)
 chrnc	chronic
 hndsm	handsome
-hug (no shorthand)
-wow (no shorthand)
-pursuit (no shorthand)
+	hug	(undefined)
+	wow	(undefined)
+	pursuit	(undefined)
 rsdnc	residence
-loud (no shorthand)
+	loud	(undefined)
 prmsng	promising
-disk (no shorthand)
-doorway (no shorthand)
+	disk	(undefined)
+	doorway	(undefined)
 dgnss	diagnosis
-scout (no shorthand)
-cancel (no shorthand)
+	scout	(undefined)
+	cancel	(undefined)
 amd	amid
 envlp	envelope
-sooner (no shorthand)
-beam (no shorthand)
+	sooner	(undefined)
+	beam	(undefined)
 rlctnt	reluctant
-spouse (no shorthand)
-fluid (no shorthand)
+	spouse	(undefined)
+	fluid	(undefined)
 ext	exit
 mld	mild
 elctrcl	electrical
-bath (no shorthand)
+	bath	(undefined)
 dcnt	decent
 ankl	ankle
 trnsctn	transaction
 rprtng	reporting
-pit (no shorthand)
-practically (no shorthand)
+	pit	(undefined)
+	practically	(undefined)
 oxgn	oxygen
 rcsm	racism
-fist (no shorthand)
+	fist	(undefined)
 grbg	garbage
 gtr	guitar
 exprts	expertise
-parade (no shorthand)
+	parade	(undefined)
 explrtn	exploration
-carve (no shorthand)
+	carve	(undefined)
 rlm	realm
 rcpnt	recipient
 rsdntl	residential
-bias (no shorthand)
+	bias	(undefined)
 snlght	sunlight
 lmp	lamp
-donor (no shorthand)
+	donor	(undefined)
 rpr	repair
 shrpl	sharply
-hers (no shorthand)
+	hers	(undefined)
 gdnc	guidance
 dplmtc	diplomatic
 prpl	purple
@@ -3489,13 +3490,13 @@ cndl	candle
 gnrs	generous
 ncst	necessity
 tck	tuck
-statue (no shorthand)
+	statue	(undefined)
 elvtr	elevator
 pplrt	popularity
 indctr	indicator
 entt	entity
 lmb	limb
-bold (no shorthand)
+	bold	(undefined)
 hstt	hesitate
 strtng	starting
 dmnsh	diminish
@@ -3511,29 +3512,29 @@ atmbl	automobile
 prdctv	productive
 endrs	endorse
 islt	isolate
-confess (no shorthand)
+	confess	(undefined)
 wldrns	wilderness
 mnmz	minimize
 dgns	diagnose
 hpns	happiness
 spctrm	spectrum
-hint (no shorthand)
+	hint	(undefined)
 etng	eating
 abstrct	abstract
 rvltnr	revolutionary
-gym (no shorthand)
+	gym	(undefined)
 dspntd	disappointed
 prtcl	particle
 dnmc	dynamic
 atmtcl	automatically
-dawn (no shorthand)
+	dawn	(undefined)
 rlng	ruling
 mchncl	mechanical
 vtmn	vitamin
-silly (no shorthand)
+	silly	(undefined)
 artfcl	artificial
 otstndng	outstanding
-peel (no shorthand)
+	peel	(undefined)
 orl	oral
 o'clck	o'clock
 undrtk	undertake
@@ -3548,39 +3549,39 @@ bhvrl	behavioral
 shrtg	shortage
 rcptn	reception
 ofrng	offering
-huh (no shorthand)
+	huh	(undefined)
 crdblt	credibility
-chin (no shorthand)
+	chin	(undefined)
 phscs	physics
 vnsh	vanish
-blend (no shorthand)
-noon (no shorthand)
-precious (no shorthand)
+	blend	(undefined)
+	noon	(undefined)
+	precious	(undefined)
 flp	flip
-scary (no shorthand)
+	scary	(undefined)
 pz	pizza
 tlt	toilet
 slk	silk
-bid (no shorthand)
+	bid	(undefined)
 gthrng	gathering
 sftl	softly
-annually (no shorthand)
+	annually	(undefined)
 sfrng	suffering
 acrc	accuracy
 brkr	broker
 hpfl	hopefully
 dscnd	descend
-tide (no shorthand)
+	tide	(undefined)
 stmbl	stumble
-verbal (no shorthand)
+	verbal	(undefined)
 clctr	collector
 jdcl	judicial
 brnng	burning
 invntr	inventory
-fool (no shorthand)
+	fool	(undefined)
 llt	loyalty
 prfrmr	performer
-kit (no shorthand)
+	kit	(undefined)
 rmnc	romance
 qntt	quantity
 algd	alleged
@@ -3588,7 +3589,7 @@ thrpst	therapist
 lngtm	longtime
 sntmnt	sentiment
 sdm	sodium
-seal (no shorthand)
+	seal	(undefined)
 trlr	trailer
 shrd	shared
 eqt	equity
@@ -3598,34 +3599,34 @@ prcsng	processing
 dlm	dilemma
 qst	quest
 plw	pillow
-lately (no shorthand)
+	lately	(undefined)
 lsr	laser
 rgd	rigid
 ors	ours
 prhbt	prohibit
 gns	genius
 strtr	starter
-cart (no shorthand)
-Cuban (no shorthand)
+	cart	(undefined)
+	Cuban	(undefined)
 inmt	inmate
 scrfc	sacrifice
-officially (no shorthand)
-slap (no shorthand)
+	officially	(undefined)
+	slap	(undefined)
 mstrs	mysterious
 spclz	specialize
 frk	fork
 invttn	invitation
-sail (no shorthand)
+	sail	(undefined)
 rgltr	regulatory
-cartoon (no shorthand)
-stiff (no shorthand)
+	cartoon	(undefined)
+	stiff	(undefined)
 crtrm	courtroom
 imprt	import
 tghtl	tightly
 eqtn	equation
 trsr	treasure
-jaw (no shorthand)
-scan (no shorthand)
+	jaw	(undefined)
+	scan	(undefined)
 cndmn	condemn
 imprvd	improved
 pckp	pickup
@@ -3640,21 +3641,21 @@ hmlnd	homeland
 gsln	gasoline
 grvt	gravity
 thrghl	thoroughly
-bow (no shorthand)
-glory (no shorthand)
+	bow	(undefined)
+	glory	(undefined)
 optmstc	optimistic
 srgnt	sergeant
 cslt	casualty
 cncd	concede
-bloody (no shorthand)
-barn (no shorthand)
+	bloody	(undefined)
+	barn	(undefined)
 dnt	donate
-unite (no shorthand)
-pro (no shorthand)
+	unite	(undefined)
+	pro	(undefined)
 fdbck	feedback
 grf	grief
-spite (no shorthand)
-steep (no shorthand)
+	spite	(undefined)
+	steep	(undefined)
 prdctvt	productivity
 cncv	conceive
 tndr	tender
@@ -3673,46 +3674,46 @@ erthqk	earthquake
 vtng	voting
 inpt	input
 cnvs	canvas
-click (no shorthand)
+	click	(undefined)
 swrd	sword
-mate (no shorthand)
+	mate	(undefined)
 prtfl	portfolio
-bug (no shorthand)
+	bug	(undefined)
 rfrgrtr	refrigerator
 nrthst	northeast
 svnth	seventh
-post (no shorthand)
+	post	(undefined)
 cmbnd	combined
-alien (no shorthand)
+	alien	(undefined)
 wlngns	willingness
 hdn	hidden
 acntng	accounting
-sexually (no shorthand)
-chop (no shorthand)
+	sexually	(undefined)
+	chop	(undefined)
 ptrl	patrol
 smblc	symbolic
-ruin (no shorthand)
-drum (no shorthand)
+	ruin	(undefined)
+	drum	(undefined)
 opsd	opposed
-sheer (no shorthand)
+	sheer	(undefined)
 idlgcl	ideological
 dscrg	discourage
 cnl	canal
-haul (no shorthand)
+	haul	(undefined)
 prtctv	protective
 cnsprc	conspiracy
-steam (no shorthand)
+	steam	(undefined)
 embs	embassy
 tckl	tackle
 trpcl	tropical
 instntl	instantly
-bubble (no shorthand)
-calm (no shorthand)
-sheep (no shorthand)
-accent (no shorthand)
+	bubble	(undefined)
+	calm	(undefined)
+	sheep	(undefined)
+	accent	(undefined)
 grsp	grasp
 mdf	modify
-grin (no shorthand)
+	grin	(undefined)
 txc	toxic
 mxd	mixed
 mgntd	magnitude
@@ -3724,47 +3725,47 @@ mnmnt	monument
 vrdct	verdict
 flxbl	flexible
 dclrtn	declaration
-costume (no shorthand)
+	costume	(undefined)
 drwr	drawer
 bls	bless
-rack (no shorthand)
+	rack	(undefined)
 dpr	deeper
-neutral (no shorthand)
+	neutral	(undefined)
 fscntng	fascinating
-terrific (no shorthand)
+	terrific	(undefined)
 smpth	sympathy
 spctclr	spectacular
-ounce (no shorthand)
-rear (no shorthand)
-inn (no shorthand)
-collaboration (no shorthand)
+	ounce	(undefined)
+	rear	(undefined)
+	inn	(undefined)
+	collaboration	(undefined)
 clp	clip
 instrct	instruct
-sock (no shorthand)
-rider (no shorthand)
-revelation (no shorthand)
+	sock	(undefined)
+	rider	(undefined)
+	revelation	(undefined)
 acmplshmnt	accomplishment
 fnt	faint
-spell (no shorthand)
+	spell	(undefined)
 gspl	gospel
-whale (no shorthand)
-theatre (no shorthand)
+	whale	(undefined)
+	theatre	(undefined)
 crdntr	coordinator
 tlntd	talented
 alngsd	alongside
-cab (no shorthand)
+	cab	(undefined)
 isltn	isolation
-costly (no shorthand)
+	costly	(undefined)
 trgc	tragic
 instnct	instinct
 intmt	intimate
 undrlng	underlying
 inflntl	influential
-pastor (no shorthand)
+	pastor	(undefined)
 prsmbl	presumably
 skp	skip
 elvn	eleven
-tens (no shorthand)
+	tens	(undefined)
 whvr	whoever
 ancstr	ancestor
 sfl	safely
@@ -3772,20 +3773,20 @@ nmn	nominee
 extc	exotic
 mnml	minimal
 uncrtn	uncertain
-Persian (no shorthand)
+	Persian	(undefined)
 prntl	parental
 orchstr	orchestra
-treasury (no shorthand)
+	treasury	(undefined)
 tlrt	tolerate
 gln	gallon
-thigh (no shorthand)
+	thigh	(undefined)
 frtntl	fortunately
 ambts	ambitious
 actvl	actively
 flxblt	flexibility
-jar (no shorthand)
+	jar	(undefined)
 ccn	cocaine
-incredibly (no shorthand)
+	incredibly	(undefined)
 cnsqntl	consequently
 dcmntr	documentary
 insrt	insert
@@ -3794,23 +3795,23 @@ fnctnl	functional
 bnkrptc	bankruptcy
 rnr	runner
 exctn	execution
-crush (no shorthand)
-buddy (no shorthand)
+	crush	(undefined)
+	buddy	(undefined)
 wrkplc	workplace
-skull (no shorthand)
-cord (no shorthand)
+	skull	(undefined)
+	cord	(undefined)
 fxd	fixed
 eqvlnt	equivalent
-casino (no shorthand)
+	casino	(undefined)
 rlblt	reliability
 expctd	expected
-boil (no shorthand)
+	boil	(undefined)
 whp	whip
 dvn	divine
 prpstn	proposition
 cnss	census
 crctn	correction
-diary (no shorthand)
+	diary	(undefined)
 nst	nest
 sttt	statute
 exm	exam
@@ -3819,90 +3820,90 @@ ntrtn	nutrition
 brz	breeze
 ilsn	illusion
 annms	anonymous
-coup (no shorthand)
-midst (no shorthand)
+	coup	(undefined)
+	midst	(undefined)
 edt	edit
 exprncd	experienced
-castle (no shorthand)
+	castle	(undefined)
 explt	exploit
 jwlr	jewelry
 dbts	diabetes
 trnsltn	translation
 Dtch	Dutch
-irony (no shorthand)
+	irony	(undefined)
 asctd	associated
 utlz	utilize
 rbt	rabbit
-soap (no shorthand)
-booth (no shorthand)
+	soap	(undefined)
+	booth	(undefined)
 imn	immune
-gut (no shorthand)
+	gut	(undefined)
 aprctn	appreciation
 scrmbl	scramble
 upstrs	upstairs
 pnch	punch
-gross (no shorthand)
+	gross	(undefined)
 lblt	liability
 acsbl	accessible
 mchnc	mechanic
-ass (no shorthand)
+	ass	(undefined)
 asthtc	aesthetic
-dessert (no shorthand)
-waist (no shorthand)
+	dessert	(undefined)
+	waist	(undefined)
 alk	alike
 brv	brave
-loop (no shorthand)
+	loop	(undefined)
 psng	passing
-partially (no shorthand)
+	partially	(undefined)
 sttstcl	statistical
 crctl	correctly
-pin (no shorthand)
+	pin	(undefined)
 prcttnr	practitioner
 encrgng	encouraging
 sndrm	syndrome
-tribal (no shorthand)
+	tribal	(undefined)
 prsst	persist
 trsh	trash
-teenage (no shorthand)
+	teenage	(undefined)
 slfestm	self-esteem
 prlmnr	preliminary
 snst	sunset
 hrsmnt	harassment
 rprtdl	reportedly
-fever (no shorthand)
+	fever	(undefined)
 pnc	panic
 chrtr	charter
 otlk	outlook
-foster (no shorthand)
+	foster	(undefined)
 cmprs	comprise
 knwn	known
 Thnksgvng	Thanksgiving
 shrttrm	short-term
-shed (no shorthand)
+	shed	(undefined)
 cprtv	cooperative
-alley (no shorthand)
+	alley	(undefined)
 sbsd	subsidy
 sclr	secular
 almnm	aluminum
 clf	cliff
 grm	gram
 otln	outline
-mentally (no shorthand)
+	mentally	(undefined)
 invd	invade
 cnfrnttn	confrontation
 dslv	dissolve
-shy (no shorthand)
+	shy	(undefined)
 cn	coin
 spcltn	speculation
 crtvt	creativity
 cstd	custody
 intrfr	interfere
-spoon (no shorthand)
-bee (no shorthand)
-rolling (no shorthand)
+	spoon	(undefined)
+	bee	(undefined)
+	rolling	(undefined)
 intrct	interact
-damn (no shorthand)
-dam (no shorthand)
+	damn	(undefined)
+	dam	(undefined)
 unfr	unfair
 smd	someday
 lqd	liquid
@@ -3912,7 +3913,7 @@ dsbld	disabled
 ctlg	catalog
 pblct	publicity
 cmpl	compel
-cease (no shorthand)
+	cease	(undefined)
 dcrt	decorate
 srndng	surrounding
 exclsvl	exclusively
@@ -3928,15 +3929,15 @@ dntn	donation
 dsprtl	desperately
 hghtch	high-tech
 cht	cheat
-audio (no shorthand)
+	audio	(undefined)
 snstn	sensation
 entrprnr	entrepreneur
 prclm	proclaim
 splr	supplier
-rival (no shorthand)
+	rival	(undefined)
 rmndr	reminder
-heal (no shorthand)
-beast (no shorthand)
+	heal	(undefined)
+	beast	(undefined)
 uncvr	uncover
 mrt	merit
 mmntm	momentum
@@ -3945,44 +3946,44 @@ rtnl	rational
 clmnst	columnist
 pnr	pioneer
 blg	biology
-photography (no shorthand)
+	photography	(undefined)
 invtv	innovative
-purse (no shorthand)
+	purse	(undefined)
 frnchs	franchise
 cnsnt	consent
 otft	outfit
-eve (no shorthand)
-spray (no shorthand)
+	eve	(undefined)
+	spray	(undefined)
 shv	shove
 fshrmn	fisherman
 snstvt	sensitivity
 crts	courtesy
-stack (no shorthand)
-pork (no shorthand)
+	stack	(undefined)
+	pork	(undefined)
 tmmt	teammate
 instnt	instant
-pulse (no shorthand)
+	pulse	(undefined)
 otsdr	outsider
 hlmt	helmet
-ladder (no shorthand)
+	ladder	(undefined)
 opnl	openly
-fierce (no shorthand)
+	fierce	(undefined)
 rqrd	required
 shrnk	shrink
-cute (no shorthand)
-dot (no shorthand)
+	cute	(undefined)
+	dot	(undefined)
 wkn	weaken
 fltr	filter
 wrldwd	worldwide
 envsn	envision
 vdtp	videotape
-partial (no shorthand)
-patent (no shorthand)
-tray (no shorthand)
+	partial	(undefined)
+	patent	(undefined)
+	tray	(undefined)
 jngl	jungle
 clsf	classify
 spclt	specialty
-nasty (no shorthand)
+	nasty	(undefined)
 asl	aisle
 grph	graph
 sx	sexy
@@ -3994,41 +3995,41 @@ swmng	swimming
 plcmnt	placement
 atndnc	attendance
 infrml	informal
-sack (no shorthand)
+	sack	(undefined)
 eghth	eighth
-premise (no shorthand)
-grill (no shorthand)
+	premise	(undefined)
+	grill	(undefined)
 dng	dying
 clrfl	colorful
 hck	hockey
 bckrd	backyard
-collar (no shorthand)
+	collar	(undefined)
 brthng	breathing
 lgcl	logical
 lghtnng	lightning
 drd	dried
 dscnt	discount
-sole (no shorthand)
-boast (no shorthand)
-tag (no shorthand)
+	sole	(undefined)
+	boast	(undefined)
+	tag	(undefined)
 sblng	sibling
 stv	stove
 trnr	trainer
 vrtcl	vertical
-added (no shorthand)
+	added	(undefined)
 mrktplc	marketplace
-cure (no shorthand)
+	cure	(undefined)
 crst	curiosity
 orgnztnl	organizational
 shrmp	shrimp
 inhrt	inherit
-distract (no shorthand)
+	distract	(undefined)
 isltd	isolated
 plnr	planner
 spsdl	supposedly
 lkws	likewise
 mnk	monkey
-toll (no shorthand)
+	toll	(undefined)
 embrsd	embarrassed
 dlbrtl	deliberately
 bccl	bicycle
@@ -4037,61 +4038,61 @@ orbt	orbit
 hrmn	hormone
 dprsd	depressed
 orgnsm	organism
-deploy (no shorthand)
+	deploy	(undefined)
 strctl	strictly
 dm	deem
 ebrw	eyebrow
-legally (no shorthand)
+	legally	(undefined)
 pzl	puzzle
 icn	icon
-pat (no shorthand)
+	pat	(undefined)
 clsst	closest
-sneak (no shorthand)
-fleet (no shorthand)
+	sneak	(undefined)
+	fleet	(undefined)
 cnsrvtn	conservation
 sprtv	supportive
 cmprbl	comparable
 txtr	texture
 strkng	striking
 Chrstnt	Christianity
-dip (no shorthand)
+	dip	(undefined)
 dspntmnt	disappointment
-sleeve (no shorthand)
-socially (no shorthand)
-wheat (no shorthand)
+	sleeve	(undefined)
+	socially	(undefined)
+	wheat	(undefined)
 chnk	chunk
 twthrds	two-thirds
-refuge (no shorthand)
+	refuge	(undefined)
 blnk	blank
 unfld	unfold
-considerably (no shorthand)
-frontier (no shorthand)
+	considerably	(undefined)
+	frontier	(undefined)
 sspcs	suspicious
 cncptn	conception
-feather (no shorthand)
+	feather	(undefined)
 elphnt	elephant
 txtbk	textbook
 glmps	glimpse
-inevitably (no shorthand)
+	inevitably	(undefined)
 trmph	triumph
 plng	plunge
 sphr	sphere
-hunger (no shorthand)
+	hunger	(undefined)
 dnst	density
-cheer (no shorthand)
+	cheer	(undefined)
 blncd	balanced
-protocol (no shorthand)
-legislator (no shorthand)
-auction (no shorthand)
+	protocol	(undefined)
+	legislator	(undefined)
+	auction	(undefined)
 eqlt	equality
-risky (no shorthand)
+	risky	(undefined)
 cmtr	cemetery
 bldr	builder
 awk	awake
 rtlr	retailer
-debut (no shorthand)
+	debut	(undefined)
 tghtn	tighten
-spare (no shorthand)
+	spare	(undefined)
 cnstrnt	constraint
 cmplnc	compliance
 emrgng	emerging
@@ -4108,23 +4109,23 @@ intrvl	interval
 ntbk	notebook
 gnr	genre
 lklhd	likelihood
-streak (no shorthand)
-rib (no shorthand)
+	streak	(undefined)
+	rib	(undefined)
 scnt	scent
 vldt	validity
-steer (no shorthand)
+	steer	(undefined)
 intct	intact
 shrk	shark
-uh (no shorthand)
+	uh	(undefined)
 prgrmng	programming
 dmb	dumb
 frmrl	formerly
 sqd	squad
-comply (no shorthand)
+	comply	(undefined)
 dbrs	debris
 psnt	peasant
 otlt	outlet
-neat (no shorthand)
+	neat	(undefined)
 vld	valid
 kngdm	kingdom
 sll	solely
@@ -4134,81 +4135,81 @@ mncpl	municipal
 dpst	deposit
 trnsprt	transport
 dgh	dough
-lid (no shorthand)
-voluntary (no shorthand)
+	lid	(undefined)
+	voluntary	(undefined)
 jrnlsm	journalism
 impls	impulse
 plcmn	policeman
 objctn	objection
 thrv	thrive
 prvtl	privately
-cling (no shorthand)
+	cling	(undefined)
 hlfw	halfway
 unhp	unhappy
-rally (no shorthand)
+	rally	(undefined)
 scrtch	scratch
-robot (no shorthand)
+	robot	(undefined)
 cnvrsn	conversion
 sprmrkt	supermarket
-blink (no shorthand)
+	blink	(undefined)
 phlsphcl	philosophical
 hpl	happily
-thread (no shorthand)
+	thread	(undefined)
 algdl	allegedly
-ash (no shorthand)
+	ash	(undefined)
 dnmcs	dynamics
 dnl	denial
-riot (no shorthand)
-soar (no shorthand)
-mentor (no shorthand)
-beard (no shorthand)
+	riot	(undefined)
+	soar	(undefined)
+	mentor	(undefined)
+	beard	(undefined)
 wdw	widow
 ofndr	offender
 lndmrk	landmark
-routinely (no shorthand)
-butt (no shorthand)
+	routinely	(undefined)
+	butt	(undefined)
 frbd	forbid
 mgrtn	migration
-carrot (no shorthand)
-harmony (no shorthand)
+	carrot	(undefined)
+	harmony	(undefined)
 brtl	brutal
 prvl	prevail
-weed (no shorthand)
+	weed	(undefined)
 exhst	exhaust
-pasta (no shorthand)
+	pasta	(undefined)
 dstnctv	distinctive
 frctn	fraction
-emotionally (no shorthand)
-poke (no shorthand)
+	emotionally	(undefined)
+	poke	(undefined)
 dncng	dancing
 frshmn	freshman
-suitable (no shorthand)
+	suitable	(undefined)
 yngstr	youngster
-slavery (no shorthand)
-balloon (no shorthand)
-opt (no shorthand)
+	slavery	(undefined)
+	balloon	(undefined)
+	opt	(undefined)
 crwdd	crowded
-liver (no shorthand)
+	liver	(undefined)
 lstnr	listener
 irncl	ironically
 afrmtv	affirmative
 cmdt	commodity
-fur (no shorthand)
-freely (no shorthand)
+	fur	(undefined)
+	freely	(undefined)
 rmvl	removal
-goat (no shorthand)
+	goat	(undefined)
 shrhldr	shareholder
 expdtn	expedition
-ll	loyal
+	loyal	(undefined)
 cnscnc	conscience
 frgl	fragile
 clndr	calendar
 mnrl	mineral
 cmng	coming
-fare (no shorthand)
+	fare	(undefined)
 blsng	blessing
 lbrtn	liberation
-steak (no shorthand)
+	steak	(undefined)
 eclgcl	ecological
 bnn	banana
 stdl	steadily
@@ -4222,15 +4223,15 @@ ovrnght	overnight
 nghbrng	neighboring
 enct	enact
 fvrbl	favorable
-severely (no shorthand)
+	severely	(undefined)
 dmgrphc	demographic
-terrain (no shorthand)
+	terrain	(undefined)
 explct	explicit
 intgrtd	integrated
-terribly (no shorthand)
-sofa (no shorthand)
+	terribly	(undefined)
+	sofa	(undefined)
 scrw	screw
-shield (no shorthand)
+	shield	(undefined)
 invntn	invention
 prcvd	perceived
 crl	cruel
@@ -4240,7 +4241,7 @@ atnm	autonomy
 pblshng	publishing
 rtrt	retreat
 thlg	theology
-substantially (no shorthand)
+	substantially	(undefined)
 mnsn	mansion
 dvlpmntl	developmental
 onthrd	one-third
@@ -4251,22 +4252,22 @@ mthmtcs	mathematics
 oldfshnd	old-fashioned
 lwmkr	lawmaker
 thrshld	threshold
-radar (no shorthand)
+	radar	(undefined)
 sldm	seldom
 hdch	headache
 rntl	rental
-spy (no shorthand)
-patron (no shorthand)
+	spy	(undefined)
+	patron	(undefined)
 drvw	driveway
-till (no shorthand)
+	till	(undefined)
 ovrwhlm	overwhelm
 crdnt	coordinate
 vndr	vendor
 frgmnt	fragment
-hammer (no shorthand)
+	hammer	(undefined)
 smnr	seminar
 avlblt	availability
-peanut (no shorthand)
+	peanut	(undefined)
 fntstc	fantastic
 dprt	depart
 ctg	cottage
@@ -4275,20 +4276,20 @@ frstrt	frustrate
 dstrbng	disturbing
 artfct	artifact
 bsn	basin
-regain (no shorthand)
-grape (no shorthand)
-ego (no shorthand)
+	regain	(undefined)
+	grape	(undefined)
+	ego	(undefined)
 smtm	sometime
 orgnzd	organized
 chrm	charm
 swtr	sweater
-rim (no shorthand)
-speculate (no shorthand)
+	rim	(undefined)
+	speculate	(undefined)
 dlght	delight
 ftg	fatigue
 dvsttng	devastating
 instrctnl	instructional
-plea (no shorthand)
+	plea	(undefined)
 trsm	tourism
 wrmth	warmth
 jrsdctn	jurisdiction
@@ -4303,11 +4304,11 @@ chl	chill
 ecnmcl	economically
 undrgrdt	undergraduate
 dctt	dictate
-regulator (no shorthand)
+	regulator	(undefined)
 dfndr	defender
 wrkt	workout
 acrtl	accurately
-tile (no shorthand)
+	tile	(undefined)
 frgnr	foreigner
 imprtntl	importantly
 ctznshp	citizenship
@@ -4319,7 +4320,7 @@ brcrc	bureaucracy
 inhrnt	inherent
 hzrd	hazard
 swl	swell
-bride (no shorthand)
+	bride	(undefined)
 prcsr	processor
 bckt	bucket
 tmbr	timber
@@ -4329,52 +4330,52 @@ aplg	apology
 scrnng	screening
 arw	arrow
 mrkr	marker
-sunny (no shorthand)
+	sunny	(undefined)
 tchncn	technician
 hmwrk	homework
-fog (no shorthand)
-soak (no shorthand)
+	fog	(undefined)
+	soak	(undefined)
 mrtlt	mortality
-flying (no shorthand)
+	flying	(undefined)
 acntblt	accountability
 skld	skilled
 strghtn	straighten
 sprnkl	sprinkle
-cue (no shorthand)
+	cue	(undefined)
 epdmc	epidemic
 artclt	articulate
 rhblttn	rehabilitation
 dplmt	diplomat
 rbn	ribbon
 trnst	transit
-militia (no shorthand)
+	militia	(undefined)
 knl	kneel
-seller (no shorthand)
+	seller	(undefined)
 ftl	fatal
 cmplng	compelling
 wlbng	well-being
 lndr	laundry
-confession (no shorthand)
+	confession	(undefined)
 twntth	twentieth
 dns	dense
 aclrt	accelerate
 trbt	tribute
 smkng	smoking
-aboard (no shorthand)
+	aboard	(undefined)
 mrbl	marble
 entrtn	entertain
-boring (no shorthand)
+	boring	(undefined)
 scrtn	scrutiny
 bzr	bizarre
 brgn	bargain
 drwn	drown
 bgrph	biography
-naval (no shorthand)
+	naval	(undefined)
 ntnwd	nationwide
 skptcl	skeptical
 shrts	shorts
 lns	lens
-spit (no shorthand)
+	spit	(undefined)
 sxlt	sexuality
 wrhs	warehouse
 prds	paradise
@@ -4383,12 +4384,12 @@ dvlpd	developed
 unfrtnt	unfortunate
 grndchld	grandchild
 tnr	tenure
-preach (no shorthand)
-slot (no shorthand)
+	preach	(undefined)
+	slot	(undefined)
 strtp	stereotype
 blb	bulb
-weave (no shorthand)
+	weave	(undefined)
 mrgr	merger
 indqt	inadequate
 elctrncs	electronics
-trim (no shorthand)
+	trim	(undefined)
