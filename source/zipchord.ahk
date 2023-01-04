@@ -726,7 +726,7 @@ BuildMainDialog() {
     Gui, Add, Tab3, vUI_tab, % "  Dictionaries  |  Detection  |  Output  |  About  "
     Gui, Add, Text, Section, &Keyboard and language
     Gui, Add, DropDownList, y+10 w150 vUI_locale
-    Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
+    Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs w310 h140 vUI_chord_entries, Chord dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
@@ -735,9 +735,9 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
     Gui, Add, GroupBox, xs-20 y+30 w310 h140 vUI_shorthand_entries, Shorthand dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, &Open
-    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, &Edit
-    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, &Reload
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, O&pen
+    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, Edi&t
+    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, Reloa&d
     Gui, Add, Checkbox, vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
     Gui, Tab, 2
     Gui, Add, Checkbox, vUI_show_tips, % "Show &hints for chords and shorthands"
@@ -756,13 +756,13 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
     Gui, Add, Text, xs y+30, Auto-&capitalization:
     Gui, Add, DropDownList, vUI_capitalization AltSubmit Right xp+150 w130, Off|For shortcuts|For all input
-    Gui, Add, Text, xs y+m, O&utput delay (ms):
+    Gui, Add, Text, xs y+m, &Output delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
     Gui, Add, Button, Default w80 xm+240 gButtonOK, OK
     Gui, Tab, 4
     Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
-    Gui, Add, Checkbox, vUI_debugging, Log this session (debugging)
+    Gui, Add, Checkbox, vUI_debugging, &Log this session (debugging)
     Gui, Font, Underline cBlue
     Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
     Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
@@ -1112,40 +1112,35 @@ global UI_hint1
     , UI_hint3
     , UI_OSD_transparency
     , UI_OSD_fading
-
 BuildOSD() {
-    CustomColor := "EEAA99"  ; Can be any kkRGB coEEAA99lor (it will be made transparent below).
     Gui, UI_OSD:Default
     Gui +LastFound +AlwaysOnTop -Caption +ToolWindow ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
     Gui, Margin, 10, 10
-    Gui, Color, %CustomColor%
+    Gui, Color, 40E812
     Gui, Font, s32, Consolas  ; Set a large font size (32-point).
-    Gui, Add, Text, cLime Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
-    Gui, Add, Text, cLime Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
-    Gui, Add, Text, cLime Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c3BD511 Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, c3BD511 Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c3BD511 Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
     ; Make all pixels of this color transparent and make the text itself translucent (150):
 }
-
 ShowHint(line1, line2:="", line3 :="") {
     UI_OSD_fading := False
     UI_OSD_transparency := 140
     Gui, UI_OSD:Default
     Gui, Show, NoActivate, ZipChord_OSD
-    WinSet, TransColor, EEAA99 %UI_OSD_transparency%, ZipChord_OSD
+    WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
     GuiControl,, UI_hint1, % line1
     GuiControl,, UI_hint2, % line2
     GuiControl,, UI_hint3, % line3
     SetTimer, HideOSD, -900
 }
-
 HideOSD:
     UI_OSD_fading := true
-    CustomColor := "EEAA99"
     Sleep 1000
     Gui, UI_OSD:Default
     while(UI_OSD_fading && UI_OSD_transparency) {
         UI_OSD_transparency -= 10
-        WinSet, TransColor, EEAA99 %UI_OSD_transparency%, ZipChord_OSD
+        WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
         Sleep 100
     }
     if (UI_OSD_fading)
