@@ -177,9 +177,9 @@ Class DictionaryClass {
         entries := {}
         Loop, Read, % this._file
         {
-            pos := InStr(A_LoopReadLine, A_Tab)
-            if (pos)
-                ObjRawSet(entries, "" SubStr(A_LoopReadLine, 1, pos-1), "" SubStr(A_LoopReadLine, pos+1))  ; the "" forces the value to be treated as text, even if it's something like " 1"
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
+            if (columns[2] && columns[1] != "")
+                ObjRawSet(entries, "" columns[1], "" columns[2])  ; the "" forces the value to be treated as text, even if it's something like " 1"
         }
         Return entries
     }
