@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -1102,6 +1102,48 @@ ButtonSaveLocale() {
     new_loc.other_plain := UI_loc_other_plain
     new_loc.other_shift := UI_loc_other_shift
     SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
+}
+
+;; Add Shortcut UI
+; -----------------
+
+global UI_AddShortcut_text
+    , UI_AddShortcut_chord
+    , UI_AddShortcut_shorthand
+UI_AddShortcut_Build() {
+    Gui, UI_AddShortcut:New, , % "Add Shortcut"
+    Gui, Margin, 25, 25
+    Gui, Font, s10, Segoe UI
+    Gui, Add, Text, Section, % "&Expanded text"
+    Gui, Margin, 15, 15
+    Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text Disabled
+    Gui, Add, Button, x+20 yp w100, % "Chan&ge"
+    Gui, Add, GroupBox, xs h120 w360, % "&Chord"
+    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord
+    Gui, Add, Button, x+20 yp w100 Disabled, % "&Save"
+    Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
+    Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
+    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand
+    Gui, Add, Button, x+20 yp w100 Disabled, % "Sa&ve"
+    Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
+    Gui, Margin, 25, 25
+    Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
+}
+UI_AddShortcut_Show() {
+    Gui, UI_AddShortcut:Default
+    GuiControl,, UI_AddShortcut_text, % "test1"
+    GuiControl,, UI_AddShortcut_chord, % "test2"
+    GuiControl,, UI_AddShortcut_shorthand, % "test3"
+    Gui, Show, w410
+}
+UI_AddShortcutGuiClose() {
+    UI_AddShortcut_Close()
+}
+UI_AddShortcutGuiEscape() {
+    UI_AddShortcut_Close()
+}
+UI_AddShortcut_Close() {
+    Gui, UI_AddShortcut:Hide
 }
 
 ;; Shortcut Hint OSD
