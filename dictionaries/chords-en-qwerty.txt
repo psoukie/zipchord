@@ -4,10 +4,9 @@ Keys that trigger the chord are separated from the expanded full words by Tab. Y
 
 While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.
 
-Note that the category headings are for orientation only, and do not affect the functionality. For extended characters to work correctly, the dictionary files are saved in UTF-8 encoding with BOM.
+Note that the category headings are for orientation only. For extended characters to work correctly, the dictionary needs to be saved in UTF-8 encoding with BOM.
 
 See https://github.com/psoukie/zipchord for details.
-
 
 Articles
 --------
