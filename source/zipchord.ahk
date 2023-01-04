@@ -49,6 +49,7 @@ global SPACE_BEFORE_CHORD := 1
 global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
     , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
     , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
+    , CHORD_IMMIDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
 
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
@@ -148,7 +149,6 @@ Class DictionaryClass {
     _LoadChords() {
         this._entries := {}
         this._reverse_entries := {}
-        entries := {}
         Loop, Read, % this._file
         {
             columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
@@ -354,7 +354,7 @@ KeyDown:
     }
 
     if (settings.shorthands_enabled || (settings.preferences & PREF_SHOW_SHORTCUTS) ) {
-        if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key))  ) {
+        if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
                 if (settings.preferences & PREF_SHOW_SHORTCUTS) {
@@ -368,24 +368,8 @@ KeyDown:
                         ShowHint(shorthand_buffer, chord_hint, shorthand_hint)
                 }
                 ; then, we test if it's a shorthand to be expanded 
-                if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) ) {
-                    affixes := ProcessAffixes(expanded)
-                    debug.Log("SHORTHAND " expanded)
-                    adj := StrLen(shorthand_buffer) + 1
-                    if (affixes & AFFIX_SUFFIX)
-                        adj++
-                    SendInput {Backspace %adj%}
-                    if (capitalize_shorthand)
-                        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
-                    else
-                        SendInput % "{Text}" expanded
-                    if (shifted)
-                        SendInput +%key%
-                    else
-                        SendInput %key%
-                    if (key == " " && (affixes & AFFIX_PREFIX))
-                        SendInput {Backspace}
-                }
+                if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) )
+                    OutputShorthand(expanded, shorthand_buffer, key)
             }
             shorthand_buffer := ""
         } else {    ; i.e. it was not the end of the word
@@ -393,6 +377,11 @@ KeyDown:
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
+            ; now, the slightly chaotic immidiate mode allowing shorthands triggered as soon as they are completed:
+            if ( (settings.chording & CHORD_IMMIDIATE_SHORTHANDS) && (expanded := shorthands.LookUp(shorthand_buffer)) ) {
+                OutputShorthand(expanded, shorthand_buffer, key)
+                shorthand_buffer := ""
+            }
         }
 
         if ( (settings.capitalization != CAP_OFF) && (StrLen(shorthand_buffer) == 1) ) {
@@ -557,6 +546,25 @@ DelayOutput() {
         Sleep settings.output_delay
 }
 
+OutputShorthand(expanded, shorthand_buffer, key) {
+    affixes := ProcessAffixes(expanded)
+    debug.Log("SHORTHAND " expanded)
+    adj := StrLen(shorthand_buffer) + 1
+    if (affixes & AFFIX_SUFFIX)
+        adj++
+    SendInput {Backspace %adj%}
+    if (capitalize_shorthand)
+        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
+    else
+        SendInput % "{Text}" expanded
+    if (shifted)
+        SendInput +%key%
+    else
+        SendInput %key%
+    if (key == " " && (affixes & AFFIX_PREFIX))
+        SendInput {Backspace}
+}
+
 ; detect and adjust expansion for suffixes and prefixes
 ProcessAffixes(ByRef phrase) {
     affixes := AFFIX_NONE
@@ -672,8 +680,8 @@ AddChord() {
     UpdateDictionaryUI()
 }
 
-;;      GUI
-; ------------------
+;; Main UI
+; ---------
 
 ; variables holding the UI elements and selections
 global UI_input_delay
@@ -683,6 +691,7 @@ global UI_input_delay
     , UI_space_punctuation
     , UI_delete_unrecognized
     , UI_show_tips
+    , UI_immidiate_shorthands
     , UI_capitalization
     , UI_allow_shift
     , UI_restrict_chords
@@ -701,7 +710,7 @@ BuildMainDialog() {
     Gui, UI_main_window:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, Dictionaries|Detection|Output|About
+    Gui, Add, Tab3, vUI_tab, % "  Dictionaries  |  Detection  |  Output  |  About  "
     Gui, Add, Text, Section, &Keyboard and language
     Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, &Customize
@@ -718,19 +727,22 @@ BuildMainDialog() {
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, &Reload
     Gui, Add, Checkbox, vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
     Gui, Tab, 2
-    Gui, Add, Text, Section, &Detection delay (ms):
+    Gui, Add, Checkbox, vUI_show_tips, % "Show &hints for chords and shorthands"
+    Gui, Add, GroupBox, w310 h180, Chords
+    Gui, Add, Text, xp+20 yp+30 Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
     Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
-    Gui, Add, Checkbox, vUI_delete_unrecognized, Delete &mistyped chords
-    Gui, Add, Checkbox, y+30 vUI_show_tips, Show hints for chords and shorthands
+    Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
+    Gui, Add, GroupBox, xs-20 y+30 w310 h70, % "Shorthands"
+    Gui, Add, Checkbox, vUI_immidiate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
     Gui, Tab, 3
     Gui, Add, GroupBox, w310 h120 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
     Gui, Add, Text, xs y+30, Auto-&capitalization:
-    Gui, Add, DropDownList, vUI_capitalization AltSubmit Right xp+150 w130, Off|For chords only|For all input
+    Gui, Add, DropDownList, vUI_capitalization AltSubmit Right xp+150 w130, Off|For shortcuts|For all input
     Gui, Add, Text, xs y+m, O&utput delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
@@ -756,6 +768,7 @@ ShowMainDialog() {
     GuiControl Text, UI_output_delay, % settings.output_delay
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
+    GuiControl , , UI_immidiate_shorthands, % (settings.chording & CHORD_IMMIDIATE_SHORTHANDS) ? 1 : 0
     GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
     GuiControl , , UI_show_tips, % (settings.preferences & PREF_SHOW_SHORTCUTS) ? 1 : 0
     GuiControl , Choose, UI_capitalization, % settings.capitalization
@@ -791,7 +804,7 @@ ButtonOK() {
     }
     settings.capitalization := UI_capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
-    settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT
+    settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immidiate_shorthands * CHORD_IMMIDIATE_SHORTHANDS
     settings.locale := UI_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
