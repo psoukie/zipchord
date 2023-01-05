@@ -27,7 +27,6 @@ Class localeClass {
     other_plain := "[" ; unmodified keys for other punctuation
     other_shift := "9,["  ; other punctuation keys when modified by Shift
 }
-; stores current locale information 
 keys := New localeClass
 
 ; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
@@ -37,23 +36,19 @@ complex_keys := {}
 global AFFIX_NONE := 0 ; no prefix or suffix
     , AFFIX_PREFIX := 1 ; expansion is a prefix
     , AFFIX_SUFFIX := 2 ; expansion is a suffix
-
 ; capitalization constants
 global CAP_OFF = 1 ; no auto-capitalization,
     , CAP_CHORDS = 2 ; auto-capitalize chords only
     , CAP_ALL = 3 ; auto-capitalize all typing
-
 ; smart spacing constants
 global SPACE_BEFORE_CHORD := 1
     , SPACE_AFTER_CHORD := 2
     , SPACE_PUNCTUATION := 4
-
 ; Chord recognition constants
 global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
     , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
     , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
     , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
-
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
@@ -70,7 +65,7 @@ Class settingsClass {
     chording := CHORD_RESTRICT ; Chord recognition options
     chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
     shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
-    input_delay := 90
+    input_delay := 70
     output_delay := 0
     ; Read settings from Windows Registry and locate dictionary file
     Read() {
@@ -86,7 +81,6 @@ Class settingsClass {
         RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
     }
 }
-
 global settings := New settingsClass
  
 /**
@@ -206,28 +200,24 @@ Class DictionaryClass {
         Return False
     }
 }
-
 global chords := New DictionaryClass(true)
 global shorthands := New DictionaryClass
 
 ; Processing input and output 
-
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
 shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
 capitalize_shorthand := false  ; should the shorthand be capitalized
-
 global start := 0 ; tracks start time of two keys pressed at once
 
-; constants and variable to track the difference between key presses and output (because of smart spaces and punctuation)
+; constants to track the difference between key presses and output (because of smart spaces and punctuation)
 global DIF_NONE := 0
     , DIF_EXTRA_SPACE := 1
     , DIF_REMOVED_SMART_SPACE := 2
     , DIF_IGNORED_SPACE := 4
     , difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
     , final_difference := DIF_NONE
-
-; Characteristics of last output: constants and variables
+; Constants for characteristics of last output
 global OUT_CHARACTER := 1     ; output is a character
     , OUT_SPACE := 2         ; output was a space
     , OUT_PUNCTUATION := 4   ; output was a punctuation
@@ -236,7 +226,6 @@ global OUT_CHARACTER := 1     ; output is a character
     , OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
     , OUT_SPACE_AFTER := 64  ; output is a punctuation that needs a space after it
     , OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
-
 ; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
 global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
@@ -342,12 +331,10 @@ KeyDown:
     }
     if (complex_keys.HasKey(key))
         key := complex_keys[key]
-
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
     }
-
     if (settings.chords_enabled)
         chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
@@ -356,7 +343,7 @@ KeyDown:
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
-
+    ; Deal with shorthands and showing hints for defined shortcuts if needed
     if (settings.shorthands_enabled || (settings.preferences & PREF_SHOW_SHORTCUTS) ) {
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
@@ -387,21 +374,20 @@ KeyDown:
                 shorthand_buffer := ""
             }
         }
-
         if ( (settings.capitalization != CAP_OFF) && (StrLen(shorthand_buffer) == 1) ) {
             if ( (last_output & OUT_CAPITALIZE) || shifted )
                 capitalize_shorthand := true
             else
                 capitalize_shorthand := false
         }
-    }
+    } ; end of shorhands and hints section
 
     if (!start)
         difference := DIF_NONE   ; a chord is not being formed, so we reset the diff between keys and output.
-
+    
     ; Now, we carry over capitalization and categorize the new output on the fly as needed:
     new_output := OUT_CHARACTER | (last_output & OUT_CAPITALIZE)
-
+    
     ; if the key pressed is a space
     if (key==" ") {
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. if last output is a smart space
@@ -411,11 +397,10 @@ KeyDown:
         }
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
-
+    
     ; if it's punctuation which doesn't do anything but separates words
     if ( (! shifted && InStr(keys.other_plain, key)) || (shifted && InStr(keys.other_shift, key)) )
         new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
-
     ; if it's punctuation that removes a smart space before it 
     if ( (! shifted && InStr(keys.remove_space_plain, key)) || (shifted && InStr(keys.remove_space_shift, key)) ) {
         new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
@@ -464,7 +449,6 @@ KeyDown:
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag gets turned off
             }
     }
-
     last_output := new_output
 Return
 
@@ -656,11 +640,11 @@ Arrange(raw) {
 
 ReplaceWithVariants(text, enclose_latin_letters:=false) {
     new_str := text
-    new_str := StrReplace(new_str, "+", Chr(8679))
-    new_str := StrReplace(new_str, " ", Chr(9251))
+    new_str := StrReplace(new_str, "+", Chr(0x21E7))
+    new_str := StrReplace(new_str, " ", Chr(0x2423))
     if (enclose_latin_letters) {
         Loop, 26
-            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(127279 + A_Index))
+            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(0x1F12F + A_Index))
         new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ")
     }
     Return new_str
@@ -744,9 +728,9 @@ BuildMainDialog() {
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
     Gui, Add, Tab3, vUI_tab, % "  Dictionaries  |  Detection  |  Output  |  About  "
-    Gui, Add, Text, Section, &Keyboard and language
+    Gui, Add, Text, y+20 Section, &Keyboard and language
     Gui, Add, DropDownList, y+10 w150 vUI_locale
-    Gui, Add, Button, x+40 w80 gButtonCustomizeLocale, % "C&ustomize"
+    Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs w310 h140 vUI_chord_entries, Chord dictionary
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
@@ -760,8 +744,7 @@ BuildMainDialog() {
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, Reloa&d
     Gui, Add, Checkbox, vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
     Gui, Tab, 2
-    Gui, Add, Checkbox, vUI_show_tips, % "Show &hints for chords and shorthands"
-    Gui, Add, GroupBox, w310 h180, Chords
+    Gui, Add, GroupBox, y+20 w310 h180, Chords
     Gui, Add, Text, xp+20 yp+30 Section, &Detection delay (ms):
     Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
@@ -769,6 +752,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h70, % "Shorthands"
     Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
+    Gui, Add, Checkbox, xs-20 y+50 vUI_show_tips, % "Show &hints for chords and shorthands"
     Gui, Tab, 3
     Gui, Add, GroupBox, w310 h120 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
@@ -781,11 +765,11 @@ BuildMainDialog() {
     Gui, Tab
     Gui, Add, Button, Default w80 xm+240 gButtonOK, OK
     Gui, Tab, 4
-    Gui, Add, Text, X+m Y+m, ZipChord`nversion %version%
-    Gui, Add, Checkbox, vUI_debugging, &Log this session (debugging)
+    Gui, Add, Text, Y+50, ZipChord`nversion %version%
+    Gui, Add, Checkbox, y+30 vUI_debugging, &Log this session (debugging)
     Gui, Font, Underline cBlue
-    Gui, Add, Text, xp Y+m gWebsiteLink, Help and documentation
-    Gui, Add, Text, xp Y+m gReleaseLink, Latest releases (check for updates)
+    Gui, Add, Text, Y+30 gWebsiteLink, Help and documentation
+    Gui, Add, Text, gReleaseLink, Latest releases (check for updates)
 
     ; Create taskbar tray menu:
     Menu, Tray, Add, Open Settings, ShowMainDialog
@@ -869,11 +853,11 @@ CloseMainDialog() {
 }
 
 WebsiteLink:
-Run https://github.com/psoukie/zipchord#readme
+    Run https://github.com/psoukie/zipchord#readme
 Return
 
 ReleaseLink:
-Run https://github.com/psoukie/zipchord/releases
+    Run https://github.com/psoukie/zipchord/releases
 Return
 
 ; Functions supporting UI
@@ -958,7 +942,6 @@ ShowClosingTipDialog() {
     Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
     Gui, Show, w470
 }
-
 BtnCloseTip() {
     Gui, UI_closing_tip:Submit
     if (UI_dont_show_again) {
@@ -966,14 +949,12 @@ BtnCloseTip() {
         settings.Write()
     }
 }
-
 UI_closing_tipGuiClose() {
     Gui, UI_closing_tip:Submit
 }
 UI_closing_tipGuiEscape() {
     Gui, UI_closing_tip:Submit
 }
-
 
 ;; Locale UI
 ; -----------
@@ -1306,6 +1287,7 @@ Class DebugClass {
         FileDelete, "debug.txt"
         this.debug_file := FileOpen("debug.txt", "w")
         this.Write("Please copy the actual text output of your typing below:`n`OUTPUT:`n`nZIPCHORD SETTINGS:")
+        this.Write("ZipChord v." . version)
         For key, value in settings
             this.Write(key "=" value)
         this.Write("LOCALE SETTINGS:")
