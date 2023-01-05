@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -29,6 +29,9 @@ Class localeClass {
 }
 ; stores current locale information 
 keys := New localeClass
+
+; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+complex_keys := {}
 
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
@@ -297,17 +300,18 @@ Initialize() {
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
+    parsed_keys := ParseKeys(keys.all)
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
-    Loop Parse, % keys.all
+    For _, key in parsed_keys
     {
-        Hotkey, % "~" A_LoopField, KeyDown, %state% UseErrorLevel
+        Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
-            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%A_LoopField%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
-            Break
+            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
+            Continue
         }
-        Hotkey, % "~+" A_LoopField, KeyDown, %state%
-        Hotkey, % "~" A_LoopField " Up", KeyUp, %state%
-        Hotkey, % "~+" A_LoopField " Up", KeyUp, %state%
+        Hotkey, % "~+" key, KeyDown, %state%
+        Hotkey, % "~" key " Up", KeyUp, %state%
+        Hotkey, % "~+" key " Up", KeyUp, %state%
     }
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
@@ -331,11 +335,13 @@ KeyDown:
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
     if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
         shifted := true
-        key := SubStr(key, 3, 1)
+        key := SubStr(key, 3)
     } else {
         shifted := false
-        key := SubStr(key, 2, 1)
+        key := SubStr(key, 2)
     }
+    if (complex_keys.HasKey(key))
+        key := complex_keys[key]
 
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
@@ -592,9 +598,13 @@ ProcessAffixes(ByRef phrase) {
 
 ;remove raw chord output
 RemoveRawChord(output) {
+    global complex_keys
     adj :=0
-    ; we remove any Shift from the chord because that is not a real character
+    ; we remove any Shift from the chord because that is not a real character...
     output := StrReplace(output, "+")
+    ; ...and any complex keys because these should also not produce any text output
+    For _, key in complex_keys
+        output := StrReplace(output, key)
     if (final_difference & DIF_EXTRA_SPACE)
         adj++
     if (final_difference & DIF_IGNORED_SPACE)
@@ -656,6 +666,22 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
     Return new_str
 }
 
+ParseKeys(old_keys) {
+    global complex_keys
+    normal_keys := RegExReplace(old_keys, "\{(.*?)\}", "")  ; removes all text in between curly braces
+    new_keys := StrSplit(normal_keys)
+    segments := StrSplit(old_keys, "{")
+    For i, segment in segments {
+        if (i > 1) {
+            curly_content := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
+            complex_key := StrSplit(curly_content, ":")
+            new_keys.push(complex_key[1])
+            ObjRawSet(complex_keys, complex_key[1], complex_key[2])
+        }
+    }
+    return new_keys
+} 
+
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
@@ -666,7 +692,6 @@ Enter_key:
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE
     fixed_output := last_output
 Return
-
 
 ;;  Adding shortcuts 
 ; -------------------
