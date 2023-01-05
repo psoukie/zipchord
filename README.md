@@ -6,7 +6,9 @@ Thanks to Zipf's law, even if we used simple chords for only a few dozen words, 
 
 _ZipChord_ fills this gap and lets you type faster and more comfortably by allowing you to use chords for frequent words (or phrases) together with regular typing.
 
-For more details on why combining typing and chords is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).  
+For more details on why combining typing and chords is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).
+
+A new version 2.0 of ZipChord is currently in Beta and includes several new features, including an autocomplete of regularly typed "shorthands." See [details in the discussion](https://github.com/psoukie/zipchord/discussions/68) and let me know via Issues or Discussion what you think. This page describes the latest stable version.
 
 ## Installation
 
@@ -108,7 +110,7 @@ Note that if you edit the dictionary file directly in a text editor, you need to
 
 ### Special Characters
 
-Key that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`" (a space and lower-case w) to represent a **`Spacebar`**+**`W`**), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Control, Tab and other function keys cannot be used in a chord.
+Keys that activate a chord can only consist of alphanumerical keys, including space bar (simply type a space in the chord, e.g. "` w`" (a space and lower-case w) to represent a **`Spacebar`**+**`W`**), number keys, and keys for comma, semicolon etc. (,./;'[]-=\\). Note that Control, Tab and other function keys cannot be used in a chord.
 
 The Shift key can be optionally used as part of chords. If this feature is enabled ("Allow Shift in chords" on the "Chord detection" tab), use the character `+` (plus) to represent the Shift key when defining chords within the app, or directly in the dictionary file.
 
