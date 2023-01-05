@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -267,6 +267,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
+    global keys
     settings.Read()
     if (settings.preferences & PREF_FIRST_RUN) {
         settings.preferences &= ~PREF_FIRST_RUN
@@ -279,6 +280,8 @@ Initialize() {
     if (!FileExist("locales.ini")) {
         default_locale := new localeClass
         SavePropertiesToIni(default_locale, "English US", "locales.ini")
+    } else {
+        LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
     }
     BuildMainDialog()
     BuildLocaleDialog()
