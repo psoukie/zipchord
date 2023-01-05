@@ -10,7 +10,7 @@ SetWorkingDir %A_ScriptDir%
 ; Licensed under GPL-3.0
 ; See https://github.com/psoukie/zipchord/
 
-global version = "2.0.0-alpha.4"
+global version = "2.0.0-beta"
 
 ;; Classes and Variables
 ; -----------------------
