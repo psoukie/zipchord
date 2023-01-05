@@ -349,6 +349,8 @@ KeyDown:
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
                 if (settings.preferences & PREF_SHOW_SHORTCUTS) {
+                    chord_hint := ""
+                    shorthand_hint := ""
                     if (settings.chords_enabled)
                         chord_hint := chords.ReverseLookUp(shorthand_buffer)
                     if (settings.shorthands_enabled)
