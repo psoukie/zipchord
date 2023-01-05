@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -128,17 +128,14 @@ Class DictionaryClass {
             filename := this._file
         if (filename != "") {
             this._file := filename
-            this._LoadChords()
+            this._LoadShortcuts()
         } else {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
         }
     }
     Add(shortcut, text) {
-        if (this._chorded) {
-            if( ! this._RegisterShortcut(shortcut, text) )
-                return False
-        }
-        this._WriteToFile(shortcut, text)
+        if( ! this._RegisterShortcut(shortcut, text, true) )
+            return False
         return True
     }
     ; Private functions
@@ -146,7 +143,7 @@ Class DictionaryClass {
         this._chorded := chorded_keys
     }
     ; Load chords from a dictionary file
-    _LoadChords() {
+    _LoadShortcuts() {
         this._entries := {}
         this._reverse_entries := {}
         Loop, Read, % this._file
@@ -160,11 +157,8 @@ Class DictionaryClass {
             }
         }
     }
-    _WriteToFile(shortcut, word) {
-        FileAppend % "`r`n" shortcut "`t" word, % this._file, UTF-8
-    }
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _RegisterShortcut(newch_unsorted, newword) {
+    _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
         if (this._chorded)
             newch := Arrange(newch_unsorted)
         else
@@ -178,6 +172,8 @@ Class DictionaryClass {
         ObjRawSet(this._entries, newch, newword)
         if ( ! InStr(newword, " ") )
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
+        if (write_to_file)
+            FileAppend % "`r`n" newch_unsorted "`t" newword, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
         return true
     }
     _IsShortcutOK(shortcut, word) {
@@ -262,7 +258,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ~^c::
     Sleep 300
     if GetKeyState("c","P")
-        AddChord()
+        AddShortcut()
     Return
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
@@ -287,6 +283,7 @@ Initialize() {
     BuildMainDialog()
     BuildLocaleDialog()
     BuildOSD()
+    UI_AddShortcut_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
@@ -671,24 +668,21 @@ Return
 ;;  Adding shortcuts 
 ; -------------------
 
-; Define a new chord for the selected text (or check what it is for existing)
-AddChord() {
-    newword := Trim(Clipboard)
-    if (!StrLen(newword)) {
+; Define a new shortcut for the selected text (or check what it is for existing)
+AddShortcut() {
+    ; we try to copy any currently selected text into the Windows clipboard (while backing up and restoring its content)
+    clipboard_backup := ClipboardAll
+    Clipboard := ""
+    Send ^c
+    ClipWait, 1
+    copied_text := Trim(Clipboard)
+    Clipboard := clipboard_backup
+    clipboard_backup := ""
+    if (!StrLen(copied_text)) {
         MsgBox ,, ZipChord, % "First, select a word you would like to define a chord for, and then press and hold Ctrl+C again."
         Return
     }
-    For ch, wd in chords
-        if (wd==newword) {
-            MsgBox    ,, ZipChord, % Format("The text '{}' already has the chord {:U} associated with it.", wd, ch)
-            Return
-        }
-    Loop {
-        InputBox, newch, ZipChord, % Format("Type the individual keys that will make up the chord for '{}'.`n(Only lowercase letters, numbers, space, and other alphanumerical keys without pressing Shift or function keys.)", newword)
-        if ErrorLevel
-            Return
-    } Until chords.Add("" newch, "" newword, true)  ; "" forces the values to be interpreted as string
-    UpdateDictionaryUI()
+    UI_AddShortcut_Show(copied_text)
 }
 
 ;; Main UI
@@ -1108,30 +1102,50 @@ ButtonSaveLocale() {
 global UI_AddShortcut_text
     , UI_AddShortcut_chord
     , UI_AddShortcut_shorthand
+    , UI_AddShortcut_btnSaveChord
+    , UI_AddShortcut_btnSaveShorthand
 UI_AddShortcut_Build() {
     Gui, UI_AddShortcut:New, , % "Add Shortcut"
     Gui, Margin, 25, 25
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, Section, % "&Expanded text"
     Gui, Margin, 15, 15
-    Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text Disabled
-    Gui, Add, Button, x+20 yp w100, % "Chan&ge"
+    Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text
+    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_Adjust, % "&Adjust"
     Gui, Add, GroupBox, xs h120 w360, % "&Chord"
     Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord
-    Gui, Add, Button, x+20 yp w100 Disabled, % "&Save"
+    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveChord vUI_AddShortcut_btnSaveChord, % "&Save"
     Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
     Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
     Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand
-    Gui, Add, Button, x+20 yp w100 Disabled, % "Sa&ve"
+    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
     Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
     Gui, Margin, 25, 25
-    Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
+    Gui, Add, Button, gUI_AddShortcut_Close x265 y+30 w100, % "Close" 
 }
-UI_AddShortcut_Show() {
+UI_AddShortcut_Show(exp) {
+    WireHotkeys("Off")  ; so the user can edit values without interference
     Gui, UI_AddShortcut:Default
-    GuiControl,, UI_AddShortcut_text, % "test1"
-    GuiControl,, UI_AddShortcut_chord, % "test2"
-    GuiControl,, UI_AddShortcut_shorthand, % "test3"
+    GuiControl, Disable, UI_AddShortcut_text
+    GuiControl,, UI_AddShortcut_text, % exp
+    if (chord := chords.ReverseLookUp(exp)) {
+        GuiControl, Disable, UI_AddShortcut_chord
+        GuiControl, , UI_AddShortcut_chord, % chord
+        GuiControl, Disable, UI_AddShortcut_btnSaveChord
+    } else {
+        GuiControl, Enable, UI_AddShortcut_chord
+        GuiControl, , UI_AddShortcut_chord, % ""
+        GuiControl, Enable, UI_AddShortcut_btnSaveChord
+    }
+    if (shorthand := shorthands.ReverseLookUp(exp)) {
+        GuiControl, Disable, UI_AddShortcut_shorthand
+        GuiControl, , UI_AddShortcut_shorthand, % shorthand
+        GuiControl, Disable, UI_AddShortcut_btnSaveShorthand
+    } else {
+        GuiControl, Enable, UI_AddShortcut_shorthand
+        GuiControl, , UI_AddShortcut_shorthand, % ""
+        GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
+    }
     Gui, Show, w410
 }
 UI_AddShortcutGuiClose() {
@@ -1142,6 +1156,31 @@ UI_AddShortcutGuiEscape() {
 }
 UI_AddShortcut_Close() {
     Gui, UI_AddShortcut:Hide
+    if (settings.chords_enabled || settings.shorthands_enabled)
+        WireHotkeys("On")  ; resume normal mode
+}
+UI_AddShortcut_SaveChord(){
+    Gui, Submit, NoHide
+    if (chords.Add(UI_AddShortcut_chord, UI_AddShortcut_text)) {
+        UI_AddShortcut_Close()
+        UpdateDictionaryUI()
+    }
+}
+UI_AddShortcut_SaveShorthand(){
+    Gui, Submit, NoHide
+    if (shorthands.Add(UI_AddShortcut_shorthand, UI_AddShortcut_text)) {
+        UI_AddShortcut_Close()
+        UpdateDictionaryUI()
+    }
+}
+UI_AddShortcut_Adjust(){
+    GuiControl, , UI_AddShortcut_chord, % ""
+    GuiControl, Enable, UI_AddShortcut_chord
+    GuiControl, Enable, UI_AddShortcut_btnSaveChord
+    GuiControl, , UI_AddShortcut_shorthand, % ""
+    GuiControl, Enable, UI_AddShortcut_shorthand
+    GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
+    GuiControl, Enable, UI_AddShortcut_text
 }
 
 ;; Shortcut Hint OSD
