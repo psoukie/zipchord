@@ -5,6 +5,7 @@
 #KeyHistory 0
 ListLines Off
 SetWorkingDir %A_ScriptDir%
+CoordMode ToolTip, Screen
 
 ; ZipChord by Pavel Soukenik
 ; Licensed under GPL-3.0
@@ -36,6 +37,9 @@ complex_keys := {}
 global AFFIX_NONE := 0 ; no prefix or suffix
     , AFFIX_PREFIX := 1 ; expansion is a prefix
     , AFFIX_SUFFIX := 2 ; expansion is a suffix
+
+; Settings constants and class
+
 ; capitalization constants
 global CAP_OFF = 1 ; no auto-capitalization,
     , CAP_CHORDS = 2 ; auto-capitalize chords only
@@ -49,17 +53,21 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
     , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
     , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
     , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
+; Hints preferences
+global HINT_OFF := 1
+    , HINT_OSD := 2
+    , HINT_TOOLTIP := 3
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
-    , PREF_SHOW_SHORTCUTS := 4    ; show tip about re-opening the main dialog and adding chords
 
 ; Current application settings
 Class settingsClass {
     chords_enabled := 1
     shorthands_enabled := 1
-    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_SHORTCUTS
+    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
+    hints := HINT_OSD
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
@@ -344,11 +352,11 @@ KeyDown:
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
-    if (settings.shorthands_enabled || (settings.preferences & PREF_SHOW_SHORTCUTS) ) {
+    if (settings.shorthands_enabled || (settings.hints > HINT_OFF) ) {
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
-                if (settings.preferences & PREF_SHOW_SHORTCUTS) {
+                if (settings.hints > HINT_OFF) {
                     chord_hint := ""
                     shorthand_hint := ""
                     if (settings.chords_enabled)
@@ -709,7 +717,7 @@ global UI_input_delay
     , UI_space_after
     , UI_space_punctuation
     , UI_delete_unrecognized
-    , UI_show_tips
+    , UI_show_hints
     , UI_immediate_shorthands
     , UI_capitalization
     , UI_allow_shift
@@ -754,14 +762,15 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h70, % "Shorthands"
     Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
-    Gui, Add, Checkbox, xs-20 y+50 vUI_show_tips, % "Show &hints for chords and shorthands"
+    Gui, Add, Text, xs-20 y+50 , % "Hints with chords and shorthands:"
+    Gui, Add, DropDownList, vUI_show_hints AltSubmit x+20 w90, % "Off|OSD|Tooltips"
     Gui, Tab, 3
     Gui, Add, GroupBox, w310 h120 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
     Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords and shorthands
     Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
     Gui, Add, Text, xs y+30, Auto-&capitalization:
-    Gui, Add, DropDownList, vUI_capitalization AltSubmit Right xp+150 w130, Off|For shortcuts|For all input
+    Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, Off|For shortcuts|For all input
     Gui, Add, Text, xs y+m, &Output delay (ms):
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
     Gui, Tab
@@ -789,7 +798,7 @@ ShowMainDialog() {
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
     GuiControl , , UI_immediate_shorthands, % (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) ? 1 : 0
     GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
-    GuiControl , , UI_show_tips, % (settings.preferences & PREF_SHOW_SHORTCUTS) ? 1 : 0
+    GuiControl , Choose, UI_show_hints, % settings.hints
     GuiControl , Choose, UI_capitalization, % settings.capitalization
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
@@ -827,7 +836,7 @@ ButtonOK() {
     settings.locale := UI_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
-    settings.preferences := UI_show_tips ? (settings.preferences | PREF_SHOW_SHORTCUTS) : (settings.preferences & ~ PREF_SHOW_SHORTCUTS)
+    settings.hints := UI_show_hints
     ; ...and save them to Windows Registry
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
@@ -1086,7 +1095,6 @@ UI_locale_windowGuiClose() {
 UI_locale_windowGuiEscape() {
     Close_Locale_Window()
 }
-
 Close_Locale_Window() {
     Gui, UI_locale_window:Submit
     UpdateLocaleInMainUI(global UI_loc_name)
@@ -1214,16 +1222,27 @@ BuildOSD() {
     ; Make all pixels of this color transparent and make the text itself translucent (150):
 }
 ShowHint(line1, line2:="", line3 :="") {
-    UI_OSD_fading := False
-    UI_OSD_transparency := 140
-    Gui, UI_OSD:Default
-    Gui, Show, NoActivate, ZipChord_OSD
-    WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
-    GuiControl,, UI_hint1, % line1
-    GuiControl,, UI_hint2, % ReplaceWithVariants(line2, true)
-    GuiControl,, UI_hint3, % ReplaceWithVariants(line3)
-    SetTimer, HideOSD, -900
+    if (settings.hints == HINT_TOOLTIP) {
+        GetCaret(x, y, , h)
+        ToolTip % line2 . "`n" . line3, x-1.5*h, y+1.5*h
+        SetTimer, HideToolTip, -1800
+    } else {
+        UI_OSD_fading := False
+        UI_OSD_transparency := 140
+        Gui, UI_OSD:Default
+        Gui, Show, NoActivate, ZipChord_OSD
+        WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
+        GuiControl,, UI_hint1, % line1
+        GuiControl,, UI_hint2, % ReplaceWithVariants(line2, true)
+        GuiControl,, UI_hint3, % ReplaceWithVariants(line3)
+        SetTimer, HideOSD, -900
+    }
 }
+
+HideToolTip:
+    ToolTip
+Return
+
 HideOSD:
     UI_OSD_fading := true
     Sleep 1000
@@ -1236,6 +1255,44 @@ HideOSD:
     if (UI_OSD_fading)
         Gui, Hide
 Return
+
+; The following function for getting caret position more reliably is from a post by plankoe at https://www.reddit.com/r/AutoHotkey/comments/ysuawq/get_the_caret_location_in_any_program/
+GetCaret(ByRef X:="", ByRef Y:="", ByRef W:="", ByRef H:="") {
+    ; UIA caret
+    static IUIA := ComObjCreate("{ff48dba4-60ef-4201-aa87-54103eef594e}", "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")
+    ; GetFocusedElement
+    DllCall(NumGet(NumGet(IUIA+0)+8*A_PtrSize), "ptr", IUIA, "ptr*", FocusedEl:=0)
+    ; GetCurrentPattern. TextPatternElement2 = 10024
+    DllCall(NumGet(NumGet(FocusedEl+0)+16*A_PtrSize), "ptr", FocusedEl, "int", 10024, "ptr*", patternObject:=0), ObjRelease(FocusedEl)
+    if patternObject {
+        ; GetCaretRange
+        DllCall(NumGet(NumGet(patternObject+0)+10*A_PtrSize), "ptr", patternObject, "int*", 1, "ptr*", caretRange:=0), ObjRelease(patternObject)
+        ; GetBoundingRectangles
+        DllCall(NumGet(NumGet(caretRange+0)+10*A_PtrSize), "ptr", caretRange, "ptr*", boundingRects:=0), ObjRelease(caretRange)
+        ; VT_ARRAY = 0x20000 | VT_R8 = 5 (64-bit floating-point number)
+        Rect := ComObject(0x2005, boundingRects)
+        if (Rect.MaxIndex() = 3) {
+            X:=Round(Rect[0]), Y:=Round(Rect[1]), W:=Round(Rect[2]), H:=Round(Rect[3])
+            return
+        }
+    }
+    ; Acc caret
+    static _ := DllCall("LoadLibrary", "Str","oleacc", "Ptr")
+    idObject := 0xFFFFFFF8 ; OBJID_CARET
+    if DllCall("oleacc\AccessibleObjectFromWindow", "Ptr", WinExist("A"), "UInt", idObject&=0xFFFFFFFF, "Ptr", -VarSetCapacity(IID,16)+NumPut(idObject==0xFFFFFFF0?0x46000000000000C0:0x719B3800AA000C81,NumPut(idObject==0xFFFFFFF0?0x0000000000020400:0x11CF3C3D618736E0,IID,"Int64"),"Int64"), "Ptr*", pacc:=0)=0 {
+        oAcc := ComObjEnwrap(9,pacc,1)
+        oAcc.accLocation(ComObj(0x4003,&_x:=0), ComObj(0x4003,&_y:=0), ComObj(0x4003,&_w:=0), ComObj(0x4003,&_h:=0), 0)
+        X:=NumGet(_x,0,"int"), Y:=NumGet(_y,0,"int"), W:=NumGet(_w,0,"int"), H:=NumGet(_h,0,"int")
+        if (X | Y) != 0
+            return
+    }
+    ; default caret
+    CoordMode Caret, Screen
+    X := A_CaretX
+    Y := A_CaretY
+    W := 4
+    H := 20
+}
 
 ;; File and registry functions
 ; -----------------------------
