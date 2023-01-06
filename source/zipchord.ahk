@@ -735,22 +735,18 @@ AddShortcut() {
 ; variables holding the UI elements and selections
 global UI_input_delay
     , UI_output_delay
-    , UI_space_before
-    , UI_space_after
-    , UI_space_punctuation
+    , UI_space_before, UI_space_after, UI_space_punctuation
     , UI_delete_unrecognized
-    , UI_show_hints
+    , UI_show_hints, UI_hint_destination, UI_hint_frequency
     , UI_immediate_shorthands
     , UI_capitalization
     , UI_allow_shift
     , UI_restrict_chords
-    , UI_chord_file
-    , UI_shorthand_file
-    , UI_chord_entries := "0"
-    , UI_shorthand_entries := "0"
-    , UI_chords_enabled := 1
-    , UI_shorthands_enabled := 1
-    , UI_tab := 0
+    , UI_chord_file, UI_shorthand_file
+    , UI_chord_entries
+    , UI_shorthand_entries
+    , UI_chords_enabled, UI_shorthands_enabled
+    , UI_tab
     , UI_locale
     , UI_debugging
 
@@ -759,50 +755,64 @@ BuildMainDialog() {
     Gui, UI_main_window:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, % "  Dictionaries  |  Detection  |  Output  |  About  "
-    Gui, Add, Text, y+20 Section, &Keyboard and language
+    Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
+    Gui, Add, Text, y+20 Section, % "&Keyboard and language"
     Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
-    Gui, Add, GroupBox, xs w310 h140 vUI_chord_entries, Chord dictionary
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
-    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
-    Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
-    Gui, Add, Checkbox, vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
-    Gui, Add, GroupBox, xs-20 y+30 w310 h140 vUI_shorthand_entries, Shorthand dictionary
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, O&pen
-    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, Edi&t
-    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, Reloa&d
-    Gui, Add, Checkbox, vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
+    Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "[file name]"
+    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
+    Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
+    Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
+    Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "[file name]"
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
+    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
+    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
+    Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
     Gui, Tab, 2
-    Gui, Add, GroupBox, y+20 w310 h180, Chords
+    Gui, Add, GroupBox, y+20 w310 h175, Chords
     Gui, Add, Text, xp+20 yp+30 Section, &Detection delay (ms):
-    Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
-    Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
-    Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
+    Gui, Add, Edit, vUI_input_delay Right xp+150 yp-2 w40, 99
+    Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
+    Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
-    Gui, Add, GroupBox, xs-20 y+30 w310 h70, % "Shorthands"
+    Gui, Add, GroupBox, xs-20 y+40 w310 h70, % "Shorthands"
     Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
-    Gui, Add, Text, xs-20 y+50 , % "Hints with chords and shorthands:"
-    Gui, Add, DropDownList, vUI_show_hints AltSubmit x+20 w90, % "Off|OSD|Tooltips"
     Gui, Tab, 3
-    Gui, Add, GroupBox, w310 h120 Section, Smart spaces
-    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
-    Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords and shorthands
-    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
-    Gui, Add, Text, xs y+30, Auto-&capitalization:
-    Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, Off|For shortcuts|For all input
-    Gui, Add, Text, xs y+m, &Output delay (ms):
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-    Gui, Tab
-    Gui, Add, Button, Default w80 xm+240 gButtonOK, OK
+    Gui, Add, Checkbox, y+20 vUI_show_hints Section, % "&Show hints for shortcuts in dictionaries"
+    Gui, Add, Text, , % "Hint &location"
+    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+170 w100, % "On-screen display|Tooltips"
+    Gui, Add, Text, xs, % "Hints &frequency"
+    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w100, % "All|Normal|Relaxed"
+    Gui, Add, Button, xs w140, % "&Customize hints"
+    Gui, Add, GroupBox, xs y+20 w310 h200 Section, % "Hint customization"
+    Gui, Add, Text, xp+20 yp+30 Section, % "Horizontal offset (px)"
+    Gui, Add, Edit, xp+180 w70 Right, % "0"
+    Gui, Add, Text, xs Section, % "Vertical offset (px)"
+    Gui, Add, Edit, xp+180 w70 Right, % "0"
+    Gui, Add, Text, xs, % "OSD font size (pt)"
+    Gui, Add, Edit, xp+180 w70 Right, % "32"
+    Gui, Add, Text, xs, % "OSD color (hex code)"
+    Gui, Add, Edit, xp+180 w70 Right, % "3BD511"
     Gui, Tab, 4
-    Gui, Add, Text, Y+50, ZipChord`nversion %version%
-    Gui, Add, Checkbox, y+30 vUI_debugging, &Log this session (debugging)
+    Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
+    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
+    Gui, Add, Checkbox, vUI_space_after xp y+10, % "&After chords and shorthands"
+    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, % "After &punctuation"
+    Gui, Add, Text, xs y+30, % "Auto-&capitalization"
+    Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
+    Gui, Add, Text, xs y+m, % "&Output delay (ms)"
+    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, % "99"
+    Gui, Tab
+    Gui, Add, Button, Default w80 xm+240 gButtonOK, % "OK"
+    Gui, Tab, 5
+    Gui, Add, Text, Y+50, % "ZipChord`nversion " . version
+    Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
     Gui, Font, Underline cBlue
-    Gui, Add, Text, Y+30 gWebsiteLink, Help and documentation
-    Gui, Add, Text, gReleaseLink, Latest releases (check for updates)
+    Gui, Add, Text, Y+30 gWebsiteLink, % "Help and documentation"
+    Gui, Add, Text, gReleaseLink, % "Latest releases (check for updates)"
 
     ; Create taskbar tray menu:
     Menu, Tray, Add, Open Settings, ShowMainDialog
