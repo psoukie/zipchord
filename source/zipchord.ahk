@@ -4,6 +4,7 @@
 #MaxThreadsBuffer On
 #KeyHistory 0
 ListLines Off
+SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
