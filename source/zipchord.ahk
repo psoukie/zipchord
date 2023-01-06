@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -31,8 +31,8 @@ Class localeClass {
 }
 keys := New localeClass
 
-; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-complex_keys := {}
+; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+special_key_map := {}
 
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
@@ -298,9 +298,12 @@ Initialize() {
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
-    parsed_keys := ParseKeys(keys.all)
+    global special_key_map
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
-    For _, key in parsed_keys
+    new_keys := {}
+    bypassed_keys := {}
+    ParseKeys(keys.all, new_keys, bypassed_keys, special_key_map)
+    For _, key in new_keys
     {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
@@ -320,6 +323,17 @@ WireHotkeys(state) {
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
     Hotkey, % "~Enter", Enter_key, %state%
+    For _, key in bypassed_keys
+    {
+        Hotkey, % key, KeyDown, %state% UseErrorLevel
+        If ErrorLevel {
+            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
+            Continue
+        }
+        Hotkey, % "+" key, KeyDown, %state%
+        Hotkey, % key " Up", KeyUp, %state%
+        Hotkey, % "+" key " Up", KeyUp, %state%
+    }
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
@@ -330,16 +344,17 @@ WireHotkeys(state) {
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
     debug.Log("KeyDown " key)
+    if (SubStr(key, 1, 1) == "~")
+        key := SubStr(key, 2)
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
-    if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
+    if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
         shifted := true
-        key := SubStr(key, 3)
+        key := SubStr(key, 2)
     } else {
         shifted := false
-        key := SubStr(key, 2)
     }
-    if (complex_keys.HasKey(key))
-        key := complex_keys[key]
+    if (special_key_map.HasKey(key))
+        key := special_key_map[key]
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -593,12 +608,12 @@ ProcessAffixes(ByRef phrase) {
 
 ;remove raw chord output
 RemoveRawChord(output) {
-    global complex_keys
+    global special_key_map
     adj :=0
     ; we remove any Shift from the chord because that is not a real character...
     output := StrReplace(output, "+")
     ; ...and any complex keys because these should also not produce any text output
-    For _, key in complex_keys
+    For _, key in special_key_map
         output := StrReplace(output, key)
     if (final_difference & DIF_EXTRA_SPACE)
         adj++
@@ -661,20 +676,25 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
     Return new_str
 }
 
-ParseKeys(old_keys) {
-    global complex_keys
-    normal_keys := RegExReplace(old_keys, "\{(.*?)\}", "")  ; removes all text in between curly braces
-    new_keys := StrSplit(normal_keys)
-    segments := StrSplit(old_keys, "{")
+; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
+ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
+    new := StrSplit( RegExReplace(old, "\{(.*?)\}", "") )   ; array with all text in between curly braces removed
+    segments := StrSplit(old, "{")
     For i, segment in segments {
         if (i > 1) {
-            curly_content := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
-            complex_key := StrSplit(curly_content, ":")
-            new_keys.push(complex_key[1])
-            ObjRawSet(complex_keys, complex_key[1], complex_key[2])
+            key_definition := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
+            if (InStr(key_definition, ":")) {
+                divider := ":"
+                target := new
+            } else {
+                divider := "="
+                target := bypassed
+            }
+            def_components := StrSplit(key_definition, divider)
+            target.push(def_components[1])
+            ObjRawSet(map, def_components[1], def_components[2])
         }
     }
-    return new_keys
 } 
 
 Interrupt:
