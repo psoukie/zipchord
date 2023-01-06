@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -317,12 +317,13 @@ WireHotkeys(state) {
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
+    Hotkey, % "~+Space Up", KeyUp, %state%
+    Hotkey, % "~Enter", Enter_key, %state%
     Loop Parse, % interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
-    Hotkey, % "~Enter", Enter_key, %state%
     For _, key in bypassed_keys
     {
         Hotkey, % key, KeyDown, %state% UseErrorLevel
@@ -1014,7 +1015,7 @@ BuildLocaleDialog() {
     Gui, Add, Button, w80 gButtonNewLocale, &New
     Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
     Gui, Add, GroupBox, ys h330 w460, Locale settings
-    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except dead keys)
+    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except space bar and dead keys)
     Gui, Font, s10, Consolas
     Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
     Gui, Font, s10 w700, Segoe UI
