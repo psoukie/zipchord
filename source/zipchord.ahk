@@ -376,11 +376,11 @@ KeyDown:
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
-    if (settings.shorthands_enabled || (settings.hints > HINT_OFF) ) {
+    if (settings.shorthands_enabled || (settings.hints & HINT_ON) ) {
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
-                if (settings.hints > HINT_OFF) {
+                if (settings.hints & HINT_ON) {
                     chord_hint := ""
                     shorthand_hint := ""
                     if (settings.chords_enabled)
@@ -782,8 +782,8 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
     Gui, Tab, 2
     Gui, Add, GroupBox, y+20 w310 h175, Chords
-    Gui, Add, Text, xp+20 yp+30 Section, &Detection delay (ms):
-    Gui, Add, Edit, vUI_input_delay Right xp+150 yp-2 w40, 99
+    Gui, Add, Text, xp+20 yp+30 Section, %"&Detection delay (ms)"
+    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
     Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
@@ -792,16 +792,16 @@ BuildMainDialog() {
     Gui, Tab, 3
     Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
     Gui, Add, Text, , % "Hint &location"
-    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+170 w100, % "On-screen display|Tooltips"
+    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+170 w120, % "On-screen display|Tooltips"
     Gui, Add, Text, xs, % "Hints &frequency"
-    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w100, % "Always|Normal|Relaxed"
-    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w140, % "&Customize hints"
+    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w120, % "Always|Normal|Relaxed"
+    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w140, % "&Adjust display"
     Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
     Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
     Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
     Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
     Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
-    Gui, Add, Edit, vUI_hint_offset_x ys xp+180 w70 Right
+    Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
     Gui, Add, Edit, vUI_hint_offset_y w70 Right
     Gui, Add, Edit, vUI_hint_size w70 Right
     Gui, Add, Edit, vUI_hint_color w70 Right
@@ -912,6 +912,9 @@ ButtonOK() {
         WireHotkeys("On")
     if (UI_debugging)
         debug.Start()
+    ; to reflect any changes to OSD UI
+    Gui, UI_OSD:Destroy
+    BuildOSD() 
     CloseMainDialog()
 }
 
@@ -1268,39 +1271,49 @@ UI_AddShortcut_Adjust(){
     GuiControl, Enable, UI_AddShortcut_text
 }
 
-;; Shortcut Hint OSD
+;; Shortcut Hint UI
 ; -------------------
 
-global UI_hint1
-    , UI_hint2
-    , UI_hint3
+global UI_OSD_line1
+    , UI_OSD_line2
+    , UI_OSD_line3
     , UI_OSD_transparency
     , UI_OSD_fading
+    , UI_OSD_pos_x, UI_OSD_pos_y
+
 BuildOSD() {
     Gui, UI_OSD:Default
-    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
-    Gui, Margin, 10, 10
+    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow +HwndOSDHwnd ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
+    size := settings.hint_size
+    Gui, Margin, Round(size/3), Round(size/3)
     Gui, Color, 40E812
-    Gui, Font, s32, Consolas  ; Set a large font size (32-point).
-    Gui, Add, Text, c3BD511 Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
-    Gui, Add, Text, c3BD511 Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
-    Gui, Add, Text, c3BD511 Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
-    ; Make all pixels of this color transparent and make the text itself translucent (150):
+    Gui, Font, s%size%, Consolas  ; Set a large font size (32-point).
+    color := settings.hint_color
+    Gui, Add, Text, c%color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, c%color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c%color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Show, NoActivate Center, ZipChord_OSD
+    WinSet, TransColor, 40E812 140, ZipChord_OSD
+    WinGetPos UI_OSD_pos_x, UI_OSD_pos_y, , , ZipChord_OSD
+    UI_OSD_pos_x += settings.hint_offset_x
+    UI_OSD_pos_y += settings.hint_offset_y
+    Gui, Hide
+    debug.Write("Coord: " . pos_x . " " . pos_y)
 }
 ShowHint(line1, line2:="", line3 :="") {
-    if (settings.hints == HINT_TOOLTIP) {
+    if (settings.hints & HINT_TOOLTIP) {
         GetCaret(x, y, , h)
-        ToolTip % line2 . "`n" . line3, x-1.5*h, y+1.5*h
+        ToolTip % line2 . "`n" . line3, x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
         SetTimer, HideToolTip, -1800
     } else {
         UI_OSD_fading := False
         UI_OSD_transparency := 140
         Gui, UI_OSD:Default
-        Gui, Show, NoActivate, ZipChord_OSD
+        GuiControl,, UI_OSD_line1, % line1
+        GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, true)
+        GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
+        Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
         WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
-        GuiControl,, UI_hint1, % line1
-        GuiControl,, UI_hint2, % ReplaceWithVariants(line2, true)
-        GuiControl,, UI_hint3, % ReplaceWithVariants(line3)
         SetTimer, HideOSD, -900
     }
 }
