@@ -862,15 +862,15 @@ ShowMainDialog() {
 }
 
 ; Shows or hides controls for hints customization (1 = show, 0 = hide)
-ShowHintCustomization(show := true) {
-    GuiControl, Disable%show%, UI_btn_customize
-    GuiControl, Show%show%, UI_hint_offset_x
-    GuiControl, Show%show%, UI_hint_offset_y
-    GuiControl, Show%show%, UI_hint_size
-    GuiControl, Show%show%, UI_hint_color
+ShowHintCustomization(show_controls := true) {
+    GuiControl, Disable%show_controls%, UI_btn_customize
+    GuiControl, Show%show_controls%, UI_hint_offset_x
+    GuiControl, Show%show_controls%, UI_hint_offset_y
+    GuiControl, Show%show_controls%, UI_hint_size
+    GuiControl, Show%show_controls%, UI_hint_color
     Loop 5 
     {
-        GuiControl, Show%show%, UI_hint_%A_Index%
+        GuiControl, Show%show_controls%, UI_hint_%A_Index%
     }
 }
 
@@ -1288,10 +1288,10 @@ BuildOSD() {
     Gui, Margin, Round(size/3), Round(size/3)
     Gui, Color, 40E812
     Gui, Font, s%size%, Consolas  ; Set a large font size (32-point).
-    color := settings.hint_color
-    Gui, Add, Text, c%color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
-    Gui, Add, Text, c%color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWWWWW
-    Gui, Add, Text, c%color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWWWWW
+    hint_color := settings.hint_color
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWWWWW
     Gui, Show, NoActivate Center, ZipChord_OSD
     WinSet, TransColor, 40E812 140, ZipChord_OSD
     WinGetPos UI_OSD_pos_x, UI_OSD_pos_y, , , ZipChord_OSD
