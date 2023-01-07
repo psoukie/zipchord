@@ -55,9 +55,12 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
     , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
     , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
 ; Hints preferences
-global HINT_OFF := 1
-    , HINT_OSD := 2
-    , HINT_TOOLTIP := 3
+global HINT_ON := 1
+    , HINT_ALWAYS := 2
+    , HINT_NORMAL := 4
+    , HINT_RELAXED := 8
+    , HINT_OSD := 16
+    , HINT_TOOLTIP := 32
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
@@ -68,7 +71,11 @@ Class settingsClass {
     shorthands_enabled := 1
     preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
-    hints := HINT_OSD
+    hints := HINT_ON | HINT_NORMAL | HINT_OSD
+    hint_offset_x := 0
+    hint_offset_y := 0
+    hint_size := 32
+    hint_color := "3BD511"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
@@ -737,7 +744,9 @@ global UI_input_delay
     , UI_output_delay
     , UI_space_before, UI_space_after, UI_space_punctuation
     , UI_delete_unrecognized
-    , UI_show_hints, UI_hint_destination, UI_hint_frequency
+    , UI_hints_show, UI_hint_destination, UI_hint_frequency
+    , UI_hint_offset_x, UI_hint_offset_y, UI_hint_size, UI_hint_color 
+    , UI_btn_customize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
     , UI_immediate_shorthands
     , UI_capitalization
     , UI_allow_shift
@@ -781,21 +790,21 @@ BuildMainDialog() {
     Gui, Add, GroupBox, xs-20 y+40 w310 h70, % "Shorthands"
     Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
     Gui, Tab, 3
-    Gui, Add, Checkbox, y+20 vUI_show_hints Section, % "&Show hints for shortcuts in dictionaries"
+    Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
     Gui, Add, Text, , % "Hint &location"
     Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+170 w100, % "On-screen display|Tooltips"
     Gui, Add, Text, xs, % "Hints &frequency"
-    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w100, % "All|Normal|Relaxed"
-    Gui, Add, Button, xs w140, % "&Customize hints"
-    Gui, Add, GroupBox, xs y+20 w310 h200 Section, % "Hint customization"
-    Gui, Add, Text, xp+20 yp+30 Section, % "Horizontal offset (px)"
-    Gui, Add, Edit, xp+180 w70 Right, % "0"
-    Gui, Add, Text, xs Section, % "Vertical offset (px)"
-    Gui, Add, Edit, xp+180 w70 Right, % "0"
-    Gui, Add, Text, xs, % "OSD font size (pt)"
-    Gui, Add, Edit, xp+180 w70 Right, % "32"
-    Gui, Add, Text, xs, % "OSD color (hex code)"
-    Gui, Add, Edit, xp+180 w70 Right, % "3BD511"
+    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w100, % "Always|Normal|Relaxed"
+    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w140, % "&Customize hints"
+    Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
+    Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
+    Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
+    Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
+    Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
+    Gui, Add, Edit, vUI_hint_offset_x ys xp+180 w70 Right
+    Gui, Add, Edit, vUI_hint_offset_y w70 Right
+    Gui, Add, Edit, vUI_hint_size w70 Right
+    Gui, Add, Edit, vUI_hint_color w70 Right
     Gui, Tab, 4
     Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
     Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
@@ -830,7 +839,6 @@ ShowMainDialog() {
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
     GuiControl , , UI_immediate_shorthands, % (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) ? 1 : 0
     GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
-    GuiControl , Choose, UI_show_hints, % settings.hints
     GuiControl , Choose, UI_capitalization, % settings.capitalization
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
@@ -839,9 +847,31 @@ ShowMainDialog() {
     GuiControl , , UI_shorthands_enabled, % settings.shorthands_enabled
     ; debugging is always set to disabled
     GuiControl , , UI_debugging, 0
+    GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
+    GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
+    hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
+    GuiControl , Choose, UI_hint_frequency, % Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting 
+    GuiControl Text, UI_hint_offset_x, % settings.hint_offset_x
+    GuiControl Text, UI_hint_offset_y, % settings.hint_offset_y
+    GuiControl Text, UI_hint_size, % settings.hint_size
+    GuiControl Text, UI_hint_color, % settings.hint_color
+    ShowHintCustomization(false)
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
     Gui, Show,, ZipChord
+}
+
+; Shows or hides controls for hints customization (1 = show, 0 = hide)
+ShowHintCustomization(show := true) {
+    GuiControl, Disable%show%, UI_btn_customize
+    GuiControl, Show%show%, UI_hint_offset_x
+    GuiControl, Show%show%, UI_hint_offset_y
+    GuiControl, Show%show%, UI_hint_size
+    GuiControl, Show%show%, UI_hint_color
+    Loop 5 
+    {
+        GuiControl, Show%show%, UI_hint_%A_Index%
+    }
 }
 
 UpdateLocaleInMainUI(selected_loc) {
@@ -868,7 +898,11 @@ ButtonOK() {
     settings.locale := UI_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
-    settings.hints := UI_show_hints
+    settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
+    settings.hint_offset_x := UI_hint_offset_x
+    settings.hint_offset_y := UI_hint_offset_y
+    settings.hint_size := UI_hint_size
+    settings.hint_color := UI_hint_color
     ; ...and save them to Windows Registry
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
