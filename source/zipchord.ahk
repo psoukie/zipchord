@@ -4,6 +4,7 @@
 #MaxThreadsBuffer On
 #KeyHistory 0
 ListLines Off
+SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
@@ -30,8 +31,8 @@ Class localeClass {
 }
 keys := New localeClass
 
-; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-complex_keys := {}
+; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+special_key_map := {}
 
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
@@ -54,9 +55,12 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
     , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
     , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
 ; Hints preferences
-global HINT_OFF := 1
-    , HINT_OSD := 2
-    , HINT_TOOLTIP := 3
+global HINT_ON := 1
+    , HINT_ALWAYS := 2
+    , HINT_NORMAL := 4
+    , HINT_RELAXED := 8
+    , HINT_OSD := 16
+    , HINT_TOOLTIP := 32
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
@@ -67,7 +71,11 @@ Class settingsClass {
     shorthands_enabled := 1
     preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
-    hints := HINT_OSD
+    hints := HINT_ON | HINT_NORMAL | HINT_OSD
+    hint_offset_x := 0
+    hint_offset_y := 0
+    hint_size := 32
+    hint_color := "3BD511"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
@@ -297,9 +305,12 @@ Initialize() {
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
-    parsed_keys := ParseKeys(keys.all)
+    global special_key_map
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
-    For _, key in parsed_keys
+    new_keys := {}
+    bypassed_keys := {}
+    ParseKeys(keys.all, new_keys, bypassed_keys, special_key_map)
+    For _, key in new_keys
     {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
@@ -313,12 +324,24 @@ WireHotkeys(state) {
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
+    Hotkey, % "~+Space Up", KeyUp, %state%
+    Hotkey, % "~Enter", Enter_key, %state%
     Loop Parse, % interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
-    Hotkey, % "~Enter", Enter_key, %state%
+    For _, key in bypassed_keys
+    {
+        Hotkey, % key, KeyDown, %state% UseErrorLevel
+        If ErrorLevel {
+            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
+            Continue
+        }
+        Hotkey, % "+" key, KeyDown, %state%
+        Hotkey, % key " Up", KeyUp, %state%
+        Hotkey, % "+" key " Up", KeyUp, %state%
+    }
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
@@ -329,16 +352,17 @@ WireHotkeys(state) {
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
     debug.Log("KeyDown " key)
+    if (SubStr(key, 1, 1) == "~")
+        key := SubStr(key, 2)
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
-    if ( StrLen(A_ThisHotkey)>2 && SubStr(A_ThisHotkey, 2, 1) == "+" ) {
+    if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
         shifted := true
-        key := SubStr(key, 3)
+        key := SubStr(key, 2)
     } else {
         shifted := false
-        key := SubStr(key, 2)
     }
-    if (complex_keys.HasKey(key))
-        key := complex_keys[key]
+    if (special_key_map.HasKey(key))
+        key := special_key_map[key]
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -352,11 +376,11 @@ KeyDown:
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
-    if (settings.shorthands_enabled || (settings.hints > HINT_OFF) ) {
+    if (settings.shorthands_enabled || (settings.hints & HINT_ON) ) {
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
-                if (settings.hints > HINT_OFF) {
+                if (settings.hints & HINT_ON) {
                     chord_hint := ""
                     shorthand_hint := ""
                     if (settings.chords_enabled)
@@ -592,12 +616,12 @@ ProcessAffixes(ByRef phrase) {
 
 ;remove raw chord output
 RemoveRawChord(output) {
-    global complex_keys
+    global special_key_map
     adj :=0
     ; we remove any Shift from the chord because that is not a real character...
     output := StrReplace(output, "+")
     ; ...and any complex keys because these should also not produce any text output
-    For _, key in complex_keys
+    For _, key in special_key_map
         output := StrReplace(output, key)
     if (final_difference & DIF_EXTRA_SPACE)
         adj++
@@ -660,25 +684,31 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
     Return new_str
 }
 
-ParseKeys(old_keys) {
-    global complex_keys
-    normal_keys := RegExReplace(old_keys, "\{(.*?)\}", "")  ; removes all text in between curly braces
-    new_keys := StrSplit(normal_keys)
-    segments := StrSplit(old_keys, "{")
+; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
+ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
+    new := StrSplit( RegExReplace(old, "\{(.*?)\}", "") )   ; array with all text in between curly braces removed
+    segments := StrSplit(old, "{")
     For i, segment in segments {
         if (i > 1) {
-            curly_content := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
-            complex_key := StrSplit(curly_content, ":")
-            new_keys.push(complex_key[1])
-            ObjRawSet(complex_keys, complex_key[1], complex_key[2])
+            key_definition := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
+            if (InStr(key_definition, ":")) {
+                divider := ":"
+                target := new
+            } else {
+                divider := "="
+                target := bypassed
+            }
+            def_components := StrSplit(key_definition, divider)
+            target.push(def_components[1])
+            ObjRawSet(map, def_components[1], def_components[2])
         }
     }
-    return new_keys
 } 
 
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
+    shorthand_buffer := ""
     debug.Write("Interrupted")
 Return
 
@@ -713,22 +743,20 @@ AddShortcut() {
 ; variables holding the UI elements and selections
 global UI_input_delay
     , UI_output_delay
-    , UI_space_before
-    , UI_space_after
-    , UI_space_punctuation
+    , UI_space_before, UI_space_after, UI_space_punctuation
     , UI_delete_unrecognized
-    , UI_show_hints
+    , UI_hints_show, UI_hint_destination, UI_hint_frequency
+    , UI_hint_offset_x, UI_hint_offset_y, UI_hint_size, UI_hint_color 
+    , UI_btn_customize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
     , UI_immediate_shorthands
     , UI_capitalization
     , UI_allow_shift
     , UI_restrict_chords
-    , UI_chord_file
-    , UI_shorthand_file
-    , UI_chord_entries := "0"
-    , UI_shorthand_entries := "0"
-    , UI_chords_enabled := 1
-    , UI_shorthands_enabled := 1
-    , UI_tab := 0
+    , UI_chord_file, UI_shorthand_file
+    , UI_chord_entries
+    , UI_shorthand_entries
+    , UI_chords_enabled, UI_shorthands_enabled
+    , UI_tab
     , UI_locale
     , UI_debugging
 
@@ -737,50 +765,64 @@ BuildMainDialog() {
     Gui, UI_main_window:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, % "  Dictionaries  |  Detection  |  Output  |  About  "
-    Gui, Add, Text, y+20 Section, &Keyboard and language
+    Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
+    Gui, Add, Text, y+20 Section, % "&Keyboard and language"
     Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
-    Gui, Add, GroupBox, xs w310 h140 vUI_chord_entries, Chord dictionary
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, [file name]
-    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, &Open
-    Gui, Add, Button, gBtnEditChordDictionary ys w80, &Edit
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, &Reload
-    Gui, Add, Checkbox, vUI_chords_enabled xs Checked%UI_chords_enabled%, Use &chords
-    Gui, Add, GroupBox, xs-20 y+30 w310 h140 vUI_shorthand_entries, Shorthand dictionary
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, [file name]
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, O&pen
-    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, Edi&t
-    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, Reloa&d
-    Gui, Add, Checkbox, vUI_shorthands_enabled xs Checked%UI_shorthands_enabled%, Use &shorthands
+    Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "[file name]"
+    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
+    Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
+    Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
+    Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "[file name]"
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
+    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
+    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
+    Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
     Gui, Tab, 2
-    Gui, Add, GroupBox, y+20 w310 h180, Chords
-    Gui, Add, Text, xp+20 yp+30 Section, &Detection delay (ms):
-    Gui, Add, Edit, vUI_input_delay Right xp+150 w40, 99
-    Gui, Add, Checkbox, vUI_restrict_chords xs, &Restrict chords while typing
-    Gui, Add, Checkbox, vUI_allow_shift, Allow &Shift in chords 
+    Gui, Add, GroupBox, y+20 w310 h175, Chords
+    Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
+    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40, 99
+    Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
+    Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
-    Gui, Add, GroupBox, xs-20 y+30 w310 h70, % "Shorthands"
+    Gui, Add, GroupBox, xs-20 y+40 w310 h70, % "Shorthands"
     Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
-    Gui, Add, Text, xs-20 y+50 , % "Hints with chords and shorthands:"
-    Gui, Add, DropDownList, vUI_show_hints AltSubmit x+20 w90, % "Off|OSD|Tooltips"
     Gui, Tab, 3
-    Gui, Add, GroupBox, w310 h120 Section, Smart spaces
-    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, In &front of chords
-    Gui, Add, Checkbox, vUI_space_after xp y+10, &After chords and shorthands
-    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, After &punctuation
-    Gui, Add, Text, xs y+30, Auto-&capitalization:
-    Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, Off|For shortcuts|For all input
-    Gui, Add, Text, xs y+m, &Output delay (ms):
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, 99
-    Gui, Tab
-    Gui, Add, Button, Default w80 xm+240 gButtonOK, OK
+    Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
+    Gui, Add, Text, , % "Hint &location"
+    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+170 w120, % "On-screen display|Tooltips"
+    Gui, Add, Text, xs, % "Hints &frequency"
+    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w120, % "Always|Normal|Relaxed"
+    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w140, % "&Adjust display"
+    Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
+    Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
+    Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
+    Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
+    Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
+    Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
+    Gui, Add, Edit, vUI_hint_offset_y w70 Right
+    Gui, Add, Edit, vUI_hint_size w70 Right
+    Gui, Add, Edit, vUI_hint_color w70 Right
     Gui, Tab, 4
-    Gui, Add, Text, Y+50, ZipChord`nversion %version%
-    Gui, Add, Checkbox, y+30 vUI_debugging, &Log this session (debugging)
+    Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
+    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
+    Gui, Add, Checkbox, vUI_space_after xp y+10, % "&After chords and shorthands"
+    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, % "After &punctuation"
+    Gui, Add, Text, xs y+30, % "Auto-&capitalization"
+    Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
+    Gui, Add, Text, xs y+m, % "&Output delay (ms)"
+    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, % "99"
+    Gui, Tab
+    Gui, Add, Button, Default w80 xm+240 gButtonOK, % "OK"
+    Gui, Tab, 5
+    Gui, Add, Text, Y+50, % "ZipChord`nversion " . version
+    Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
     Gui, Font, Underline cBlue
-    Gui, Add, Text, Y+30 gWebsiteLink, Help and documentation
-    Gui, Add, Text, gReleaseLink, Latest releases (check for updates)
+    Gui, Add, Text, Y+30 gWebsiteLink, % "Help and documentation"
+    Gui, Add, Text, gReleaseLink, % "Latest releases (check for updates)"
 
     ; Create taskbar tray menu:
     Menu, Tray, Add, Open Settings, ShowMainDialog
@@ -798,7 +840,6 @@ ShowMainDialog() {
     GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
     GuiControl , , UI_immediate_shorthands, % (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) ? 1 : 0
     GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
-    GuiControl , Choose, UI_show_hints, % settings.hints
     GuiControl , Choose, UI_capitalization, % settings.capitalization
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
@@ -807,9 +848,31 @@ ShowMainDialog() {
     GuiControl , , UI_shorthands_enabled, % settings.shorthands_enabled
     ; debugging is always set to disabled
     GuiControl , , UI_debugging, 0
+    GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
+    GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
+    hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
+    GuiControl , Choose, UI_hint_frequency, % Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting 
+    GuiControl Text, UI_hint_offset_x, % settings.hint_offset_x
+    GuiControl Text, UI_hint_offset_y, % settings.hint_offset_y
+    GuiControl Text, UI_hint_size, % settings.hint_size
+    GuiControl Text, UI_hint_color, % settings.hint_color
+    ShowHintCustomization(false)
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
     Gui, Show,, ZipChord
+}
+
+; Shows or hides controls for hints customization (1 = show, 0 = hide)
+ShowHintCustomization(show_controls := true) {
+    GuiControl, Disable%show_controls%, UI_btn_customize
+    GuiControl, Show%show_controls%, UI_hint_offset_x
+    GuiControl, Show%show_controls%, UI_hint_offset_y
+    GuiControl, Show%show_controls%, UI_hint_size
+    GuiControl, Show%show_controls%, UI_hint_color
+    Loop 5 
+    {
+        GuiControl, Show%show_controls%, UI_hint_%A_Index%
+    }
 }
 
 UpdateLocaleInMainUI(selected_loc) {
@@ -836,7 +899,11 @@ ButtonOK() {
     settings.locale := UI_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
-    settings.hints := UI_show_hints
+    settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
+    settings.hint_offset_x := UI_hint_offset_x
+    settings.hint_offset_y := UI_hint_offset_y
+    settings.hint_size := UI_hint_size
+    settings.hint_color := UI_hint_color
     ; ...and save them to Windows Registry
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
@@ -846,6 +913,9 @@ ButtonOK() {
         WireHotkeys("On")
     if (UI_debugging)
         debug.Start()
+    ; to reflect any changes to OSD UI
+    Gui, UI_OSD:Destroy
+    BuildOSD() 
     CloseMainDialog()
 }
 
@@ -993,7 +1063,7 @@ BuildLocaleDialog() {
     Gui, Add, Button, w80 gButtonNewLocale, &New
     Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
     Gui, Add, GroupBox, ys h330 w460, Locale settings
-    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except dead keys)
+    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except space bar and dead keys)
     Gui, Font, s10, Consolas
     Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
     Gui, Font, s10 w700, Segoe UI
@@ -1202,39 +1272,50 @@ UI_AddShortcut_Adjust(){
     GuiControl, Enable, UI_AddShortcut_text
 }
 
-;; Shortcut Hint OSD
+;; Shortcut Hint UI
 ; -------------------
 
-global UI_hint1
-    , UI_hint2
-    , UI_hint3
+global UI_OSD_line1
+    , UI_OSD_line2
+    , UI_OSD_line3
     , UI_OSD_transparency
     , UI_OSD_fading
+    , UI_OSD_pos_x, UI_OSD_pos_y
+    , UI_OSD_transparent_color  ; gets calculated from settings.hint_color for a nicer effect
+
 BuildOSD() {
+    hint_color := settings.hint_color
+    UI_OSD_transparent_color := ShiftHexColor(hint_color, 1)
     Gui, UI_OSD:Default
-    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
-    Gui, Margin, 10, 10
-    Gui, Color, 40E812
-    Gui, Font, s32, Consolas  ; Set a large font size (32-point).
-    Gui, Add, Text, c3BD511 Center vUI_hint1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
-    Gui, Add, Text, c3BD511 Center vUI_hint2, WWWWWWWWWWWWWWWWWWWWWWWW
-    Gui, Add, Text, c3BD511 Center vUI_hint3, WWWWWWWWWWWWWWWWWWWWWWWW
-    ; Make all pixels of this color transparent and make the text itself translucent (150):
+    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow +HwndOSDHwnd ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
+    size := settings.hint_size
+    Gui, Margin, Round(size/3), Round(size/3)
+    Gui, Color, %UI_OSD_transparent_color%
+    Gui, Font, s%size%, Consolas  ; Set a large font size (32-point).
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Show, NoActivate Center, ZipChord_OSD
+    WinSet, TransColor, %UI_OSD_transparent_color% 150, ZipChord_OSD
+    WinGetPos UI_OSD_pos_x, UI_OSD_pos_y, , , ZipChord_OSD
+    UI_OSD_pos_x += settings.hint_offset_x
+    UI_OSD_pos_y += settings.hint_offset_y
+    Gui, Hide
 }
 ShowHint(line1, line2:="", line3 :="") {
-    if (settings.hints == HINT_TOOLTIP) {
+    if (settings.hints & HINT_TOOLTIP) {
         GetCaret(x, y, , h)
-        ToolTip % line2 . "`n" . line3, x-1.5*h, y+1.5*h
+        ToolTip % line2 . "`n" . line3, x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
         SetTimer, HideToolTip, -1800
     } else {
         UI_OSD_fading := False
-        UI_OSD_transparency := 140
+        UI_OSD_transparency := 150
         Gui, UI_OSD:Default
-        Gui, Show, NoActivate, ZipChord_OSD
-        WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
-        GuiControl,, UI_hint1, % line1
-        GuiControl,, UI_hint2, % ReplaceWithVariants(line2, true)
-        GuiControl,, UI_hint3, % ReplaceWithVariants(line3)
+        GuiControl,, UI_OSD_line1, % line1
+        GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, true)
+        GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
+        Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
+        WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
         SetTimer, HideOSD, -900
     }
 }
@@ -1249,12 +1330,22 @@ HideOSD:
     Gui, UI_OSD:Default
     while(UI_OSD_fading && UI_OSD_transparency) {
         UI_OSD_transparency -= 10
-        WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
+        WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
         Sleep 100
     }
     if (UI_OSD_fading)
         Gui, Hide
 Return
+
+ShiftHexColor(source_color, offset) {
+    Loop 3
+    {
+        component := "0x" . SubStr(source_color, 2 * A_Index - 1, 2)
+        component := component > 0x7f ? component - offset : component + offset
+        new_color .= Format("{:02x}", component)
+    }
+    return new_color
+}
 
 ; The following function for getting caret position more reliably is from a post by plankoe at https://www.reddit.com/r/AutoHotkey/comments/ysuawq/get_the_caret_location_in_any_program/
 GetCaret(ByRef X:="", ByRef Y:="", ByRef W:="", ByRef H:="") {
