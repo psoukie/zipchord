@@ -1,4 +1,31 @@
-﻿#NoEnv
+﻿/**
+*
+*  ZipChord
+*  A customizable hybrid keyboard input method that augments regular
+*  typing with chords and shorthands.
+*  
+*  Copyright © 2021-2023 Pavel Soukenik
+*  
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*  
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*  
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*  
+*  
+*  See the official GitHub page for the documentation, source code, and
+*  to contact the author: https://github.com/psoukie/zipchord/
+*  
+*/
+
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -8,11 +35,7 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
-; ZipChord by Pavel Soukenik
-; Licensed under GPL-3.0
-; See https://github.com/psoukie/zipchord/
-
-global version = "2.0.0-beta"
+global version = "2.0.0-rc.1"
 
 ;; Classes and Variables
 ; -----------------------
@@ -312,6 +335,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     global keys
+    FileInstall, ..\LICENSE, % "LICENSE.txt"
     settings.Read()
     if (settings.preferences & PREF_FIRST_RUN) {
         settings.preferences &= ~PREF_FIRST_RUN
@@ -859,11 +883,18 @@ BuildMainDialog() {
     Gui, Tab
     Gui, Add, Button, Default w80 xm+240 gButtonOK, % "OK"
     Gui, Tab, 5
-    Gui, Add, Text, Y+50, % "ZipChord`nversion " . version
-    Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+    Gui, Add, Text, Y+20, % "ZipChord"
+    Gui, Margin, 15, 5
+    Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
+    Gui, Add, Text, , % "version " . version
+    Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
     Gui, Font, Underline cBlue
-    Gui, Add, Text, Y+30 gWebsiteLink, % "Help and documentation"
-    Gui, Add, Text, gReleaseLink, % "Latest releases (check for updates)"
+    Gui, Add, Text, gLinkToLicense, % "Open the license"
+    Gui, Margin, 15, 15
+    Gui, Add, Text, gLinkToWebsite, % "Help and documentation"
+    Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
+    Gui, Font, norm cDefault
+    Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
 
     ; Create taskbar tray menu:
     Menu, Tray, Add, Open Settings, ShowMainDialog
@@ -981,11 +1012,17 @@ CloseMainDialog() {
         ShowClosingTipDialog()
 }
 
-WebsiteLink:
+LinkToLicense() {
+    if (FileExist("LICENSE.txt"))
+        Run % "LICENSE.txt"
+    else
+        Run https://www.gnu.org/licenses/gpl-3.0.html
+}
+Return
+LinkToWebsite:
     Run https://github.com/psoukie/zipchord#readme
 Return
-
-ReleaseLink:
+LinkToReleases:
     Run https://github.com/psoukie/zipchord/releases
 Return
 
