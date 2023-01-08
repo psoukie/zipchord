@@ -54,13 +54,49 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
     , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
     , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
     , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
-; Hints preferences
+
+; Hints preferences and object
 global HINT_ON := 1
     , HINT_ALWAYS := 2
     , HINT_NORMAL := 4
     , HINT_RELAXED := 8
     , HINT_OSD := 16
     , HINT_TOOLTIP := 32
+global GOLDEN_RATIO := 1.618
+global DELAY_AT_START := 2000
+
+Class HintTimingClass {
+    ; private variables
+    _delay := DELAY_AT_START   ; this varies based on the hint frequency and hints shown
+    _next_tick := A_TickCount  ; stores tick time when next hint is allowed
+    ; public functions
+    HasElapsed() {
+        if (settings.hints & HINT_ALWAYS || A_TickCount > this._next_tick)
+            return True
+        else
+            return False
+    }
+    Extend() {
+        if (settings.hints & HINT_ALWAYS)
+            Return
+        this._delay := Round( this._delay * ( GOLDEN_RATIO**(OrdinalOfHintFrequency(-1) ) ) )
+        this._next_tick := A_TickCount + this._delay
+    }
+    Shorten() {
+        if (settings.hints & HINT_ALWAYS)
+            Return
+        if (settings.hints & HINT_NORMAL)
+            this.Reset()
+        else
+            this._delay := Round( this._delay / 3 )
+    }
+    Reset() {
+        this._delay := DELAY_AT_START
+        this._next_tick := A_TickCount + this._delay
+    }
+}
+hint_delay := New HintTimingClass
+
 ; Other preferences constants
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
@@ -346,8 +382,8 @@ WireHotkeys(state) {
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
-;; Chord Detection
-; ------------------
+;; Shortcuts Detection
+; ---------------------
 
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
@@ -371,7 +407,7 @@ KeyDown:
         chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
     if (StrLen(chord_buffer)==2) {
-        start := A_TickCount 
+        start := A_TickCount
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
@@ -383,14 +419,16 @@ KeyDown:
                 if (settings.hints & HINT_ON) {
                     chord_hint := ""
                     shorthand_hint := ""
-                    if (settings.chords_enabled)
-                        chord_hint := chords.ReverseLookUp(shorthand_buffer)
-                    if (settings.shorthands_enabled)
-                        shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
-                    chord_hint := chord_hint ? chord_hint : "" 
-                    shorthand_hint := shorthand_hint ? shorthand_hint : "" 
-                    if (chord_hint || shorthand_hint)
-                        ShowHint(shorthand_buffer, chord_hint, shorthand_hint)
+                    if (hint_delay.HasElapsed()) {
+                        if (settings.chords_enabled)
+                            chord_hint := chords.ReverseLookUp(shorthand_buffer)
+                        if (settings.shorthands_enabled)
+                            shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
+                        chord_hint := chord_hint ? chord_hint : "" 
+                        shorthand_hint := shorthand_hint ? shorthand_hint : "" 
+                        if (chord_hint || shorthand_hint)
+                            ShowHint(shorthand_buffer, chord_hint, shorthand_hint)
+                    }
                 }
                 ; then, we test if it's a shorthand to be expanded 
                 if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) )
@@ -518,6 +556,7 @@ KeyUp:
             ; if we aren't restricted, we print a chord
             if ( (affixes & AFFIX_SUFFIX) || IsUnrestricted()) {
                 DelayOutput()
+                hint_delay.Shorten()
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
                 OpeningSpace(affixes & AFFIX_SUFFIX)
@@ -572,7 +611,9 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     ; needs to access the following variables
     global capitalize_shorthand
     global shorthand_buffer
+    global hint_delay
     DelayOutput()
+    hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     debug.Log("SHORTHAND " expanded)
     adj := StrLen(shorthand_buffer)
@@ -793,10 +834,10 @@ BuildMainDialog() {
     Gui, Tab, 3
     Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
     Gui, Add, Text, , % "Hint &location"
-    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+170 w120, % "On-screen display|Tooltips"
+    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
     Gui, Add, Text, xs, % "Hints &frequency"
-    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+170 w120, % "Always|Normal|Relaxed"
-    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w140, % "&Adjust display"
+    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
+    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w100, % "&Adjust >>"
     Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
     Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
     Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
@@ -850,8 +891,7 @@ ShowMainDialog() {
     GuiControl , , UI_debugging, 0
     GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
     GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
-    hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
-    GuiControl , Choose, UI_hint_frequency, % Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting 
+    GuiControl , Choose, UI_hint_frequency, % OrdinalOfHintFrequency()
     GuiControl Text, UI_hint_offset_x, % settings.hint_offset_x
     GuiControl Text, UI_hint_offset_y, % settings.hint_offset_y
     GuiControl Text, UI_hint_size, % settings.hint_size
@@ -860,6 +900,12 @@ ShowMainDialog() {
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
     Gui, Show,, ZipChord
+}
+
+OrdinalOfHintFrequency(offset := 0) {
+    hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
+    hint_frequency := Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
+    Return hint_frequency + offset
 }
 
 ; Shows or hides controls for hints customization (1 = show, 0 = hide)
@@ -883,8 +929,9 @@ UpdateLocaleInMainUI(selected_loc) {
 }
 
 ButtonOK() {
-    Gui, Submit, NoHide
     global keys
+    global hint_delay
+    Gui, Submit, NoHide
     ; gather new settings from UI...
     if (RegExMatch(UI_input_delay,"^\d+$") && RegExMatch(UI_output_delay,"^\d+$")) {
             settings.input_delay := UI_input_delay + 0
@@ -915,6 +962,7 @@ ButtonOK() {
         debug.Start()
     ; to reflect any changes to OSD UI
     Gui, UI_OSD:Destroy
+    hint_delay.Reset()
     BuildOSD() 
     CloseMainDialog()
 }
@@ -1202,11 +1250,15 @@ UI_AddShortcut_Build() {
     Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_Adjust, % "&Adjust"
     Gui, Add, GroupBox, xs h120 w360, % "&Chord"
+    Gui, Font, s10, Consolas
     Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord
+    Gui, Font, s10, Segoe UI
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveChord vUI_AddShortcut_btnSaveChord, % "&Save"
     Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
     Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
+    Gui, Font, s10, Consolas
     Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand
+    Gui, Font, s10, Segoe UI
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
     Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
     Gui, Margin, 25, 25
@@ -1303,9 +1355,11 @@ BuildOSD() {
     Gui, Hide
 }
 ShowHint(line1, line2:="", line3 :="") {
+    global hint_delay
+    hint_delay.Extend()
     if (settings.hints & HINT_TOOLTIP) {
         GetCaret(x, y, , h)
-        ToolTip % line2 . "`n" . line3, x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
+        ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " ", x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
         SetTimer, HideToolTip, -1800
     } else {
         UI_OSD_fading := False
