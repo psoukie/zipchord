@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -1281,25 +1281,26 @@ global UI_OSD_line1
     , UI_OSD_transparency
     , UI_OSD_fading
     , UI_OSD_pos_x, UI_OSD_pos_y
+    , UI_OSD_transparent_color  ; gets calculated from settings.hint_color for a nicer effect
 
 BuildOSD() {
+    hint_color := settings.hint_color
+    UI_OSD_transparent_color := ShiftHexColor(hint_color, 1)
     Gui, UI_OSD:Default
     Gui +LastFound +AlwaysOnTop -Caption +ToolWindow +HwndOSDHwnd ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
     size := settings.hint_size
     Gui, Margin, Round(size/3), Round(size/3)
-    Gui, Color, 40E812
+    Gui, Color, %UI_OSD_transparent_color%
     Gui, Font, s%size%, Consolas  ; Set a large font size (32-point).
-    hint_color := settings.hint_color
     Gui, Add, Text, c%hint_color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
     Gui, Add, Text, c%hint_color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWWWWW
     Gui, Add, Text, c%hint_color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWWWWW
     Gui, Show, NoActivate Center, ZipChord_OSD
-    WinSet, TransColor, 40E812 140, ZipChord_OSD
+    WinSet, TransColor, %UI_OSD_transparent_color% 150, ZipChord_OSD
     WinGetPos UI_OSD_pos_x, UI_OSD_pos_y, , , ZipChord_OSD
     UI_OSD_pos_x += settings.hint_offset_x
     UI_OSD_pos_y += settings.hint_offset_y
     Gui, Hide
-    debug.Write("Coord: " . pos_x . " " . pos_y)
 }
 ShowHint(line1, line2:="", line3 :="") {
     if (settings.hints & HINT_TOOLTIP) {
@@ -1308,13 +1309,13 @@ ShowHint(line1, line2:="", line3 :="") {
         SetTimer, HideToolTip, -1800
     } else {
         UI_OSD_fading := False
-        UI_OSD_transparency := 140
+        UI_OSD_transparency := 150
         Gui, UI_OSD:Default
         GuiControl,, UI_OSD_line1, % line1
         GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, true)
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
         Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
-        WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
+        WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
         SetTimer, HideOSD, -900
     }
 }
@@ -1329,12 +1330,22 @@ HideOSD:
     Gui, UI_OSD:Default
     while(UI_OSD_fading && UI_OSD_transparency) {
         UI_OSD_transparency -= 10
-        WinSet, TransColor, 40E812 %UI_OSD_transparency%, ZipChord_OSD
+        WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
         Sleep 100
     }
     if (UI_OSD_fading)
         Gui, Hide
 Return
+
+ShiftHexColor(source_color, offset) {
+    Loop 3
+    {
+        component := "0x" . SubStr(source_color, 2 * A_Index - 1, 2)
+        component := component > 0x7f ? component - offset : component + offset
+        new_color .= Format("{:02x}", component)
+    }
+    return new_color
+}
 
 ; The following function for getting caret position more reliably is from a post by plankoe at https://www.reddit.com/r/AutoHotkey/comments/ysuawq/get_the_caret_location_in_any_program/
 GetCaret(ByRef X:="", ByRef Y:="", ByRef W:="", ByRef H:="") {
