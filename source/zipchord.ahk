@@ -1,4 +1,4 @@
-﻿#NoEnv
+#NoEnv
 #SingleInstance Force
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
@@ -708,6 +708,7 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
+    shorthand_buffer := ""
     debug.Write("Interrupted")
 Return
 
@@ -782,7 +783,7 @@ BuildMainDialog() {
     Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
     Gui, Tab, 2
     Gui, Add, GroupBox, y+20 w310 h175, Chords
-    Gui, Add, Text, xp+20 yp+30 Section, %"&Detection delay (ms)"
+    Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
     Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
     Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
