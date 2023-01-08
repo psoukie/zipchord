@@ -8,7 +8,7 @@ _ZipChord_ fills this gap and lets you type faster and more comfortably by allow
 
 For more details on why combining typing and chords is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).
 
-A [Release Candidate of version 2.0](https://github.com/psoukie/zipchord/releases/) of ZipChord is includes several new features, including an autocomplete of regularly typed "shorthands" and hints for available shortcuts. This page describes the previous stable version and will be gradually updated with a description of the new features.
+A [Release Candidate of version 2.0](https://github.com/psoukie/zipchord/releases/) of ZipChord includes several new features, including an autocomplete of regularly typed "shorthands" and hints for available shortcuts. This page describes the previous stable version and will be gradually updated with a description of the new features.
 
 ## Installation
 
