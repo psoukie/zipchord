@@ -432,7 +432,8 @@ KeyDown:
     }
     if (special_key_map.HasKey(key))
         key := special_key_map[key]
-    key_monitor.Pressed(key)
+    if (key_monitor.IsOn())
+        key_monitor.Pressed(key)
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -569,19 +570,20 @@ KeyUp:
     Critical
     debug.Log("KeyUp")
 
-    key := StrReplace(A_ThisHotkey, "Space", " ")
-    if (SubStr(key, 1, 1) == "~")
-        key := SubStr(key, 2)
-    if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
-        shifted := true
-        key := SubStr(key, 2)
-    } else {
-        shifted := false
+    if (key_monitor.IsOn()) {
+        key := StrReplace(A_ThisHotkey, "Space", " ")
+        if (SubStr(key, 1, 1) == "~")
+            key := SubStr(key, 2)
+        if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
+            shifted := true
+            key := SubStr(key, 2)
+        } else {
+            shifted := false
+        }
+        if (special_key_map.HasKey(key))
+            key := special_key_map[key]
+        key_monitor.Lifted(SubStr(key, 1, 1))
     }
-    if (special_key_map.HasKey(key))
-        key := special_key_map[key]
-    key_monitor.Lifted(SubStr(key, 1, 1))
- 
 
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
     if ( start && chord_candidate == "" && (A_TickCount - start > settings.input_delay) ) {

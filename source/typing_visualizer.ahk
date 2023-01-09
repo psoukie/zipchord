@@ -41,14 +41,14 @@ Class KeyMonitorClass {
     _new_line := false
     __New(details := false) {
         this._mode := details ? 2 : 1
-        Gui, UI_monitor:New, +AlwaysOnTop, % "ZipChord Key Visualization"
+        Gui, UI_monitor:New, , % "ZipChord Key Visualization"
+        Gui, Margin, 20 0
         Gui, Color, ffffff
-        Gui, Margin, 40 20
         Loop 10
         {
-            posx := (A_Index - 1) * 50
-            Gui, Font, s50 bold, Consolas
-            Gui, Add, Text, vUI_monitor_slot%A_Index% xm+%posx% ym-10 Center, % "W"
+            posx := (A_Index - 1) * 40
+            Gui, Font, s32 bold, Consolas
+            Gui, Add, Text, vUI_monitor_slot%A_Index% xm+%posx% ym-14 Center, % "W"
             if (details) {
                 Gui, Font, s12, Segoe UI
                 Gui, Add, Text, vUI_monitor_duration%A_Index% xm+%posx% ym+70 Center, % "99999"
@@ -56,17 +56,15 @@ Class KeyMonitorClass {
                 Gui, Add, Text, vUI_monitor_overlap%A_Index% xm+%posx% ym+100 Center, % "9999"
             }
         }
-        Gui, Show
+        Gui, Show, h80
         this._UpdateUI()
         SetTimer Darken, 100
-        if (this.IsOn())
-            OutputDebug, % "test: " 
     }
     IsOn() {
         return (this._mode > 0) ? 1 : 0
     }
     Pressed(key){
-        if (this._new_line) {
+        if (this._new_line && this._next != 2) {
             this._next := 1
             this._new_line := false
         }
