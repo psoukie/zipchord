@@ -1,5 +1,7 @@
 # ZipChord Keyboard
 
+<img align="right" src="/psoukie/zipchord/wiki/images/zipchord-dictionaries.png" width="300" alt="Dictionaries tab of ZipChord" />
+
 _ZipChord_ is a customizable hybrid keyboard input method for Windows that allows you to seamlessly **combine regular typing with chorded entry**. Chords allow you to type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
 
 Thanks to Zipf's law, even if we used simple chords for only a few dozen words, it would still accelerate a huge amount of our typing. For example, 40% of the text of _The Lord of the Rings_ consists of only 32 words. Unfortunately, I could not find any tool that could reliably detect keyboard shortcuts of more than two keys, and tools dedicated to stenotyping (such as [Plover](http://www.openstenoproject.org/plover/)) by design do not work for regular typing.
