@@ -1,6 +1,6 @@
 # ZipChord Keyboard
 
-<img align="right" src="/psoukie/zipchord/wiki/images/zipchord-dictionaries.png" width="300" alt="Dictionaries tab of ZipChord" />
+<img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-dictionaries.png" width="300" alt="ZipChord options dialog" />
 
 _ZipChord_ is a customizable hybrid keyboard input method for Windows that allows you to seamlessly **combine regular typing with chorded entry**. Chords allow you to type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
 
