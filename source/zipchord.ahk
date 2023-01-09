@@ -35,9 +35,15 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
+#Include typing_visualizer.ahk
+
+if (key_monitor.IsOn()) {
+    Process, Priority, , A
+    SetBatchLines, -1
+}
+
 global version = "2.0.0-rc.1"
 
-#Include typing_visualizer.ahk
 
 ;; Classes and Variables
 ; -----------------------
@@ -496,10 +502,12 @@ KeyDown:
     ; if the key pressed is a space
     if (key==" ") {
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. if last output is a smart space
-            DelayOutput()
+            DelayOutput()                
             SendInput {Backspace} ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
+        if (key_monitor.IsOn())
+            key_monitor.NewLine()
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
     
@@ -606,6 +614,10 @@ KeyUp:
                 hint_delay.Shorten()
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
+
+                if (key_monitor.IsOn())
+                    key_monitor.NewLine()
+
                 OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
@@ -660,6 +672,10 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     global shorthand_buffer
     global hint_delay
     DelayOutput()
+
+    if (key_monitor.IsOn())
+        key_monitor.NewLine()
+
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     debug.Log("SHORTHAND " expanded)
