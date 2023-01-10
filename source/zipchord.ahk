@@ -418,7 +418,6 @@ WireHotkeys(state) {
 ; ---------------------
 
 KeyDown:
-    global key_monitor
     key := StrReplace(A_ThisHotkey, "Space", " ")
     debug.Log("KeyDown " key)
     if (SubStr(key, 1, 1) == "~")
@@ -616,10 +615,8 @@ KeyUp:
                 hint_delay.Shorten()
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
-
                 if (key_monitor.IsOn())
                     key_monitor.NewLine()
-
                 OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
@@ -674,10 +671,8 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     global shorthand_buffer
     global hint_delay
     DelayOutput()
-
     if (key_monitor.IsOn())
         key_monitor.NewLine()
-
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     debug.Log("SHORTHAND " expanded)
@@ -1449,7 +1444,7 @@ ShowHint(line1, line2:="", line3 :="") {
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
         Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        SetTimer, HideOSD, -900
+        SetTimer, HideOSD, -1900
     }
 }
 
@@ -1459,7 +1454,6 @@ Return
 
 HideOSD:
     UI_OSD_fading := true
-    Sleep 1000
     Gui, UI_OSD:Default
     while(UI_OSD_fading && UI_OSD_transparency) {
         UI_OSD_transparency -= 10
