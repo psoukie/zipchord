@@ -1,4 +1,4 @@
-﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.	
+﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the QWERTY layout.	
 
 Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.	
 
