@@ -1,4 +1,4 @@
-﻿/**
+/**
 *
 *  ZipChord
 *  A customizable hybrid keyboard input method that augments regular
@@ -437,6 +437,10 @@ KeyDown:
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
     if (settings.shorthands_enabled || (settings.hints & HINT_ON) ) {
+        if (last_output & OUT_AUTOMATIC)
+            shorthand_buffer := ""
+        if (last_output & OUT_INTERRUPTED & ~OUT_AUTOMATIC)
+            shorthand_buffer := "<<SHORTHAND_BLOCKED>>"
         debug.Log("Shorthand buffer: " shorthand_buffer)
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
@@ -461,7 +465,7 @@ KeyDown:
             }
             shorthand_buffer := ""
         } else {    ; i.e. it was not the end of the word
-            if (last_output & OUT_INTERRUPTED || last_output & OUT_AUTOMATIC)
+            if (last_output & OUT_AUTOMATIC)
                 shorthand_buffer := key
             else
                 shorthand_buffer .= key
@@ -579,7 +583,6 @@ KeyUp:
             affixes := ProcessAffixes(expanded)
             ; if we aren't restricted, we print a chord
             if ( (affixes & AFFIX_SUFFIX) || IsUnrestricted()) {
-                shorthand_buffer := ""
                 DelayOutput()
                 hint_delay.Shorten()
                 debug.Log("OUTPUTTING")
@@ -774,13 +777,14 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
-    shorthand_buffer := ""
     debug.Write("Interrupted")
 Return
 
 Enter_key:
-    last_output := OUT_INTERRUPTED | OUT_CAPITALIZE
+    last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
+    if (key_monitor.IsOn())
+        key_monitor.NewLine()
 Return
 
 ;;  Adding shortcuts 
