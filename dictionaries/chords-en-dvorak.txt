@@ -115,7 +115,7 @@ de	does
 di	did
 sem	seem
 cl	call
-aht	thank
+tha	thank
 
 Other
 -----
@@ -176,14 +176,14 @@ tp	top
 
 Prefixes
 --------
-'r	re~
-'d	de~
-'ds	dis~
-'v	over~
-'n	un~
-'m	mis~
-'o	out~
-'p	pre~
+r'	re~
+d'	de~
+ds'	dis~
+v'	over~
+n'	un~
+m'	mis~
+o'	out~
+p'	pre~
 
 Suffixes
 --------

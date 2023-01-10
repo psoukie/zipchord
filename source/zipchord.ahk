@@ -1,6 +1,7 @@
-/**
+﻿/**
 *
 *  ZipChord
+* 
 *  A customizable hybrid keyboard input method that augments regular
 *  typing with chords and shorthands.
 *  
@@ -343,12 +344,15 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     global keys
-    FileInstall, ..\LICENSE, % "LICENSE.txt"
+    if (A_IsCompiled)
+        FileInstall, ..\LICENSE, % "LICENSE.txt"
     settings.Read()
     if (settings.preferences & PREF_FIRST_RUN) {
         settings.preferences &= ~PREF_FIRST_RUN
-        FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-        FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+        if (A_IsCompiled) {
+            FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
+            FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+        }
     }
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
