@@ -1459,13 +1459,13 @@ Return
 HideOSD:
     UI_OSD_fading := true
     Gui, UI_OSD:Default
-    while(UI_OSD_fading && UI_OSD_transparency) {
+    if (UI_OSD_fading && UI_OSD_transparency > 1) {
         UI_OSD_transparency -= 10
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        Sleep 100
+        SetTimer, HideOSD, -100
+        Return
     }
-    if (UI_OSD_fading)
-        Gui, Hide
+    Gui, Hide
 Return
 
 ShiftHexColor(source_color, offset) {
