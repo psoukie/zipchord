@@ -437,6 +437,7 @@ KeyDown:
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
     if (settings.shorthands_enabled || (settings.hints & HINT_ON) ) {
+        debug.Log("Shorthand buffer: " shorthand_buffer)
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
@@ -574,11 +575,11 @@ KeyUp:
         }
         chord := Arrange(chord_candidate)
         if ( expanded := chords.LookUp(chord)) {
-            shorthand_buffer := ""
             debug.Log("Chord for:" expanded)
             affixes := ProcessAffixes(expanded)
             ; if we aren't restricted, we print a chord
             if ( (affixes & AFFIX_SUFFIX) || IsUnrestricted()) {
+                shorthand_buffer := ""
                 DelayOutput()
                 hint_delay.Shorten()
                 debug.Log("OUTPUTTING")
