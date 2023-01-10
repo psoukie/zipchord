@@ -1,12 +1,12 @@
-﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the QWERTY layout.
+﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.	
 
-Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.
+Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.	
 
-While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.
+While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.	
 
-Note that the category headings are for orientation only. For extended characters to work correctly, the dictionary needs to be saved in UTF-8 encoding with BOM.
+Note that the category headings are for orientation only. For extended characters to work correctly, the dictionary needs to be saved in UTF-8 encoding with BOM.	
 
-See https://github.com/psoukie/zipchord for details.
+See https://github.com/psoukie/zipchord for details.	
 
 Articles
 --------
@@ -22,6 +22,8 @@ or	or
 bu	but
 if	if
 so	so
+dn	then
+bc	because
 
 Prepositions
 ------------
@@ -37,33 +39,9 @@ by	by
 ab	about
 up	up
 io	into
-
-Interrogatives
---------------
-wh	which
-wn	when
-wt	what
-wo	who
-ho	how
-
-Verbs
------
-is	is
-ar	are
-be	be
-wa	was
-hv	have
-nt	not
-wl	will
-cn	can
-hz	has
-do	do
-hd	had
-wou	would
-er	were
-li	like
-bn	been
-ge	get
+ov	over
+af	after
+wo	without
 
 Pronouns
 --------
@@ -73,21 +51,82 @@ Pronouns
 ou	you
 ur	your
 he	he
+hm	him
 his	his
 sh	she
 hr	her
 it	it
+ts	its
 we	we
+us	us
 our	our
 dy	they
 dr	their
 dm	them
 
+Interrogatives
+--------------
+wc	which
+wn	when
+wt	what
+wr	where
+ho	who
+hw	how
+wy	why
+
+Verbs
+-----
+is	is
+ar	are
+wa	was
+er	were
+be	be
+hv	have
+hz	has
+hd	had
+nt	not
+cn	can
+do	do
+wl	will
+cd	could
+wd	would
+sd	should
+li	like
+bn	been
+ge	get
+may	may
+mad	made
+mk	make
+ai	said
+wk	work
+uz	use
+sy	say
+ g	go
+kn	know
+tk	take
+se	see
+lk	look
+cm	come
+thk	think
+wnt	want
+gi	give
+ct	cannot
+de	does
+di	did
+sem	seem
+cl	call
+tha	thank
+
 Other
 -----
+im	I'm
+dt	that
+dis	this
+des	these
 al	all
  o	one
 mo	more
+the	there
 out	out
 ao	also
 tm	time
@@ -95,23 +134,56 @@ sm	some
 js	just
 ne	new
 odr	other
-dn	than
+pl	people
+ n	no
+dan	than
 oy	only
-dt	that
-ds	this
-the	there
-dis	these
+ m	most
+ay	any
+ma	many
+el	well
+fs	first
+vy	very
+now	now
+ev	even
+go	good
+way	way
+ t	two
+yr	year
+bk	back
+day	day
+qn	question
+sc	second
+dg	thing
+ y	yes
+cn'	can’t
+dif	different
+dgh	though
+tru	through
+sr	sorry
+ 1	Monday
+ 2	Tuesday
+ 3	Wednesday
+ 4	Thursday
+ 5	Friday
+ 6	Saturday
+ 7	Sunday
+mv	move
+dir	direction
+nx	next
+sam	same
+tp	top
 
 Prefixes
 --------
-'r	re~
-'d	de~
-'ds	dis~
-'v	over~
-'n	un~
-'m	mis~
-'o	out~
-'p	pre~
+r'	re~
+d'	de~
+ds'	dis~
+v'	over~
+n'	un~
+m'	mis~
+o'	out~
+p'	pre~
 
 Suffixes
 --------
@@ -121,6 +193,6 @@ Suffixes
 's	~’s
 ;t	~tion
 ;l	~ly
-
+	
 Newly added
 -----------
