@@ -41,14 +41,14 @@ Class KeyMonitorClass {
     _new_line := false
     __New(details := false) {
         this._mode := details ? 2 : 1
-        Gui, UI_monitor:New, , % "ZipChord Key Visualization"
-        Gui, Margin, 20 0
+        Gui, UI_monitor:New, +AlwaysOnTop, % "ZipChord Key Visualization"
+        Gui, Margin, 24 0
         Gui, Color, ffffff
         Loop 10
         {
-            posx := (A_Index - 1) * 40
-            Gui, Font, s32 bold, Consolas
-            Gui, Add, Text, vUI_monitor_slot%A_Index% xm+%posx% ym-14 Center, % "W"
+            posx := (A_Index - 1) * 30
+            Gui, Font, s24 bold, Consolas
+            Gui, Add, Text, vUI_monitor_slot%A_Index% xm+%posx% ym-8 Center, % "W"
             if (details) {
                 Gui, Font, s12, Segoe UI
                 Gui, Add, Text, vUI_monitor_duration%A_Index% xm+%posx% ym+70 Center, % "99999"
@@ -56,14 +56,13 @@ Class KeyMonitorClass {
                 Gui, Add, Text, vUI_monitor_overlap%A_Index% xm+%posx% ym+100 Center, % "9999"
             }
         }
-        Gui, Show, h80
-        this._UpdateUI()
-        SetTimer Darken, 100
+        Gui, Show, h62
+        this._UpdateUI(true)
     }
     IsOn() {
         return (this._mode > 0) ? 1 : 0
     }
-    Pressed(key){
+    Pressed(key) {
         if (this._new_line && this._next != 2) {
             this._next := 1
             this._new_line := false
@@ -80,7 +79,7 @@ Class KeyMonitorClass {
     Lifted(key){
         slot := this._keys[key]
         this._ends[slot] := A_TickCount
-        this._statuses[slot] := 120
+        this._statuses[slot] := 144
         if (this._mode == 2) {
             this._overlaps[slot] := 0
             if (this._statuses[this._last] == 255)
@@ -93,6 +92,7 @@ Class KeyMonitorClass {
             }
         }
         this._UpdateUI()
+        SetTimer Timer_KeyVisualizerDarken, 100
     }
     NewLine() {
         this._new_line := true
@@ -101,7 +101,7 @@ Class KeyMonitorClass {
         Gui, UI_monitor:Default
         Loop 10
         {
-            val := this._statuses[%A_Index%]
+            val := this._statuses[A_Index]
             if ( (! refresh) && ( val == 255 ||  val == 120) || (refresh && val != 120 && val != 255) ) {
                 GuiControl, UI_monitor:, UI_monitor_slot%A_Index%, % ReplaceWithVariants(this._slots[A_Index], true)
                 if (this._statuses[A_Index] == 255) {
@@ -126,15 +126,21 @@ Class KeyMonitorClass {
     _Darken() {
         Loop 10
         {
-            if (this._statuses[A_Index] && this._statuses[A_Index] != 255)
-                this._statuses[A_Index] -= 20
+            if (this._statuses[A_Index] > 0 && this._statuses[A_Index] != 255) {
+                this._statuses[A_Index] -= 18
+                changed := true
+            }
         }
-        this._UpdateUI(true)
+        if (changed)
+            this._UpdateUI(true)
+        else
+            SetTimer Timer_KeyVisualizerDarken, Off
     }
 }
 
 key_monitor := New KeyMonitorClass
 
-Darken() {
+Timer_KeyVisualizerDarken() {
+    global key_monitor
     key_monitor._Darken()
 }
