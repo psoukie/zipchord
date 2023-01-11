@@ -890,7 +890,8 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40, % "99"
     Gui, Tab
-    Gui, Add, Button, Default w80 xm+240 gButtonOK, % "OK"
+    Gui, Add, Button, Default w80 xm+240 ym+450 gButtonOK, % "OK"
+    Gui, Add, Button, Default w80 xm+140 ym+450 gButtonApply, % "Apply"
     Gui, Tab, 5
     Gui, Add, Text, Y+20, % "ZipChord"
     Gui, Margin, 15, 5
@@ -968,7 +969,16 @@ UpdateLocaleInMainUI(selected_loc) {
     GuiControl, Choose, UI_locale, % selected_loc
 }
 
-ButtonOK() {
+
+ButtonOK:
+ApplyMainSettings("OK")
+return
+
+ButtonApply:
+ApplyMainSettings("Apply")
+return
+
+ApplyMainSettings(arg) {
     global keys
     global hint_delay
     Gui, Submit, NoHide
@@ -1004,7 +1014,9 @@ ButtonOK() {
     Gui, UI_OSD:Destroy
     hint_delay.Reset()
     BuildOSD() 
-    CloseMainDialog()
+    if (arg != "Apply") {
+        CloseMainDialog()
+    }
 }
 
 UI_main_windowGuiClose() {
