@@ -859,7 +859,7 @@ BuildMainDialog() {
     Gui, Tab, 2
     Gui, Add, GroupBox, y+20 w310 h175, Chords
     Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
-    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40, 99
+    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40 Number, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
     Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
@@ -879,7 +879,7 @@ BuildMainDialog() {
     Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
     Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
     Gui, Add, Edit, vUI_hint_offset_y w70 Right
-    Gui, Add, Edit, vUI_hint_size w70 Right
+    Gui, Add, Edit, vUI_hint_size w70 Right Number
     Gui, Add, Edit, vUI_hint_color w70 Right
     Gui, Tab, 4
     Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
@@ -889,7 +889,7 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+30, % "Auto-&capitalization"
     Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, % "99"
+    Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
     Gui, Tab
     Gui, Add, Button, w80 xm+140 ym+450 gButtonApply, % "Apply"
     Gui, Add, Button, Default w80 xm+240 ym+450 gButtonOK, % "OK"
@@ -971,8 +971,8 @@ UpdateLocaleInMainUI(selected_loc) {
 }
 
 ButtonOK:
-    ApplyMainSettings()
-    CloseMainDialog()
+    if (ApplyMainSettings())
+        CloseMainDialog()
 return
 
 ButtonApply:
@@ -984,13 +984,8 @@ ApplyMainSettings() {
     global hint_delay
     Gui, Submit, NoHide
     ; gather new settings from UI...
-    if (RegExMatch(UI_input_delay,"^\d+$") && RegExMatch(UI_output_delay,"^\d+$")) {
-            settings.input_delay := UI_input_delay + 0
-            settings.output_delay := UI_output_delay + 0
-    } else {
-        MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
-        Return
-    }
+    settings.input_delay := UI_input_delay + 0
+    settings.output_delay := UI_output_delay + 0
     settings.capitalization := UI_capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
@@ -998,10 +993,19 @@ ApplyMainSettings() {
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
     settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
-    settings.hint_offset_x := UI_hint_offset_x
-    settings.hint_offset_y := UI_hint_offset_y
+    if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
+        MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
+        Return false
+    } else settings.hint_offset_x := temp
+    if ( (temp:=SanitizeNumber(UI_hint_offset_y)) == "ERROR") {
+        MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
+        Return false
+    } else settings.hint_offset_y := temp
     settings.hint_size := UI_hint_size
-    settings.hint_color := UI_hint_color
+    if ( (temp:=SanitizeNumber(UI_hint_color, true)) =="ERROR") {
+        MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
+        Return false
+    } else settings.hint_color := temp
     ; ...and save them to Windows Registry
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
@@ -1014,7 +1018,8 @@ ApplyMainSettings() {
     ; to reflect any changes to OSD UI
     Gui, UI_OSD:Destroy
     hint_delay.Reset()
-    BuildOSD() 
+    BuildOSD()
+    Return true
 }
 
 UI_main_windowGuiClose() {
@@ -1446,6 +1451,23 @@ HideOSD:
     if (UI_OSD_fading)
         Gui, Hide
 Return
+
+; Process input to ensure it is an integer or a color hex code, return number or "ERROR" 
+SanitizeNumber(orig, hex_color := false) {
+    sanitized := Trim(orig)
+    format := "integer"
+    if (hex_color) {
+        format := "xdigit"
+        if (SubStr(orig, 1, 1) == "#")
+            sanitized := SubStr(orig, 2)
+        if (StrLen(sanitized)!=6)
+            return "ERROR"
+    }
+    if sanitized is %format%
+        return sanitized
+    else
+        return "ERROR"
+}
 
 ShiftHexColor(source_color, offset) {
     Loop 3
