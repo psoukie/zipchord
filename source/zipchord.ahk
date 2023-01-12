@@ -566,6 +566,7 @@ KeyUp:
         final_difference := difference
         chord_buffer := ""
         start := 0
+        chord_shifted := false
         debug.Log("/KeyUp-chord")
         Critical Off
         Return
@@ -575,10 +576,10 @@ KeyUp:
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord_candidate != "") {
         if (InStr(chord_candidate, "+")) {
-            ;if Shift is not allowed as a chord key, we just capitalize the chord.
+            ;if Shift is not allowed as a chord key, and it's pressed within a chord, we should capitalize the output.
             if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
-            fixed_output |= OUT_CAPITALIZE
-            chord_candidate := StrReplace(chord_candidate, "+")
+                chord_shifted := true
+                chord_candidate := StrReplace(chord_candidate, "+")
             }
         }
         chord := Arrange(chord_candidate)
@@ -597,7 +598,7 @@ KeyUp:
                     SendInput % expanded
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
-                    if ( (fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
+                    if ( ((fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF)) || chord_shifted )
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
                         SendInput % "{Text}" expanded
