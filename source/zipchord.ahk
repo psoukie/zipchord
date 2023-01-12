@@ -36,7 +36,11 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
-global version = "2.0.0-rc.1"
+global version = "2.0.0-rc.2"
+;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
+;@Ahk2Exe-SetName ZipChord
+;@Ahk2Exe-SetDescription ZipChord 2.0 RC 2
+;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;; Classes and Variables
 ; -----------------------
