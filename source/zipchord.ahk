@@ -1252,16 +1252,16 @@ ButtonDeleteLocale(){
 }
 
 ButtonRenameLocale() {
-    temp_loc := new localeClass
     InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_loc_name)
     if ErrorLevel
         Return
-    IniRead, locale_exists, locales.ini, % locale_name, all
-    if (locale_exists == "ERROR") {
+    IniRead, locale_exists, locales.ini, %new_name%, all
+    if (locale_exists != "ERROR") {
         MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
             IfMsgBox No
                 Return
     }
+    temp_loc := new localeClass
     LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
     IniDelete, locales.ini, % UI_loc_name
     SavePropertiesToIni(temp_loc, new_name, "locales.ini")
