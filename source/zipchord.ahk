@@ -650,10 +650,13 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     global capitalize_shorthand
     global shorthand_buffer
     global hint_delay
+    global special_key_map
     DelayOutput()
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     debug.Log("SHORTHAND " expanded)
+    For _, k in special_key_map
+        shorthand_buffer := StrReplace(shorthand_buffer, k)
     adj := StrLen(shorthand_buffer)
     if (! immediate)
         adj++
