@@ -378,7 +378,8 @@ WireHotkeys(state) {
     {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
-            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
+            if (state=="On")     
+                MsgBox, , % "ZipChord", % Format("The current keyboard layout does not include the unmodified key '{}'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key)
             Continue
         }
         Hotkey, % "~+" key, KeyDown, %state%
@@ -566,6 +567,7 @@ KeyUp:
         final_difference := difference
         chord_buffer := ""
         start := 0
+        chord_shifted := false
         debug.Log("/KeyUp-chord")
         Critical Off
         Return
@@ -575,10 +577,10 @@ KeyUp:
     ; when another key is lifted (so we could check for false triggers in rolls) we test and expand the chord
     if (chord_candidate != "") {
         if (InStr(chord_candidate, "+")) {
-            ;if Shift is not allowed as a chord key, we just capitalize the chord.
+            ;if Shift is not allowed as a chord key, and it's pressed within a chord, we should capitalize the output.
             if (!(settings.chording & CHORD_ALLOW_SHIFT)) {
-            fixed_output |= OUT_CAPITALIZE
-            chord_candidate := StrReplace(chord_candidate, "+")
+                chord_shifted := true
+                chord_candidate := StrReplace(chord_candidate, "+")
             }
         }
         chord := Arrange(chord_candidate)
@@ -597,7 +599,7 @@ KeyUp:
                     SendInput % expanded
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
-                    if ( (fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF) )
+                    if ( ((fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF)) || chord_shifted )
                         SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
                     else
                         SendInput % "{Text}" expanded
@@ -858,7 +860,7 @@ BuildMainDialog() {
     Gui, Tab, 2
     Gui, Add, GroupBox, y+20 w310 h175, Chords
     Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
-    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40, 99
+    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40 Number, 99
     Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
     Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
     Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
@@ -878,7 +880,7 @@ BuildMainDialog() {
     Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
     Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
     Gui, Add, Edit, vUI_hint_offset_y w70 Right
-    Gui, Add, Edit, vUI_hint_size w70 Right
+    Gui, Add, Edit, vUI_hint_size w70 Right Number
     Gui, Add, Edit, vUI_hint_color w70 Right
     Gui, Tab, 4
     Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
@@ -888,7 +890,7 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+30, % "Auto-&capitalization"
     Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40, % "99"
+    Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
     Gui, Tab
     Gui, Add, Button, w80 xm+140 ym+450 gButtonApply, % "Apply"
     Gui, Add, Button, Default w80 xm+240 ym+450 gButtonOK, % "OK"
@@ -970,8 +972,8 @@ UpdateLocaleInMainUI(selected_loc) {
 }
 
 ButtonOK:
-    ApplyMainSettings()
-    CloseMainDialog()
+    if (ApplyMainSettings())
+        CloseMainDialog()
 return
 
 ButtonApply:
@@ -983,13 +985,8 @@ ApplyMainSettings() {
     global hint_delay
     Gui, Submit, NoHide
     ; gather new settings from UI...
-    if (RegExMatch(UI_input_delay,"^\d+$") && RegExMatch(UI_output_delay,"^\d+$")) {
-            settings.input_delay := UI_input_delay + 0
-            settings.output_delay := UI_output_delay + 0
-    } else {
-        MsgBox ,, ZipChord, % "The chord sensitivity needs to be entered as a whole number."
-        Return
-    }
+    settings.input_delay := UI_input_delay + 0
+    settings.output_delay := UI_output_delay + 0
     settings.capitalization := UI_capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
@@ -997,10 +994,19 @@ ApplyMainSettings() {
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
     settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
-    settings.hint_offset_x := UI_hint_offset_x
-    settings.hint_offset_y := UI_hint_offset_y
+    if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
+        MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
+        Return false
+    } else settings.hint_offset_x := temp
+    if ( (temp:=SanitizeNumber(UI_hint_offset_y)) == "ERROR") {
+        MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
+        Return false
+    } else settings.hint_offset_y := temp
     settings.hint_size := UI_hint_size
-    settings.hint_color := UI_hint_color
+    if ( (temp:=SanitizeNumber(UI_hint_color, true)) =="ERROR") {
+        MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
+        Return false
+    } else settings.hint_color := temp
     ; ...and save them to Windows Registry
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
@@ -1013,7 +1019,8 @@ ApplyMainSettings() {
     ; to reflect any changes to OSD UI
     Gui, UI_OSD:Destroy
     hint_delay.Reset()
-    BuildOSD() 
+    BuildOSD()
+    Return true
 }
 
 UI_main_windowGuiClose() {
@@ -1109,6 +1116,7 @@ BtnReloadShorthandDictionary() {
 ButtonCustomizeLocale() {
     WireHotkeys("Off")  ; so the user can edit the values without interference
     Gui, Submit, NoHide ; to get the currently selected UI_locale
+    Gui, +Disabled
     ShowLocaleDialog(UI_locale)
 }
 
@@ -1157,6 +1165,7 @@ global UI_locale_window
 
 BuildLocaleDialog() {
     Gui, UI_locale_window:New, , Keyboard and language settings
+    Gui, UI_locale_window:+OwnerUI_main_window
     Gui, Margin, 15, 15
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, Section, &Locale name
@@ -1246,16 +1255,16 @@ ButtonDeleteLocale(){
 }
 
 ButtonRenameLocale() {
-    temp_loc := new localeClass
     InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_loc_name)
     if ErrorLevel
         Return
-    IniRead, locale_exists, locales.ini, % locale_name, all
-    if (locale_exists == "ERROR") {
+    IniRead, locale_exists, locales.ini, %new_name%, all
+    if (locale_exists != "ERROR") {
         MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
             IfMsgBox No
                 Return
     }
+    temp_loc := new localeClass
     LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
     IniDelete, locales.ini, % UI_loc_name
     SavePropertiesToIni(temp_loc, new_name, "locales.ini")
@@ -1269,6 +1278,7 @@ UI_locale_windowGuiEscape() {
     Close_Locale_Window()
 }
 Close_Locale_Window() {
+    Gui, UI_main_window:-Disabled
     Gui, UI_locale_window:Submit
     UpdateLocaleInMainUI(global UI_loc_name)
 }
@@ -1306,33 +1316,24 @@ UI_AddShortcut_Build() {
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_Adjust, % "&Adjust"
     Gui, Add, GroupBox, xs h120 w360, % "&Chord"
     Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord
+    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord gUI_AddShortcut_Focus_Chord
     Gui, Font, s10, Segoe UI
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveChord vUI_AddShortcut_btnSaveChord, % "&Save"
     Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
     Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
     Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand
+    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand gUI_AddShortcut_Focus_Shorthand
     Gui, Font, s10, Segoe UI
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
     Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
     Gui, Margin, 25, 25
-    Gui, Add, Button, gUI_AddShortcut_Close x265 y+30 w100, % "Close" 
+    Gui, Add, Button, gUI_AddShortcut_Close x265 y+30 w100 Default, % "Close" 
 }
 UI_AddShortcut_Show(exp) {
     WireHotkeys("Off")  ; so the user can edit values without interference
     Gui, UI_AddShortcut:Default
     GuiControl, Disable, UI_AddShortcut_text
     GuiControl,, UI_AddShortcut_text, % exp
-    if (chord := chords.ReverseLookUp(exp)) {
-        GuiControl, Disable, UI_AddShortcut_chord
-        GuiControl, , UI_AddShortcut_chord, % chord
-        GuiControl, Disable, UI_AddShortcut_btnSaveChord
-    } else {
-        GuiControl, Enable, UI_AddShortcut_chord
-        GuiControl, , UI_AddShortcut_chord, % ""
-        GuiControl, Enable, UI_AddShortcut_btnSaveChord
-    }
     if (shorthand := shorthands.ReverseLookUp(exp)) {
         GuiControl, Disable, UI_AddShortcut_shorthand
         GuiControl, , UI_AddShortcut_shorthand, % shorthand
@@ -1341,8 +1342,25 @@ UI_AddShortcut_Show(exp) {
         GuiControl, Enable, UI_AddShortcut_shorthand
         GuiControl, , UI_AddShortcut_shorthand, % ""
         GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
+        GuiControl, Focus, UI_AddShortcut_shorthand
+    }
+    if (chord := chords.ReverseLookUp(exp)) {
+        GuiControl, Disable, UI_AddShortcut_chord
+        GuiControl, , UI_AddShortcut_chord, % chord
+        GuiControl, Disable, UI_AddShortcut_btnSaveChord
+    } else {
+        GuiControl, Enable, UI_AddShortcut_chord
+        GuiControl, , UI_AddShortcut_chord, % ""
+        GuiControl, Enable, UI_AddShortcut_btnSaveChord
+        GuiControl, Focus, UI_AddShortcut_chord
     }
     Gui, Show, w410
+}
+UI_AddShortcut_Focus_Chord() {
+    GuiControl, +Default, UI_AddShortcut_btnSaveChord
+}
+UI_AddShortcut_Focus_Shorthand() {
+    GuiControl, +Default, UI_AddShortcut_btnSaveShorthand
 }
 UI_AddShortcutGuiClose() {
     UI_AddShortcut_Close()
@@ -1445,6 +1463,23 @@ HideOSD:
     if (UI_OSD_fading)
         Gui, Hide
 Return
+
+; Process input to ensure it is an integer or a color hex code, return number or "ERROR" 
+SanitizeNumber(orig, hex_color := false) {
+    sanitized := Trim(orig)
+    format := "integer"
+    if (hex_color) {
+        format := "xdigit"
+        if (SubStr(orig, 1, 1) == "#")
+            sanitized := SubStr(orig, 2)
+        if (StrLen(sanitized)!=6)
+            return "ERROR"
+    }
+    if sanitized is %format%
+        return sanitized
+    else
+        return "ERROR"
+}
 
 ShiftHexColor(source_color, offset) {
     Loop 3
