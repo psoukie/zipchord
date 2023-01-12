@@ -378,7 +378,8 @@ WireHotkeys(state) {
     {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
-            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
+            if (state=="On")     
+                MsgBox, , % "ZipChord", % Format("The current keyboard layout does not include the unmodified key '{}'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key)
             Continue
         }
         Hotkey, % "~+" key, KeyDown, %state%
@@ -1115,6 +1116,7 @@ BtnReloadShorthandDictionary() {
 ButtonCustomizeLocale() {
     WireHotkeys("Off")  ; so the user can edit the values without interference
     Gui, Submit, NoHide ; to get the currently selected UI_locale
+    Gui, +Disabled
     ShowLocaleDialog(UI_locale)
 }
 
@@ -1163,6 +1165,7 @@ global UI_locale_window
 
 BuildLocaleDialog() {
     Gui, UI_locale_window:New, , Keyboard and language settings
+    Gui, UI_locale_window:+OwnerUI_main_window
     Gui, Margin, 15, 15
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, Section, &Locale name
@@ -1275,6 +1278,7 @@ UI_locale_windowGuiEscape() {
     Close_Locale_Window()
 }
 Close_Locale_Window() {
+    Gui, UI_main_window:-Disabled
     Gui, UI_locale_window:Submit
     UpdateLocaleInMainUI(global UI_loc_name)
 }
@@ -1312,33 +1316,24 @@ UI_AddShortcut_Build() {
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_Adjust, % "&Adjust"
     Gui, Add, GroupBox, xs h120 w360, % "&Chord"
     Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord
+    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord gUI_AddShortcut_Focus_Chord
     Gui, Font, s10, Segoe UI
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveChord vUI_AddShortcut_btnSaveChord, % "&Save"
     Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
     Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
     Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand
+    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand gUI_AddShortcut_Focus_Shorthand
     Gui, Font, s10, Segoe UI
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
     Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
     Gui, Margin, 25, 25
-    Gui, Add, Button, gUI_AddShortcut_Close x265 y+30 w100, % "Close" 
+    Gui, Add, Button, gUI_AddShortcut_Close x265 y+30 w100 Default, % "Close" 
 }
 UI_AddShortcut_Show(exp) {
     WireHotkeys("Off")  ; so the user can edit values without interference
     Gui, UI_AddShortcut:Default
     GuiControl, Disable, UI_AddShortcut_text
     GuiControl,, UI_AddShortcut_text, % exp
-    if (chord := chords.ReverseLookUp(exp)) {
-        GuiControl, Disable, UI_AddShortcut_chord
-        GuiControl, , UI_AddShortcut_chord, % chord
-        GuiControl, Disable, UI_AddShortcut_btnSaveChord
-    } else {
-        GuiControl, Enable, UI_AddShortcut_chord
-        GuiControl, , UI_AddShortcut_chord, % ""
-        GuiControl, Enable, UI_AddShortcut_btnSaveChord
-    }
     if (shorthand := shorthands.ReverseLookUp(exp)) {
         GuiControl, Disable, UI_AddShortcut_shorthand
         GuiControl, , UI_AddShortcut_shorthand, % shorthand
@@ -1347,8 +1342,25 @@ UI_AddShortcut_Show(exp) {
         GuiControl, Enable, UI_AddShortcut_shorthand
         GuiControl, , UI_AddShortcut_shorthand, % ""
         GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
+        GuiControl, Focus, UI_AddShortcut_shorthand
+    }
+    if (chord := chords.ReverseLookUp(exp)) {
+        GuiControl, Disable, UI_AddShortcut_chord
+        GuiControl, , UI_AddShortcut_chord, % chord
+        GuiControl, Disable, UI_AddShortcut_btnSaveChord
+    } else {
+        GuiControl, Enable, UI_AddShortcut_chord
+        GuiControl, , UI_AddShortcut_chord, % ""
+        GuiControl, Enable, UI_AddShortcut_btnSaveChord
+        GuiControl, Focus, UI_AddShortcut_chord
     }
     Gui, Show, w410
+}
+UI_AddShortcut_Focus_Chord() {
+    GuiControl, +Default, UI_AddShortcut_btnSaveChord
+}
+UI_AddShortcut_Focus_Shorthand() {
+    GuiControl, +Default, UI_AddShortcut_btnSaveShorthand
 }
 UI_AddShortcutGuiClose() {
     UI_AddShortcut_Close()
