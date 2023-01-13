@@ -1,16 +1,14 @@
-# ZipChord Keyboard
+# ZipChord
 
-<img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-dictionaries.png" width="300" alt="ZipChord options dialog" />
+<img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-demo-border.gif" width="500" alt="ZipChord demo" />
 
-_ZipChord_ is a customizable hybrid keyboard input method for Windows that allows you to seamlessly **combine regular typing with chorded entry**. Chords allow you to type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
+ZipChord allows you to seamlessly **combine regular typing with chording and shorthands**. Chords let you type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
 
-Thanks to Zipf's law, even if we used simple chords for only a few dozen words, it would still accelerate a huge amount of our typing. For example, 40% of the text of _The Lord of the Rings_ consists of only 32 words. Unfortunately, I could not find any tool that could reliably detect keyboard shortcuts of more than two keys, and tools dedicated to stenotyping (such as [Plover](http://www.openstenoproject.org/plover/)) by design do not work for regular typing.
+You don't need to learn stenotyping though. Languages obey Zipf's law, so it takes only a few dozen chords to accelerate a huge amount of all your typing. For example, just 32 unique words make up 40% of the whole text of _The Lord of the Rings_. So even a small number of chords with simple key combinations can make your typing faster and more comfortable.
 
-_ZipChord_ fills this gap and lets you type faster and more comfortably by allowing you to use chords for frequent words (or phrases) together with regular typing.
+I could not find any software that supported keyboard shortcuts of more than two keys and regular typing at the same time, so I built ZipChord to make this type of typing possible.
 
-For more details on why combining typing and chords is useful, see [ZipChord: Hybrid Chorded Keyboard](https://pavelsoukenik.com/zipchord-hybrid-chorded-keyboard).
-
-A [Release Candidate of version 2.0](https://github.com/psoukie/zipchord/releases/) of ZipChord includes several new features, including an autocomplete of regularly typed "shorthands" and hints for available shortcuts. This page describes the latest stable version. The [documentation for the new version](https://github.com/psoukie/zipchord/wiki) is  being created underthe  Wiki tab.
+A [Release Candidate of version 2.0](https://github.com/psoukie/zipchord/releases/) of ZipChord includes several new features, including a completion of regularly typed "shorthands" and hints for available shortcuts. This page describes the latest stable version. The [documentation for the new version](https://github.com/psoukie/zipchord/wiki) is  being created under the Wiki tab.
 
 ## Installation
 
@@ -36,6 +34,8 @@ To use the chord, press the keys that make up the chord simultaneously and relea
 
 ## Menu Options
 
+<img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-dictionaries.png" width="350" alt="ZipChord options dialog" />
+
 To open the menu, click the _ZipChord_ icon in the Windows tray or press and hold **Ctrl-Shift-C** until the menu appears.
 
 ### Dictionary
@@ -46,11 +46,11 @@ The dictionary tab shows the current keyboard and language settings and the curr
 
 **Chord dictionary** section shows the currently used dictionary and the number of chords that are available. It allows you to select a different dictionary file using the **Open** button, edit its chords directly in default text editor (**Edit**), and reload a dictionary when you make changes to the chord file directly in an editor (**Reload**).
 
-You can download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point. 
+You can download a dictionary from the [dictionaries](https://github.com/psoukie/zipchord/tree/main/dictionaries) folder to use as a starting point.
 
 **Notes:**
 * See [below](#chord-dictionary) for more details about the chord dictionary file and advanced features.
-* When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.  
+* When you add chords by selecting text and pressing and holding Ctrl-C, the new chord is added automatically, and you do not need to open the menu to edit or reload the dictionary.
 
 ### Detection
 
@@ -71,7 +71,7 @@ This tab allows you to change the typing and chord behavior to adjust how spaces
 **Smart spaces**: The smart spaces--when enabled--ensure correct spacing around chords and punctuation. This means that spaces are added automatically if you haven't typed one manually, but the smart spaces are also dynamically removed if they are followed by punctuation or you type another space manually. Smart spaces can be enabled to be inserted as follows:
 - **In front of chords**
 - **After chords**
-- **After punctuation**  
+- **After punctuation**
 
 **Auto-capitalization** offers three options:
 - **Off:** Automatic capitalization is not used. (To manually capitalize a chorded word, press Shift in parallel with the chord entry.)
@@ -82,7 +82,7 @@ This tab allows you to change the typing and chord behavior to adjust how spaces
 
 ### About
 
-This tab shows you the information about the current version with links to this documentation and latest releases. There is also a checkbox for debugging that can help when submitting bug reports:  
+This tab shows you the information about the current version with links to this documentation and latest releases. There is also a checkbox for debugging that can help when submitting bug reports:
 
 **Log this session (debugging):** When enabled, ZipChord will start store debugging information after you click **OK**. Type the input that exhibits a problem. When you reopen the ZipChord menu, the debugging will stops, and the text file with the debugging info will open.
 
