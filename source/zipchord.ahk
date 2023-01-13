@@ -360,6 +360,8 @@ Initialize() {
         LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
     }
     BuildMainDialog()
+    Gui, UI_main_window:+Disabled ; for loading
+    ShowMainDialog()
     UI_Tray_Build()
     BuildLocaleDialog()
     BuildOSD()
@@ -367,8 +369,8 @@ Initialize() {
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
+    Gui, UI_main_window:-Disabled
     WireHotkeys("On")
-    ShowMainDialog()
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
@@ -851,13 +853,13 @@ BuildMainDialog() {
     Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "[file name]"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "[file name]"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
