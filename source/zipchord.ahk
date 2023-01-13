@@ -1133,7 +1133,7 @@ ShowClosingTipDialog() {
     Gui, UI_closing_tip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcut.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
+    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
     Gui, Add, Checkbox, vUI_dont_show_again, % "Do &not show this tip again."
     Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
     Gui, Show, w470
@@ -1179,7 +1179,7 @@ BuildLocaleDialog() {
     Gui, Add, Button, w80 gButtonNewLocale, &New
     Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
     Gui, Add, GroupBox, ys h330 w460, Locale settings
-    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except space bar and dead keys)
+    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except spacebar and dead keys)
     Gui, Font, s10, Consolas
     Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
     Gui, Font, s10 w700, Segoe UI
