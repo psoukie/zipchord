@@ -360,6 +360,7 @@ Initialize() {
         LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
     }
     BuildMainDialog()
+    UI_Tray_Build()
     BuildLocaleDialog()
     BuildOSD()
     UI_AddShortcut_Build()
@@ -911,12 +912,22 @@ BuildMainDialog() {
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
     Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+}
 
     ; Create taskbar tray menu:
-    Menu, Tray, Add, Open Settings, ShowMainDialog
-    Menu, Tray, Default, Open Settings
-    Menu, Tray, Tip, ZipChord
+UI_Tray_Build() {
+    Menu, Tray, NoStandard
+    Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", ShowMainDialog
+    Menu, Tray, Add, % "Add Shortcut`t(hold Ctrl+C)", AddShortcut
+    Menu, Tray, Add  ;  adds a horizontal line
+    Menu, Tray, Add, % "Quit", QuitApp
+    Menu, Tray, Default, 1&
+    Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
+}
+
+QuitApp() {
+    ExitApp
 }
 
 ShowMainDialog() {
