@@ -360,14 +360,16 @@ Initialize() {
         LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
     }
     BuildMainDialog()
+    Gui, UI_main_window:+Disabled ; for loading
+    ShowMainDialog()
+    UI_Tray_Build()
     BuildLocaleDialog()
     BuildOSD()
-    UI_AddShortcut_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
+    Gui, UI_main_window:-Disabled
     WireHotkeys("On")
-    ShowMainDialog()
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
@@ -810,10 +812,6 @@ AddShortcut() {
     copied_text := Trim(Clipboard)
     Clipboard := clipboard_backup
     clipboard_backup := ""
-    if (!StrLen(copied_text)) {
-        MsgBox ,, ZipChord, % "First, select a word you would like to define a chord for, and then press and hold Ctrl+C again."
-        Return
-    }
     UI_AddShortcut_Show(copied_text)
 }
 
@@ -850,13 +848,13 @@ BuildMainDialog() {
     Gui, Add, DropDownList, y+10 w150 vUI_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "[file name]"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "[file name]"
+    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
@@ -911,12 +909,22 @@ BuildMainDialog() {
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
     Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+}
 
     ; Create taskbar tray menu:
-    Menu, Tray, Add, Open Settings, ShowMainDialog
-    Menu, Tray, Default, Open Settings
-    Menu, Tray, Tip, ZipChord
+UI_Tray_Build() {
+    Menu, Tray, NoStandard
+    Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", ShowMainDialog
+    Menu, Tray, Add, % "Add Shortcut`t(hold Ctrl+C)", AddShortcut
+    Menu, Tray, Add  ;  adds a horizontal line
+    Menu, Tray, Add, % "Quit", QuitApp
+    Menu, Tray, Default, 1&
+    Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
+}
+
+QuitApp() {
+    ExitApp
 }
 
 ShowMainDialog() {
@@ -1133,7 +1141,7 @@ ShowClosingTipDialog() {
     Gui, UI_closing_tip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcut.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
+    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
     Gui, Add, Checkbox, vUI_dont_show_again, % "Do &not show this tip again."
     Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
     Gui, Show, w470
@@ -1179,7 +1187,7 @@ BuildLocaleDialog() {
     Gui, Add, Button, w80 gButtonNewLocale, &New
     Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
     Gui, Add, GroupBox, ys h330 w460, Locale settings
-    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except space bar and dead keys)
+    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except spacebar and dead keys)
     Gui, Font, s10, Consolas
     Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
     Gui, Font, s10 w700, Segoe UI
@@ -1310,6 +1318,7 @@ global UI_AddShortcut_text
     , UI_AddShortcut_shorthand
     , UI_AddShortcut_btnSaveChord
     , UI_AddShortcut_btnSaveShorthand
+    , UI_AddShortcut_btnAdjust
 UI_AddShortcut_Build() {
     Gui, UI_AddShortcut:New, , % "Add Shortcut"
     Gui, Margin, 25, 25
@@ -1317,7 +1326,7 @@ UI_AddShortcut_Build() {
     Gui, Add, Text, Section, % "&Expanded text"
     Gui, Margin, 15, 15
     Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text
-    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_Adjust, % "&Adjust"
+    Gui, Add, Button, x+20 yp w100 vUI_AddShortcut_btnAdjust gUI_AddShortcut_Adjust, % "&Adjust"
     Gui, Add, GroupBox, xs h120 w360, % "&Chord"
     Gui, Font, s10, Consolas
     Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord gUI_AddShortcut_Focus_Chord
@@ -1331,40 +1340,42 @@ UI_AddShortcut_Build() {
     Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
     Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
     Gui, Margin, 25, 25
-    Gui, Add, Button, gUI_AddShortcut_Close x265 y+30 w100 Default, % "Close" 
+    Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
 }
 UI_AddShortcut_Show(exp) {
     WireHotkeys("Off")  ; so the user can edit values without interference
+    UI_AddShortcut_Build()
     Gui, UI_AddShortcut:Default
-    GuiControl, Disable, UI_AddShortcut_text
-    GuiControl,, UI_AddShortcut_text, % exp
-    if (shorthand := shorthands.ReverseLookUp(exp)) {
-        GuiControl, Disable, UI_AddShortcut_shorthand
-        GuiControl, , UI_AddShortcut_shorthand, % shorthand
-        GuiControl, Disable, UI_AddShortcut_btnSaveShorthand
+    if (exp=="") {
+        GuiControl, Hide, UI_AddShortcut_btnAdjust
+        GuiControl, Focus, UI_AddShortcut_text
     } else {
-        GuiControl, Enable, UI_AddShortcut_shorthand
-        GuiControl, , UI_AddShortcut_shorthand, % ""
-        GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
-        GuiControl, Focus, UI_AddShortcut_shorthand
-    }
-    if (chord := chords.ReverseLookUp(exp)) {
-        GuiControl, Disable, UI_AddShortcut_chord
-        GuiControl, , UI_AddShortcut_chord, % chord
-        GuiControl, Disable, UI_AddShortcut_btnSaveChord
-    } else {
-        GuiControl, Enable, UI_AddShortcut_chord
-        GuiControl, , UI_AddShortcut_chord, % ""
-        GuiControl, Enable, UI_AddShortcut_btnSaveChord
-        GuiControl, Focus, UI_AddShortcut_chord
+        GuiControl, Disable, UI_AddShortcut_text
+        GuiControl,, UI_AddShortcut_text, % exp
+        if (shorthand := shorthands.ReverseLookUp(exp)) {
+            GuiControl, Disable, UI_AddShortcut_shorthand
+            GuiControl, , UI_AddShortcut_shorthand, % shorthand
+            GuiControl, Disable, UI_AddShortcut_btnSaveShorthand
+        } else GuiControl, Focus, UI_AddShortcut_shorthand
+        if (chord := chords.ReverseLookUp(exp)) {
+            GuiControl, Disable, UI_AddShortcut_chord
+            GuiControl, , UI_AddShortcut_chord, % chord
+            GuiControl, Disable, UI_AddShortcut_btnSaveChord
+        } else GuiControl, Focus, UI_AddShortcut_chord
     }
     Gui, Show, w410
 }
 UI_AddShortcut_Focus_Chord() {
-    GuiControl, +Default, UI_AddShortcut_btnSaveChord
+        GuiControlGet, isEnabled, Enabled, UI_AddShortcut_chord
+    GuiControlGet, UI_AddShortcut_chord
+    if (isEnabled && UI_AddShortcut_chord != "")
+        GuiControl, +Default, UI_AddShortcut_btnSaveChord
 }
 UI_AddShortcut_Focus_Shorthand() {
-    GuiControl, +Default, UI_AddShortcut_btnSaveShorthand
+    GuiControlGet, isEnabled, Enabled, UI_AddShortcut_shorthand
+    GuiControlGet, UI_AddShortcut_shorthand
+    if (isEnabled && UI_AddShortcut_shorthand != "")
+        GuiControl, +Default, UI_AddShortcut_btnSaveShorthand
 }
 UI_AddShortcutGuiClose() {
     UI_AddShortcut_Close()
@@ -1373,7 +1384,7 @@ UI_AddShortcutGuiEscape() {
     UI_AddShortcut_Close()
 }
 UI_AddShortcut_Close() {
-    Gui, UI_AddShortcut:Hide
+    Gui, UI_AddShortcut:Destroy
     if (settings.chords_enabled || settings.shorthands_enabled)
         WireHotkeys("On")  ; resume normal mode
 }
@@ -1392,13 +1403,16 @@ UI_AddShortcut_SaveShorthand(){
     }
 }
 UI_AddShortcut_Adjust(){
+    GuiControl, Disable, UI_AddShortcut_btnAdjust
     GuiControl, , UI_AddShortcut_chord, % ""
+    GuiControl, , UI_AddShortcut_shorthand, % ""
+    Sleep 10
     GuiControl, Enable, UI_AddShortcut_chord
     GuiControl, Enable, UI_AddShortcut_btnSaveChord
-    GuiControl, , UI_AddShortcut_shorthand, % ""
     GuiControl, Enable, UI_AddShortcut_shorthand
     GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
     GuiControl, Enable, UI_AddShortcut_text
+    GuiControl, Focus, UI_AddShortcut_text
 }
 
 ;; Shortcut Hint UI
