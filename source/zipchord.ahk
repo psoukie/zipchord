@@ -323,7 +323,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ~^+c::
     Sleep 300
     if GetKeyState("c","P")
-        ShowMainDialog()
+        UI_Main_Show()
     Return
 
 ; An always-on Ctrl+C hotkey held long to add a new chord to the dictionary.
@@ -359,16 +359,16 @@ Initialize() {
     } else {
         LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
     }
-    BuildMainDialog()
-    Gui, UI_main_window:+Disabled ; for loading
-    ShowMainDialog()
+    UI_Main_Build()
+    Gui, UI_Main:+Disabled ; for loading
+    UI_Main_Show()
     UI_Tray_Build()
-    BuildLocaleDialog()
-    BuildOSD()
+    UI_Locale_Build()
+    UI_OSD_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
-    Gui, UI_main_window:-Disabled
+    Gui, UI_Main:-Disabled
     WireHotkeys("On")
 }
 
@@ -818,17 +818,17 @@ AddShortcut() {
     UI_AddShortcut_Show(copied_text)
 }
 
-;; Main UI
-; ---------
+;; Main Dialog UI
+; ----------------
 
-; variables holding the UI elements and selections
+; variables holding the UI elements and selections (These should technically all be named UI_Main_xyz but I am using UI_xyz as a shortcut for the main dialog vars)
 global UI_input_delay
     , UI_output_delay
     , UI_space_before, UI_space_after, UI_space_punctuation
     , UI_delete_unrecognized
     , UI_hints_show, UI_hint_destination, UI_hint_frequency
     , UI_hint_offset_x, UI_hint_offset_y, UI_hint_size, UI_hint_color 
-    , UI_btn_customize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
+    , UI_btnCustomize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
     , UI_immediate_shorthands
     , UI_capitalization
     , UI_allow_shift
@@ -838,17 +838,17 @@ global UI_input_delay
     , UI_shorthand_entries
     , UI_chords_enabled, UI_shorthands_enabled
     , UI_tab
-    , UI_locale
+    , UI_selected_locale
     , UI_debugging
 
 ; Prepare UI
-BuildMainDialog() {
-    Gui, UI_main_window:New, , ZipChord
+UI_Main_Build() {
+    Gui, UI_Main:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
     Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
     Gui, Add, Text, y+20 Section, % "&Keyboard and language"
-    Gui, Add, DropDownList, y+10 w150 vUI_locale
+    Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
@@ -877,7 +877,7 @@ BuildMainDialog() {
     Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
     Gui, Add, Text, xs, % "Hints &frequency"
     Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
-    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w100, % "&Adjust >>"
+    Gui, Add, Button, gShowHintCustomization vUI_btnCustomize xs w100, % "&Adjust >>"
     Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
     Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
     Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
@@ -897,8 +897,8 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
     Gui, Tab
-    Gui, Add, Button, w80 xm+140 ym+450 gButtonApply, % "Apply"
-    Gui, Add, Button, Default w80 xm+240 ym+450 gButtonOK, % "OK"
+    Gui, Add, Button, w80 xm+140 ym+450 gUI_btnApply, % "Apply"
+    Gui, Add, Button, Default w80 xm+240 ym+450 gUI_btnOK, % "OK"
     Gui, Tab, 5
     Gui, Add, Text, Y+20, % "ZipChord"
     Gui, Margin, 15, 5
@@ -917,7 +917,7 @@ BuildMainDialog() {
     ; Create taskbar tray menu:
 UI_Tray_Build() {
     Menu, Tray, NoStandard
-    Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", ShowMainDialog
+    Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", UI_Main_Show
     Menu, Tray, Add, % "Add Shortcut`t(hold Ctrl+C)", AddShortcut
     Menu, Tray, Add  ;  adds a horizontal line
     Menu, Tray, Add, % "Quit", QuitApp
@@ -930,9 +930,9 @@ QuitApp() {
     ExitApp
 }
 
-ShowMainDialog() {
+UI_Main_Show() {
     debug.Stop()
-    Gui, UI_main_window:Default
+    Gui, UI_Main:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
@@ -968,7 +968,7 @@ OrdinalOfHintFrequency(offset := 0) {
 
 ; Shows or hides controls for hints customization (1 = show, 0 = hide)
 ShowHintCustomization(show_controls := true) {
-    GuiControl, Disable%show_controls%, UI_btn_customize
+    GuiControl, Disable%show_controls%, UI_btnCustomize
     GuiControl, Show%show_controls%, UI_hint_offset_x
     GuiControl, Show%show_controls%, UI_hint_offset_y
     GuiControl, Show%show_controls%, UI_hint_size
@@ -981,17 +981,17 @@ ShowHintCustomization(show_controls := true) {
 
 UpdateLocaleInMainUI(selected_loc) {
     IniRead, sections, locales.ini
-    Gui, UI_main_window:Default
-    GuiControl, , UI_locale, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, Choose, UI_locale, % selected_loc
+    Gui, UI_Main:Default
+    GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, Choose, UI_selected_locale, % selected_loc
 }
 
-ButtonOK:
+UI_btnOK:
     if (ApplyMainSettings())
-        CloseMainDialog()
+        UI_Main_Close()
 return
 
-ButtonApply:
+UI_btnApply:
     ApplyMainSettings()
 return
 
@@ -1005,7 +1005,7 @@ ApplyMainSettings() {
     settings.capitalization := UI_capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
-    settings.locale := UI_locale
+    settings.locale := UI_selected_locale
     settings.chords_enabled := UI_chords_enabled
     settings.shorthands_enabled := UI_shorthands_enabled
     settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
@@ -1026,7 +1026,7 @@ ApplyMainSettings() {
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
-    LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
+    LoadPropertiesFromIni(keys, UI_selected_locale, "locales.ini")
     if (UI_chords_enabled || UI_shorthands_enabled)
         WireHotkeys("On")
     if (UI_debugging)
@@ -1034,22 +1034,22 @@ ApplyMainSettings() {
     ; to reflect any changes to OSD UI
     Gui, UI_OSD:Destroy
     hint_delay.Reset()
-    BuildOSD()
+    UI_OSD_Build()
     Return true
 }
 
-UI_main_windowGuiClose() {
-    CloseMainDialog()
+UI_MainGuiClose() {
+    UI_Main_Close()
 }
-UI_main_windowGuiEscape() {
-    CloseMainDialog()
+UI_MainGuiEscape() {
+    UI_Main_Close()
 }
 
-CloseMainDialog() {
-    Gui, UI_main_window:Default
+UI_Main_Close() {
+    Gui, UI_Main:Default
     Gui, Submit
     if (settings.preferences & PREF_SHOW_CLOSING_TIP)
-        ShowClosingTipDialog()
+        UI_ClosingTip_Show()
 }
 
 LinkToLicense() {
@@ -1074,7 +1074,7 @@ UpdateDictionaryUI() {
         filestr := "..." SubStr(settings.chord_file, -34)
     else
         filestr := settings.chord_file
-    Gui, UI_main_window:Default
+    Gui, UI_Main:Default
     GuiControl Text, UI_chord_file, %filestr%
     entriesstr := "Chord dictionary (" chords.entries
     entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
@@ -1130,69 +1130,68 @@ BtnReloadShorthandDictionary() {
 
 ButtonCustomizeLocale() {
     WireHotkeys("Off")  ; so the user can edit the values without interference
-    Gui, Submit, NoHide ; to get the currently selected UI_locale
+    Gui, Submit, NoHide ; to get the currently selected UI_selected_locale
     Gui, +Disabled
-    ShowLocaleDialog(UI_locale)
+    UI_Locale_Show(UI_selected_locale)
 }
 
 ;; Closing Tip UI
 ; ----------------
 
-global UI_dont_show_again := 0
+global UI_ClosingTip_dont_show := 0
 
-ShowClosingTipDialog() {
-    Gui, UI_closing_tip:New, , % "ZipChord"
+UI_ClosingTip_Show() {
+    Gui, UI_ClosingTip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
-    Gui, Add, Checkbox, vUI_dont_show_again, % "Do &not show this tip again."
-    Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
+    Gui, Add, Checkbox, vUI_ClosingTip_dont_show, % "Do &not show this tip again."
+    Gui, Add, Button, gUI_ClosingTip_btnOK x370 w80 Default, OK
     Gui, Show, w470
 }
-BtnCloseTip() {
-    Gui, UI_closing_tip:Submit
-    if (UI_dont_show_again) {
+UI_ClosingTip_btnOK() {
+    Gui, UI_ClosingTip:Submit
+    if (UI_ClosingTip_dont_show) {
         settings.preferences &= ~PREF_SHOW_CLOSING_TIP
         settings.Write()
     }
 }
-UI_closing_tipGuiClose() {
-    Gui, UI_closing_tip:Submit
+UI_ClosingTipGuiClose() {
+    Gui, UI_ClosingTip:Submit
 }
-UI_closing_tipGuiEscape() {
-    Gui, UI_closing_tip:Submit
+UI_ClosingTipGuiEscape() {
+    Gui, UI_ClosingTip:Submit
 }
 
 ;; Locale UI
 ; -----------
 
-global UI_locale_window
-    , UI_loc_name
-    , UI_loc_all
-    , UI_loc_space_after_plain
-    , UI_loc_space_after_shift
-    , UI_loc_capitalizing_plain
-    , UI_loc_capitalizing_shift
-    , UI_loc_remove_space_plain
-    , UI_loc_remove_space_shift
-    , UI_loc_other_plain
-    , UI_loc_other_shift
+global UI_Locale_name
+    , UI_Locale_all
+    , UI_Locale_space_after_plain
+    , UI_Locale_space_after_shift
+    , UI_Locale_capitalizing_plain
+    , UI_Locale_capitalizing_shift
+    , UI_Locale_remove_space_plain
+    , UI_Locale_remove_space_shift
+    , UI_Locale_other_plain
+    , UI_Locale_other_shift
 
-BuildLocaleDialog() {
-    Gui, UI_locale_window:New, , Keyboard and language settings
-    Gui, UI_locale_window:+OwnerUI_main_window
+UI_Locale_Build() {
+    Gui, UI_Locale:New, , Keyboard and language settings
+    Gui, UI_Locale:+OwnerUI_Main
     Gui, Margin, 15, 15
     Gui, Font, s10, Segoe UI
     Gui, Add, Text, Section, &Locale name
-    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI
-    Gui, Add, Button, y+30 w80 gButtonRenameLocale, &Rename
-    Gui, Add, Button, w80 gButtonDeleteLocale, &Delete 
-    Gui, Add, Button, w80 gButtonNewLocale, &New
-    Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
+    Gui, Add, DropDownList, w120 vUI_Locale_name gUI_Locale_Change
+    Gui, Add, Button, y+30 w80 gUI_Locale_btnRename, &Rename
+    Gui, Add, Button, w80 gUI_Locale_btnDelete, &Delete 
+    Gui, Add, Button, w80 gUI_Locale_btnNew, &New
+    Gui, Add, Button, y+90 w80 gUI_Locale_Close Default, Close
     Gui, Add, GroupBox, ys h330 w460, Locale settings
     Gui, Add, Text, xp+20 yp+30 Section, &All keys (except spacebar and dead keys)
     Gui, Font, s10, Consolas
-    Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
+    Gui, Add, Edit, y+10 w420 r1 vUI_Locale_all
     Gui, Font, s10 w700, Segoe UI
     Gui, Add, Text, yp+40, Punctuation
     Gui, Add, Text, xs+160 yp, Unmodified keys
@@ -1202,21 +1201,21 @@ BuildLocaleDialog() {
     Gui, Add, Text, y+20, Follow by a space
     Gui, Add, Text, y+20, Capitalize after
     Gui, Add, Text, y+20, Other
-    Gui, Add, Button, xs+240 yp+40 w100 gButtonSaveLocale, Save Changes
+    Gui, Add, Button, xs+240 yp+40 w100 gUI_Locale_btnSave, Save Changes
     Gui, Font, s10, Consolas
-    Gui, Add, Edit, xs+160 ys Section w120 r1 vUI_loc_remove_space_plain
-    Gui, Add, Edit, xs w120 r1 vUI_loc_space_after_plain
-    Gui, Add, Edit, xs w120 r1 vUI_loc_capitalizing_plain
-    Gui, Add, Edit, xs w120 r1 vUI_loc_other_plain
-    Gui, Add, Edit, xs+140 ys Section w120 r1 vUI_loc_remove_space_shift
-    Gui, Add, Edit, xs w120 r1 vUI_loc_space_after_shift
-    Gui, Add, Edit, xs w120 r1 vUI_loc_capitalizing_shift
-    Gui, Add, Edit, xs w120 r1 vUI_loc_other_shift
+    Gui, Add, Edit, xs+160 ys Section w120 r1 vUI_Locale_remove_space_plain
+    Gui, Add, Edit, xs w120 r1 vUI_Locale_space_after_plain
+    Gui, Add, Edit, xs w120 r1 vUI_Locale_capitalizing_plain
+    Gui, Add, Edit, xs w120 r1 vUI_Locale_other_plain
+    Gui, Add, Edit, xs+140 ys Section w120 r1 vUI_Locale_remove_space_shift
+    Gui, Add, Edit, xs w120 r1 vUI_Locale_space_after_shift
+    Gui, Add, Edit, xs w120 r1 vUI_Locale_capitalizing_shift
+    Gui, Add, Edit, xs w120 r1 vUI_Locale_other_shift
 }
 
 ; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.  
-ShowLocaleDialog(locale_name) {
-    Gui, UI_locale_window:Default
+UI_Locale_Show(locale_name) {
+    Gui, UI_Locale:Default
     loc_obj := new localeClass
     IniRead, sections, locales.ini
     if (locale_name) {
@@ -1225,52 +1224,52 @@ ShowLocaleDialog(locale_name) {
         locales := StrSplit(sections, "`n")
         locale_name := locales[1]
     }
-    GuiControl, , UI_loc_name, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, Choose, UI_loc_name, % locale_name
-    GuiControl, , UI_loc_all, % loc_obj.all
-    GuiControl, , UI_loc_remove_space_plain, % loc_obj.remove_space_plain
-    GuiControl, , UI_loc_remove_space_shift, % loc_obj.remove_space_shift
-    GuiControl, , UI_loc_space_after_plain, % loc_obj.space_after_plain
-    GuiControl, , UI_loc_space_after_shift, % loc_obj.space_after_shift
-    GuiControl, , UI_loc_capitalizing_plain, % loc_obj.capitalizing_plain
-    GuiControl, , UI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
-    GuiControl, , UI_loc_other_plain, % loc_obj.other_plain
-    GuiControl, , UI_loc_other_shift, % loc_obj.other_shift
+    GuiControl, , UI_Locale_name, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, Choose, UI_Locale_name, % locale_name
+    GuiControl, , UI_Locale_all, % loc_obj.all
+    GuiControl, , UI_Locale_remove_space_plain, % loc_obj.remove_space_plain
+    GuiControl, , UI_Locale_remove_space_shift, % loc_obj.remove_space_shift
+    GuiControl, , UI_Locale_space_after_plain, % loc_obj.space_after_plain
+    GuiControl, , UI_Locale_space_after_shift, % loc_obj.space_after_shift
+    GuiControl, , UI_Locale_capitalizing_plain, % loc_obj.capitalizing_plain
+    GuiControl, , UI_Locale_capitalizing_shift, % loc_obj.capitalizing_shift
+    GuiControl, , UI_Locale_other_plain, % loc_obj.other_plain
+    GuiControl, , UI_Locale_other_shift, % loc_obj.other_shift
     Gui Submit, NoHide
     Gui, Show
 }
 
 ; when the locale name dropdown changes: 
-ChangeLocaleUI() {
-    Gui, UI_locale_window:Submit
-    ShowLocaleDialog(UI_loc_name)
+UI_Locale_Change() {
+    Gui, UI_Locale:Submit
+    UI_Locale_Show(UI_Locale_name)
 }
 
-ButtonNewLocale() {
+UI_Locale_btnNew() {
     InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
         if ErrorLevel
             Return
     new_loc := New localeClass
     SavePropertiesToIni(new_loc, new_name, "locales.ini")
-    ShowLocaleDialog(new_name)
+    UI_Locale_Show(new_name)
 }
 
-ButtonDeleteLocale(){
+UI_Locale_btnDelete(){
     IniRead, sections, locales.ini
     If (! InStr(sections, "`n")) {
-        MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_loc_name)
+        MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_Locale_name)
         Return
     }
-    MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", UI_loc_name)
+    MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", UI_Locale_name)
     IfMsgBox Yes
     {
-        IniDelete, locales.ini, % UI_loc_name
-        ShowLocaleDialog(false)
+        IniDelete, locales.ini, % UI_Locale_name
+        UI_Locale_Show(false)
     }
 }
 
-ButtonRenameLocale() {
-    InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_loc_name)
+UI_Locale_btnRename() {
+    InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_Locale_name)
     if ErrorLevel
         Return
     IniRead, locale_exists, locales.ini, %new_name%, all
@@ -1280,37 +1279,37 @@ ButtonRenameLocale() {
                 Return
     }
     temp_loc := new localeClass
-    LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
-    IniDelete, locales.ini, % UI_loc_name
+    LoadPropertiesFromIni(temp_loc, UI_Locale_name, "locales.ini")
+    IniDelete, locales.ini, % UI_Locale_name
     SavePropertiesToIni(temp_loc, new_name, "locales.ini")
-    ShowLocaleDialog(new_name)
+    UI_Locale_Show(new_name)
 }
 
-UI_locale_windowGuiClose() {
-    Close_Locale_Window()
+UI_LocaleGuiClose() {
+    UI_Locale_Close()
 }
-UI_locale_windowGuiEscape() {
-    Close_Locale_Window()
+UI_LocaleGuiEscape() {
+    UI_Locale_Close()
 }
-Close_Locale_Window() {
-    Gui, UI_main_window:-Disabled
-    Gui, UI_locale_window:Submit
-    UpdateLocaleInMainUI(global UI_loc_name)
+UI_Locale_Close() {
+    Gui, UI_Main:-Disabled
+    Gui, UI_Locale:Submit
+    UpdateLocaleInMainUI(global UI_Locale_name)
 }
 
-ButtonSaveLocale() {
+UI_Locale_btnSave() {
     new_loc := new localeClass
-    Gui, UI_locale_window:Submit, NoHide
-    new_loc.all := UI_loc_all
-    new_loc.space_after_plain := UI_loc_space_after_plain
-    new_loc.space_after_shift := UI_loc_space_after_shift
-    new_loc.capitalizing_plain := UI_loc_capitalizing_plain
-    new_loc.capitalizing_shift := UI_loc_capitalizing_shift
-    new_loc.remove_space_plain := UI_loc_remove_space_plain
-    new_loc.remove_space_shift := UI_loc_remove_space_shift
-    new_loc.other_plain := UI_loc_other_plain
-    new_loc.other_shift := UI_loc_other_shift
-    SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
+    Gui, UI_Locale:Submit, NoHide
+    new_loc.all := UI_Locale_all
+    new_loc.space_after_plain := UI_Locale_space_after_plain
+    new_loc.space_after_shift := UI_Locale_space_after_shift
+    new_loc.capitalizing_plain := UI_Locale_capitalizing_plain
+    new_loc.capitalizing_shift := UI_Locale_capitalizing_shift
+    new_loc.remove_space_plain := UI_Locale_remove_space_plain
+    new_loc.remove_space_shift := UI_Locale_remove_space_shift
+    new_loc.other_plain := UI_Locale_other_plain
+    new_loc.other_shift := UI_Locale_other_shift
+    SavePropertiesToIni(new_loc, UI_Locale_name, "locales.ini")
 }
 
 ;; Add Shortcut UI
@@ -1429,7 +1428,7 @@ global UI_OSD_line1
     , UI_OSD_pos_x, UI_OSD_pos_y
     , UI_OSD_transparent_color  ; gets calculated from settings.hint_color for a nicer effect
 
-BuildOSD() {
+UI_OSD_Build() {
     hint_color := settings.hint_color
     UI_OSD_transparent_color := ShiftHexColor(hint_color, 1)
     Gui, UI_OSD:Default
@@ -1464,7 +1463,7 @@ ShowHint(line1, line2:="", line3 :="") {
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
         Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        SetTimer, HideOSD, -900
+        SetTimer, UI_OSD_Hide, -900
     }
 }
 
@@ -1472,7 +1471,7 @@ HideToolTip:
     ToolTip
 Return
 
-HideOSD:
+UI_OSD_Hide:
     UI_OSD_fading := true
     Sleep 1000
     Gui, UI_OSD:Default
