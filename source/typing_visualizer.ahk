@@ -57,6 +57,7 @@ Class KeyMonitorClass {
             }
         }
         Gui, Show, h62
+        this._darken_fn := ObjBindMethod(this, "_Darken")
         this._UpdateUI(true)
     }
     IsOn() {
@@ -92,7 +93,8 @@ Class KeyMonitorClass {
             }
         }
         this._UpdateUI()
-        SetTimer Timer_KeyVisualizerDarken, 100
+        darken := this._darken_fn
+        SetTimer % darken, 100
     }
     NewLine() {
         this._new_line := true
@@ -131,16 +133,12 @@ Class KeyMonitorClass {
                 changed := true
             }
         }
+        darken := this._darken_fn
         if (changed)
             this._UpdateUI(true)
         else
-            SetTimer Timer_KeyVisualizerDarken, Off
+            SetTimer % darken, Off
     }
 }
 
 key_monitor := New KeyMonitorClass
-
-Timer_KeyVisualizerDarken() {
-    global key_monitor
-    key_monitor._Darken()
-}
