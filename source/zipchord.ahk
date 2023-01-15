@@ -42,6 +42,10 @@ global version = "2.0.0-rc.2"
 ;@Ahk2Exe-SetDescription ZipChord 2.0 RC 2
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
+;@Ahk2Exe-IgnoreBegin
+    #Include *i testing.ahk
+;@Ahk2Exe-IgnoreEnd
+
 ;; Classes and Variables
 ; -----------------------
 
@@ -422,6 +426,10 @@ WireHotkeys(state) {
 
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
+    ;@Ahk2Exe-IgnoreBegin
+    if (testing.mode == TEST_RECORD)
+        testing.Write(A_TickCount . "`tKeyDown`t" . key)
+    ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyDown " key)
     if (SubStr(key, 1, 1) == "~")
         key := SubStr(key, 2)
@@ -566,6 +574,10 @@ Return
 
 KeyUp:
     Critical
+    ;@Ahk2Exe-IgnoreBegin
+    if (testing.mode == TEST_RECORD)
+        testing.Write(A_TickCount . "`tKeyUp`t" . key)
+    ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyUp")
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
     if ( start && chord_candidate == "" && (A_TickCount - start > settings.input_delay) ) {
