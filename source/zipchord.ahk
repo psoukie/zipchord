@@ -427,8 +427,8 @@ WireHotkeys(state) {
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
     ;@Ahk2Exe-IgnoreBegin
-    if (testing.mode == TEST_RECORD)
-        testing.Write(A_TickCount . "`tKeyDown`t" . key)
+    if (test.mode == TEST_RECORDING)
+        test.Log(key, TEST_TO_INPUT)
     ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyDown " key)
     if (SubStr(key, 1, 1) == "~")
@@ -575,8 +575,8 @@ Return
 KeyUp:
     Critical
     ;@Ahk2Exe-IgnoreBegin
-    if (testing.mode == TEST_RECORD)
-        testing.Write(A_TickCount . "`tKeyUp`t" . key)
+    if (test.mode == TEST_RECORDING)
+        test.Log(A_ThisHotkey, TEST_TO_INPUT)
     ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyUp")
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
