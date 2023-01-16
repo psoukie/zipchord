@@ -68,7 +68,7 @@ Class TestingClass {
     Stop() {
         this.Log("<<End of input>>", TEST_TO_INPUT)
         this.Log("<<End of output>>", TEST_TO_OUTPUT)
-        this.Write("Recording ended.`nOpening the files for review.`nPress Ctrl-X for another command.")
+        this.Write("Recording stopped.`nOpening the files for review.`nPress Ctrl-X for another command.")
         this._mode := TEST_STANDBY
         if (this._test_output_file != "") {
             this._test_output_file.Close()

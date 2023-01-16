@@ -43,8 +43,17 @@ global version = "2.0.0-rc.2"
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;@Ahk2Exe-IgnoreBegin
+if (A_Args[1] != "test-vs")
     #Include *i testing.ahk
 ;@Ahk2Exe-IgnoreEnd
+
+OutputKeys(output) {
+    ;@Ahk2Exe-IgnoreBegin
+    if (test.mode>TEST_STANDBY)
+        test.Log(output, TEST_TO_OUTPUT)
+    ;@Ahk2Exe-IgnoreEnd
+    SendInput % output
+}
 
 ;; Classes and Variables
 ; -----------------------
@@ -427,8 +436,10 @@ WireHotkeys(state) {
 KeyDown:
     key := StrReplace(A_ThisHotkey, "Space", " ")
     ;@Ahk2Exe-IgnoreBegin
-    if (test.mode == TEST_RECORDING)
+    if (test.mode == TEST_RECORDING) {
         test.Log(key, TEST_TO_INPUT)
+        test.Log(key, TEST_TO_OUTPUT)
+    }
     ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyDown " key)
     if (SubStr(key, 1, 1) == "~")
@@ -512,7 +523,7 @@ KeyDown:
     if (key==" ") {
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. if last output is a smart space
             DelayOutput()
-            SendInput {Backspace} ; delete any smart-space
+            OutputKeys("{Backspace}") ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
@@ -526,12 +537,12 @@ KeyDown:
         new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             DelayOutput()
-            SendInput {Backspace}{Backspace}
+            OutputKeys("{Backspace 2}")
             difference |= DIF_REMOVED_SMART_SPACE
             if (shifted)
-                SendInput +%key%
+                OutputKeys("+" . key)
             else
-                SendInput %key%
+                OutputKeys(key)
         }
     }
 
@@ -541,7 +552,7 @@ KeyDown:
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( settings.spacing & SPACE_PUNCTUATION ) {
             DelayOutput()
-            SendInput {Space}
+            OutputKeys("{Space}")
             difference |= DIF_EXTRA_SPACE
             new_output |= OUT_SPACE | OUT_AUTOMATIC
         } else {
@@ -565,7 +576,7 @@ KeyDown:
             if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
                 DelayOutput()
                 cap_key := RegExReplace(key, "(.*)", "$U1")
-                SendInput % "{Backspace}{Text}" RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
+                OutputKeys("{Backspace}{Text}" . RegExReplace(key, "(.*)", "$U1")) ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag gets turned off
             }
     }
@@ -614,20 +625,20 @@ KeyUp:
                 OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
-                    SendInput % expanded
+                    OutputKeys(expanded)
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
                     if ( ((fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF)) || chord_shifted )
-                        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
+                        OutputKeys("{Text}" . RegExReplace(expanded, "(^.)", "$U1"))
                     else
-                        SendInput % "{Text}" expanded
+                        OutputKeys("{Text}" . expanded)
                 }
                 last_output := OUT_CHARACTER | OUT_AUTOMATIC  ; i.e. a chord (automated typing)
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
                     last_output |= OUT_PREFIX
                 } else if (settings.spacing & SPACE_AFTER_CHORD) {
-                    SendInput {Space}
+                    OutputKeys("{Space}")
                     last_output := OUT_SPACE | OUT_AUTOMATIC
                 }
             }
@@ -676,23 +687,23 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
         adj++
     if (affixes & AFFIX_SUFFIX)
         adj++
-    SendInput {Backspace %adj%}
+    OutputKeys("{Backspace %adj%}")
     if (capitalize_shorthand)
-        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
+        OutputKeys("{Text}" . RegExReplace(expanded, "(^.)", "$U1"))
     else
-        SendInput % "{Text}" expanded
+        OutputKeys("{Text}" . expanded)
     if (immediate) {
         if ( (settings.spacing & SPACE_AFTER_CHORD) && !(affixes & AFFIX_PREFIX) ) {
-            SendInput {Space}
+            OutputKeys("{Space}")
             last_output := OUT_SPACE | OUT_AUTOMATIC
         }
     } else {
         if (shifted)
-            SendInput +%key%
+            OutputKeys("+" . key)
         else
-            SendInput %key%
+            OutputKeys(key)
         if (key == " " && (affixes & AFFIX_PREFIX))
-            SendInput {Backspace}
+            OutputKeys("{Backspace}")
     }
 }
 
@@ -724,9 +735,9 @@ RemoveRawChord(output) {
     if (final_difference & DIF_IGNORED_SPACE)
         adj--
     adj += StrLen(output)
-    SendInput {Backspace %adj%}
+    OutputKeys("{Backspace " . adj . "}")
     if (final_difference & DIF_REMOVED_SMART_SPACE)
-        SendInput {Space}
+        OutputKeys("{Space}")
 }
 
 ; check we can output chord here
@@ -745,7 +756,7 @@ OpeningSpace(attached) {
     ; if there is a smart space, we remove it for suffixes, and we're done
     if ( (fixed_output & OUT_SPACE) && (fixed_output & OUT_AUTOMATIC) ) {
         if (attached)
-            SendInput {Backspace}
+            OutputKeys("{Backspace}")
         Return
     }
     ; if adding smart spaces before is disabled, we are done too
@@ -758,7 +769,7 @@ OpeningSpace(attached) {
     if (fixed_output & OUT_INTERRUPTED || fixed_output & OUT_SPACE || fixed_output & OUT_PREFIX || attached)
         Return
     ; if we get here, we probably need a space in front of the chord
-    SendInput {Space}
+    OutputKeys("{Space}")
 }
 
 ; Sort the string alphabetically
