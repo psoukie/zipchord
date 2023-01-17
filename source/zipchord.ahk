@@ -43,14 +43,14 @@ global version = "2.0.0-rc.2"
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;@Ahk2Exe-IgnoreBegin
-if (A_Args[1] != "test-vs")
     #Include *i testing.ahk
 ;@Ahk2Exe-IgnoreEnd
 
 OutputKeys(output) {
     ;@Ahk2Exe-IgnoreBegin
-    if (test.mode>TEST_STANDBY)
-        test.Log(output, TEST_TO_OUTPUT)
+        test.Log(output)
+        if (test.mode == TEST_RUNNING)
+            return
     ;@Ahk2Exe-IgnoreEnd
     SendInput % output
 }
@@ -363,6 +363,9 @@ Initialize() {
             FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
         }
     }
+    ;@Ahk2Exe-IgnoreBegin
+        test.Init()
+    ;@Ahk2Exe-IgnoreEnd
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
@@ -434,13 +437,17 @@ WireHotkeys(state) {
 ; ---------------------
 
 KeyDown:
-    key := StrReplace(A_ThisHotkey, "Space", " ")
+    key := A_ThisHotkey
+    tick := A_TickCount
     ;@Ahk2Exe-IgnoreBegin
-    if (test.mode == TEST_RECORDING) {
-        test.Log(key, TEST_TO_INPUT)
-        test.Log(key, TEST_TO_OUTPUT)
-    }
+        if (test.mode == TEST_RUNNING) {
+            key := test_key
+            tick := test_timestamp
+        }
+        test.Log(key, true)
+        test.Log(key)
     ;@Ahk2Exe-IgnoreEnd
+    key := StrReplace(key, "Space", " ")
     debug.Log("KeyDown " key)
     if (SubStr(key, 1, 1) == "~")
         key := SubStr(key, 2)
@@ -461,7 +468,7 @@ KeyDown:
         chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
     if (StrLen(chord_buffer)==2) {
-        start := A_TickCount
+        start := tick
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
@@ -585,13 +592,15 @@ Return
 
 KeyUp:
     Critical
+    tick_up := A_TickCount
     ;@Ahk2Exe-IgnoreBegin
-    if (test.mode == TEST_RECORDING)
-        test.Log(A_ThisHotkey, TEST_TO_INPUT)
+        if (test.mode == TEST_RUNNING)
+            tick_up := test_timestamp
+        test.Log(A_ThisHotkey, true)
     ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyUp")
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( start && chord_candidate == "" && (A_TickCount - start > settings.input_delay) ) {
+    if ( start && chord_candidate == "" && (tick_up - start > settings.input_delay) ) {
         chord_candidate := chord_buffer
         final_difference := difference
         chord_buffer := ""
