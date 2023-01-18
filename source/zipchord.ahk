@@ -363,9 +363,6 @@ Initialize() {
             FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
         }
     }
-    ;@Ahk2Exe-IgnoreBegin
-        test.Init()
-    ;@Ahk2Exe-IgnoreEnd
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
@@ -696,7 +693,7 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
         adj++
     if (affixes & AFFIX_SUFFIX)
         adj++
-    OutputKeys("{Backspace %adj%}")
+    OutputKeys("{Backspace " . adj . "}")
     if (capitalize_shorthand)
         OutputKeys("{Text}" . RegExReplace(expanded, "(^.)", "$U1"))
     else
@@ -1082,6 +1079,10 @@ UI_Main_Close() {
     Gui, Submit
     if (settings.preferences & PREF_SHOW_CLOSING_TIP)
         UI_ClosingTip_Show()
+    ;@Ahk2Exe-IgnoreBegin
+        if (A_Args[1]=="console" && test.mode==TEST_OFF)
+            test.Init()
+    ;@Ahk2Exe-IgnoreEnd
 }
 
 LinkToLicense() {
