@@ -39,8 +39,10 @@ Class KeyMonitorClass {
     _last := 10
     _mode := 0  ; 0 - off, 1 - on, 2 - on with details
     _new_line := false
-    __New(details := false) {
-        this._mode := details ? 2 : 1
+    __New(mode := 0) {
+        this._mode := mode
+        if(! mode)
+            return
         Gui, UI_monitor:New, +AlwaysOnTop, % "ZipChord Key Visualization"
         Gui, Margin, 24 0
         Gui, Color, ffffff
@@ -49,7 +51,7 @@ Class KeyMonitorClass {
             posx := (A_Index - 1) * 30
             Gui, Font, s24 bold, Consolas
             Gui, Add, Text, vUI_monitor_slot%A_Index% xm+%posx% ym-8 Center, % "W"
-            if (details) {
+            if (mode==2) {
                 Gui, Font, s12, Segoe UI
                 Gui, Add, Text, vUI_monitor_duration%A_Index% xm+%posx% ym+70 Center, % "99999"
                 posx -= 20
