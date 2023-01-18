@@ -36,10 +36,10 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
-global version = "2.0.0-rc.2"
+global version = "2.0.0"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 ;@Ahk2Exe-SetName ZipChord
-;@Ahk2Exe-SetDescription ZipChord 2.0 RC 2
+;@Ahk2Exe-SetDescription ZipChord 2.0
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;; Classes and Variables
@@ -911,7 +911,7 @@ BuildMainDialog() {
     Gui, Add, Text, gLinkToWebsite, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
-    Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+    Gui, Add, Checkbox, y+30 vUI_debugging Hidden, % "&Log this session (debugging)"
 }
 
     ; Create taskbar tray menu:
