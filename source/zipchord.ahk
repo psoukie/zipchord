@@ -36,6 +36,13 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
+#Include typing_visualizer.ahk
+
+if (key_monitor.IsOn()) {
+    Process, Priority, , A
+    SetBatchLines, -1
+}
+
 global version = "2.0.0-rc.2"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 ;@Ahk2Exe-SetName ZipChord
@@ -457,6 +464,8 @@ KeyDown:
     }
     if (special_key_map.HasKey(key))
         key := special_key_map[key]
+    if (key_monitor.IsOn())
+        key_monitor.Pressed(key)
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -530,6 +539,8 @@ KeyDown:
             OutputKeys("{Backspace}") ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
+        if (key_monitor.IsOn())
+            key_monitor.NewLine()
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
     
@@ -596,6 +607,22 @@ KeyUp:
         test.Log(A_ThisHotkey, true)
     ;@Ahk2Exe-IgnoreEnd
     debug.Log("KeyUp")
+
+    if (key_monitor.IsOn()) {
+        key := StrReplace(A_ThisHotkey, "Space", " ")
+        if (SubStr(key, 1, 1) == "~")
+            key := SubStr(key, 2)
+        if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
+            shifted := true
+            key := SubStr(key, 2)
+        } else {
+            shifted := false
+        }
+        if (special_key_map.HasKey(key))
+            key := special_key_map[key]
+        key_monitor.Lifted(SubStr(key, 1, 1))
+    }
+
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
     if ( start && chord_candidate == "" && (tick_up - start > settings.input_delay) ) {
         chord_candidate := chord_buffer
@@ -628,6 +655,8 @@ KeyUp:
                 hint_delay.Shorten()
                 debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
+                if (key_monitor.IsOn())
+                    key_monitor.NewLine()
                 OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
@@ -683,6 +712,8 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     global hint_delay
     global special_key_map
     DelayOutput()
+    if (key_monitor.IsOn())
+        key_monitor.NewLine()
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     debug.Log("SHORTHAND " expanded)
@@ -1496,7 +1527,7 @@ ShowHint(line1, line2:="", line3 :="") {
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
         Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        SetTimer, UI_OSD_Hide, -900
+        SetTimer, UI_OSD_Hide, -1900
     }
 }
 
@@ -1506,15 +1537,14 @@ Return
 
 UI_OSD_Hide:
     UI_OSD_fading := true
-    Sleep 1000
     Gui, UI_OSD:Default
-    while(UI_OSD_fading && UI_OSD_transparency) {
+    if (UI_OSD_fading && UI_OSD_transparency > 1) {
         UI_OSD_transparency -= 10
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        Sleep 100
+        SetTimer, UI_OSD_Hide, -100
+        Return
     }
-    if (UI_OSD_fading)
-        Gui, Hide
+    Gui, Hide
 Return
 
 ; Process input to ensure it is an integer or a color hex code, return number or "ERROR" 
