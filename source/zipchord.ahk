@@ -908,7 +908,7 @@ BuildMainDialog() {
     Gui, Font, Underline cBlue
     Gui, Add, Text, gLinkToLicense, % "Open the license"
     Gui, Margin, 15, 15
-    Gui, Add, Text, gLinkToWebsite, % "Help and documentation"
+    Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
     Gui, Add, Checkbox, y+30 vUI_debugging Hidden, % "&Log this session (debugging)"
@@ -1059,8 +1059,8 @@ LinkToLicense() {
         Run https://www.gnu.org/licenses/gpl-3.0.html
 }
 Return
-LinkToWebsite:
-    Run https://github.com/psoukie/zipchord#readme
+LinkToDocumentation:
+    Run https://github.com/psoukie/zipchord/wiki
 Return
 LinkToReleases:
     Run https://github.com/psoukie/zipchord/releases
