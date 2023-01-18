@@ -43,10 +43,10 @@ if (key_monitor.IsOn()) {
     SetBatchLines, -1
 }
 
-global version = "2.0.0-rc.2"
+global version = "2.0.0"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 ;@Ahk2Exe-SetName ZipChord
-;@Ahk2Exe-SetDescription ZipChord 2.0 RC 2
+;@Ahk2Exe-SetDescription ZipChord 2.0
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;@Ahk2Exe-IgnoreBegin
@@ -968,10 +968,10 @@ UI_Main_Build() {
     Gui, Font, Underline cBlue
     Gui, Add, Text, gLinkToLicense, % "Open the license"
     Gui, Margin, 15, 15
-    Gui, Add, Text, gLinkToWebsite, % "Help and documentation"
+    Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
-    Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+    Gui, Add, Checkbox, y+30 vUI_debugging Hidden, % "&Log this session (debugging)"
 }
 
     ; Create taskbar tray menu:
@@ -1123,8 +1123,8 @@ LinkToLicense() {
         Run https://www.gnu.org/licenses/gpl-3.0.html
 }
 Return
-LinkToWebsite:
-    Run https://github.com/psoukie/zipchord#readme
+LinkToDocumentation:
+    Run https://github.com/psoukie/zipchord/wiki
 Return
 LinkToReleases:
     Run https://github.com/psoukie/zipchord/releases
