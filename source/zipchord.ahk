@@ -36,12 +36,6 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
-#Include typing_visualizer.ahk
-
-if (key_monitor.IsOn()) {
-    Process, Priority, , A
-    SetBatchLines, -1
-}
 
 global version = "2.0.0"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
@@ -50,6 +44,7 @@ global version = "2.0.0"
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;@Ahk2Exe-IgnoreBegin
+    #Include *i visualizer.ahk
     #Include *i testing.ahk
 ;@Ahk2Exe-IgnoreEnd
 
@@ -461,8 +456,8 @@ KeyDown:
     }
     if (special_key_map.HasKey(key))
         key := special_key_map[key]
-    if (key_monitor.IsOn())
-        key_monitor.Pressed(key)
+    if (visualizer.IsOn())
+        visualizer.Pressed(key)
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -535,8 +530,8 @@ KeyDown:
             OutputKeys("{Backspace}") ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
-        if (key_monitor.IsOn())
-            key_monitor.NewLine()
+        if (visualizer.IsOn())
+            visualizer.NewLine()
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
     
@@ -603,7 +598,7 @@ KeyUp:
         test.Log(A_ThisHotkey, true)
     ;@Ahk2Exe-IgnoreEnd
 
-    if (key_monitor.IsOn()) {
+    if (visualizer.IsOn()) {
         key := StrReplace(A_ThisHotkey, "Space", " ")
         if (SubStr(key, 1, 1) == "~")
             key := SubStr(key, 2)
@@ -615,7 +610,7 @@ KeyUp:
         }
         if (special_key_map.HasKey(key))
             key := special_key_map[key]
-        key_monitor.Lifted(SubStr(key, 1, 1))
+        visualizer.Lifted(SubStr(key, 1, 1))
     }
 
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
@@ -647,8 +642,8 @@ KeyUp:
                 DelayOutput()
                 hint_delay.Shorten()
                 RemoveRawChord(chord)
-                if (key_monitor.IsOn())
-                    key_monitor.NewLine()
+                if (visualizer.IsOn())
+                    visualizer.NewLine()
                 OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
@@ -702,8 +697,8 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     global hint_delay
     global special_key_map
     DelayOutput()
-    if (key_monitor.IsOn())
-        key_monitor.NewLine()
+    if (visualizer.IsOn())
+        visualizer.NewLine()
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     For _, k in special_key_map
@@ -846,8 +841,8 @@ Return
 Enter_key:
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
-    if (key_monitor.IsOn())
-        key_monitor.NewLine()
+    if (visualizer.IsOn())
+        visualizer.NewLine()
 Return
 
 ;;  Adding shortcuts 

@@ -28,7 +28,7 @@ global UI_monitor_duration1, UI_monitor_duration2, UI_monitor_duration3, UI_moni
 global UI_monitor_overlap1, UI_monitor_overlap2, UI_monitor_overlap3, UI_monitor_overlap4, UI_monitor_overlap5
     , UI_monitor_overlap6, UI_monitor_overlap7, UI_monitor_overlap8, UI_monitor_overlap9, UI_monitor_overlap10
 
-Class KeyMonitorClass {
+Class clsVisualizer {
     _slots := {}
     _keys := {}
     _statuses := {}
@@ -39,10 +39,10 @@ Class KeyMonitorClass {
     _last := 10
     _mode := 0  ; 0 - off, 1 - on, 2 - on with details
     _new_line := false
-    __New(mode := 0) {
-        this._mode := mode
-        if(! mode)
+    Init(mode := 1) {
+        if (this._mode)
             return
+        this._mode := mode
         Gui, UI_monitor:New, +AlwaysOnTop, % "ZipChord Key Visualization"
         Gui, Margin, 24 0
         Gui, Color, ffffff
@@ -143,4 +143,4 @@ Class KeyMonitorClass {
     }
 }
 
-key_monitor := New KeyMonitorClass
+global visualizer := New clsVisualizer
