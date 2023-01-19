@@ -1,4 +1,4 @@
-/**
+﻿/**
 *
 *  This file is part of ZipChord.
 * 
@@ -39,6 +39,7 @@ Class TestingClass {
     _output_obj := 0
     _mode := TEST_OFF
     _starting_tick := 0
+    _folder := ""
     mode {
         get { 
             return this._mode 
@@ -46,11 +47,12 @@ Class TestingClass {
     }
     Init() {
         this._mode := TEST_STANDBY
+        this._folder := "..\tests\"
         WireHotkeys("Off")
         prompt_fn := ObjBindMethod(this, "Prompt")
         if (A_Args[1] != "test-vs") {
             DllCall("AllocConsole")
-            DllCall("SetConsoleTitle", Str, "ZipChord Console")
+            DllCall("SetConsoleTitle", Str, "ZipChord Test Automation")
             this._stdin  := FileOpen("*", "r `n")
             this._stdout := FileOpen("*", "w `n")
         }
@@ -59,8 +61,8 @@ Class TestingClass {
         this.Write("`nCopyright (c) 2023 Pavel Soukenik")
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
         this.Write("This is free software, and you are welcome to redistribute it")
-        this.Write("under certain conditions. Type 'LICENSE' for details.")
-        this.Write("`nType 'HELP' to get a list of available commands.")
+        this.Write("under certain conditions. Type 'license' for details.")
+        this.Write("`nType 'help' for a list of available commands.")
         %prompt_fn%()
     }
     Config(mode:="", ByRef filename:="") {
@@ -76,23 +78,33 @@ Class TestingClass {
                     this.Write(key . ": " value)
             Case "save":
                 if (! this._CheckFilename(filename, "cfg"))
-                    return
-                SavePropertiesToIni(settings, "Application", filename)
-                SavePropertiesToIni(keys, "Locale", filename)
+                    return -1
+                SavePropertiesToIni(settings, "Application", this._folder . filename)
+                SavePropertiesToIni(keys, "Locale", this._folder . filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
             Case "load":
                 if (! this._CheckFilename(filename, "cfg", true))
                     return -1
-                LoadPropertiesFromIni(settings, "Application", filename)
-                LoadPropertiesFromIni(keys, "Locale", filename)
+                LoadPropertiesFromIni(settings, "Application", this._folder . filename)
+                LoadPropertiesFromIni(keys, "Locale", this._folder .filename)
                 this.Write(Format("Loaded configuration from '{}'.", filename))
             Case "help":
-                this.Write("TK: config command help")
+                this.Help(ObjFnName(A_ThisFunc))
             Default:
-                this.Write("Could not understand the command. Try 'CONFIG HELP'.")
+                this._MessageTryHelp(A_ThisFunc)
         }
     }
-    Interact() {
+    Interact(a:="") {
+        Switch a {
+            Case "help":
+                this.Help(ObjFnName(A_ThisFunc))
+                return
+            Case "":
+                
+            Default:
+                this._MessageTryHelp(A_ThisFunc)
+                return
+        }
         this._Ready()
         if(settings.chords_enabled || settings.shorthands_enabled) {
             this.Write("Wiring hotkeys...")
@@ -102,7 +114,7 @@ Class TestingClass {
         this._mode := TEST_INTERACTIVE
         Return true
     }
-    Monitor(what:="", destination:="console") {
+    Monitor(what:="", ByRef destination:="console") {
         Switch what {
             Case "", "show":
                 this.Write(Format("ZipChord input is monitored to {}.", this._input))
@@ -126,20 +138,20 @@ Class TestingClass {
                         if (! this._CheckFilename(destination, extension))
                             return -1
                         this[target_var] := destination
-                        this[target_var . "_obj"] := FileOpen(destination, "w")
+                        this[target_var . "_obj"] := FileOpen(this._folder . destination, "w")
                 }
                 this.Write(Format("Connected ZipChord {} to {}.", what, destination))
             Case "help":
-                this.Write("TK: Help. mention 'console' is default.")
-                return
+                this.Help(ObjFnName(A_ThisFunc))
             Default:
                 this._MessageTryHelp(A_ThisFunc)
         }
     }
-    Record(what:="", fname:="") {
+    Record(what:="", fname:="", out_file:="") {
         Switch what {
             Case "":
-                what:="both"
+                this._MessageTryHelp(A_ThisFunc)
+                return
             Case "both":
                 
             Case "input":
@@ -147,11 +159,11 @@ Class TestingClass {
             Case "output":
 
             Case "help":
-                this.Write("TK: Help. mention 'both' is default.")
+                this.Help(ObjFnName(A_ThisFunc))
                 return
             Default:
-                fname:=what
-                what:="both"
+                this._RecordCase(what, fname, out_file)
+                return
         }
         if (what=="input" || what=="both")
             if (this.Monitor("input", fname) == -1)
@@ -162,6 +174,18 @@ Class TestingClass {
         if(this.Interact())
             return true
     }
+    _RecordCase(cfg:="", in_file:="", out_file:="") {
+        if (this.Config("save", cfg) == -1)
+            return
+        if (this.Monitor("input", in_file) == -1)
+            return
+        if (out_file="")
+           out_file := SubStr(cfg, 1, StrLen(cfg)-4) . "__" . SubStr(in_file, 1, StrLen(in_file)-3)
+        if (this.Monitor("output", out_file) == -1)
+            return
+        if(this.Interact())
+            return true
+    }
     _Ready() {
         this.Write("Loading dictionaries...")
         chords.Load(settings.chord_file)
@@ -169,18 +193,16 @@ Class TestingClass {
         this._starting_tick := 0
         GoSub Interrupt
     }
-    _Stop() {
-        WireHotkeys("Off")
-        this._mode := TEST_STANDBY
-        this.Write("Interactive mode stopped.")
+    Stop() {
+        if (this.mode == TEST_INTERACTIVE) {
+            WireHotkeys("Off")
+            this._mode := TEST_STANDBY
+            this.Write("Stopped interactive mode.")
+        }
         this.Monitor("input", "off")
         this.Monitor("output", "off")
     }
     Log(output, is_input := false) {
-        if (A_Args[1] == "test-vs") {
-            OutputDebug, % output . terminator
-            Return
-        }
         if (this._input && is_input) {
             if (!this._starting_tick)
                 this._starting_tick := A_TickCount
@@ -197,7 +219,20 @@ Class TestingClass {
                 this._output_obj.Write(output . "`n")
         }
     }
-    Play(in_file:="") {
+    Play(cfg:="", in_file:="") {
+        Switch cfg {
+            Case "help":
+                this.Help(ObjFnName(A_ThisFunc))
+                return
+            Case "":
+                this._MessageTryHelp(A_ThisFunc)
+        }
+        if (in_file != "") {
+            if (this.Config("load", cfg) == -1)
+                return
+        } else {
+            in_file := cfg
+        }
         if (! this._CheckFilename(in_file, "in", true))
             return -1
         this.Write("Playback file is: " in_file)
@@ -214,50 +249,66 @@ Class TestingClass {
             else
                 GoSub KeyDown
         }
-        this._Stop()
+        this.Stop()
     }
-    Test(cfg:="", in_file:="", out_file:="") {
-        if (cfg=="help") {
-            this.Write("TK: Help. Three uses:`nTEST testcase`nTEST BATCH batch`nTEST config input [output]`n`n  testcase    Run the specified test case file and compare the output against the test case.`n`nThe default 'output' will be a test case 'config_name__input_name.out'")
-            return
+    Compose(cfg:="", in_file:="", out_file:="") {
+        Switch cfg {
+            Case "help":
+                this.Help(ObjFnName(A_ThisFunc))
+                return
+            Case "":
+                this._MessageTryHelp(A_ThisFunc)
         }
-        if (cfg=="batch") {
-            this._Batch(in_file)
-            return
-        }
-        if (cfg:=="" or InStr(cfg, "__"))
-            this._Retest(cfg)
         if (this.Config("load", cfg) == -1)
             return
         if (! this._CheckFilename(in_file, "in", true))
             return
-        if (out_file=="")
-            out_file := SubStr(cfg, 10, StrLen(cfg)-13) . "__" . SubStr(in_file, 10, StrLen(in_file)-12)
+        if (out_file="")
+           out_file := SubStr(cfg, 1, StrLen(cfg)-4) . "__" . SubStr(in_file, 1, StrLen(in_file)-3)
         this.Monitor("input", "off")
         if (this.Monitor("output", out_file) == -1)
             return
         if (this.Play(in_file) == -1)
             return
     }
-    _Retest(test_case:="") {
+    Test(param:="", filename:="") {
+        Switch param {
+            Case "help":
+                this.Help(ObjFnName(A_ThisFunc))
+            Case "":
+                this._MessageTryHelp(A_ThisFunc)
+            Case "batch":
+                this._Batch(filename)
+            Default:
+                this._TestCase(param)            
+        }
+    }
+    _TestCase(test_case:="") {
         if (! this._CheckFilename(test_case, "out", true))
             Return
-        cfg := SubStr(test_case, 10, InStr(test_case, "__")-10)
+        if (! InStr(test_case, "__")) {
+            this.Write("Error: You need to provide a test case to use this command. Try TEST HELP.")
+            return
+        }
+        cfg := SubStr(test_case, 1, InStr(test_case, "__")-1)
         in_file := SubStr(test_case, InStr(test_case, "__")+2, StrLen(test_case)-InStr(test_case, "__")-5)
-        FileDelete, % "..\tests\temp.out"
-        this.Test(cfg, in_file, "temp")
-        this.Compare(test_case, "..\tests\temp.out")
+        FileDelete, % this._folder . "temp.out"
+        this.Compose(cfg, in_file, "temp.out")
+        this.Compare(test_case, "temp.out")
     }
     Compare(a:="", b:="") {
-        if (a=="help") {
-            this.Write("TK: Help.")
-            return
+        Switch a {
+            Case "help":
+                this.Help(ObjFnName(A_ThisFunc))
+                return
+            Case "":
+                this._MessageTryHelp(A_ThisFunc)
         }
         if (! this._CheckFilename(a, "out", true))
             Return
         if (! this._CheckFilename(b, "out", true))
             Return
-        RunWait % "fc.exe /a /n " . a . " " . b
+        RunWait % "fc.exe /a /n " . this._folder . a . " " . this._folder . b
     }
     List(mask:="*.*") {
         Switch mask {
@@ -270,12 +321,12 @@ Class TestingClass {
             Case "case", "cases":
                 opts := "dir /b *__*.out"
             Case "help":
-                this.Write("TK: Help.")
+                this.Help(ObjFnName(A_ThisFunc))
                 return
             Default:
                 opts := "dir /b " . mask
         }
-        RunWait  %ComSpec% /c %opts%, % "..\tests\"
+        RunWait  %ComSpec% /c %opts%, % this._folder
     }
     _Batch(set_name:="") {
         if (! this._CheckFilename(set_name, "set", true))
@@ -287,6 +338,8 @@ Class TestingClass {
         }
     }
     Write(output, terminator:="`n") {
+        if (this.mode == TEST_OFF)
+            return  ; we don't want to ouput anything if the method is called without the console open
         if (A_Args[1] == "test-vs") {
             OutputDebug, % output . terminator
         } else {
@@ -296,8 +349,8 @@ Class TestingClass {
     }
     Prompt() {
         if (this._mode==TEST_INTERACTIVE) {
-            WinActivate % "ZipChord Console"
-            this._Stop()
+            WinActivate % "ZipChord Test Automation"
+            this.Stop()
         }
         this.Write("`n>", "")
         if (A_Args[1] == "test-vs")
@@ -315,15 +368,15 @@ Class TestingClass {
             SetTimer % prompt_fn, -10 ; show prompt again after we're done
         }
     }
-    Exit() {
-        ExitApp
+    Exit(a:="") {
+        if (a!="help")
+            ExitApp
+        this.Help(ObjFnName(A_ThisFunc))
     }
-    License() {
-        LinkToLicense()
-    }
-    Help() {
-        this.Write("Available commands: COMPARE, CONFIG, INTERACT, LIST, MONITOR, RECORD, PLAY, TEST, EXIT")
-        this.Write("Type 'command HELP' to learn more about each.")
+    License(a:="") {
+        if (a!="help")
+            LinkToLicense()
+        this.Help(ObjFnName(A_ThisFunc))
     }
     _CheckFilename(ByRef filename, extension, should_exist := false) {
         if (! filename) {
@@ -335,15 +388,13 @@ Class TestingClass {
         extension := "." . extension
         if (SubStr(filename, 1-StrLen(extension)) != extension)
             filename .= extension
-        if (SubStr(filename,1, 9) != "..\tests\")
-            filename := "..\tests\" . filename
         if (should_exist) {
-            if (! FileExist(filename)) {
+            if (! FileExist(this._folder . filename)) {
                 this.Write(Format("Error: The file '{}' does not exists.", filename))
                 return false
             }
         } else {
-            if (FileExist(filename)) {
+            if (FileExist(this._folder . filename)) {
                 this.Write(Format("The file '{}' already exists. Overwrite [Y/N]?", filename), " ")
                 if (A_Args[1] == "test-vs")
                     InputBox, answer,% "Overwrite? [Y/N]", % ">"
@@ -352,14 +403,12 @@ Class TestingClass {
                 if (answer!="Y")
                     return false
             }
-            FileDelete, % filename
+            FileDelete, % this._folder . filename
         }
         return filename
     }
     _MessageTryHelp(fn) {
-        fn := SubStr(fn, InStr(fn, ".")+1)
-        StringUpper fn, fn
-        this.Write(Format("Could not understand the command. Try '{} HELP'.", fn))
+        this.Write( Format("Could not understand the command. Try 'help {}'.", ObjFnName(fn)) )
     }
     __Call(name, params*) {
         if (!IsFunc(this[name])) {
