@@ -1,4 +1,4 @@
-﻿/**
+/**
 *
 *  ZipChord
 * 
@@ -331,8 +331,6 @@ global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing c
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
 ; also "new_output" local variable is used to track the current key / output
 
-global debug := New DebugClass
-
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
@@ -452,7 +450,6 @@ KeyDown:
         test.Log(key)
     ;@Ahk2Exe-IgnoreEnd
     key := StrReplace(key, "Space", " ")
-    debug.Log("KeyDown " key)
     if (SubStr(key, 1, 1) == "~")
         key := SubStr(key, 2)
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
@@ -484,7 +481,6 @@ KeyDown:
             shorthand_buffer := ""
         if (last_output & OUT_INTERRUPTED & ~OUT_AUTOMATIC)
             shorthand_buffer := "<<SHORTHAND_BLOCKED>>"
-        debug.Log("Shorthand buffer: " shorthand_buffer)
         if (key == " " || (! shifted && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, key)) || (shifted && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, key)) ) {
             if (shorthand_buffer != "") {
                 ; first, we show a hint for a shortcut, if applicable
@@ -606,7 +602,6 @@ KeyUp:
             tick_up := test_timestamp
         test.Log(A_ThisHotkey, true)
     ;@Ahk2Exe-IgnoreEnd
-    debug.Log("KeyUp")
 
     if (key_monitor.IsOn()) {
         key := StrReplace(A_ThisHotkey, "Space", " ")
@@ -630,7 +625,6 @@ KeyUp:
         chord_buffer := ""
         start := 0
         chord_shifted := false
-        debug.Log("/KeyUp-chord")
         Critical Off
         Return
     }
@@ -647,13 +641,11 @@ KeyUp:
         }
         chord := Arrange(chord_candidate)
         if ( expanded := chords.LookUp(chord)) {
-            debug.Log("Chord for:" expanded)
             affixes := ProcessAffixes(expanded)
             ; if we aren't restricted, we print a chord
             if ( (affixes & AFFIX_SUFFIX) || IsUnrestricted()) {
                 DelayOutput()
                 hint_delay.Shorten()
-                debug.Log("OUTPUTTING")
                 RemoveRawChord(chord)
                 if (key_monitor.IsOn())
                     key_monitor.NewLine()
@@ -681,7 +673,6 @@ KeyUp:
                 ; output was restricted
                 fixed_output := last_output
                 chord_candidate := ""
-                debug.Log("RESTRICTED")
             }
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
@@ -692,7 +683,6 @@ KeyUp:
         chord_candidate := ""
     }
     fixed_output := last_output ; and this last output is also the last fixed output.
-    debug.Log("/KeyUp-fixed")
     Critical Off
 Return
 
@@ -716,7 +706,6 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
         key_monitor.NewLine()
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
-    debug.Log("SHORTHAND " expanded)
     For _, k in special_key_map
         shorthand_buffer := StrReplace(shorthand_buffer, k)
     adj := StrLen(shorthand_buffer)
@@ -852,7 +841,6 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
-    debug.Write("Interrupted")
 Return
 
 Enter_key:
@@ -971,7 +959,9 @@ UI_Main_Build() {
     Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
-    Gui, Add, Checkbox, y+30 vUI_debugging Hidden, % "&Log this session (debugging)"
+    ;@Ahk2Exe-IgnoreBegin
+        Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+    ;@Ahk2Exe-IgnoreEnd
 }
 
     ; Create taskbar tray menu:
@@ -991,7 +981,10 @@ QuitApp() {
 }
 
 UI_Main_Show() {
-    debug.Stop()
+    ;@Ahk2Exe-IgnoreBegin
+        if (UI_debugging)
+            test.Stop()  ; TK Direct to a function that will also open the location of logs 
+    ;@Ahk2Exe-IgnoreEnd
     Gui, UI_Main:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
@@ -1089,8 +1082,14 @@ ApplyMainSettings() {
     LoadPropertiesFromIni(keys, UI_selected_locale, "locales.ini")
     if (UI_chords_enabled || UI_shorthands_enabled)
         WireHotkeys("On")
-    if (UI_debugging)
-        debug.Start()
+    ;@Ahk2Exe-IgnoreBegin
+        if (UI_debugging) {
+            FileDelete, % "debug.cfg"
+            FileDelete, % "debug.in"
+            FileDelete, % "debug.out"
+            test.Record("debug", "debug", "debug")
+        }
+    ;@Ahk2Exe-IgnoreEnd
     ; to reflect any changes to OSD UI
     Gui, UI_OSD:Destroy
     hint_delay.Reset()
@@ -1651,46 +1650,5 @@ LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
         key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
         value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
         object_destination[key] := value
-    }
-}
-
-;; Debugging
-; -----------
-
-Class DebugClass {
-    static debug_file := ""
-    Start() {
-        global keys
-        FileDelete, "debug.txt"
-        this.debug_file := FileOpen("debug.txt", "w")
-        this.Write("Please copy the actual text output of your typing below:`n`OUTPUT:`n`nZIPCHORD SETTINGS:")
-        this.Write("ZipChord v." . version)
-        For key, value in settings
-            this.Write(key "=" value)
-        this.Write("LOCALE SETTINGS:")
-        For key, value in keys
-            this.Write(key "=" value)
-        this.Write("`nINPUT LOG:`nEvent`tTimestamp`tlast_output`tfixed_output`tchord_buffer`tchord`tstart")       
-    }
-    Log(output) {
-        global chord_buffer
-        global chord
-        if ( (this.debug_file != "") || (A_Args[1] == "debug-vs") ) {
-            output .= "`t" A_TickCount "`t" last_output "`t" fixed_output "`t" chord_buffer "`t" chord "`t" start
-            this.Write(output)
-        }
-    }
-    Write(output) {
-        if (A_Args[1] == "debug-vs")
-            OutputDebug, % output "`n"
-        if (this.debug_file != "")
-            this.debug_file.Write(output "`n")
-    }
-    Stop() {
-        if (this.debug_file != "") {
-            this.debug_file.Close()
-            this.debug_file := ""
-            Run % "debug.txt"
-        }
     }
 }
