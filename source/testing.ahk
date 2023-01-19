@@ -1,4 +1,4 @@
-﻿/**
+/**
 *
 *  This file is part of ZipChord.
 * 
@@ -367,6 +367,79 @@ Class TestingClass {
         }
         params := 0  ; to remove compiler warning
     }
+    Help(topic:="") {
+        Switch topic {
+            Case "compare":
+                this.Write("TBD")
+            Case "compose":
+                this.Write("TBD COMPOSE config input`n`n  Creates a test case named 'config__input.out' with the output that was produced by playing 'input' with 'config' settings.`n TK testcase    Run the specified test case file and compare the output against the test case.`n`nThe default 'output' will be a test case 'config_name__input_name.out'")
+            Case "config":
+                this.Write("
+(
+Saves or loads ZipChord configuration and keyboard and language settings.
+If used without parameters, it displays the current settings.
+
+config [show]
+config {save|load} <config_name>
+   [show]          Show current ZipChord settings.
+   <config_name>   Name of the configuration file to load or save.
+)")
+            Case "exit":
+                this.Write("TBD")
+            Case "help":
+                this.Write("
+(
+Displays a list of the available commands or help information about
+a specified command. If used without parameters, lists and briefly
+describes every command.
+
+help [<command>]
+
+  <command>    Specifies the command for which to show help.
+)")
+            Case "interact":
+                this.Write("TBD")
+            Case "license":
+                this.Write("TBD")
+            Case "list":
+                this.Write("TBD")
+            Case "monitor":
+                this.Write("TBD")
+            Case "play":
+                this.Write("TBD PLAY [config] input")
+            Case "record":
+                this.Write("TBD")
+            Case "test":
+                this.Write("TBD TEST testcase`nTEST BATCH batch`n`n  testcase    Run the specified test case file and compare the output against the test case.`n`nThe default 'output' will be a test case 'config_name__input_name.out")
+            Default:
+                this.Write("
+(
+ZipChord Test Automation commands:
+
+compare     Shows differences between two output files.     
+compose     Creates a test case from a given configartion and input file.
+config      Shows, saves or loads app configuration and keyboard settings. 
+exit        Exits the console and ZipChord.
+help        Shows help information for ZipChord Test Automation commands.
+interact    Temporarily switches to normal interaction with the app.
+list        Lists all or specified files in the testing folder.
+monitor     Directs the input or output of ZipChord to console or a file.
+play        Sends recorded input to ZipChord for processing.
+record      Records input and/or output of your interaction to a file. 
+test        Runs and compares results of a test case or a set of cases.
+
+For more information on a specific command, type 'help <command>'.
+)")
+        }
+
+    }
+}
+
+; Helper function
+
+ObjFnName(fn) {
+    StringLower, fn, % SubStr(fn, InStr(fn, ".")+1)
+    return fn
 }
 
 global test := New TestingClass()
