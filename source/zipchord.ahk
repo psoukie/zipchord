@@ -1,4 +1,4 @@
-/**
+﻿/**
 *
 *  ZipChord
 * 
@@ -965,11 +965,26 @@ UI_Tray_Build() {
     Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", UI_Main_Show
     Menu, Tray, Add, % "Add Shortcut`t(hold Ctrl+C)", AddShortcut
     Menu, Tray, Add  ;  adds a horizontal line
+    ;@Ahk2Exe-IgnoreBegin
+        Menu, Tray, Add, % "Open Key Visualizer", OpenKeyVisualizer
+        Menu, Tray, Add, % "Open Test Console", OpenTestConsole
+        Menu, Tray, Add
+    ;@Ahk2Exe-IgnoreEnd
     Menu, Tray, Add, % "Quit", QuitApp
     Menu, Tray, Default, 1&
     Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
 }
+
+;@Ahk2Exe-IgnoreBegin
+    OpenKeyVisualizer() {
+        visualizer.Init()
+    }
+    OpenTestConsole() {
+        if (test.mode==TEST_OFF)
+            test.Init()
+    }
+;@Ahk2Exe-IgnoreEnd
 
 QuitApp() {
     ExitApp
@@ -1104,10 +1119,6 @@ UI_Main_Close() {
     Gui, Submit
     if (settings.preferences & PREF_SHOW_CLOSING_TIP)
         UI_ClosingTip_Show()
-    ;@Ahk2Exe-IgnoreBegin
-        if (A_Args[1]=="console" && test.mode==TEST_OFF)
-            test.Init()
-    ;@Ahk2Exe-IgnoreEnd
 }
 
 LinkToLicense() {
