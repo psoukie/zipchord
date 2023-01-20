@@ -441,8 +441,10 @@ KeyDown:
             key := test_key
             tick := test_timestamp
         }
-        test.Log(key, true)
-        test.Log(key)
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
     ;@Ahk2Exe-IgnoreEnd
     key := StrReplace(key, "Space", " ")
     if (SubStr(key, 1, 1) == "~")
@@ -595,7 +597,8 @@ KeyUp:
     ;@Ahk2Exe-IgnoreBegin
         if (test.mode == TEST_RUNNING)
             tick_up := test_timestamp
-        test.Log(A_ThisHotkey, true)
+        if (test.mode > TEST_STANDBY)
+            test.Log(A_ThisHotkey, true)
     ;@Ahk2Exe-IgnoreEnd
 
     if (visualizer.IsOn()) {
@@ -836,13 +839,21 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
+    ;@Ahk2Exe-IgnoreBegin
+        if (test.mode > TEST_STANDBY)
+            test.Log("*Interrupt*")
+    ;@Ahk2Exe-IgnoreEnd
 Return
 
 Enter_key:
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
-    if (visualizer.IsOn())
-        visualizer.NewLine()
+    ;@Ahk2Exe-IgnoreBegin
+        if (test.mode > TEST_STANDBY)
+            test.Log("~Enter")
+        if (visualizer.IsOn())
+            visualizer.NewLine()
+    ;@Ahk2Exe-IgnoreEnd
 Return
 
 ;;  Adding shortcuts 
@@ -1518,6 +1529,10 @@ UI_OSD_Build() {
 }
 ShowHint(line1, line2:="", line3 :="") {
     global hint_delay
+    ;@Ahk2Exe-IgnoreBegin
+        if (test.mode > TEST_STANDBY)
+            test.Log("*Hint*")
+    ;@Ahk2Exe-IgnoreEnd
     hint_delay.Extend()
     if (settings.hints & HINT_TOOLTIP) {
         GetCaret(x, y, , h)

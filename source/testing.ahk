@@ -1,4 +1,4 @@
-/**
+﻿/**
 *
 *  This file is part of ZipChord.
 * 
@@ -233,10 +233,19 @@ Class TestingClass {
             columns := StrSplit(A_LoopReadLine, A_Tab)
             test_timestamp := columns[1]
             test_key := columns[2]
-            if (SubStr(test_key, -2)==" Up")
-                GoSub KeyUp
-            else
-                GoSub KeyDown
+            Switch test_key {
+                Case "*Hint*":
+                    Continue
+                Case "*Interrupt*":
+                    GoSub Interrupt
+                Case "~Enter":
+                    GoSub Enter_key
+                Default:
+                    if (SubStr(test_key, -2)==" Up")
+                        GoSub KeyUp
+                    else
+                        GoSub KeyDown
+            }
         }
         this.Stop()
     }
@@ -334,7 +343,7 @@ Class TestingClass {
         if (this._IsBasicHelp(opt, A_ThisFunc))
             return
         if (file && opt=="raw") {
-        RunWait %ComSpec% /c type %file%, % this._path
+            RunWait %ComSpec% /c type %file%, % this._path
             Return
         }
         file := opt
@@ -359,7 +368,7 @@ Class TestingClass {
                         if (SubStr(key, 1, 17)=="{Backspace}{Text}") {
                             out := SubStr(out, 1, StrLen(out)-1) . SubStr(key, 18)
                             Continue
-    }
+                        }
                         if (SubStr(key, 1, 6)=="{Text}") {
                             out .= SubStr(key, 7)
                             Continue
@@ -666,7 +675,7 @@ is specified.
 
 show [raw] <filename>
 
-  <filename>    The name (including extension) of the file to show. 
+  <filename>    The name (including extension) of the file to show.
   raw           Forces the raw output for test case and output files.  
 )")
             Case "test":
