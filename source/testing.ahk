@@ -1,4 +1,4 @@
-﻿/**
+/**
 *
 *  This file is part of ZipChord.
 * 
@@ -163,6 +163,7 @@ Class TestingClass {
                 if (what=="output" || what=="both")
                     if (this.Monitor("output", orig_name) == -1)
                         return
+                Run % "Notepad.exe"
                 return this.Interact()
             Default:
                 return this._RecordCase(what, filename, out_file)
@@ -190,9 +191,9 @@ Class TestingClass {
         if (this.mode == TEST_INTERACTIVE) {
             Hotkey, % "^x", % prompt_fn, % "Off"
             WireHotkeys("Off")
-            this._mode := TEST_STANDBY
             this.Write("Stopped interactive mode.")
         }
+        this._mode := TEST_STANDBY
         this.Monitor("input", "off")
         this.Monitor("output", "off")
     }
@@ -224,7 +225,6 @@ Class TestingClass {
         }
         if (! this._CheckFilename(in_file, "in", true))
             return -1
-        this.Write("Playback file is: " in_file)
         this._Ready()
         this.Write(Format("Sending the test '{}' to ZipChord...", in_file))
         this._mode := TEST_RUNNING
@@ -330,14 +330,50 @@ Class TestingClass {
         }
         RunWait %ComSpec% /c %opts%, % this._path
     }
-    Show(file:="") {
-        if (this._IsBasicHelp(file, A_ThisFunc))
+    Show(opt:="", file:="") {
+        if (this._IsBasicHelp(opt, A_ThisFunc))
             return
+        if (file && opt=="raw") {
         RunWait %ComSpec% /c type %file%, % this._path
+            Return
+        }
+        file := opt
+        if (SubStr(file, InStr(file, ".", false, 0)) == ".out") { ; searches for "." from the back
+            Loop, Read, % this._path . file
+            {
+                key := A_LoopReadLine
+                if (SubStr(key, 1, 1) == "~")
+                    key := SubStr(key, 2)
+                Switch key {
+                    Case "Enter":
+                        out .= "`n"
+                    Case "Space", "{Space}":
+                        out .= " "
+                    Case "{Backspace}":
+                        out := SubStr(out, 1, StrLen(out)-1)
+                    Case "{Backspace 2}":
+                        out := SubStr(out, 1, StrLen(out)-2)
+                    Case "*Hint*":
 
+                    Default:
+                        if (SubStr(key, 1, 17)=="{Backspace}{Text}") {
+                            out := SubStr(out, 1, StrLen(out)-1) . SubStr(key, 18)
+                            Continue
     }
-    TryMe() {
-        this.Write("Try me" . Chr(8))
+                        if (SubStr(key, 1, 6)=="{Text}") {
+                            out .= SubStr(key, 7)
+                            Continue
+                        }
+                        if (SubStr(key, 1, 1) == "+")
+                            out .= ToAscii(SubStr(key, 2, 1), ["Shift"])
+                        else
+                            out .= key
+                }
+            }
+            this.Write(out)
+            return
+        }
+        RunWait %ComSpec% /c type %file%, % this._path
     }
     _Batch(testset:="") {
         if (! this._CheckFilename(testset, "set", true))
@@ -624,11 +660,14 @@ record <configfile> <inputfile> [<outputfile>]
             Case "show":
                 this.Write("
 (
-Shows the contents of a file in the console.
+Shows the contents of a file in the console. Output and test case files
+are formatted as they would look in text editor, unless the 'raw' option
+is specified.
 
-show <filename>
+show [raw] <filename>
 
   <filename>    The name (including extension) of the file to show. 
+  raw           Forces the raw output for test case and output files.  
 )")
             Case "test":
                 this.Write("
@@ -681,6 +720,20 @@ For more information on a specific command, type 'help <command>'.
 ObjFnName(fn) {
     StringLower, fn, % SubStr(fn, InStr(fn, ".")+1)
     return fn
+}
+
+; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
+
+ToAscii(Key, Modifiers := "") {
+   VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
+   VK := GetKeyVK(Key)
+   SC := GetKeySC(Key)
+   VarSetCapacity(ModStates, 256, 0)
+   For _, Modifier In Modifiers
+      If VK_MOD.HasKey(Modifier)
+         NumPut(0x80, ModStates, VK_MOD[Modifier], "UChar")
+   DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
+   Return Chr(Ascii)
 }
 
 global test := New TestingClass()
