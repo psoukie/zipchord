@@ -1,4 +1,4 @@
-/**
+﻿/**
 *
 *  This file is part of ZipChord.
 * 
@@ -159,10 +159,10 @@ Class TestingClass {
                 orig_name := filename
                 if (what=="input" || what=="both")
                     if (this.Monitor("input", filename) == -1)
-                return
+                        return
                 if (what=="output" || what=="both")
                     if (this.Monitor("output", orig_name) == -1)
-                return
+                        return
                 return this.Interact()
             Default:
                 return this._RecordCase(what, filename, out_file)
@@ -215,7 +215,7 @@ Class TestingClass {
     }
     Play(cfg:="", in_file:="") {
         if (this._IsBasicHelp(cfg, A_ThisFunc))
-                return
+            return
         if (in_file != "") {
             if (this.Config("load", cfg) == -1)
                 return
@@ -242,7 +242,7 @@ Class TestingClass {
     }
     Compose(cfg:="", in_file:="", out_file:="") {
         if (this._IsBasicHelp(cfg, A_ThisFunc))
-                return
+            return
         if (this.Config("load", cfg) == -1)
             return
         if (! this._CheckFilename(in_file, "in", true))
@@ -259,7 +259,7 @@ Class TestingClass {
         if (this._IsBasicHelp(testcase, A_ThisFunc))
             return
         if (filename && testcase=="set")
-                this._Batch(filename)
+            this._Batch(filename)
         else {
             if (! this._CheckFilename(testcase, "testcase", true))
                 Return
@@ -287,7 +287,7 @@ Class TestingClass {
         if (! this._CheckFilename(testset, "set", true))
             this.Write(Format("...Creating new test set '{}' and adding '{}'.", testset, testcase))
         FileAppend % testcase, % this._path . testset
-        }
+    }
     Delete(file:="") {
         if (this._IsBasicHelp(file, A_ThisFunc))
             return
@@ -447,23 +447,70 @@ Class TestingClass {
     }
     Help(topic:="") {
         Switch topic {
+            Case "add":
+                this.Write("
+(
+Adds a specified existing test case to a test set.
+
+add <testcase> <testset>
+
+  <testcase>    The name of an existing test case file to add.
+  <testset>     The name of the test set the case will be added to. 
+)")
             Case "compare":
-                this.Write("TBD")
+                this.Write("
+(
+Runs a comparison and shows differences between two output files.
+
+compare <output1> <output2>
+
+  <output1>    Specifies the first output file to compare.
+  <output2>    Specifies the second output file to compare.
+)")
             Case "compose":
-                this.Write("TBD COMPOSE config input`n`n  Creates a test case named 'config__input.out' with the output that was produced by playing 'input' with 'config' settings.`n TK testcase    Run the specified test case file and compare the output against the test case.`n`nThe default 'output' will be a test case 'config_name__input_name.out'")
+                this.Write("
+(
+Creates a test case from the specified configartion and input files.
+If you don't specify the output file, the result is saved in an
+automatically named test case file.  
+
+compose <configfile> <inputfile> [<outputfile>]
+
+  <configfile>    The settings to be applied for creation of this test.
+  <inputfile>     The input to be played to generate the test's output.
+  <outputfile>    The output file with the result of the test. If omitted,
+                  saves a test case as '<configfile>__<inputfile>.out'. 
+)")
             Case "config":
                 this.Write("
 (
-Saves or loads ZipChord configuration and keyboard and language settings.
-If used without parameters, it displays the current settings.
+Shows, saves or loads ZipChord configuration and keyboard and language
+settings. If used without parameters, it displays the current settings.
 
 config [show]
-config {save|load} <config_name>
-   [show]          Show current ZipChord settings.
-   <config_name>   Name of the configuration file to load or save.
+config {save|load} <configfile>
+
+   show            Shows current ZipChord settings. (Default behavior when
+                   used without parameters.)
+   save            Saves current ZipChord settings to the specified file.
+   load            Loads settings from the specified file to ZipChord.
+   <configfile>    Name of the configuration file to load or save.
+)")
+            Case "delete":
+                this.Write("
+(
+Deletes the specified file.
+
+delete <filename>
+
+  <filename>    The file name, including extension, of the file to delete. 
 )")
             Case "exit":
-                this.Write("TBD")
+                this.Write("
+(
+Quits the console and ZipChord. (ZipChord is terminated because the
+console is linked to the application.)
+)")
             Case "help":
                 this.Write("
 (
@@ -476,35 +523,151 @@ help [<command>]
   <command>    Specifies the command for which to show help.
 )")
             Case "interact":
-                this.Write("TBD")
+                this.Write("
+(
+Resumes ZipChord in an interactive mode.
+
+ZipChord is paused whenever the Test Automation prompt is available.
+Use this command to make changes in ZipChord user interface or to monitor
+or capture ZipChord's input and output using this console.
+
+Press Ctrl+X to pause ZipChord and return to the console.  
+)")
             Case "license":
-                this.Write("TBD")
+                this.Write("
+(
+Shows the license for this product in a text file, or (if the license file
+is unavailable) opens the text on website. 
+)")
             Case "list":
-                this.Write("TBD")
+                this.Write("
+(
+Lists all files in the testing folder or only files of the specified type.
+
+list [<type>]
+
+  <type>    When omitted, lists all the files in the testing folder.
+            The <type> can be one of the following:
+               inputs     input files 
+               outputs    output files (execept test cases)
+               cases      test case files 
+               sets       test set files
+)")
             Case "monitor":
-                this.Write("TBD")
+                this.Write("
+(
+Shows or changes the destination of ZipChord's input (detected key
+presses) and output streams. The input and output destinations can be
+individually sent to console, a file, or turned off.
+
+monitor [show]
+monitor {input | output} {console | off | <filename>}
+
+   show          Shows current destinations of input and output streams.
+                 (Default behavior when used without parameters.)
+   input         Changes the destination of the input stream.
+   output        Changes the destination of the output stream.
+   console       The specified stream will be shown on the console.
+   off           The stream will be ignored. 
+   <filename>    The stream will be recorded to the specified file.
+)")
+            Case "path":
+                this.Write("
+(
+Shows or sets the working folder where the testing files are stored
+and read from. This can be an abosolute or relative path. If used
+without parameters, it displays the current folder.
+
+path [show | set <path>]
+
+   show      Shows the current path to test files.
+   set       Sets the relative or absolute path to test files.
+   <path>    Name of the configuration file to load or save.
+)")
             Case "play":
-                this.Write("TBD PLAY [config] input")
+                this.Write("
+(
+Sends recorded keyboard input to ZipChord for processing.
+
+play [configfile] <inputfile>
+
+  <configfile>    The settings to be applied for sending this input.
+  <inputfile>     The input to be sent to ZipChord.
+
+Note: The output from ZipChord may be handled depending on the output
+setting. See also 'monitor'.
+)")
             Case "record":
-                this.Write("TBD")
+                this.Write("
+(
+Records input and/or output of an interactive session into specified
+file(s) or into a test case with a corresponding name.
+
+record {input | output | both} <filename>
+record <configfile> <inputfile> [<outputfile>]
+
+  input           Only keyboard input detected by ZipChord will be
+                  recorded.
+  output          Only ZipChord's output will be recorded.
+  both            Both input and output will be recorded simultaneously
+                  into files named '<filename>.in' and '<filename>.out'.
+                  (Do not include the file extension in <filename> when
+                  using this option.)
+  <filename>      File where the input and/or output of the interaction
+                  will be recorded.
+  <configfile>    The settings to be applied for this recording.
+  <inputfile>     File where the detected input will be recorded.
+  <outputfile>    Optional name for the file where the session output
+                  will be recorded. When omitted, the output is saved as
+                  a test case named '<configfile>__<inputfile>.out'.
+)")
+            Case "show":
+                this.Write("
+(
+Shows the contents of a file in the console.
+
+show <filename>
+
+  <filename>    The name (including extension) of the file to show. 
+)")
             Case "test":
-                this.Write("TBD TEST testcase`nTEST BATCH batch`n`n  testcase    Run the specified test case file and compare the output against the test case.`n`nThe default 'output' will be a test case 'config_name__input_name.out")
+                this.Write("
+(
+Runs a test case or a set of cases and compares the output that this
+generates against the original output stored in the test cases.
+
+test <testcase>
+test set <testset>
+
+  <testcase>    Run the specified test case file and compare the output
+                against the test case.
+  <testset>     Run a set of test cases listed in the specified test set.
+                (Use 'add' to add test cases to a test set.)
+)")
             Default:
                 this.Write("
 (
-ZipChord Test Automation commands:
+Available commands:
 
+add         Adds an existing test case to a test set.
 compare     Shows differences between two output files.     
 compose     Creates a test case from a given configartion and input file.
-config      Shows, saves or loads app configuration and keyboard settings. 
+config      Shows, saves or loads app configuration and keyboard settings.
+delete      Deletes the specified file.
 exit        Exits the console and ZipChord.
+path        Shows or sets the path to the folder for testing files.
 help        Shows help information for ZipChord Test Automation commands.
-interact    Temporarily switches to normal interaction with the app.
-list        Lists all or specified files in the testing folder.
+interact    Resumes ZipChord in an interactive mode.
+license     Shows the license information.
+list        Lists all files (or files of a type) in the testing folder.
 monitor     Directs the input or output of ZipChord to console or a file.
 play        Sends recorded input to ZipChord for processing.
-record      Records input and/or output of your interaction to a file. 
+record      Records input and/or output of your interaction to a file.
+show        Shows the contents of a file.
 test        Runs and compares results of a test case or a set of cases.
+
+Note: Including file extensions in file names is optional except in
+commands 'show' and 'delete'.
 
 For more information on a specific command, type 'help <command>'.
 )")
