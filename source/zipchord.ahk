@@ -37,7 +37,7 @@ SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
 
-global version = "2.0.0"
+version := "2.0.0"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 ;@Ahk2Exe-SetName ZipChord
 ;@Ahk2Exe-SetDescription ZipChord 2.0
@@ -840,8 +840,10 @@ Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
     ;@Ahk2Exe-IgnoreBegin
-        if (test.mode > TEST_STANDBY)
+        if (test.mode > TEST_STANDBY) {
+            test.Log("*Interrupt*", true)
             test.Log("*Interrupt*")
+        }
     ;@Ahk2Exe-IgnoreEnd
 Return
 
@@ -849,8 +851,10 @@ Enter_key:
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
     ;@Ahk2Exe-IgnoreBegin
-        if (test.mode > TEST_STANDBY)
+        if (test.mode > TEST_STANDBY) {
+            test.Log("~Enter", true)
             test.Log("~Enter")
+        }
         if (visualizer.IsOn())
             visualizer.NewLine()
     ;@Ahk2Exe-IgnoreEnd
@@ -897,6 +901,7 @@ global UI_input_delay
 
 ; Prepare UI
 UI_Main_Build() {
+    global version
     Gui, UI_Main:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
@@ -987,16 +992,6 @@ UI_Tray_Build() {
     Menu, Tray, Click, 1
 }
 
-;@Ahk2Exe-IgnoreBegin
-    OpenKeyVisualizer() {
-        visualizer.Init()
-    }
-    OpenTestConsole() {
-        if (test.mode==TEST_OFF)
-            test.Init()
-    }
-;@Ahk2Exe-IgnoreEnd
-
 QuitApp() {
     ExitApp
 }
@@ -1004,7 +999,7 @@ QuitApp() {
 UI_Main_Show() {
     ;@Ahk2Exe-IgnoreBegin
         if (UI_debugging)
-            test.Stop()  ; TK Direct to a function that will also open the location of logs 
+            FinishDebugging() 
     ;@Ahk2Exe-IgnoreEnd
     Gui, UI_Main:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
@@ -1034,6 +1029,34 @@ UI_Main_Show() {
     Gui, Show,, ZipChord
 }
 
+;@Ahk2Exe-IgnoreBegin
+    OpenKeyVisualizer() {
+        visualizer.Init()
+    }
+    OpenTestConsole() {
+        if (test.mode==TEST_OFF)
+            test.Init()
+    }
+    FinishDebugging() {
+        global version
+        test.Stop()
+        FileDelete, % "debug.txt"
+        FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . version . "`n", % "debug.txt", UTF-8
+        FileRead file_content, % "debug.cfg"
+        FileAppend % file_content, % "debug.txt", UTF-8
+        FileAppend % "`nInput`n-----`n", % "debug.txt", UTF-8
+        FileRead file_content, % "debug.in"
+        FileAppend % file_content, % "debug.txt", UTF-8
+        FileAppend % "`nOutput`n------`n", % "debug.txt", UTF-8
+        FileRead file_content, % "debug.out"
+        FileAppend % file_content, % "debug.txt", UTF-8
+        FileDelete, % "debug.cfg"
+        FileDelete, % "debug.in"
+        FileDelete, % "debug.out"
+        Run % "debug.txt"
+    }
+;@Ahk2Exe-IgnoreEnd
+
 OrdinalOfHintFrequency(offset := 0) {
     hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
     hint_frequency := Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
@@ -1062,7 +1085,7 @@ UpdateLocaleInMainUI(selected_loc) {
 
 UI_btnOK:
     if (ApplyMainSettings())
-        UI_Main_Close()
+        UI_Main_Close()    
 return
 
 UI_btnApply:
@@ -1108,7 +1131,8 @@ ApplyMainSettings() {
             FileDelete, % "debug.cfg"
             FileDelete, % "debug.in"
             FileDelete, % "debug.out"
-            test.Record("debug", "debug", "debug")
+            test.Config("save", "debug")
+            test.Record("both", "debug")
         }
     ;@Ahk2Exe-IgnoreEnd
     ; to reflect any changes to OSD UI
