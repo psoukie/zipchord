@@ -347,42 +347,15 @@ Class TestingClass {
             Return
         }
         file := opt
-        if (SubStr(file, InStr(file, ".", false, 0)) == ".out") { ; searches for "." from the back
-            Loop, Read, % this._path . file
-            {
-                key := A_LoopReadLine
-                if (SubStr(key, 1, 1) == "~")
-                    key := SubStr(key, 2)
-                Switch key {
-                    Case "Enter":
-                        out .= "`n"
-                    Case "Space", "{Space}":
-                        out .= " "
-                    Case "{Backspace}":
-                        out := SubStr(out, 1, StrLen(out)-1)
-                    Case "{Backspace 2}":
-                        out := SubStr(out, 1, StrLen(out)-2)
-                    Case "*Hint*":
-
-                    Default:
-                        if (SubStr(key, 1, 17)=="{Backspace}{Text}") {
-                            out := SubStr(out, 1, StrLen(out)-1) . SubStr(key, 18)
-                            Continue
-                        }
-                        if (SubStr(key, 1, 6)=="{Text}") {
-                            out .= SubStr(key, 7)
-                            Continue
-                        }
-                        if (SubStr(key, 1, 1) == "+")
-                            out .= ToAscii(SubStr(key, 2, 1), ["Shift"])
-                        else
-                            out .= key
-                }
-            }
-            this.Write(out)
-            return
+        ext := SubStr(file, -2)
+        Switch ext {
+            Case ".in":
+                this.Write(this._FormatInput(file))
+            Case "out":
+                this.Write(this._FormatOutput(file))
+            Default:
+                RunWait %ComSpec% /c type %file%, % this._path       
         }
-        RunWait %ComSpec% /c type %file%, % this._path
     }
     _Batch(testset:="") {
         if (! this._CheckFilename(testset, "set", true))
@@ -471,6 +444,97 @@ Class TestingClass {
             FileDelete, % this._path . filename
         }
         return filename
+    }
+    _FormatInput(file) {
+        p_time := 0
+        ch_time := 0
+        key := ""
+        modifier := ""
+        this.Write(" Key(s)")
+        this.Write(" ------", "")
+        Loop, Read, % this._path . file
+        {
+            columns := StrSplit(A_LoopReadLine, A_Tab)
+            time := columns[1]
+            key := SubStr(columns[2], 2)
+            if (SubStr(key, 1, 1) == "+") {
+                shifted := True
+                key := SubStr(key, 2)
+            } else shifted := False
+            key := StrReplace(key, "Space", " ")
+            if (SubStr(key, -2)==" Up") {
+                key := SubStr(key, 1, StrLen(key)-3)
+                p_buffer := buffer
+                buffer := StrReplace(buffer, key)
+                if (ch_time==-1) {
+                    p_time := time
+                    Continue
+                }
+                modifier := shifted ? "`n +" : "`n  "
+                this.Write(modifier . p_buffer, "")
+                Loop % 12-StrLen(p_buffer)
+                    this.Write(" ", "")
+                if (ch_time > 0 && time - ch_time > 0)
+                    this.Write(Format("{:6}", time - ch_time), "")
+                else
+                    this.Write(Format("{:6}", time - p_time), "")
+                ch_time := -1
+                p_time := time
+                Continue
+            }
+            Switch key {
+                Case "Interrupt*":
+                    this.Write("`n Interrupt", "")
+                Case "Enter":
+                    this.Write("`n Enter", "")
+                Default:
+                    if (ch_time==-1)
+                        ch_time := 0
+                    if (StrLen(buffer)==1)
+                        ch_time := time
+                    p_time := time
+                    buffer .= key
+            }
+        }
+    }
+    _FormatOutput(file) {
+        Loop, Read, % this._path . file
+        {
+            key := A_LoopReadLine
+            if (SubStr(key, 1, 1) == "~")
+                key := SubStr(key, 2)
+            Switch key {
+                Case "Enter":
+                    out .= "`n"
+                Case "Space", "{Space}":
+                    out .= " "
+                Case "{Backspace}":
+                    out := SubStr(out, 1, StrLen(out)-1)
+                Case "*Hint*":
+                    Continue
+                Case "*Interrupt*":
+                    out .= "`n*interrupted*`n"
+                Default:
+                    if (SubStr(key, 1, 11)=="{Backspace ") {
+                        count := SubStr(key, 12, StrLen(key)-12)
+                        out := SubStr(out, 1, StrLen(out)-count)
+                        Continue
+                    }
+                    if (SubStr(key, 1, 17)=="{Backspace}{Text}") {
+                        out := SubStr(out, 1, StrLen(out)-1) . SubStr(key, 18)
+                        Continue
+                    }
+                    if (SubStr(key, 1, 6)=="{Text}") {
+                        out .= SubStr(key, 7)
+                        Continue
+                    }
+                    if (SubStr(key, 1, 1) == "+")
+                        out .= ToAscii(SubStr(key, 2, 1), ["Shift"])
+                    else
+                        out .= key
+            }
+        }
+        return out
     }
     _IsBasicHelp(param, fn) {
         if (param && param!="help")
@@ -669,14 +733,14 @@ record <configfile> <inputfile> [<outputfile>]
             Case "show":
                 this.Write("
 (
-Shows the contents of a file in the console. Output and test case files
-are formatted as they would look in text editor, unless the 'raw' option
-is specified.
+Shows the contents of the specified file in the console. Input, output
+and test case files are shown in human-readable view, unless you use
+the 'raw' option.
 
 show [raw] <filename>
 
   <filename>    The name (including extension) of the file to show.
-  raw           Forces the raw output for test case and output files.  
+  raw           Forces raw output for input, output and test case files.  
 )")
             Case "test":
                 this.Write("
