@@ -1,23 +1,11 @@
-﻿/**
-*
-*  This file is part of ZipChord.
-* 
-*  ZipChord is free software: you can redistribute it and/or modify it
-*  under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*  
-*  ZipChord is distributed in the hope that it will be useful, but
-*  WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with ZipChord. If not, see <https://www.gnu.org/licenses/>.
-*  
-*  See the official GitHub page for the documentation, source code, and
-*  to contact the author: https://github.com/psoukie/zipchord/
-*  
+﻿/*
+
+This file is part of ZipChord.
+
+Copyright (c) 2023 Pavel Soukenik
+
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+
 */
 
 global TEST_OFF := 0

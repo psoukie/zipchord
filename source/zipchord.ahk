@@ -1,29 +1,37 @@
-﻿/**
-*
-*  ZipChord
-* 
-*  A customizable hybrid keyboard input method that augments regular
-*  typing with chords and shorthands.
-*  
-*  Copyright © 2021-2023 Pavel Soukenik
-*  
-*  This program is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*  
-*  This program is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*  
-*  You should have received a copy of the GNU General Public License
-*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*  
-*  
-*  See the official GitHub page for the documentation, source code, and
-*  to contact the author: https://github.com/psoukie/zipchord/
-*  
+﻿/*
+
+ZipChord
+
+A customizable hybrid keyboard input method that augments regular typing with
+chords and shorthands.
+
+Copyright (c) 2021-2023 Pavel Soukenik
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 */
 
 #NoEnv
@@ -963,9 +971,9 @@ UI_Main_Build() {
     Gui, Margin, 15, 5
     Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
     Gui, Add, Text, , % "version " . version
-    Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
+    ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
     Gui, Font, Underline cBlue
-    Gui, Add, Text, gLinkToLicense, % "Open the license"
+    Gui, Add, Text, gLinkToLicense, % "License information"
     Gui, Margin, 15, 15
     Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
@@ -1160,7 +1168,7 @@ LinkToLicense() {
     if (FileExist("LICENSE.txt"))
         Run % "LICENSE.txt"
     else
-        Run https://www.gnu.org/licenses/gpl-3.0.html
+        Run https://raw.githubusercontent.com/psoukie/zipchord/main/LICENSE
 }
 Return
 LinkToDocumentation:
