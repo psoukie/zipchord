@@ -1,4 +1,4 @@
-﻿/**
+/**
 *
 *  ZipChord
 * 
@@ -385,12 +385,16 @@ WireHotkeys(state) {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
             if (state=="On")     
-                MsgBox, , % "ZipChord", % Format("The current keyboard layout does not include the unmodified key '{}'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key)
+                unrecognized .= key 
             Continue
         }
         Hotkey, % "~+" key, KeyDown, %state%
         Hotkey, % "~" key " Up", KeyUp, %state%
         Hotkey, % "~+" key " Up", KeyUp, %state%
+    }
+    if (unrecognized) {
+        key_str := StrLen(unrecognized)>1 ? "keys" : "key"
+        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
     }
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
