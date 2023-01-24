@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -406,12 +406,16 @@ WireHotkeys(state) {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
             if (state=="On")     
-                MsgBox, , % "ZipChord", % Format("The current keyboard layout does not include the unmodified key '{}'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key)
+                unrecognized .= key 
             Continue
         }
         Hotkey, % "~+" key, KeyDown, %state%
         Hotkey, % "~" key " Up", KeyUp, %state%
         Hotkey, % "~+" key " Up", KeyUp, %state%
+    }
+    if (unrecognized) {
+        key_str := StrLen(unrecognized)>1 ? "keys" : "key"
+        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
     }
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
@@ -1537,29 +1541,32 @@ global UI_OSD_line1
     , UI_OSD_line3
     , UI_OSD_transparency
     , UI_OSD_fading
-    , UI_OSD_pos_x, UI_OSD_pos_y
     , UI_OSD_transparent_color  ; gets calculated from settings.hint_color for a nicer effect
+    , UI_OSD_pos_x, UI_OSD_pos_y
+    , UI_OSD_hwnd
 
 UI_OSD_Build() {
     hint_color := settings.hint_color
     UI_OSD_transparent_color := ShiftHexColor(hint_color, 1)
     Gui, UI_OSD:Default
-    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow +HwndOSDHwnd ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
+    Gui +LastFound +AlwaysOnTop -Caption +ToolWindow +HwndUI_OSD_hwnd ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
     size := settings.hint_size
     Gui, Margin, Round(size/3), Round(size/3)
     Gui, Color, %UI_OSD_transparent_color%
     Gui, Font, s%size%, Consolas  ; Set a large font size (32-point).
-    Gui, Add, Text, c%hint_color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
-    Gui, Add, Text, c%hint_color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWWWWW
-    Gui, Add, Text, c%hint_color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line1, WWWWWWWWWWWWWWWWWWWWW  ; to auto-size the window.
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line2, WWWWWWWWWWWWWWWWWWWWW
+    Gui, Add, Text, c%hint_color% Center vUI_OSD_line3, WWWWWWWWWWWWWWWWWWWWW
     Gui, Show, NoActivate Center, ZipChord_OSD
     WinSet, TransColor, %UI_OSD_transparent_color% 150, ZipChord_OSD
+    ; Get position of the window in case our fancy detection for multiple monitors fails
     WinGetPos UI_OSD_pos_x, UI_OSD_pos_y, , , ZipChord_OSD
     UI_OSD_pos_x += settings.hint_offset_x
     UI_OSD_pos_y += settings.hint_offset_y
     Gui, Hide
 }
 ShowHint(line1, line2:="", line3 :="") {
+    active_window_handle := WinExist("A")
     global hint_delay
     ;@Ahk2Exe-IgnoreBegin
         if (test.mode > TEST_STANDBY)
@@ -1577,7 +1584,11 @@ ShowHint(line1, line2:="", line3 :="") {
         GuiControl,, UI_OSD_line1, % line1
         GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, true)
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
-        Gui, Show, NoActivate X%UI_OSD_pos_x% Y%UI_OSD_pos_y%, ZipChord_OSD
+        Gui, %UI_OSD_hwnd%: Show, Hide NoActivate, ZipChord_OSD
+        GetMonitorCenterForWindow(active_window_handle, UI_OSD_hwnd, pos_x, pos_y)
+        pos_x := pos_x ? pos_x+settings.hint_offset_x : UI_OSD_pos_x
+        pos_y := pos_y ? pos_y+settings.hint_offset_y : UI_OSD_pos_y
+        Gui, %UI_OSD_hwnd%: Show, NoActivate X%pos_x% Y%pos_y%, ZipChord_OSD
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
         SetTimer, UI_OSD_Hide, -1900
     }
@@ -1662,6 +1673,28 @@ GetCaret(ByRef X:="", ByRef Y:="", ByRef W:="", ByRef H:="") {
     Y := A_CaretY
     W := 4
     H := 20
+}
+
+GetMonitorCenterForWindow(window_Handle, OSD_handle, ByRef pos_x, ByRef pos_y ) {
+    ; Uses code for getting monitor info by "kon" from https://www.autohotkey.com/boards/viewtopic.php?t=15501
+    VarSetCapacity(monitor_info, 40), NumPut(40, monitor_info)
+    if ((monitorHandle := DllCall("MonitorFromWindow", "Ptr", window_Handle, "UInt", 1)) 
+        && DllCall("GetMonitorInfo", "Ptr", monitorHandle, "Ptr", &monitor_info)) {
+        monitor_left   := NumGet(monitor_info,  4, "Int")
+        monitor_top    := NumGet(monitor_info,  8, "Int")
+        monitor_right  := NumGet(monitor_info, 12, "Int")
+        monitor_bottom := NumGet(monitor_info, 16, "Int")
+        ; From code for multiple monitors by DigiDon from https://www.autohotkey.com/boards/viewtopic.php?t=31716 
+        VarSetCapacity(rc, 16)
+        DllCall("GetClientRect", "uint", OSD_handle, "uint", &rc)
+        window_width := NumGet(rc, 8, "int")
+        window_height := NumGet(rc, 12, "int")
+        pos_x := (( monitor_right - monitor_left - window_width ) / 2) + monitor_left
+        pos_y := (( monitor_bottom - monitor_top - window_height ) / 2) + monitor_top
+    } else {
+        pos_x := 0
+        pos_y := 0
+    }
 }
 
 ;; File and registry functions
