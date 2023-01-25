@@ -33,10 +33,12 @@ Class clsAppShortcuts {
         this.Add("QuitApp", "Quit ZipChord", "", this.MD_SHORT)
         this.LoadSettings()
         this._WireHotkeys("On")
-        this._BuildUI()
     }
     ShowUI() {
+        this._BuildUI()
         Gui, UI_AppShortcuts:Show, w440
+        call := Func("OpenHelp").Bind("AppShortcuts")
+        Hotkey, F1, % call, On
     }
     SaveSettings() {
         For _, shortcut in this._shortcuts
@@ -91,7 +93,7 @@ Class clsAppShortcuts {
         } else %function%()
     }
     _BuildUI() {
-        Gui, UI_AppShortcuts:New, , % "ZipChord Keyboard Shortcuts"
+        Gui, UI_AppShortcuts:New, , % "ZipChord Application Keyboard Shortcuts"
         Gui, Margin, 20, 20
         Gui, Font, s10, Segoe UI
         Gui, Add, Text, x+20 y-35, % ""
@@ -129,7 +131,7 @@ Class clsAppShortcuts {
             this._UpdateHotkeys()
             this.SaveSettings()
             UI_Tray_Update()
-            Gui, UI_AppShortcuts:Hide
+            this._CloseUI()
         }
     }
     _CheckDuplicates() {
@@ -173,29 +175,6 @@ Class clsAppShortcuts {
 
 app_shortcuts := New clsAppShortcuts
 
-; t := New clsAppShortcuts
-; t.Init()
-; t.ShowUI()
-; Return
-
-; UI_Main_Show() {
-;     MsgBox, % "Opening Menu..." . m
-; }
-
-; AddShortcut() {
-;     MsgBox, % "Add..." 
-; }
-; TogglePause() {
-;     MsgBox, % "Toggling"
-; }
-; OpenMenu:
-;     MsgBox, % "3..."
-; Return
-; QuitApp:
-;     ExitApp
-; Return
-
-
 UI_AppShortcutsGuiClose() {
     UI_AppShortcuts_Close()
 }
@@ -203,10 +182,9 @@ UI_AppShortcutsGuiEscape() {
     UI_AppShortcuts_Close()
 }
 UI_AppShortcuts_Close() {
+    Hotkey, F1, Off
     Gui, UI_AppShortcuts:Destroy
 }
-
-
 
 ; Shared functions
 

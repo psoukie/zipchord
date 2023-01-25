@@ -691,6 +691,27 @@ Return
 ;; Helper functions
 ; ------------------
 
+OpenHelp(topic) {
+    Switch topic {
+        Case "AppShortcuts":
+            Run https://github.com/psoukie/zipchord/wiki/Application-Keyboard-Shortcuts-window
+        Case "AddShortcut":
+            Run https://github.com/psoukie/zipchord/wiki/Add-Shortcut-window
+        Case "Main-Dictionaries":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#dictionaries
+        Case "Main-Detection":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#detection
+        Case "Main-Hints":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#hints
+        Case "Main-Output":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#output
+        Case "Main-About":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#about
+        Default:
+            Run https://github.com/psoukie/zipchord/wiki
+    }
+}
+
 ; Delay output by defined delay
 DelayOutput() {
     if (settings.output_delay)
@@ -1058,6 +1079,7 @@ UI_Main_Show() {
         if (UI_debugging)
             FinishDebugging() 
     ;@Ahk2Exe-IgnoreEnd
+    Hotkey, F1, UI_MainHelp, On
     Gui, UI_Main:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
@@ -1085,6 +1107,13 @@ UI_Main_Show() {
     GuiControl, Choose, UI_tab, 1 ; switch to first tab
     UpdateLocaleInMainUI(settings.locale)
     Gui, Show,, ZipChord
+}
+
+UI_MainHelp() {
+    Gui, UI_Main:Default
+    ; Gui, Submit, NoHide
+    GuiControlGet, current_tab,, UI_tab
+    OpenHelp("Main-" . Trim(current_tab))
 }
 
 ;@Ahk2Exe-IgnoreBegin
@@ -1212,6 +1241,7 @@ UI_MainGuiEscape() {
 }
 
 UI_Main_Close() {
+    Hotkey, F1, Off
     Gui, UI_Main:Default
     Gui, Submit
     if (settings.preferences & PREF_SHOW_CLOSING_TIP)
@@ -1381,6 +1411,8 @@ UI_Locale_Build() {
 
 ; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.  
 UI_Locale_Show(locale_name) {
+    call := Func("OpenHelp").Bind("Locale")
+    Hotkey, F1, % call, On
     Gui, UI_Locale:Default
     loc_obj := new localeClass
     IniRead, sections, locales.ini
@@ -1511,6 +1543,8 @@ UI_AddShortcut_Build() {
     Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
 }
 UI_AddShortcut_Show(exp) {
+    call := Func("OpenHelp").Bind("AddShortcut")
+    Hotkey, F1, % call, On
     WireHotkeys("Off")  ; so the user can edit values without interference
     UI_AddShortcut_Build()
     Gui, UI_AddShortcut:Default
@@ -1552,6 +1586,7 @@ UI_AddShortcutGuiEscape() {
     UI_AddShortcut_Close()
 }
 UI_AddShortcut_Close() {
+    Hotkey, F1, Off
     Gui, UI_AddShortcut:Destroy
     if (settings.mode > MODE_ZIPCHORD_ENABLED)
         WireHotkeys("On")  ; resume normal mode
