@@ -152,10 +152,13 @@ hint_delay := New HintTimingClass
 global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
     , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
 
+global MODE_CHORDS_ENABLED := 1
+    , MODE_SHORTHANDS_ENABLED := 2
+    , MODE_ZIPCHORD_ENABLED := 4
+
 ; Current application settings
 Class settingsClass {
-    chords_enabled := 1
-    shorthands_enabled := 1
+    mode := MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
     preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
     hints := HINT_ON | HINT_NORMAL | HINT_OSD
@@ -170,7 +173,6 @@ Class settingsClass {
     shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
     input_delay := 70
     output_delay := 0
-    ; Read settings from Windows Registry and locate dictionary file
     Read() {
         For key in this
         {
@@ -397,6 +399,7 @@ Initialize() {
 WireHotkeys(state) {
     global keys
     global special_key_map
+    ShowHint("ZipChord Keyboard", state, , false)
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
@@ -476,7 +479,7 @@ KeyDown:
         start := 0
         chord_candidate := ""
     }
-    if (settings.chords_enabled)
+    if (settings.mode & MODE_CHORDS_ENABLED)
         chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
     if (StrLen(chord_buffer)==2) {
@@ -485,7 +488,7 @@ KeyDown:
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
-    if (settings.shorthands_enabled || (settings.hints & HINT_ON) ) {
+    if ( (settings.mode & MODE_SHORTHANDS_ENABLED) || (settings.hints & HINT_ON) ) {
         if (last_output & OUT_AUTOMATIC)
             shorthand_buffer := ""
         if (last_output & OUT_INTERRUPTED & ~OUT_AUTOMATIC)
@@ -497,9 +500,9 @@ KeyDown:
                     chord_hint := ""
                     shorthand_hint := ""
                     if (hint_delay.HasElapsed()) {
-                        if (settings.chords_enabled)
+                        if (settings.mode & MODE_CHORDS_ENABLED)
                             chord_hint := chords.ReverseLookUp(shorthand_buffer)
-                        if (settings.shorthands_enabled)
+                        if (settings.mode & MODE_SHORTHANDS_ENABLED)
                             shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
                         chord_hint := chord_hint ? chord_hint : "" 
                         shorthand_hint := shorthand_hint ? shorthand_hint : "" 
@@ -508,7 +511,7 @@ KeyDown:
                     }
                 }
                 ; then, we test if it's a shorthand to be expanded 
-                if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) )
+                if ( (settings.mode & MODE_SHORTHANDS_ENABLED) && expanded := shorthands.LookUp(shorthand_buffer) )
                     OutputShorthand(expanded, key, shifted)
             }
             shorthand_buffer := ""
@@ -906,7 +909,7 @@ global UI_input_delay
     , UI_chord_file, UI_shorthand_file
     , UI_chord_entries
     , UI_shorthand_entries
-    , UI_chords_enabled, UI_shorthands_enabled
+    , UI_zipchord_paused, UI_chords_enabled, UI_shorthands_enabled
     , UI_tab
     , UI_selected_locale
     , UI_debugging
@@ -968,8 +971,9 @@ UI_Main_Build() {
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
     Gui, Tab
-    Gui, Add, Button, w80 xm+140 ym+450 gUI_btnApply, % "Apply"
-    Gui, Add, Button, Default w80 xm+240 ym+450 gUI_btnOK, % "OK"
+    Gui, Add, Checkbox, vUI_zipchord_paused gUI_TogglePause xm ym+452, % "&Pause ZipChord"
+    Gui, Add, Button, w80 xm+150 ym+450 gUI_btnApply, % "Apply"
+    Gui, Add, Button, Default w80 xm+250 ym+450 gUI_btnOK, % "OK"
     Gui, Tab, 5
     Gui, Add, Text, Y+20, % "ZipChord"
     Gui, Margin, 15, 5
@@ -987,6 +991,11 @@ UI_Main_Build() {
     ;@Ahk2Exe-IgnoreEnd
 }
 
+UI_TogglePause() {
+    Gui, Submit, NoHide ; to get the current value
+    PauseApp(UI_zipchord_paused)
+}
+
     ; Create taskbar tray menu:
 UI_Tray_Build() {
     Menu, Tray, NoStandard
@@ -998,10 +1007,28 @@ UI_Tray_Build() {
         Menu, Tray, Add, % "Open Test Console", OpenTestConsole
         Menu, Tray, Add
     ;@Ahk2Exe-IgnoreEnd
+    Menu, Tray, Add, % "Pause ZipChord", PauseApp
     Menu, Tray, Add, % "Quit", QuitApp
     Menu, Tray, Default, 1&
     Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
+}
+
+PauseApp(pause:=3) {
+    if (pause==3)
+        pause := (settings.mode & MODE_ZIPCHORD_ENABLED) ? 1 : 0
+    if (pause) {
+        settings.mode := settings.mode & ~MODE_ZIPCHORD_ENABLED
+        Menu, Tray, Rename, % "Pause ZipChord", % "Resume ZipChord"
+        WireHotkeys("Off")
+    } else {
+        settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
+        Menu, Tray, Rename, % "Resume ZipChord", % "Pause ZipChord"
+        if (settings.mode > MODE_ZIPCHORD_ENABLED)
+            WireHotkeys("On")
+    }
+    Gui, UI_Main:Default
+    GuiControl, Disable%UI_zipchord_paused%, UI_tab
 }
 
 QuitApp() {
@@ -1024,8 +1051,9 @@ UI_Main_Show() {
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_chords_enabled, % settings.chords_enabled
-    GuiControl , , UI_shorthands_enabled, % settings.shorthands_enabled
+    GuiControl , , UI_zipchord_paused, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? 0 : 1
+    GuiControl , , UI_chords_enabled, % (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+    GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
     ; debugging is always set to disabled
     GuiControl , , UI_debugging, 0
     GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
@@ -1115,8 +1143,8 @@ ApplyMainSettings() {
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
     settings.locale := UI_selected_locale
-    settings.chords_enabled := UI_chords_enabled
-    settings.shorthands_enabled := UI_shorthands_enabled
+    settings.mode := UI_chords_enabled * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED
+    settings.mode += UI_zipchord_paused ? 0 : MODE_ZIPCHORD_ENABLED
     settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
     if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
         MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
@@ -1136,7 +1164,7 @@ ApplyMainSettings() {
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_selected_locale, "locales.ini")
-    if (UI_chords_enabled || UI_shorthands_enabled)
+    if (settings.mode > MODE_ZIPCHORD_ENABLED)
         WireHotkeys("On")
     ;@Ahk2Exe-IgnoreBegin
         if (UI_debugging) {
@@ -1503,7 +1531,7 @@ UI_AddShortcutGuiEscape() {
 }
 UI_AddShortcut_Close() {
     Gui, UI_AddShortcut:Destroy
-    if (settings.chords_enabled || settings.shorthands_enabled)
+    if (settings.mode > MODE_ZIPCHORD_ENABLED)
         WireHotkeys("On")  ; resume normal mode
 }
 UI_AddShortcut_SaveChord(){
@@ -1565,7 +1593,7 @@ UI_OSD_Build() {
     UI_OSD_pos_y += settings.hint_offset_y
     Gui, Hide
 }
-ShowHint(line1, line2:="", line3 :="") {
+ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
     active_window_handle := WinExist("A")
     global hint_delay
     ;@Ahk2Exe-IgnoreBegin
@@ -1573,7 +1601,7 @@ ShowHint(line1, line2:="", line3 :="") {
             test.Log("*Hint*")
     ;@Ahk2Exe-IgnoreEnd
     hint_delay.Extend()
-    if (settings.hints & HINT_TOOLTIP) {
+    if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
         GetCaret(x, y, , h)
         ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " ", x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
         SetTimer, HideToolTip, -1800
@@ -1582,7 +1610,7 @@ ShowHint(line1, line2:="", line3 :="") {
         UI_OSD_transparency := 150
         Gui, UI_OSD:Default
         GuiControl,, UI_OSD_line1, % line1
-        GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, true)
+        GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, follow_settings)
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
         Gui, %UI_OSD_hwnd%: Show, Hide NoActivate, ZipChord_OSD
         GetMonitorCenterForWindow(active_window_handle, UI_OSD_hwnd, pos_x, pos_y)
