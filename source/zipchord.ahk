@@ -56,6 +56,8 @@ version := "2.0.0"
     #Include *i testing.ahk
 ;@Ahk2Exe-IgnoreEnd
 
+#Include app_shortcuts.ahk
+
 OutputKeys(output) {
     ;@Ahk2Exe-IgnoreBegin
         test.Log(output)
@@ -339,23 +341,6 @@ global last_output := OUT_INTERRUPTED  ; last output in the current typing seque
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
-;; Permanent Hotkeys
-; -------------------
-
-; An always enabled Ctrl+Shift+C hotkey held long to open ZipChord menu.
-~^+c::
-    Sleep 300
-    if GetKeyState("c","P")
-        UI_Main_Show()
-    Return
-
-; An always-on Ctrl+C hotkey held long to add a new chord to the dictionary.
-~^c::
-    Sleep 300
-    if GetKeyState("c","P")
-        AddShortcut()
-    Return
-
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
 ;; Initilization and Wiring
@@ -363,9 +348,12 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     global keys
+    global app_shortcuts
     if (A_IsCompiled)
         FileInstall, ..\LICENSE, % "LICENSE.txt"
+    app_shortcuts.Init()
     settings.Read()
+    settings.mode |= MODE_ZIPCHORD_ENABLED
     if (settings.preferences & PREF_FIRST_RUN) {
         settings.preferences &= ~PREF_FIRST_RUN
         if (A_IsCompiled) {
@@ -399,7 +387,7 @@ Initialize() {
 WireHotkeys(state) {
     global keys
     global special_key_map
-    ShowHint("ZipChord Keyboard", state, , false)
+    global app_shortcuts
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
@@ -441,6 +429,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
+    app_shortcuts._WireHotkeys("On")
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
@@ -932,7 +921,7 @@ UI_Main_Build() {
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Op&en"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
     Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
@@ -993,45 +982,74 @@ UI_Main_Build() {
 
 UI_TogglePause() {
     Gui, Submit, NoHide ; to get the current value
-    PauseApp(UI_zipchord_paused)
+    PauseApp(true)
 }
 
     ; Create taskbar tray menu:
 UI_Tray_Build() {
+    global app_shortcuts
     Menu, Tray, NoStandard
-    Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", UI_Main_Show
-    Menu, Tray, Add, % "Add Shortcut`t(hold Ctrl+C)", AddShortcut
+    Menu, Tray, Add, % "Open ZipChord", UI_Main_Show
+    Menu, Tray, Add, % "Add Shortcut", AddShortcut
+    Menu, Tray, Add, % "Pause ZipChord", PauseApp
+    Menu, Tray, Add  ;  adds a horizontal line
+    fn := ObjBindMethod(app_shortcuts, "ShowUI")
+    Menu, Tray, Add, % "Customize app shortcuts", % fn
     Menu, Tray, Add  ;  adds a horizontal line
     ;@Ahk2Exe-IgnoreBegin
         Menu, Tray, Add, % "Open Key Visualizer", OpenKeyVisualizer
         Menu, Tray, Add, % "Open Test Console", OpenTestConsole
         Menu, Tray, Add
     ;@Ahk2Exe-IgnoreEnd
-    Menu, Tray, Add, % "Pause ZipChord", PauseApp
     Menu, Tray, Add, % "Quit", QuitApp
     Menu, Tray, Default, 1&
     Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
+    UI_Tray_Update()
 }
 
-PauseApp(pause:=3) {
-    if (pause==3)
-        pause := (settings.mode & MODE_ZIPCHORD_ENABLED) ? 1 : 0
-    if (pause) {
+UI_Tray_Update() {
+    global app_shortcuts
+    Menu, Tray, Rename, 1&, % "Open ZipChord`t" . app_shortcuts.GetHotkeyText("UI_Main_Show")
+    Menu, Tray, Rename, 2&, % "Add Shortcut`t" . app_shortcuts.GetHotkeyText("AddShortcut")
+    string :=  (settings.mode & MODE_ZIPCHORD_ENABLED) ? "Pause" : "Resume"
+    Menu, Tray, Rename, 3&, % string . " ZipChord`t" . app_shortcuts.GetHotkeyText("PauseApp")
+    i := 7
+    ;@Ahk2Exe-IgnoreBegin
+        i += 3
+    ;@Ahk2Exe-IgnoreEnd
+    Menu, Tray, Rename, %i%&, % "Quit`t" . app_shortcuts.GetHotkeyText("QuitApp")
+}
+
+PauseApp(from_checkbox := false) {
+    Gui, UI_Main:Default
+    if (settings.mode & MODE_ZIPCHORD_ENABLED) {
         settings.mode := settings.mode & ~MODE_ZIPCHORD_ENABLED
-        Menu, Tray, Rename, % "Pause ZipChord", % "Resume ZipChord"
-        WireHotkeys("Off")
+        mode := 0
     } else {
         settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
-        Menu, Tray, Rename, % "Resume ZipChord", % "Pause ZipChord"
-        if (settings.mode > MODE_ZIPCHORD_ENABLED)
-            WireHotkeys("On")
+        mode := 1
     }
+    state := mode ? "On" : "Off"
+    if (from_checkbox != true) {
+        GuiControl , , UI_zipchord_paused, % 1-mode
+        ShowHint("ZipChord Keyboard", state, , false)
+    }
+    WireHotkeys(state)
+    fn := Func("UI_Main_EnableTabs").Bind(mode)
+    UI_Tray_Update()
+    SetTimer, % fn, -10
+}
+
+UI_Main_EnableTabs(mode) {
     Gui, UI_Main:Default
-    GuiControl, Disable%UI_zipchord_paused%, UI_tab
+    GuiControl, Enable%mode%, UI_tab
 }
 
 QuitApp() {
+    WireHotkeys("Off")
+    ShowHint("Closing ZipChord", state, , false)
+    Sleep 1100
     ExitApp
 }
 
@@ -1135,6 +1153,7 @@ return
 ApplyMainSettings() {
     global keys
     global hint_delay
+    previous_mode := settings.mode 
     Gui, Submit, NoHide
     ; gather new settings from UI...
     settings.input_delay := UI_input_delay + 0
@@ -1164,8 +1183,13 @@ ApplyMainSettings() {
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
     LoadPropertiesFromIni(keys, UI_selected_locale, "locales.ini")
-    if (settings.mode > MODE_ZIPCHORD_ENABLED)
+    if (settings.mode > MODE_ZIPCHORD_ENABLED) {
+        if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
+            ShowHint("ZipChord Keyboard", "On", , false)
         WireHotkeys("On")
+    }
+    else if (settings.mode & MODE_ZIPCHORD_ENABLED)
+        ShowHint("ZipChord Keyboard", "Off", , false)
     ;@Ahk2Exe-IgnoreBegin
         if (UI_debugging) {
             FileDelete, % "debug.cfg"
@@ -1176,9 +1200,7 @@ ApplyMainSettings() {
         }
     ;@Ahk2Exe-IgnoreEnd
     ; to reflect any changes to OSD UI
-    Gui, UI_OSD:Destroy
-    hint_delay.Reset()
-    UI_OSD_Build()
+    SetTimer,  UI_OSD_Reset, -2000
     Return true
 }
 
@@ -1620,6 +1642,12 @@ ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
         SetTimer, UI_OSD_Hide, -1900
     }
+}
+
+UI_OSD_Reset() {
+    hint_delay.Reset()
+    Gui, UI_OSD:Destroy
+    UI_OSD_Build()
 }
 
 HideToolTip:

@@ -29,7 +29,7 @@ Class clsAppShortcuts {
     Init() {
         this.Add("UI_Main_Show", "Open main ZipChord window", "^+z", this.MD_LONG)
         this.Add( "AddShortcut", "Open Add Shortcut window", "^c", this.MD_LONG)
-        this.Add("TogglePause", "Pause / Unpause ZipChord", "", this.MD_LONG)
+        this.Add("PauseApp", "Pause / Resume ZipChord", "", this.MD_LONG)
         this.Add("QuitApp", "Quit ZipChord", "", this.MD_SHORT)
         this.LoadSettings()
         this._WireHotkeys("On")
@@ -39,11 +39,11 @@ Class clsAppShortcuts {
         Gui, UI_AppShortcuts:Show, w440
     }
     SaveSettings() {
-        For i, shortcut in this._shortcuts
+        For _, shortcut in this._shortcuts
             SaveVarToRegistry(shortcut.HK . "|" shortcut.mode, "hk_" . shortcut.function)
     }
     LoadSettings() {
-        For i, shortcut in this._shortcuts
+        For _, shortcut in this._shortcuts
         {
             setting := ""
             UpdateVarFromRegistry(setting, "hk_" . shortcut.function)
@@ -62,6 +62,13 @@ Class clsAppShortcuts {
         app_shortcut.HK := HK
         app_shortcut.mode := mode
         this._shortcuts[i] := app_shortcut
+    }
+    GetHotkeyText(function) {
+        For _, shortcut in this._shortcuts
+            if (shortcut.function == function && shortcut.HK) {
+                prefix := shortcut.mode==this.MD_LONG ? "hold " : ""
+                return prefix . HotkeyToText(shortcut.HK)
+            }
     }
     _WireHotkeys(status) {
         For i, shortcut in this._shortcuts
@@ -96,11 +103,11 @@ Class clsAppShortcuts {
             handles.HK_hwnd := temp
             fn := ObjBindMethod(this, "_UpdateUI", i)
             GuiControl +g, % temp, % fn
-            checked := shortcut.mode==this.MD_LONG ? 1 : 0
-            Gui, Add, Radio, xs+180 ys-9 Hwndtemp Checked%checked%, % "Long press (non-exclusive)"
+            status := shortcut.mode==this.MD_LONG ? 1 : 0
+            Gui, Add, Radio, xs+180 ys-9 Hwndtemp Checked%status%, % "Long press (non-exclusive)"
             handles.optLong_hwnd := temp
-            checked := checked ? 0 : 1
-            Gui, Add, Radio, y+10 Hwndtemp Checked%checked%, % "Short press (exclusive)"
+            status := status ? 0 : 1
+            Gui, Add, Radio, y+10 Hwndtemp Checked%status%, % "Short press (exclusive)"
             handles.optShort_hwnd := temp
             this._UI_controls[i] := handles
         }
@@ -121,6 +128,7 @@ Class clsAppShortcuts {
         if (this._CheckDuplicates()) {
             this._UpdateHotkeys()
             this.SaveSettings()
+            UI_Tray_Update()
             Gui, UI_AppShortcuts:Hide
         }
     }
@@ -163,27 +171,29 @@ Class clsAppShortcuts {
     }
 }
 
-t := New clsAppShortcuts
-t.Init()
-t.ShowUI()
-Return
+app_shortcuts := New clsAppShortcuts
 
-UI_Main_Show() {
-    MsgBox, % "Opening Menu..." . m
-}
+; t := New clsAppShortcuts
+; t.Init()
+; t.ShowUI()
+; Return
 
-AddShortcut() {
-    MsgBox, % "Add..." 
-}
-TogglePause() {
-    MsgBox, % "Toggling"
-}
-OpenMenu:
-    MsgBox, % "3..."
-Return
-QuitApp:
-    ExitApp
-Return
+; UI_Main_Show() {
+;     MsgBox, % "Opening Menu..." . m
+; }
+
+; AddShortcut() {
+;     MsgBox, % "Add..." 
+; }
+; TogglePause() {
+;     MsgBox, % "Toggling"
+; }
+; OpenMenu:
+;     MsgBox, % "3..."
+; Return
+; QuitApp:
+;     ExitApp
+; Return
 
 
 UI_AppShortcutsGuiClose() {
@@ -196,6 +206,8 @@ UI_AppShortcuts_Close() {
     Gui, UI_AppShortcuts:Destroy
 }
 
+
+
 ; Shared functions
 
 UpdateVarFromRegistry(ByRef var, key) {
@@ -206,4 +218,15 @@ UpdateVarFromRegistry(ByRef var, key) {
 
 SaveVarToRegistry(var, key) {
     RegWrite % "REG_SZ", % "HKEY_CURRENT_USER\Software\ZipChord", % key, % var
+}
+
+HotkeyToText(HK) {
+    if (StrLen(RegExReplace(HK, "[\+\^\!]")) == 1) {
+        StringUpper, last_char, % SubStr(HK, 0)
+        text := SubStr(HK, 1, StrLen(HK)-1) . last_char
+    } else text := HK
+    text := StrReplace(text, "+", "Shift+")
+    text := StrReplace(text, "^", "Ctrl+")
+    text := StrReplace(text, "!", "Alt+")
+    return text
 }
