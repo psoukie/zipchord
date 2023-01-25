@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -45,10 +45,10 @@ SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
 
-version := "2.0.0"
+version := "2.1.0-beta"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 ;@Ahk2Exe-SetName ZipChord
-;@Ahk2Exe-SetDescription ZipChord 2.0
+;@Ahk2Exe-SetDescription ZipChord 2.1
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;@Ahk2Exe-IgnoreBegin
@@ -1340,7 +1340,7 @@ UI_ClosingTip_Show() {
     Gui, UI_ClosingTip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
+    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl+C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl+Shift+Z to open the ZipChord menu again.`n"
     Gui, Add, Checkbox, vUI_ClosingTip_dont_show, % "Do &not show this tip again."
     Gui, Add, Button, gUI_ClosingTip_btnOK x370 w80 Default, OK
     Gui, Show, w470
