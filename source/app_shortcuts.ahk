@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -65,10 +65,10 @@ Class clsAppShortcuts {
         app_shortcut.mode := mode
         this._shortcuts[i] := app_shortcut
     }
-    GetHotkeyText(function) {
+    GetHotkeyText(function, press_prefix := "", hold_prefix := "hold ") {
         For _, shortcut in this._shortcuts
             if (shortcut.function == function && shortcut.HK) {
-                prefix := shortcut.mode==this.MD_LONG ? "hold " : ""
+                prefix := shortcut.mode==this.MD_LONG ? hold_prefix : press_prefix
                 return prefix . HotkeyToText(shortcut.HK)
             }
     }

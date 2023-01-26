@@ -1337,10 +1337,11 @@ ButtonCustomizeLocale() {
 global UI_ClosingTip_dont_show := 0
 
 UI_ClosingTip_Show() {
+    global app_shortcuts
     Gui, UI_ClosingTip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl+C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl+Shift+Z to open the ZipChord menu again.`n"
+    Gui, Add, Text, +Wrap w430, % Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("UI_Main_Show", "Press ", "Press and hold "))
     Gui, Add, Checkbox, vUI_ClosingTip_dont_show, % "Do &not show this tip again."
     Gui, Add, Button, gUI_ClosingTip_btnOK x370 w80 Default, OK
     Gui, Show, w470
