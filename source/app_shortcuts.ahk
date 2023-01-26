@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -39,6 +39,7 @@ Class clsAppShortcuts {
         Gui, UI_AppShortcuts:Show, w440
         call := Func("OpenHelp").Bind("AppShortcuts")
         Hotkey, F1, % call, On
+        this._WireHotkeys("Off")  ; so the current hotkeys don't interfere with defining
     }
     SaveSettings() {
         For _, shortcut in this._shortcuts
@@ -112,6 +113,7 @@ Class clsAppShortcuts {
             Gui, Add, Radio, y+10 Hwndtemp Checked%status%, % "Short press (exclusive)"
             handles.optShort_hwnd := temp
             this._UI_controls[i] := handles
+            GuiControl, Focus, % temp
         }
         Gui, Add, Button, w80 xm+220 yp+60 Hwndtemp, % "Cancel"
         fn := ObjBindMethod(this, "_CloseUI")
@@ -147,7 +149,6 @@ Class clsAppShortcuts {
         return true
     }
     _UpdateHotkeys() {
-        this._WireHotkeys("Off")
         For i, shortcut in this._shortcuts
         {
             GuiControlGet, val, , % this._UI_controls[i].HK_hwnd
@@ -156,10 +157,11 @@ Class clsAppShortcuts {
             mode := val ? this.MD_LONG : this.MD_SHORT
             shortcut.mode := mode
         }
-        this._WireHotkeys("On")
     }
     _CloseUI() {
-        UI_AppShortcuts_Close()
+        this._WireHotkeys("On") ; restore either previous (or define new) hotkeys
+        Hotkey, F1, Off
+        Gui, UI_AppShortcuts:Destroy
     }
     shortcut[which] {
         get {
@@ -176,14 +178,10 @@ Class clsAppShortcuts {
 app_shortcuts := New clsAppShortcuts
 
 UI_AppShortcutsGuiClose() {
-    UI_AppShortcuts_Close()
+    app_shortcuts._CloseUI()
 }
 UI_AppShortcutsGuiEscape() {
-    UI_AppShortcuts_Close()
-}
-UI_AppShortcuts_Close() {
-    Hotkey, F1, Off
-    Gui, UI_AppShortcuts:Destroy
+    app_shortcuts._CloseUI()
 }
 
 ; Shared functions
