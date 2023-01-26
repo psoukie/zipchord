@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -350,7 +350,7 @@ Initialize() {
     global keys
     global app_shortcuts
     if (A_IsCompiled)
-        FileInstall, ..\LICENSE, % "LICENSE.txt"
+        FileInstall, ..\LICENSE, % "LICENSE.txt", true ; overwrite existing license file
     app_shortcuts.Init()
     settings.Read()
     settings.mode |= MODE_ZIPCHORD_ENABLED
