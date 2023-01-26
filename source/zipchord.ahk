@@ -57,6 +57,8 @@ version := "2.1.0-beta"
 ;@Ahk2Exe-IgnoreEnd
 
 #Include app_shortcuts.ahk
+#Include locale.ahk
+#Include dictionaries.ahk
 
 OutputKeys(output) {
     ;@Ahk2Exe-IgnoreBegin

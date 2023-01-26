@@ -1,3 +1,13 @@
+/*
+
+This file is part of ZipChord.
+
+Copyright (c) 2021-2023 Pavel Soukenik
+
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+
+*/
+
 ; Locale settings (keyboard and language settings) with default values (US English)
 Class localeClass {
     all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed

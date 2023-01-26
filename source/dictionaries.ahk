@@ -1,3 +1,13 @@
+/*
+
+This file is part of ZipChord.
+
+Copyright (c) 2021-2023 Pavel Soukenik
+
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+
+*/
+
 /**
 * Class for dictionaries.
 * Initializing:
