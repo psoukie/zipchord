@@ -338,6 +338,12 @@ global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing c
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
 ; also "new_output" local variable is used to track the current key / output
 
+
+; UI string constants
+global UI_STR_PAUSE := "&Pause ZipChord"
+    , UI_STR_RESUME := "&Resume ZipChord"
+
+
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
@@ -919,7 +925,7 @@ global UI_input_delay
     , UI_chord_file, UI_shorthand_file
     , UI_chord_entries
     , UI_shorthand_entries
-    , UI_zipchord_paused, UI_chords_enabled, UI_shorthands_enabled
+    , UI_zipchord_btnPause, UI_chords_enabled, UI_shorthands_enabled
     , UI_tab
     , UI_selected_locale
     , UI_debugging
@@ -938,7 +944,7 @@ UI_Main_Build() {
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "Rel&oad"
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
@@ -981,29 +987,24 @@ UI_Main_Build() {
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
     Gui, Tab
-    Gui, Add, Checkbox, vUI_zipchord_paused gUI_TogglePause xm ym+452, % "&Pause ZipChord"
-    Gui, Add, Button, w80 xm+150 ym+450 gUI_btnApply, % "Apply"
-    Gui, Add, Button, Default w80 xm+250 ym+450 gUI_btnOK, % "OK"
+    Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
+    fn := Func("PauseApp").Bind(true)
+    GuiControl +g, % temp, % fn
+    Gui, Add, Button, w80 xm+160 ym+450 gUI_btnApply, % "Apply"
+    Gui, Add, Button, Default w80 xm+260 ym+450 gUI_btnOK, % "OK"
     Gui, Tab, 5
     Gui, Add, Text, Y+20, % "ZipChord"
-    Gui, Margin, 15, 5
     Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
     Gui, Add, Text, , % "version " . version
     ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
     Gui, Font, Underline cBlue
     Gui, Add, Text, gLinkToLicense, % "License information"
-    Gui, Margin, 15, 15
     Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
     ;@Ahk2Exe-IgnoreBegin
         Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
     ;@Ahk2Exe-IgnoreEnd
-}
-
-UI_TogglePause() {
-    Gui, Submit, NoHide ; to get the current value
-    PauseApp(true)
 }
 
     ; Create taskbar tray menu:
@@ -1042,24 +1043,24 @@ UI_Tray_Update() {
     Menu, Tray, Rename, %i%&, % "Quit`t" . app_shortcuts.GetHotkeyText("QuitApp")
 }
 
-PauseApp(from_checkbox := false) {
+PauseApp(from_button := false) {
     Gui, UI_Main:Default
     if (settings.mode & MODE_ZIPCHORD_ENABLED) {
         settings.mode := settings.mode & ~MODE_ZIPCHORD_ENABLED
-        mode := 0
+        mode := false
     } else {
         settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
-        mode := 1
+        mode := true
     }
+    state := mode ? UI_STR_PAUSE : UI_STR_RESUME
+    GuiControl , , UI_zipchord_btnPause, % state
     state := mode ? "On" : "Off"
-    if (from_checkbox != true) {
-        GuiControl , , UI_zipchord_paused, % 1-mode
+    if (from_button != true) {
         ShowHint("ZipChord Keyboard", state, , false)
     }
     WireHotkeys(state)
-    fn := Func("UI_Main_EnableTabs").Bind(mode)
     UI_Tray_Update()
-    SetTimer, % fn, -10
+    UI_Main_EnableTabs(mode)
 }
 
 UI_Main_EnableTabs(mode) {
@@ -1091,7 +1092,7 @@ UI_Main_Show() {
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_zipchord_paused, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? 0 : 1
+    GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
     GuiControl , , UI_chords_enabled, % (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
     GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
     ; debugging is always set to disabled
@@ -1191,8 +1192,7 @@ ApplyMainSettings() {
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
     settings.locale := UI_selected_locale
-    settings.mode := UI_chords_enabled * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED
-    settings.mode += UI_zipchord_paused ? 0 : MODE_ZIPCHORD_ENABLED
+    settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED) + UI_chords_enabled * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED  ; carries over the current ZIPCHORD_ENABLED setting 
     settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
     if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
         MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
