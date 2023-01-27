@@ -29,7 +29,7 @@ Class clsAppShortcuts {
     Init() {
         this.Add("UI_Main_Show", "Open main ZipChord window", "^+z", this.MD_LONG)
         this.Add( "AddShortcut", "Open Add Shortcut window", "^c", this.MD_LONG)
-        this.Add("PauseApp", "Pause / Resume ZipChord", "", this.MD_LONG)
+        this.Add("PauseApp", "Pause / Resume ZipChord", "^+F1", this.MD_SHORT)
         this.Add("QuitApp", "Quit ZipChord", "", this.MD_SHORT)
         this.LoadSettings()
         this._WireHotkeys("On")
