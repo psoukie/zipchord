@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -374,10 +374,8 @@ Class TestingClass {
             InputBox, raw,% "ZipChord Console", % ">"
         else
             raw := Trim(this._stdin.ReadLine(), " `n")
-        escaped := ""
-        ; following while loop is based on sofista's code from https://www.autohotkey.com/boards/viewtopic.php?p=422922
-        while pos := RegExMatch(raw, "(\w+)|""([^""]+)""", m, A_Index=1?1:pos+StrLen(m))
-	        escaped .= m1 m2 "`n"
+        ; following line is adapted from teadrinker's code from https://www.autohotkey.com/boards/viewtopic.php?p=422922
+        escaped := RegExReplace(raw, "s).*?([^""]+(?=""( |$))|[^"" ]+).*?(?=(?1)|$)", "$1`n")
         parsed := StrSplit(escaped, "`n")
         StringLower parsed, parsed
         command:= parsed[1]
