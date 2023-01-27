@@ -27,7 +27,6 @@ Class TestingClass {
     _output_obj := 0
     _mode := TEST_OFF
     _starting_tick := 0
-    _path := ".\"
     mode {
         get { 
             return this._mode 
@@ -132,7 +131,7 @@ Class TestingClass {
                         if (! this._CheckFilename(destination, extension))
                             return -1
                         this[target_var] := destination
-                        this[target_var . "_obj"] := FileOpen(this._path . destination, "w")
+                        this[target_var . "_obj"] := FileOpen(destination, "w")
                 }
                 this.Write(Format("Connected ZipChord {} to {}.", what, destination))
             Case "help":
@@ -218,7 +217,7 @@ Class TestingClass {
         this._Ready()
         this.Write(Format("Sending the test '{}' to ZipChord...", in_file))
         this._mode := TEST_RUNNING
-        Loop, Read, % this._path . in_file
+        Loop, Read, % in_file
         {
             columns := StrSplit(A_LoopReadLine, A_Tab)
             test_timestamp := columns[1]
@@ -244,8 +243,10 @@ Class TestingClass {
             return
         if (this.Config("load", cfg) == -1)
             return
+        MsgBox, % "In file: " . in_file
         if (! this._CheckFilename(in_file, "in", true))
             return
+        MsgBox, % "In file: " . in_file
         if (out_file="")
            out_file := SubStr(cfg, 1, StrLen(cfg)-4) . "__" . SubStr(in_file, 1, StrLen(in_file)-3)
         this.Monitor("input", "off")
@@ -264,7 +265,7 @@ Class TestingClass {
                 Return
             cfg := SubStr(testcase, 1, InStr(testcase, "__")-1)
             in_file := SubStr(testcase, InStr(testcase, "__")+2, StrLen(testcase)-InStr(testcase, "__")-5)
-            FileDelete, % this._path . "temp.out"
+            FileDelete, % "temp.out"
             this.Compose(cfg, in_file, "temp.out")
             this.Compare(testcase, "temp.out")
         }
@@ -276,7 +277,7 @@ Class TestingClass {
             Return
         if (! this._CheckFilename(b, "out", true))
             Return
-        RunWait % "fc.exe /a /n " . this._path . a . " " . this._path . b
+        RunWait % "fc.exe /a /n " . a . " " . b
     }
     Add(testcase:="", testset:="") {
         if (this._IsBasicHelp(testcase, A_ThisFunc))
@@ -285,24 +286,24 @@ Class TestingClass {
             Return
         if (! this._CheckFilename(testset, "set", true))
             this.Write(Format("...Creating new test set '{}' and adding '{}'.", testset, testcase))
-        FileAppend % testcase, % this._path . testset
+        FileAppend % testcase, % testset
     }
     Delete(file:="") {
         if (this._IsBasicHelp(file, A_ThisFunc))
             return
-        RunWait %ComSpec% /c del %file%, % this._path
+        RunWait %ComSpec% /c del %file%
     }
     Path(mode:="", path:="") {        
         Switch mode {
             Case "", "show":
-                this.Write("The path to test files is {}." . this._path)
+                this.Write(Format("The working folder is {}.", A_WorkingDir))
             Case "set":
                 if (! InStr(FileExist(path), "D")) {
-                    this.Write(Format("The path '{}' does not exist.", path))
+                    this.Write(Format("The folder '{}' does not exist.", path))
                     return
                 }
-                this._path := path
-                this.Write(Format("Changed the path for test files to '{}'.", path))
+                SetWorkingDir % path
+                this.Write(Format("Changed the working folder to '{}'.", A_WorkingDir))
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
@@ -327,13 +328,13 @@ Class TestingClass {
             Default:
                 opts := "dir /b " . mask
         }
-        RunWait %ComSpec% /c %opts%, % this._path
+        RunWait %ComSpec% /c %opts%
     }
     Show(opt:="", file:="") {
         if (this._IsBasicHelp(opt, A_ThisFunc))
             return
         if (file && opt=="raw") {
-            RunWait %ComSpec% /c type %file%, % this._path
+            RunWait %ComSpec% /c type %file%
             Return
         }
         file := opt
@@ -344,13 +345,13 @@ Class TestingClass {
             Case "out":
                 this.Write(this._FormatOutput(file))
             Default:
-                RunWait %ComSpec% /c type %file%, % this._path       
+                RunWait %ComSpec% /c type %file%       
         }
     }
     _Batch(testset:="") {
         if (! this._CheckFilename(testset, "set", true))
             Return
-        Loop, Read, % this._path . testset
+        Loop, Read, % testset
         {
             this.Write(Format("Test case '{}':", A_LoopReadLine))
             this.Retest(Trim(A_LoopReadLine))
@@ -368,15 +369,19 @@ Class TestingClass {
     }
     _Prompt() {
         if (this._mode==TEST_INTERACTIVE) {
-            WinActivate % "ZipChord Test Automation"
+            WinActivate % "ZipChord Test Console"
             this.Stop()
         }
         this.Write("`n>", "")
         if (A_Args[1] == "test-vs")
             InputBox, raw,% "ZipChord Console", % ">"
         else
-            raw := this._stdin.ReadLine()
-        parsed := StrSplit(Trim(raw, " `n"), " ")
+            raw := Trim(this._stdin.ReadLine(), " `n")
+        escaped := ""
+        ; following while loop is based on sofista's code from https://www.autohotkey.com/boards/viewtopic.php?p=422922
+        while pos := RegExMatch(raw, "(\w+)|""([^""]+)""", m, A_Index=1?1:pos+StrLen(m))
+	        escaped .= m1 m2 "`n"
+        parsed := StrSplit(escaped, "`n")
         StringLower parsed, parsed
         command:= parsed[1]
         StringUpper command, command, T
@@ -417,12 +422,12 @@ Class TestingClass {
         if (SubStr(filename, 1-StrLen(extension)) != extension)
             filename .= extension
         if (should_exist) {
-            if (! FileExist(this._path . filename)) {
+            if (! FileExist(filename)) {
                 this.Write(Format("Error: The file '{}' does not exists.", filename))
                 return false
             }
         } else {
-            if (FileExist(this._path . filename)) {
+            if (FileExist(filename)) {
                 this.Write(Format("The file '{}' already exists. Overwrite [y/n]?", filename), " ")
                 if (A_Args[1] == "test-vs")
                     InputBox, answer,% "Overwrite? [y/n]", % ">"
@@ -431,7 +436,7 @@ Class TestingClass {
                 if (answer!="Y")
                     return false
             }
-            FileDelete, % this._path . filename
+            FileDelete, % filename
         }
         return filename
     }
@@ -442,7 +447,7 @@ Class TestingClass {
         modifier := ""
         this.Write(" Key(s)")
         this.Write(" ------", "")
-        Loop, Read, % this._path . file
+        Loop, Read, % file
         {
             columns := StrSplit(A_LoopReadLine, A_Tab)
             time := columns[1]
@@ -488,7 +493,7 @@ Class TestingClass {
         }
     }
     _FormatOutput(file) {
-        Loop, Read, % this._path . file
+        Loop, Read, % file
         {
             key := A_LoopReadLine
             if (SubStr(key, 1, 1) == "~")
