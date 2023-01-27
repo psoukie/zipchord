@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -69,14 +69,16 @@ Class TestingClass {
             Case "save":
                 if (! this._CheckFilename(filename, "cfg"))
                     return -1
-                SavePropertiesToIni(settings, "Application", this._path . filename)
-                SavePropertiesToIni(keys, "Locale", this._path . filename)
+                filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
+                ini.SaveProperties(settings, "Application", filename)
+                ini.SaveProperties(keys, "Locale", filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
             Case "load":
                 if (! this._CheckFilename(filename, "cfg", true))
                     return -1
-                LoadPropertiesFromIni(settings, "Application", this._path . filename)
-                LoadPropertiesFromIni(keys, "Locale", this._path .filename)
+                filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
+                ini.LoadProperties(settings, "Application", filename)
+                ini.LoadProperties(keys, "Locale", filename)
                 this.Write(Format("Loaded configuration from '{}'.", filename))
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))

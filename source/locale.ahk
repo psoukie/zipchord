@@ -78,9 +78,9 @@ UI_Locale_Show(locale_name) {
     Hotkey, F1, % call, On
     Gui, UI_Locale:Default
     loc_obj := new localeClass
-    IniRead, sections, locales.ini
+    ini.LoadSections(sections)
     if (locale_name) {
-        LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
+        ini.LoadProperties(loc_obj, locale_name)
     } else {
         locales := StrSplit(sections, "`n")
         locale_name := locales[1]
@@ -111,12 +111,12 @@ UI_Locale_btnNew() {
         if ErrorLevel
             Return
     new_loc := New localeClass
-    SavePropertiesToIni(new_loc, new_name, "locales.ini")
+    ini.SaveProperties(new_loc, new_name)
     UI_Locale_Show(new_name)
 }
 
 UI_Locale_btnDelete(){
-    IniRead, sections, locales.ini
+    ini.LoadSections(sections)
     If (! InStr(sections, "`n")) {
         MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_Locale_name)
         Return
@@ -124,7 +124,7 @@ UI_Locale_btnDelete(){
     MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", UI_Locale_name)
     IfMsgBox Yes
     {
-        IniDelete, locales.ini, % UI_Locale_name
+        ini.DeleteSection(UI_Locale_name)
         UI_Locale_Show(false)
     }
 }
@@ -133,18 +133,29 @@ UI_Locale_btnRename() {
     InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_Locale_name)
     if ErrorLevel
         Return
-    IniRead, locale_exists, locales.ini, %new_name%, all
-    if (locale_exists != "ERROR") {
-        MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
-            IfMsgBox No
-                Return
-    }
+    if (UI_Locale_CheckIfExists(new_name))
+        return
     temp_loc := new localeClass
-    LoadPropertiesFromIni(temp_loc, UI_Locale_name, "locales.ini")
-    IniDelete, locales.ini, % UI_Locale_name
-    SavePropertiesToIni(temp_loc, new_name, "locales.ini")
+    ini.LoadProperties(temp_loc, UI_Locale_name)
+    ini.DeleteSection(UI_Locale_name)
+    ini.SaveProperties(temp_loc, new_name)
     UI_Locale_Show(new_name)
 }
+
+UI_Locale_CheckIfExists(new_name) {
+    if(! ini.LoadProperties(locale_exists, new_name)) {
+    MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
+        IfMsgBox No
+            Return True
+        else
+            Return False
+    }
+}
+
+ UI_Locale_GetSectionNames() {
+    ini.LoadSections(sections)
+    return sections
+ }
 
 UI_LocaleGuiClose() {
     UI_Locale_Close()
@@ -170,5 +181,17 @@ UI_Locale_btnSave() {
     new_loc.remove_space_shift := UI_Locale_remove_space_shift
     new_loc.other_plain := UI_Locale_other_plain
     new_loc.other_shift := UI_Locale_other_shift
-    SavePropertiesToIni(new_loc, UI_Locale_name, "locales.ini")
+    ini.SaveProperties(new_loc, UI_Locale_name)
+}
+
+UI_locale_InitLocale() {
+    if ( ini.LoadSections(testing) ) {  ; will return true (error) if the locales.ini file does not exist
+        default_locale := new localeClass
+        ini.SaveProperties(default_locale, "English US")
+    }
+}
+
+UI_Locale_Load(setting) {
+    global keys
+    ini.LoadProperties(keys, setting)
 }

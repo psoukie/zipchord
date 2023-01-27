@@ -56,6 +56,7 @@ version := "2.1.0-beta"
     #Include *i testing.ahk
 ;@Ahk2Exe-IgnoreEnd
 
+#Include shared.ahk
 #Include app_shortcuts.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
@@ -1506,47 +1507,5 @@ GetMonitorCenterForWindow(window_Handle, OSD_handle, ByRef pos_x, ByRef pos_y ) 
     } else {
         pos_x := 0
         pos_y := 0
-    }
-}
-
-;; File and registry functions
-; -----------------------------
-
-CheckDictionaryFileExists(dictionary_file, dictionary_type) {
-    if (! FileExist(dictionary_file) ) {
-        errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
-        ; If we don't have the dictionary, try opening the first file with a matching naming convention.
-        new_file := dictionary_type "s*.txt"
-        if FileExist(new_file) {
-            Loop, Files, %new_file%
-                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-            Sort flist
-            new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", new_file)
-        }
-        else {
-            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in its own folder.", dictionary_type)
-            new_file := dictionary_type "s.txt"
-            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
-        }
-        new_file := A_ScriptDir "\" new_file
-        MsgBox ,, ZipChord, %errmsg%
-        Return new_file
-    }
-    Return dictionary_file
-}
-
-SavePropertiesToIni(object_to_save, ini_section, ini_filename) {
-    For key, value in object_to_save
-        IniWrite %value%, %ini_filename%, %ini_section%, %key%
-}
-
-LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
-    IniRead, properties, %ini_filename%, %ini_section%
-    Loop, Parse, properties, `n
-    {
-        key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
-        value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
-        object_destination[key] := value
     }
 }

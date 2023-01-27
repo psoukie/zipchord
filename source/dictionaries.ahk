@@ -125,5 +125,29 @@ Class DictionaryClass {
         Return False
     }
 }
+
+CheckDictionaryFileExists(dictionary_file, dictionary_type) {
+    if (! FileExist(dictionary_file) ) {
+        errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
+        ; If we don't have the dictionary, try opening the first file with a matching naming convention.
+        new_file := dictionary_type "s*.txt"
+        if FileExist(new_file) {
+            Loop, Files, %new_file%
+                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
+            Sort flist
+            new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", new_file)
+        }
+        else {
+            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in its own folder.", dictionary_type)
+            new_file := dictionary_type "s.txt"
+            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
+        }
+        MsgBox ,, ZipChord, %errmsg%
+        Return new_file
+    }
+    Return dictionary_file
+}
+
 global chords := New DictionaryClass(true)
 global shorthands := New DictionaryClass
