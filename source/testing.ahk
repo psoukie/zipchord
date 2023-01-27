@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -242,10 +242,8 @@ Class TestingClass {
             return
         if (this.Config("load", cfg) == -1)
             return
-        MsgBox, % "In file: " . in_file
         if (! this._CheckFilename(in_file, "in", true))
             return
-        MsgBox, % "In file: " . in_file
         if (out_file="")
            out_file := SubStr(cfg, 1, StrLen(cfg)-4) . "__" . SubStr(in_file, 1, StrLen(in_file)-3)
         this.Monitor("input", "off")
