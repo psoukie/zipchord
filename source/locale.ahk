@@ -110,6 +110,8 @@ UI_Locale_btnNew() {
     InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
         if ErrorLevel
             Return
+    if (UI_Locale_CheckIfExists(new_name))
+        return
     new_loc := New localeClass
     ini.SaveProperties(new_loc, new_name)
     UI_Locale_Show(new_name)
