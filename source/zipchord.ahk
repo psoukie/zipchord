@@ -44,14 +44,16 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
-
 version := "2.1.0-beta"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
-;@Ahk2Exe-SetName ZipChord
+app_name := "ZipChord"
+;@Ahk2Exe-SetName %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 ;@Ahk2Exe-SetDescription ZipChord 2.1
 ;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
 
 ;@Ahk2Exe-IgnoreBegin
+    app_name := "ZipChord Developer"
+    ;@Ahk2Exe-SetName %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
     #Include *i visualizer.ahk
     #Include *i testing.ahk
 ;@Ahk2Exe-IgnoreEnd
@@ -163,6 +165,7 @@ Class settingsClass {
     chording := CHORD_RESTRICT ; Chord recognition options
     chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
     shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
+    dictionary_folder := A_ScriptDir
     input_delay := 70
     output_delay := 0
     Read() {
@@ -172,6 +175,7 @@ Class settingsClass {
             if (! ErrorLevel)
                 this[key] := new_value
         }
+        this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Write() {
         For key, value in this
@@ -179,7 +183,6 @@ Class settingsClass {
     }
 }
 global settings := New settingsClass
- 
 
 ; Processing input and output 
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
@@ -224,20 +227,14 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
-    global keys
     global app_shortcuts
     if (A_IsCompiled)
-        FileInstall, ..\LICENSE, % "LICENSE.txt", true ; overwrite existing license file
+        FileInstall, ..\LICENSE, "LICENSE.txt", true ; overwrite existing license file (this goes into ZipChord's directory)
     app_shortcuts.Init()
     settings.Read()
-    settings.mode |= MODE_ZIPCHORD_ENABLED
-    if (settings.preferences & PREF_FIRST_RUN) {
-        settings.preferences &= ~PREF_FIRST_RUN
-        if (A_IsCompiled) {
-            FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-            FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
-        }
-    }
+    SetWorkingDir % settings.dictionary_folder
+    if (settings.preferences & PREF_FIRST_RUN)
+        DoFirstRunActions()
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
@@ -254,6 +251,40 @@ Initialize() {
     UpdateDictionaryUI()
     Gui, UI_Main:-Disabled
     WireHotkeys("On")
+}
+
+DoFirstRunActions() {
+    global app_name
+    if (A_IsCompiled)
+        return 
+    MsgBox, 1, % "ZipChord Setup", % "Welcome to ZipChord!`n`nThis initial setup has three simple steps:`n`n1. Choose your default folder for Zipchord dictionaries.`n2. Select if you would like a shortcut to ZipChord in Start menu.`n3. Choose if ZipChord should automatically start with Windows."
+    IfMsgBox Cancel
+        ExitApp
+    FileSelectFolder dict_path, % "*" . A_MyDocuments, , % "ZipChord Setup (1/3)`n`nSelect a folder for ZipChord dictionaries:`n (Click Cancel if you'd like to keep them in the same folder as zipchord.exe.)"
+    if (dict_path == "") {
+        dict_path := A_ScriptDir
+        MsgBox, 1, % "ZipChord Setup (1/3)", % Format("The default folder for dictionaries will be:`n{}`n`nClick OK to accept, or click Cancel to cancel the installation.", dict_path)
+        IfMsgBox Cancel
+            ExitApp
+    }
+    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, dictionary_folder, dict_path
+    settings.dictionary_folder := dict_path
+    SetWorkingDir, % dict_path
+    settings.preferences &= ~PREF_FIRST_RUN
+    ; Unpack the included default dictionaries 
+    FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
+    FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
+    ; Create a ZipChord folder and application shortcut in the user's Programs folder in Start menu (not in Startup folder)
+    MsgBox, 4, % "ZipChord Setup (2/3)", % Format("Would you like to create a Start menu shortcut for {}?", app_name)
+    IfMsgBox Yes
+    {
+        if ( ! InStr(FileExist(A_Programs . "\ZipChord"), "D"))
+            FileCreateDir,  % A_Programs . "\ZipChord"
+        FileCreateShortcut, %A_AhkPath%, % A_Programs . "\ZipChord\" . app_name . ".lnk", % dict_path, , % app_name
+    }
+    MsgBox, 4, % "ZipChord Setup (3/3)", % Format("Would you like to start {} automatically with Windows?", app_name)
+    IfMsgBox Yes
+        FileCreateShortcut, %A_AhkPath%, % A_Startup . "\" . app_name . ".lnk", % dict_path, , % app_name
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
@@ -1154,7 +1185,7 @@ UpdateDictionaryUI() {
 
 ; Run Windows File Selection to open a dictionary
 BtnSelectChordDictionary() {
-    FileSelectFile dict, , %A_ScriptDir%, Open Chord Dictionary, Text files (*.txt)
+    FileSelectFile dict, , % settings.dictionary_folder , Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
         chords.Load(dict)
@@ -1164,7 +1195,7 @@ BtnSelectChordDictionary() {
 }
 
 BtnSelectShorthandDictionary() {
-    FileSelectFile dict, , %A_ScriptDir%, Open Shorthand Dictionary, Text files (*.txt)
+    FileSelectFile dict, , % settings.dictionary_folder, Open Shorthand Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.shorthand_file := dict
         shorthands.Load(dict)
