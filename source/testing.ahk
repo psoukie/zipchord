@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -33,16 +33,16 @@ Class TestingClass {
         }
     }
     Init() {
+        global version
         this._mode := TEST_STANDBY
         WireHotkeys("Off")
         if (A_Args[1] != "test-vs") {
             DllCall("AllocConsole")
-            DllCall("SetConsoleTitle", Str, "ZipChord Test Automation")
-            DllCall("SetConsoleTitle", Str, "ZipChord Test Automation")
+            DllCall("SetConsoleTitle", Str, "ZipChord Test Console")
             this._stdin  := FileOpen("*", "r `n")
             this._stdout := FileOpen("*", "w `n")
         }
-        this.Write(Format("ZipChord Test Automation Console [Version {}]", version))
+        this.Write(Format("ZipChord Test Console [Version {}]", version))
         this.Write("`nCopyright (c) 2023 Pavel Soukenik")
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
         this.Write("This is free software, and you are welcome to redistribute it")
@@ -152,7 +152,6 @@ Class TestingClass {
                 if (what=="output" || what=="both")
                     if (this.Monitor("output", orig_name) == -1)
                         return
-                Run % "Notepad.exe"
                 return this.Interact()
             Default:
                 return this._RecordCase(what, filename, out_file)
@@ -684,9 +683,9 @@ without parameters, it displays the current folder.
 
 path [show | set <path>]
 
-   show      Shows the current path to test files.
-   set       Sets the relative or absolute path to test files.
-   <path>    Name of the configuration file to load or save.
+   show      Shows the current working folder.
+   set       Sets the relative or absolute path to working folder.
+   <path>    Absolute or relative path to an existing folder.
 )")
             Case "play":
                 this.Write("
@@ -762,8 +761,8 @@ compose     Creates a test case from a given configartion and input file.
 config      Shows, saves or loads app configuration and keyboard settings.
 delete      Deletes the specified file.
 exit        Exits the console and ZipChord.
-path        Shows or sets the path to the folder for testing files.
-help        Shows help information for ZipChord Test Automation commands.
+path        Shows or sets the path to the working folder.
+help        Shows help information for ZipChord Test Console commands.
 interact    Resumes ZipChord in an interactive mode.
 license     Shows the license information.
 list        Lists all files (or files of a type) in the testing folder.
@@ -773,8 +772,11 @@ record      Records input and/or output of your interaction to a file.
 show        Shows the contents of a file.
 test        Runs and compares results of a test case or a set of cases.
 
-Note: Including file extensions in file names is optional except in
-commands 'show' and 'delete'.
+For all commands:
+   Including file extensions in file names is optional except in
+   commands 'show' and 'delete'.
+   File and folder names that contain spaces must be enclosed in
+   double quotes. 
 
 For more information on a specific command, type 'help <command>'.
 )")
