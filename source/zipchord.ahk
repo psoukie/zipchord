@@ -241,12 +241,8 @@ Initialize() {
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
-    if (!FileExist("locales.ini")) {
-        default_locale := new localeClass
-        SavePropertiesToIni(default_locale, "English US", "locales.ini")
-    } else {
-        LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
-    }
+    UI_locale_InitLocale()
+    UI_Locale_Load(settings.locale)
     UI_Main_Build()
     Gui, UI_Main:+Disabled ; for loading
     UI_Main_Show()
@@ -1037,7 +1033,7 @@ ShowHintCustomization(show_controls := true) {
 }
 
 UpdateLocaleInMainUI(selected_loc) {
-    IniRead, sections, locales.ini
+    sections := UI_Locale_GetSectionNames()
     Gui, UI_Main:Default
     GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_selected_locale, % selected_loc
@@ -1053,7 +1049,6 @@ UI_btnApply:
 return
 
 ApplyMainSettings() {
-    global keys
     global hint_delay
     previous_mode := settings.mode 
     Gui, Submit, NoHide
@@ -1083,7 +1078,7 @@ ApplyMainSettings() {
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
-    LoadPropertiesFromIni(keys, UI_selected_locale, "locales.ini")
+    UI_Locale_Load(settings.locale)
     if (settings.mode > MODE_ZIPCHORD_ENABLED) {
         if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
             ShowHint("ZipChord Keyboard", "On", , false)
@@ -1423,7 +1418,7 @@ UI_OSD_Hide:
     Gui, Hide
 Return
 
-; Process input to ensure it is an integer or a color hex code, return number or "ERROR" 
+; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR" 
 SanitizeNumber(orig, hex_color := false) {
     sanitized := Trim(orig)
     format := "integer"
