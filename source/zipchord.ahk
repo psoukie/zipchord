@@ -1030,17 +1030,14 @@ UI_MainHelp() {
         test._mode := TEST_OFF
         FileDelete, % "debug.txt"
         FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . version . "`n", % "debug.txt", UTF-8
-        FileRead file_content, % "debug.cfg"
+        FileRead file_content, % A_Temp . "\debug.cfg"
         FileAppend % file_content, % "debug.txt", UTF-8
         FileAppend % "`nInput`n-----`n", % "debug.txt", UTF-8
-        FileRead file_content, % "debug.in"
+        FileRead file_content, % A_Temp . "\debug.in"
         FileAppend % file_content, % "debug.txt", UTF-8
         FileAppend % "`nOutput`n------`n", % "debug.txt", UTF-8
-        FileRead file_content, % "debug.out"
+        FileRead file_content, % A_Temp . "\debug.out"
         FileAppend % file_content, % "debug.txt", UTF-8
-        FileDelete, % "debug.cfg"
-        FileDelete, % "debug.in"
-        FileDelete, % "debug.out"
         Run % "debug.txt"
     }
 ;@Ahk2Exe-IgnoreEnd
@@ -1120,9 +1117,15 @@ ApplyMainSettings() {
         ShowHint("ZipChord Keyboard", "Off", , false)
     ;@Ahk2Exe-IgnoreBegin
         if (UI_debugging) {
-            FileDelete, % "debug.cfg"
-            FileDelete, % "debug.in"
-            FileDelete, % "debug.out"
+            if (FileExist("debug.txt")) {
+                MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
+                IfMsgBox No
+                    Return false
+            }
+            FileDelete, % A_Temp . "\debug.cfg"
+            FileDelete, % A_Temp . "\debug.in"
+            FileDelete, % A_Temp . "\debug.out"
+            test.Path("set", A_Temp)
             test.Config("save", "debug")
             test.Record("both", "debug")
         }
