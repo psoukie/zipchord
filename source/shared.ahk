@@ -21,11 +21,12 @@ class clsIniFile {
         if (! this._processing) {
             this._processing:=true
             this._dir_backup := A_WorkingDir
+            SetWorkingDir, % A_ScriptDir
             fn := ObjBindMethod(this, name, params*)
-            %fn%()
+            val := %fn%()
             this._processing:=false
             SetWorkingDir, % this._dir_backup
-            return
+            return val
         }
     }
     SaveProperties(object_to_save, ini_section, ini_filename := "locales.ini") {
@@ -35,10 +36,8 @@ class clsIniFile {
     ; return true if section not found
     LoadProperties(ByRef object_destination, ini_section, ini_filename := "locales.ini") {
         IniRead, properties, %ini_filename%, %ini_section%
-        if (! properties) {
-            OutputDebug, % "INI section empty/doesn't exist"
+        if (! properties)
             return true
-        }
         Loop, Parse, properties, `n
         {
             key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
@@ -46,13 +45,12 @@ class clsIniFile {
             object_destination[key] := value
         }
     }
-    ; return true if file not found
-    LoadSections(ByRef sections, ini_filename := "locales.ini") {
-        if (! FileExist(ini_filename)) {
-            OutputDebug, % "INI file not found"
-            return true
-        }
+    ; return -1 if file not found
+    LoadSections(ini_filename := "locales.ini") {
+        if (! FileExist(ini_filename))
+            return -1
         IniRead, sections, %ini_filename%
+        return sections
     }
     DeleteSection(section, ini_filename := "locales.ini") {
         IniDelete, % ini_filename, % section

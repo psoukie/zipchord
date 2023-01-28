@@ -78,7 +78,7 @@ UI_Locale_Show(locale_name) {
     Hotkey, F1, % call, On
     Gui, UI_Locale:Default
     loc_obj := new localeClass
-    ini.LoadSections(sections)
+    sections := ini.LoadSections()
     if (locale_name) {
         ini.LoadProperties(loc_obj, locale_name)
     } else {
@@ -118,7 +118,7 @@ UI_Locale_btnNew() {
 }
 
 UI_Locale_btnDelete(){
-    ini.LoadSections(sections)
+    sections := ini.LoadSections()
     If (! InStr(sections, "`n")) {
         MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_Locale_name)
         Return
@@ -155,7 +155,7 @@ UI_Locale_CheckIfExists(new_name) {
 }
 
  UI_Locale_GetSectionNames() {
-    ini.LoadSections(sections)
+    sections := ini.LoadSections()
     return sections
  }
 
@@ -187,7 +187,7 @@ UI_Locale_btnSave() {
 }
 
 UI_locale_InitLocale() {
-    if ( ini.LoadSections(testing) ) {  ; will return true (error) if the locales.ini file does not exist
+    if ( ini.LoadSections() == -1 ) {  ; -1 means the locales.ini file does not exist
         default_locale := new localeClass
         ini.SaveProperties(default_locale, "English US")
     }
