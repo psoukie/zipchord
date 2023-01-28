@@ -118,7 +118,7 @@ Class clsAppShortcuts {
         Gui, Add, Button, w80 xm+220 yp+60 Hwndtemp, % "Cancel"
         fn := ObjBindMethod(this, "_CloseUI")
         GuiControl +g, % temp, % fn
-        Gui, Add, Button, Default w80 xm+320 yp Default Hwndtemp, % "OK"
+        Gui, Add, Button, w80 xm+320 yp Default Hwndtemp, % "OK"
         fn := ObjBindMethod(this, "_btnOK")
         GuiControl +g, % temp, % fn
     }
