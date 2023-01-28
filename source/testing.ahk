@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -27,6 +27,7 @@ Class TestingClass {
     _output_obj := 0
     _mode := TEST_OFF
     _starting_tick := 0
+    _path_backup := ""
     mode {
         get { 
             return this._mode 
@@ -79,6 +80,9 @@ Class TestingClass {
                 ini.LoadProperties(settings, "Application", filename)
                 ini.LoadProperties(keys, "Locale", filename)
                 this.Write(Format("Loaded configuration from '{}'.", filename))
+                this.Write("Loading dictionaries...")
+                chords.Load(settings.chord_file)
+                shorthands.Load(settings.shorthand_file)
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
@@ -169,9 +173,6 @@ Class TestingClass {
         return this.Interact()
     }
     _Ready() {
-        this.Write("Loading dictionaries...")
-        chords.Load(settings.chord_file)
-        shorthands.Load(settings.shorthand_file)
         this._starting_tick := 0
         GoSub Interrupt
     }
