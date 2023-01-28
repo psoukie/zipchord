@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -294,14 +294,21 @@ Class TestingClass {
     Path(mode:="", path:="") {        
         Switch mode {
             Case "", "show":
-                this.Write(Format("The working folder is {}.", A_WorkingDir))
+                this.Write(Format("The working folder is {}", A_WorkingDir))
             Case "set":
                 if (! InStr(FileExist(path), "D")) {
                     this.Write(Format("The folder '{}' does not exist.", path))
                     return
                 }
+                if (! this._path_backup)
+                    this._path_backup := A_WorkingDir
                 SetWorkingDir % path
-                this.Write(Format("Changed the working folder to '{}'.", A_WorkingDir))
+                this.Write(Format("Changed the working folder to {}", A_WorkingDir))
+            Case "restore":
+                if (this._path_backup) {
+                    SetWorkingDir % this._path_backup
+                    this.Write(Format("Changed the working folder back to {}", A_WorkingDir))
+                } else this.Write("ZipChord is already in the original working folder.")
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
@@ -674,15 +681,16 @@ monitor {input | output} {console | off | <filename>}
             Case "path":
                 this.Write("
 (
-Shows or sets the working folder where the testing files are stored
-and read from. This can be an abosolute or relative path. If used
-without parameters, it displays the current folder.
+Shows, sets or restores the working folder where ZipChord and Test Console
+store and read files from. This can be an abosolute or relative path.
+If used without parameters, it displays the current working folder.
 
-path [show | set <path>]
+path [show | restore | set <path>]
 
-   show      Shows the current working folder.
-   set       Sets the relative or absolute path to working folder.
-   <path>    Absolute or relative path to an existing folder.
+   show       Shows the current working folder.
+   set        Sets the path for ZipChord's working folder.
+   restore    Restores the working path to the original folder. 
+   <path>     Absolute or relative path to an existing folder.
 )")
             Case "play":
                 this.Write("

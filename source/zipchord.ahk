@@ -1026,6 +1026,7 @@ UI_MainHelp() {
     FinishDebugging() {
         global version
         test.Stop()
+        test.Path("restore")
         test._mode := TEST_OFF
         FileDelete, % "debug.txt"
         FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . version . "`n", % "debug.txt", UTF-8
