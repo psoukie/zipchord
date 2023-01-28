@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -11,6 +11,8 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 ;;  Shared Functions and Classes 
 ; --------------------------------
 
+global ini := new clsIniFile
+global str := new clsStringFunctions
 
 OpenHelp(topic) {
     Switch topic {
@@ -32,6 +34,46 @@ OpenHelp(topic) {
             Run https://github.com/psoukie/zipchord/wiki/Main-Window#about
         Default:
             Run https://github.com/psoukie/zipchord/wiki
+    }
+}
+
+/**
+* String Functions
+* Methods:
+*    Ellipsisize      Returns a shortened string (if it exceeds the limit) with ellipsis added.
+*        text         String to shorten.
+*        limit        Limit in pixel length.
+*        to_end       [true|false] add ellipsis to the end (or start), default is false (left).
+*        font         Font to use for adjustment calculation. Default is Segoe UI.    
+*        size         Font size used for adjustment calculation. Default is 10.
+*/
+Class clsStringFunctions {
+    Ellipsisize(text, limit, to_end:=false, font:="Segoe UI", size:=10) {
+        if (this._TextInPixels(text, font, size) < limit)
+            return text
+        While ( (length := this._TextInPixels(text . "...", font, size)) > limit) {
+            str_length := StrLen(text)
+            new_length := Round(StrLen(text)*(limit/length))
+            ; but we always decrease by at least a character
+            if (new_length >= StrLen(text))
+                new_length := StrLen(text)-1
+            if (to_end)
+                text := SubStr(text, 1, new_length)
+            else
+                text := SubStr(text, 1+StrLen(text)-new_length)
+        }
+        if (to_end)
+            return text . "..."
+        else
+            return "..." . text
+    }
+    _TextInPixels(text, font, size)
+    {
+        Gui, strFunc:Font, s%size%, %font%
+        Gui, strFunc:Add, Text, Hwndtemp, %text%
+        GuiControlGet, values, Pos, % temp
+        Gui, strFunc:Destroy
+        return valuesW
     }
 }
 
@@ -79,5 +121,3 @@ class clsIniFile {
         IniDelete, % ini_filename, % section
     }
 }
-
-global ini := new clsIniFile

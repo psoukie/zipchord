@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -778,13 +778,13 @@ UI_Main_Build() {
     Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
+    Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
     Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "Rel&oad"
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
+    Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Op&en"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
@@ -1107,20 +1107,12 @@ Return
 
 ; Update UI with dictionary details
 UpdateDictionaryUI() {
-    if StrLen(settings.chord_file) > 40
-        filestr := "..." SubStr(settings.chord_file, -34)
-    else
-        filestr := settings.chord_file
     Gui, UI_Main:Default
-    GuiControl Text, UI_chord_file, %filestr%
+    GuiControl Text, UI_chord_file, % str.Ellipsisize(settings.chord_file, 270)
     entriesstr := "Chord dictionary (" chords.entries
     entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
     GuiControl Text, UI_chord_entries, %entriesstr%
-    if StrLen(settings.shorthand_file) > 40
-        filestr := "..." SubStr(settings.shorthand_file, -34)
-    else
-        filestr := settings.shorthand_file
-    GuiControl Text, UI_shorthand_file, %filestr%
+    GuiControl Text, UI_shorthand_file, % str.Ellipsisize(settings.shorthand_file, 270)
     entriesstr := "Shorthand dictionary (" shorthands.entries
     entriesstr .= (shorthands.entries==1) ? " shorthand)" : " shorthands)"
     GuiControl Text, UI_shorthand_entries, %entriesstr%
