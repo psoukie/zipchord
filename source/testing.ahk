@@ -34,7 +34,7 @@ Class TestingClass {
         }
     }
     Init() {
-        global version
+        global zc_version
         this._mode := TEST_STANDBY
         WireHotkeys("Off")
         if (A_Args[1] != "test-vs") {
@@ -43,7 +43,7 @@ Class TestingClass {
             this._stdin  := FileOpen("*", "r `n")
             this._stdout := FileOpen("*", "w `n")
         }
-        this.Write(Format("ZipChord Test Console [Version {}]", version))
+        this.Write(Format("ZipChord Test Console [Version {}]", zc_version))
         this.Write("`nCopyright (c) 2023 Pavel Soukenik")
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
         this.Write("This is free software, and you are welcome to redistribute it")

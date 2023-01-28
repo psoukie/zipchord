@@ -44,15 +44,9 @@ SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 
-version := "2.1.0-beta"
-;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
-app_name := "ZipChord"
-;@Ahk2Exe-SetName %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
-;@Ahk2Exe-SetDescription ZipChord 2.1
-;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
-
+#Include version.ahk
 ;@Ahk2Exe-IgnoreBegin
-    app_name := "ZipChord Developer"
+    zc_version .= "-dev" 
     ;@Ahk2Exe-SetName %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
     #Include *i visualizer.ahk
     #Include *i testing.ahk
@@ -143,8 +137,9 @@ Class HintTimingClass {
 hint_delay := New HintTimingClass
 
 ; Other preferences constants
-global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
-    , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
+global PREF_PREVIOUS_INSTALLATION := 1  ; this registry value means that the app has been installed before
+    , PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
+    , PREF_FIRST_RUN := 4               ; this value means this is the first run of 2.1.0-beta.2 or higher)
 
 global MODE_CHORDS_ENABLED := 1
     , MODE_SHORTHANDS_ENABLED := 2
@@ -152,6 +147,7 @@ global MODE_CHORDS_ENABLED := 1
 
 ; Current application settings
 Class settingsClass {
+    version := zc_version
     mode := MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
     preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
@@ -233,8 +229,6 @@ Initialize() {
     app_shortcuts.Init()
     settings.Read()
     SetWorkingDir % settings.dictionary_folder
-    if (settings.preferences & PREF_FIRST_RUN)
-        DoFirstRunActions()
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
@@ -251,40 +245,6 @@ Initialize() {
     UpdateDictionaryUI()
     Gui, UI_Main:-Disabled
     WireHotkeys("On")
-}
-
-DoFirstRunActions() {
-    global app_name
-    if (A_IsCompiled)
-        return 
-    MsgBox, 1, % "ZipChord Setup", % "Welcome to ZipChord!`n`nThis initial setup has three simple steps:`n`n1. Choose your default folder for Zipchord dictionaries.`n2. Select if you would like a shortcut to ZipChord in Start menu.`n3. Choose if ZipChord should automatically start with Windows."
-    IfMsgBox Cancel
-        ExitApp
-    FileSelectFolder dict_path, % "*" . A_MyDocuments, , % "ZipChord Setup (1/3)`n`nSelect a folder for ZipChord dictionaries:`n (Click Cancel if you'd like to keep them in the same folder as zipchord.exe.)"
-    if (dict_path == "") {
-        dict_path := A_ScriptDir
-        MsgBox, 1, % "ZipChord Setup (1/3)", % Format("The default folder for dictionaries will be:`n{}`n`nClick OK to accept, or click Cancel to cancel the installation.", dict_path)
-        IfMsgBox Cancel
-            ExitApp
-    }
-    RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, dictionary_folder, dict_path
-    settings.dictionary_folder := dict_path
-    SetWorkingDir, % dict_path
-    settings.preferences &= ~PREF_FIRST_RUN
-    ; Unpack the included default dictionaries 
-    FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-    FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
-    ; Create a ZipChord folder and application shortcut in the user's Programs folder in Start menu (not in Startup folder)
-    MsgBox, 4, % "ZipChord Setup (2/3)", % Format("Would you like to create a Start menu shortcut for {}?", app_name)
-    IfMsgBox Yes
-    {
-        if ( ! InStr(FileExist(A_Programs . "\ZipChord"), "D"))
-            FileCreateDir,  % A_Programs . "\ZipChord"
-        FileCreateShortcut, %A_AhkPath%, % A_Programs . "\ZipChord\" . app_name . ".lnk", % dict_path, , % app_name
-    }
-    MsgBox, 4, % "ZipChord Setup (3/3)", % Format("Would you like to start {} automatically with Windows?", app_name)
-    IfMsgBox Yes
-        FileCreateShortcut, %A_AhkPath%, % A_Startup . "\" . app_name . ".lnk", % dict_path, , % app_name
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
@@ -595,27 +555,6 @@ Return
 ;; Helper functions
 ; ------------------
 
-OpenHelp(topic) {
-    Switch topic {
-        Case "AppShortcuts":
-            Run https://github.com/psoukie/zipchord/wiki/Application-Keyboard-Shortcuts-window
-        Case "AddShortcut":
-            Run https://github.com/psoukie/zipchord/wiki/Add-Shortcut-window
-        Case "Main-Dictionaries":
-            Run https://github.com/psoukie/zipchord/wiki/Main-Window#dictionaries
-        Case "Main-Detection":
-            Run https://github.com/psoukie/zipchord/wiki/Main-Window#detection
-        Case "Main-Hints":
-            Run https://github.com/psoukie/zipchord/wiki/Main-Window#hints
-        Case "Main-Output":
-            Run https://github.com/psoukie/zipchord/wiki/Main-Window#output
-        Case "Main-About":
-            Run https://github.com/psoukie/zipchord/wiki/Main-Window#about
-        Default:
-            Run https://github.com/psoukie/zipchord/wiki
-    }
-}
-
 ; Delay output by defined delay
 DelayOutput() {
     if (settings.output_delay)
@@ -830,7 +769,7 @@ global UI_input_delay
 
 ; Prepare UI
 UI_Main_Build() {
-    global version
+    global zc_version
     Gui, UI_Main:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
@@ -893,7 +832,7 @@ UI_Main_Build() {
     Gui, Tab, 5
     Gui, Add, Text, Y+20, % "ZipChord"
     Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
-    Gui, Add, Text, , % "version " . version
+    Gui, Add, Text, , % "version " . zc_version
     ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
     Gui, Font, Underline cBlue
     Gui, Add, Text, gLinkToLicense, % "License information"
@@ -1024,12 +963,12 @@ UI_MainHelp() {
             test.Init()
     }
     FinishDebugging() {
-        global version
+        global zc_version
         test.Stop()
         test.Path("restore")
         test._mode := TEST_OFF
         FileDelete, % "debug.txt"
-        FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . version . "`n", % "debug.txt", UTF-8
+        FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . zc_version . "`n", % "debug.txt", UTF-8
         FileRead file_content, % A_Temp . "\debug.cfg"
         FileAppend % file_content, % "debug.txt", UTF-8
         FileAppend % "`nInput`n-----`n", % "debug.txt", UTF-8

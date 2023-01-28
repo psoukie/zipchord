@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -11,7 +11,30 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 ;;  Shared Functions and Classes 
 ; --------------------------------
 
-; Ini Files Functions
+
+OpenHelp(topic) {
+    Switch topic {
+        Case "Installation":
+            Run https://github.com/psoukie/zipchord/wiki/Installation#setup-options
+        Case "AppShortcuts":
+            Run https://github.com/psoukie/zipchord/wiki/Application-Keyboard-Shortcuts-window
+        Case "AddShortcut":
+            Run https://github.com/psoukie/zipchord/wiki/Add-Shortcut-window
+        Case "Main-Dictionaries":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#dictionaries
+        Case "Main-Detection":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#detection
+        Case "Main-Hints":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#hints
+        Case "Main-Output":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#output
+        Case "Main-About":
+            Run https://github.com/psoukie/zipchord/wiki/Main-Window#about
+        Default:
+            Run https://github.com/psoukie/zipchord/wiki
+    }
+}
+
 
 class clsIniFile {
     _processing := false
