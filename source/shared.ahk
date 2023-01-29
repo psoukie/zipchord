@@ -13,6 +13,7 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 global ini := new clsIniFile
 global str := new clsStringFunctions
+global UI := new clsUIBuilder
 
 OpenHelp(topic) {
     Switch topic {
@@ -34,6 +35,13 @@ OpenHelp(topic) {
             Run https://github.com/psoukie/zipchord/wiki/Main-Window#about
         Default:
             Run https://github.com/psoukie/zipchord/wiki
+    }
+}
+
+class clsUIBuilder {
+    AddCheckbox(text, state:=false, coord:="") {
+        Gui, Add, Checkbox, %coord% Hwndtemp Checked%state%, %text%
+        Return temp
     }
 }
 

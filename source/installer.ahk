@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord
 
@@ -79,17 +79,12 @@ Class clsInstaller {
         Gui, Add, Text, xs+20 ys+30 Hwndtemp w330, % str.Ellipsisize(this.options.dictionary_folder, 330)
         this.UI.dictionary_folder := temp
         Gui, Add, Button, y+10 w150, % "Change Folder"
-        fn := ObjBindMethod(this, "SelectFolder")
+        fn := ObjBindMethod(this, "_btnSelectFolder")
         GuiControl +g, % temp, % fn
-        state := this.options.zipchord_shortcut
-        Gui, Add, Checkbox, xs Hwndtemp Checked%state%, % "Create a ZipChord shortcut in Start menu"
-        this.UI.zipchord_shortcut := temp
-        state := this.options.autostart
-        Gui, Add, Checkbox, Hwndtemp Checked%state%, % "Start ZipChord automatically with Windows"
-        this.UI.autostart := temp
-        state := this.options.developer_shortcut
-        Gui, Add, Checkbox, xs Hwndtemp Checked%state%, % "Create a Developer version shortcut in Start menu"
-        this.UI.developer_shortcut := temp
+        this.UI.zipchord_shortcut := UI.AddCheckbox("Create a ZipChord shortcut in Start menu", this.options.zipchord_shortcut, "xs")
+        this.UI.zipchord_autostart := UI.AddCheckbox("Start ZipChord automatically with Windows", this.options.autostart)
+        this.UI.developer_shortcut := UI.AddCheckbox("Create a Developer version shortcut in Start menu", this.options.developer_shortcut)
+        this.UI.start_after := UI.AddCheckbox("Open ZipChord after installation", this.options.start_after)
         Gui, Add, Button, w80 xm+170 yp+50 Hwndtemp, % "Cancel"
         fn := ObjBindMethod(this, "_CloseUI")
         GuiControl +g, % temp, % fn
