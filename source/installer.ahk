@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord
 
@@ -50,10 +50,8 @@ Class clsInstaller {
         full_command_line := DllCall("GetCommandLine", "str")
         ; First, if the installer was already restarted to try get elevated rights 
         if (RegExMatch(full_command_line, " /restart(?!\S)")) {
-            MsgBox, % "Restarted"
             this._LoadOptions()
             if (A_IsAdmin) {
-                MsgBox, % "Running as admin"
                 this._Install()
             } else {
                 this.ShowUI()
@@ -84,6 +82,7 @@ Class clsInstaller {
     _btnInstall() {
         this._UpdateOptions()
         this._SaveOptions()
+        this._SaveRegistryInfo()
         if (this.options.destination_Programs && this._CheckAdmin())
             return
         this._Install()
@@ -94,19 +93,18 @@ Class clsInstaller {
             try
             {
                 if A_IsCompiled
-                    Run *RunAs "%A_ScriptFullPath%" /restart
+                    Run *RunAs "%A_ScriptFullPath%" /restart, % A_Temp
                 else
-                    Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%"
+                    Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", % A_Temp
             }
-            MsgBox, % "I wil survive"
             this._CloseProgramFileOption()
             return true
         }
     }
     _CloseProgramFileOption() {
-        GuiControl, Disable, % this.UI.destination_Program_Files
-        GuiControl, , % this.UI.destination_Program_Files, % False
-        GuiControl, , % this.UI.destination_current, % True
+        GuiControl, Disable, % this.controls.destination_Programs.handle
+        GuiControl, , % this.controls.destination_Programs.handle, % False
+        GuiControl, , % this.controls.destination_current.handle, % True
     }
     _CloseUI() {
         Hotkey, F1, Off
@@ -114,50 +112,74 @@ Class clsInstaller {
         ExitApp
     }
     _UpdateOptions() {
-        For key, _ in this.options
+        For key, control in this.controls
         {
-            GuiControlGet, val, , % this.UI[key]
-            this.options[key] := val 
+            GuiControlGet, val, , % control.handle
+            this.options[key] := val
         }
     }
     _SaveOptions() {
+        this.options.installation_dir := this.options.destination_Programs ? A_ProgramFiles . "\ZipChord" : A_ScriptDir
+        this.options.programs_dir := A_Programs
+        this.options.startup_dir := A_Startup
+        this.options.my_documents_dir := A_MyDocuments
         ini.SaveProperties(this.options, "Options", A_Temp . "\zipchord_installation_options.ini")
     }
     _LoadOptions() {
-        ini.LoadProperties(this.options, "Options", A_Temp . "\zipchord_installation_options.ini")
+        ini.LoadProperties(this.options, "Options", A_WorkingDir . "\zipchord_installation_options.ini") ; the WorkingDir is needed to override the default folder in LoadProperties
     }
     _btnSelectFolder() {
         FileSelectFolder dict_path, % "*" . A_MyDocuments, , % "Select a folder for ZipChord dictionaries:"
         if (dict_path != "")
-            GuiControl, , % this.UI.dictionary_folder, % dict_path
+            GuiControl, , % this.controls.dictionary_dir.handle, % dict_path
+    }
+    _SaveRegistryInfo() {
+        global zc_app_name
+        ; This needs to happen before we elevate user rights to Admin
+        SaveVarToRegistry("dictionary_dir", this.options.dictionary_dir)
+        ; create uninstallation registry entries
+        reg_uninstall := "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZipChord"
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayName, %zc_app_name%
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, UninstallString, "%path%\uninstall.exe"
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayIcon, % path . "\zipchord.ico"
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayVersion, %zc_version%
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, URLInfoAbout, % "https://github.com/psoukie/zipchord/wiki/"
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, Publisher, % "Pavel Soukenik"
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, NoModify, 1
     }
     _Install() {
         global zc_app_name
+        global zc_version
         Process, Close, % "zipchord.exe"
-        path := this.options.destination_Program_Files ? A_ProgramFiles . "\ZipChord" : A_ScriptDir
-        exe_path := this.options.destination_Program_Files ? A_ProgramFiles . "\ZipChord\zipchord.exe" : "zipchord.exe"
-        MsgBox, % "Paths: " . path . ", " . exe_path
+        path := this.options.installation_dir
+        exe_path := path . "\zipchord.exe"
+        dict_dir := this.options.dictionary_dir
         ; install zipchord.exe
         if ( ! InStr(FileExist(path), "D"))
             FileCreateDir,  % path
         FileInstall, zipchord.exe, % exe_path, true
+        FileInstall, uninstall.exe, % path . "\uninstall.exe", true
+        FileInstall, zipchord.ico, % path . "\zipchord.ico", true
         ; install dictionaries
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, % "dictionary_folder", this.options.dictionary_folder
-        if ( ! InStr(FileExist(this.options.dictionary_folder), "D"))
-            FileCreateDir,  % A_MyDocuments . "\ZipChord"
-        FileInstall, ..\dictionaries\chords-en-qwerty.txt, % this.options.dictionary_folder . "\chords-en-starting.txt"
-        FileInstall, ..\dictionaries\shorthands-english.txt, % this.options.dictionary_folder . "\shorthands-english-starting.txt"
+        if ( ! InStr(FileExist(dict_dir), "D"))
+            FileCreateDir,  % this.options.my_documents_dir . "\ZipChord"
+        FileInstall, ..\dictionaries\chords-en-qwerty.txt, % dict_dir . "\chords-en-starting.txt"
+        FileInstall, ..\dictionaries\shorthands-english.txt, % dict_dir . "\shorthands-english-starting.txt"
         ; Create a ZipChord folder and application shortcut in the user's Programs folder in Start menu
-        if ( ! InStr(FileExist(A_Programs . "\ZipChord"), "D"))
-            FileCreateDir,  % A_Programs . "\ZipChord"
-        FileCreateShortcut, % exe_path, % A_Programs . "\ZipChord\" . zc_app_name . ".lnk", % this.options.dictionary_folder, , % zc_app_name
-        ; Create shortcuts
+        if (this.options.zipchord_shortcut || this.options.developer_shortcut) {
+            if ( ! InStr(FileExist(this.options.programs_dir . "\ZipChord"), "D"))
+                FileCreateDir,  % this.options.programs_dir . "\ZipChord"
+            FileCreateShortcut, % path . "\uninstall.exe", % this.options.programs_dir . "\ZipChord\Uninstall ZipChord.lnk", , , % zc_app_name, % path . "\zipchord.ico"
+        }
         if (this.options.zipchord_shortcut)
-            FileCreateShortcut, % exe_path, % A_Startup . "\" . zc_app_name . ".lnk", % this.options.dictionary_folder, , % zc_app_name
+            FileCreateShortcut, % exe_path, % this.options.programs_dir . "\ZipChord\ZipChord.lnk", % dict_dir, , % zc_app_name, % path . "\zipchord.ico"
         if (this.options.developer_shortcut)
-            FileCreateShortcut, % exe_path, % A_Startup . "\" . zc_app_name . ".lnk", % this.options.dictionary_folder, "developer", % zc_app_name
+            FileCreateShortcut, % exe_path, % this.options.programs_dir . "\ZipChord\ZipChord Developer.lnk", % dict_dir, "dev", %zc_app_name% . " Developer", % path . "\zipchord.ico"
+        if (this.options.autostart) {
+            FileCreateShortcut, % exe_path, % this.options.startup_dir . "ZipChord.lnk", % dict_dir, , %zc_app_name%, % path . "\zipchord.ico"
+        }
         ; run ZipChord if selected
-        MsgBox, , % "ZipChord", % "Installation completed."
+        MsgBox, , % "ZipChord", % "Setup has completed."
         Run, % exe_path
         ExitApp
     }

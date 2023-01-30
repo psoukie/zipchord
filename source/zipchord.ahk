@@ -43,14 +43,13 @@ ListLines Off
 SetKeyDelay -1, -1
 SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
+OnExit("CloseApp")
 
 #Include version.ahk
-;@Ahk2Exe-IgnoreBegin
-    zc_version .= "-dev" 
-    ;@Ahk2Exe-SetName %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
+if (A_Args[1] == "dev") {
     #Include *i visualizer.ahk
     #Include *i testing.ahk
-;@Ahk2Exe-IgnoreEnd
+}
 
 #Include shared.ahk
 #Include app_shortcuts.ahk
@@ -58,12 +57,17 @@ CoordMode ToolTip, Screen
 #Include dictionaries.ahk
 
 OutputKeys(output) {
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         test.Log(output)
         if (test.mode == TEST_RUNNING)
             return
-    ;@Ahk2Exe-IgnoreEnd
+    }
     SendInput % output
+}
+
+CloseApp() {
+    WireHotkeys("Off")
+    ExitApp
 }
 
 ;; Classes and Variables
@@ -161,7 +165,7 @@ Class settingsClass {
     chording := CHORD_RESTRICT ; Chord recognition options
     chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
     shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
-    dictionary_folder := A_ScriptDir
+    dictionary_dir := A_ScriptDir
     input_delay := 70
     output_delay := 0
     Read() {
@@ -175,7 +179,7 @@ Class settingsClass {
     }
     Write() {
         For key, value in this
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
+            SaveVarToRegistry(key, value)       
     }
 }
 global settings := New settingsClass
@@ -228,7 +232,7 @@ Initialize() {
         FileInstall, ..\LICENSE, "LICENSE.txt", true ; overwrite existing license file (this goes into ZipChord's directory)
     app_shortcuts.Init()
     settings.Read()
-    SetWorkingDir % settings.dictionary_folder
+    SetWorkingDir % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
@@ -304,7 +308,7 @@ WireHotkeys(state) {
 KeyDown:
     key := A_ThisHotkey
     tick := A_TickCount
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := test_key
             tick := test_timestamp
@@ -313,7 +317,7 @@ KeyDown:
             test.Log(key, true)
             test.Log(key)
         }
-    ;@Ahk2Exe-IgnoreEnd
+    }
     key := StrReplace(key, "Space", " ")
     if (SubStr(key, 1, 1) == "~")
         key := SubStr(key, 2)
@@ -462,12 +466,12 @@ Return
 KeyUp:
     Critical
     tick_up := A_TickCount
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING)
             tick_up := test_timestamp
         if (test.mode > TEST_STANDBY)
             test.Log(A_ThisHotkey, true)
-    ;@Ahk2Exe-IgnoreEnd
+    }
 
     if (visualizer.IsOn()) {
         key := StrReplace(A_ThisHotkey, "Space", " ")
@@ -707,25 +711,25 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Interrupt*", true)
             test.Log("*Interrupt*")
         }
-    ;@Ahk2Exe-IgnoreEnd
+    }
 Return
 
 Enter_key:
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("~Enter", true)
             test.Log("~Enter")
         }
         if (visualizer.IsOn())
             visualizer.NewLine()
-    ;@Ahk2Exe-IgnoreEnd
+    }
 Return
 
 ;;  Adding shortcuts 
@@ -839,9 +843,8 @@ UI_Main_Build() {
     Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev")
         Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
-    ;@Ahk2Exe-IgnoreEnd
 }
 
     ; Create taskbar tray menu:
@@ -855,11 +858,11 @@ UI_Tray_Build() {
     fn := ObjBindMethod(app_shortcuts, "ShowUI")
     Menu, Tray, Add, % "Customize app shortcuts", % fn
     Menu, Tray, Add  ;  adds a horizontal line
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         Menu, Tray, Add, % "Open Key Visualizer", OpenKeyVisualizer
         Menu, Tray, Add, % "Open Test Console", OpenTestConsole
         Menu, Tray, Add
-    ;@Ahk2Exe-IgnoreEnd
+    }
     Menu, Tray, Add, % "Quit", QuitApp
     Menu, Tray, Default, 1&
     Menu, Tray, Tip, % "ZipChord"
@@ -874,9 +877,8 @@ UI_Tray_Update() {
     string :=  (settings.mode & MODE_ZIPCHORD_ENABLED) ? "Pause" : "Resume"
     Menu, Tray, Rename, 3&, % string . " ZipChord`t" . app_shortcuts.GetHotkeyText("PauseApp")
     i := 7
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev")
         i += 3
-    ;@Ahk2Exe-IgnoreEnd
     Menu, Tray, Rename, %i%&, % "Quit`t" . app_shortcuts.GetHotkeyText("QuitApp")
 }
 
@@ -913,10 +915,9 @@ QuitApp() {
 }
 
 UI_Main_Show() {
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev")
         if (UI_debugging)
             FinishDebugging() 
-    ;@Ahk2Exe-IgnoreEnd
     Hotkey, F1, UI_MainHelp, On
     Gui, UI_Main:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
@@ -954,32 +955,30 @@ UI_MainHelp() {
     OpenHelp("Main-" . Trim(current_tab))
 }
 
-;@Ahk2Exe-IgnoreBegin
-    OpenKeyVisualizer() {
-        visualizer.Init()
-    }
-    OpenTestConsole() {
-        if (test.mode==TEST_OFF)
-            test.Init()
-    }
-    FinishDebugging() {
-        global zc_version
-        test.Stop()
-        test.Path("restore")
-        test._mode := TEST_OFF
-        FileDelete, % "debug.txt"
-        FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . zc_version . "`n", % "debug.txt", UTF-8
-        FileRead file_content, % A_Temp . "\debug.cfg"
-        FileAppend % file_content, % "debug.txt", UTF-8
-        FileAppend % "`nInput`n-----`n", % "debug.txt", UTF-8
-        FileRead file_content, % A_Temp . "\debug.in"
-        FileAppend % file_content, % "debug.txt", UTF-8
-        FileAppend % "`nOutput`n------`n", % "debug.txt", UTF-8
-        FileRead file_content, % A_Temp . "\debug.out"
-        FileAppend % file_content, % "debug.txt", UTF-8
-        Run % "debug.txt"
-    }
-;@Ahk2Exe-IgnoreEnd
+OpenKeyVisualizer() {
+    visualizer.Init()
+}
+OpenTestConsole() {
+    if (test.mode==TEST_OFF)
+        test.Init()
+}
+FinishDebugging() {
+    global zc_version
+    test.Stop()
+    test.Path("restore")
+    test._mode := TEST_OFF
+    FileDelete, % "debug.txt"
+    FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . zc_version . "`n", % "debug.txt", UTF-8
+    FileRead file_content, % A_Temp . "\debug.cfg"
+    FileAppend % file_content, % "debug.txt", UTF-8
+    FileAppend % "`nInput`n-----`n", % "debug.txt", UTF-8
+    FileRead file_content, % A_Temp . "\debug.in"
+    FileAppend % file_content, % "debug.txt", UTF-8
+    FileAppend % "`nOutput`n------`n", % "debug.txt", UTF-8
+    FileRead file_content, % A_Temp . "\debug.out"
+    FileAppend % file_content, % "debug.txt", UTF-8
+    Run % "debug.txt"
+}
 
 OrdinalOfHintFrequency(offset := 0) {
     hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
@@ -1054,7 +1053,7 @@ ApplyMainSettings() {
     }
     else if (settings.mode & MODE_ZIPCHORD_ENABLED)
         ShowHint("ZipChord Keyboard", "Off", , false)
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev") {
         if (UI_debugging) {
             if (FileExist("debug.txt")) {
                 MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
@@ -1068,7 +1067,7 @@ ApplyMainSettings() {
             test.Config("save", "debug")
             test.Record("both", "debug")
         }
-    ;@Ahk2Exe-IgnoreEnd
+    }
     ; to reflect any changes to OSD UI
     SetTimer,  UI_OSD_Reset, -2000
     Return true
@@ -1120,7 +1119,7 @@ UpdateDictionaryUI() {
 
 ; Run Windows File Selection to open a dictionary
 BtnSelectChordDictionary() {
-    FileSelectFile dict, , % settings.dictionary_folder , Open Chord Dictionary, Text files (*.txt)
+    FileSelectFile dict, , % settings.dictionary_dir , Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
         chords.Load(dict)
@@ -1130,7 +1129,7 @@ BtnSelectChordDictionary() {
 }
 
 BtnSelectShorthandDictionary() {
-    FileSelectFile dict, , % settings.dictionary_folder, Open Shorthand Dictionary, Text files (*.txt)
+    FileSelectFile dict, , % settings.dictionary_dir, Open Shorthand Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.shorthand_file := dict
         shorthands.Load(dict)
@@ -1336,10 +1335,9 @@ UI_OSD_Build() {
 ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
     active_window_handle := WinExist("A")
     global hint_delay
-    ;@Ahk2Exe-IgnoreBegin
+    if (A_Args[1] == "dev")
         if (test.mode > TEST_STANDBY)
             test.Log("*Hint*")
-    ;@Ahk2Exe-IgnoreEnd
     hint_delay.Extend()
     if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
         GetCaret(x, y, , h)
