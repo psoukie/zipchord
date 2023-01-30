@@ -39,9 +39,39 @@ OpenHelp(topic) {
 }
 
 class clsUIBuilder {
-    AddCheckbox(text, state:=false, coord:="") {
-        Gui, Add, Checkbox, %coord% Hwndtemp Checked%state%, %text%
-        Return temp
+    name := "" ; UI name
+    controls := {}
+    class clsControl {
+        type := ""
+        text := ""
+        state := 0
+        disabled := false  ; Enabled - true / Disabled - false
+    }
+    Add(control_or_type, text:="", param:="", state:="", fn:="") {
+        new_control := new this.clsControl
+        if (IsObject(control_or_type)) {
+            param := text
+            type := control_or_type.type
+            text := control_or_type.text
+            state := control_or_type.state ? true : false
+        } else {
+            type := control_or_type
+            new_control.type := type
+            new_control.text := text
+            new_control.state := state
+        }
+        Switch type {
+            Case "Text", "Button":
+                Gui, Add, %type%, %param% Hwndhandle, %text%
+            Default:
+                Gui, Add, %type%, %param% Hwndhandle Checked%state%, %text%
+        }
+        this.controls[handle] := new_control
+        if (fn)
+            GuiControl +g, % handle, % fn
+        if (IsObject(control_or_type))
+            control_or_type.handle := handle
+        return handle
     }
 }
 
@@ -60,7 +90,6 @@ Class clsStringFunctions {
         if (this._TextInPixels(text, font, size) < limit)
             return text
         While ( (length := this._TextInPixels(text . "...", font, size)) > limit) {
-            str_length := StrLen(text)
             new_length := Round(StrLen(text)*(limit/length))
             ; but we always decrease by at least a character
             if (new_length >= StrLen(text))
@@ -75,13 +104,14 @@ Class clsStringFunctions {
         else
             return "..." . text
     }
-    _TextInPixels(text, font, size)
+    _TextInPixels(string, font_name, size)
     {
-        Gui, strFunc:Font, s%size%, %font%
-        Gui, strFunc:Add, Text, Hwndtemp, %text%
+        Gui, strFunc:Font, s%size%, %font_name%
+        Gui, strFunc:Add, Text, Hwndtemp, %string%
         GuiControlGet, values, Pos, % temp
         Gui, strFunc:Destroy
         return valuesW
+        values := values ; to get rid of a compiler warning courtesy of weird return from GuiControlGet into differently named variables
     }
 }
 
@@ -128,4 +158,14 @@ class clsIniFile {
     DeleteSection(section, ini_filename := "locales.ini") {
         IniDelete, % ini_filename, % section
     }
+}
+
+UpdateVarFromRegistry(ByRef var, key) {
+    RegRead new_value, % "HKEY_CURRENT_USER\Software\ZipChord", % key
+    if (! ErrorLevel)
+        var := new_value
+}
+
+SaveVarToRegistry(key, value) {
+    RegWrite % "REG_SZ", % "HKEY_CURRENT_USER\Software\ZipChord", % key, % value
 }

@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord
 
@@ -24,26 +24,27 @@ ListLines Off
 installer := new clsInstaller
 
 Class clsInstaller {
-    Class _clsUIHandles {
-        destination_Program_Files := ""
-        destination_current := ""
-        dictionary_folder := ""
-        zipchord_shortcut := ""
-        developer_shortcut := ""
-        autostart := ""
-        start_after := ""
-    }
-    Class _clsOptions {
-        destination_Program_Files := true
-        dictionary_folder := A_MyDocuments . "\ZipChord"
-        zipchord_shortcut := true
-        developer_shortcut := false
-        autostart := false
-        start_after := true
-    }
+    notice := A_IsAdmin ? "" : "  (will need Admin access)"
 
-    UI := New this._clsUIHandles
-    options := New this._clsOptions
+    controls := { destination_Programs: { type: "Radio"
+                                        , text: "Program Files" . this.notice
+                                        , state: True}
+                , destination_current:  { type: "Radio"
+                                        , text: "Current folder"}
+                , dictionary_dir:       { type: "Text"
+                                        , text: str.Ellipsisize(A_MyDocuments . "\ZipChord", 330)}
+                , zipchord_shortcut:    { type: "Checkbox"
+                                        , text: "Create a ZipChord shortcut in Start menu"
+                                        , state: true}
+                , autostart:            { type: "Checkbox"
+                                        , text: "Start ZipChord automatically with Windows"}
+                , developer_shortcut:   { type: "Checkbox"
+                                        , text: "Create a Developer version shortcut in Start menu"}
+                , open_after:           { type: "Checkbox"
+                                        , text: "Open ZipChord after installation"
+                                        , state: true}}
+
+    options := {}
 
     __New() {
         full_command_line := DllCall("GetCommandLine", "str")
@@ -67,35 +68,23 @@ Class clsInstaller {
         Gui, Margin, 15, 15
         Gui, Font, s10, Segoe UI
         Gui, Add, GroupBox, w370 h90 Section, % "Application installation folder"
-        state := this.options.destination_Program_Files
-        notice := A_IsAdmin ? "" : "  (will need Admin access)"
-        Gui, Add, Radio, xs+20 ys+30 Hwndtemp Checked%state%, % "Program Files" . notice
-        this.UI.destination_Program_Files := temp
-        state := 1 - state
-        Gui, Add, Radio, y+10 Hwndtemp Checked%state%, % "Current folder"
-        this.UI.destination_current := temp
+        UI.Add(this.controls.destination_Programs, "xs+20 ys+30")
+        UI.Add(this.controls.destination_current, "y+10")
         Gui, Add, GroupBox, xs w370 h100 Section, % "Default dictionary folder"
-        Gui, Add, Text, xs+20 ys+30 Hwndtemp w330, % str.Ellipsisize(this.options.dictionary_folder, 330)
-        this.UI.dictionary_folder := temp
-        Gui, Add, Button, y+10 w150 Hwndtemp, % "Change Folder"
-        fn := ObjBindMethod(this, "_btnSelectFolder")
-        GuiControl +g, % temp, % fn
-        this.UI.zipchord_shortcut := UI.AddCheckbox("Create a ZipChord shortcut in Start menu", this.options.zipchord_shortcut, "xs")
-        this.UI.zipchord_autostart := UI.AddCheckbox("Start ZipChord automatically with Windows", this.options.autostart)
-        this.UI.developer_shortcut := UI.AddCheckbox("Create a Developer version shortcut in Start menu", this.options.developer_shortcut)
-        this.UI.start_after := UI.AddCheckbox("Open ZipChord after installation", this.options.start_after)
-        Gui, Add, Button, w80 xm+170 yp+50 Hwndtemp, % "Cancel"
-        fn := ObjBindMethod(this, "_CloseUI")
-        GuiControl +g, % temp, % fn
-        Gui, Add, Button, Default w80 xm+270 yp Hwndtemp, % "Install"
-        fn := ObjBindMethod(this, "_btnInstall")
-        GuiControl +g, % temp, % fn
+        UI.Add(this.controls.dictionary_dir, "xs+20 ys+30 w330")
+        UI.Add("Button", "Change Folder", "y+10 w150", , ObjBindMethod(this, "_btnSelectFolder"))
+        UI.Add(this.controls.zipchord_shortcut, "xs")
+        UI.Add(this.controls.autostart)
+        UI.Add(this.controls.developer_shortcut)
+        UI.Add(this.controls.open_after)
+        UI.Add("Button", "Cancel", "w80 xm+170 yp+50", , ObjBindMethod(this, "_CloseUI"))
+        UI.Add("Button", "Install", "Default w80 xm+270 yp", , ObjBindMethod(this, "_btnInstall"))
         Gui, Show
     }
     _btnInstall() {
         this._UpdateOptions()
         this._SaveOptions()
-        if (this.options.destination_Program_Files && this._CheckAdmin())
+        if (this.options.destination_Programs && this._CheckAdmin())
             return
         this._Install()
         this._CloseUI()

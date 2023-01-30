@@ -43,7 +43,7 @@ Class clsAppShortcuts {
     }
     SaveSettings() {
         For _, shortcut in this._shortcuts
-            SaveVarToRegistry(shortcut.HK . "|" shortcut.mode, "hk_" . shortcut.function)
+            SaveVarToRegistry("hk_" . shortcut.function, shortcut.HK . "|" shortcut.mode)
     }
     LoadSettings() {
         For _, shortcut in this._shortcuts
@@ -185,16 +185,6 @@ UI_AppShortcutsGuiEscape() {
 }
 
 ; Shared functions
-
-UpdateVarFromRegistry(ByRef var, key) {
-    RegRead new_value, % "HKEY_CURRENT_USER\Software\ZipChord", % key
-    if (! ErrorLevel)
-        var := new_value
-}
-
-SaveVarToRegistry(var, key) {
-    RegWrite % "REG_SZ", % "HKEY_CURRENT_USER\Software\ZipChord", % key, % var
-}
 
 HotkeyToText(HK) {
     if (StrLen(RegExReplace(HK, "[\+\^\!]")) == 1) {
