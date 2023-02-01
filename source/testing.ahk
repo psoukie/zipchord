@@ -101,7 +101,7 @@ Class TestingClass {
                 return
         }
         this._Ready()
-        if(settings.chords_enabled || settings.shorthands_enabled) {
+        if(settings.mode & MODE_CHORDS_ENABLED || settings.mode & MODE_SHORTHANDS_ENABLED) {
             this.Write("Wiring hotkeys...")
             WireHotkeys("On")
         }
