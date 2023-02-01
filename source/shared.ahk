@@ -117,27 +117,30 @@ Class clsStringFunctions {
 
 
 class clsIniFile {
-    _processing := false
-    _dir_backup := ""
-    ; for all methods, we first back-up, change, and then restore the working directory
-    __Call(name, params*) {
-        if (! this._processing) {
-            this._processing:=true
-            this._dir_backup := A_WorkingDir
-            SetWorkingDir, % A_ScriptDir
-            fn := ObjBindMethod(this, name, params*)
-            val := %fn%()
-            this._processing:=false
-            SetWorkingDir, % this._dir_backup
-            return val
-        }
+    default_folder := A_AppData . "\ZipChord"
+    default_ini := A_AppData . "\ZipChord\locales.ini"
+    SaveLicense() {
+        if ( ! InStr(FileExist(this.default_folder), "D"))
+            FileCreateDir,  % this.default_folder
+        FileInstall, ..\LICENSE, % this.default_folder . "\LICENSE.txt", true
     }
-    SaveProperties(object_to_save, ini_section, ini_filename := "locales.ini") {
+    ShowLicense() {
+        if (FileExist(this.default_folder . "\LICENSE.txt"))
+            Run % this.default_folder . "\LICENSE.txt"
+        else
+            Run https://raw.githubusercontent.com/psoukie/zipchord/main/LICENSE
+    }
+    SaveProperties(object_to_save, ini_section, ini_filename := "") {
+        if (!ini_filename) {
+            ini_filename := this.default_ini
+        }
         For key, value in object_to_save
             IniWrite %value%, %ini_filename%, %ini_section%, %key%
     }
     ; return true if section not found
-    LoadProperties(ByRef object_destination, ini_section, ini_filename := "locales.ini") {
+    LoadProperties(ByRef object_destination, ini_section, ini_filename := "") {
+        if (!ini_filename)
+            ini_filename := this.default_ini
         IniRead, properties, %ini_filename%, %ini_section%
         if (! properties)
             return true
@@ -149,13 +152,17 @@ class clsIniFile {
         }
     }
     ; return -1 if file not found
-    LoadSections(ini_filename := "locales.ini") {
+    LoadSections(ini_filename := "") {
+        if (!ini_filename)
+            ini_filename := this.default_ini
         if (! FileExist(ini_filename))
             return -1
         IniRead, sections, %ini_filename%
         return sections
     }
-    DeleteSection(section, ini_filename := "locales.ini") {
+    DeleteSection(section, ini_filename := "") {
+        if (!ini_filename)
+            ini_filename := this.default_ini
         IniDelete, % ini_filename, % section
     }
 }

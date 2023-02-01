@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -163,7 +163,7 @@ Class settingsClass {
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
     chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
-    shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
+    shorthand_file := "shorthands-en-starting.txt" ; file name for the shorthand dictionary
     dictionary_dir := A_ScriptDir
     input_delay := 70
     output_delay := 0
@@ -216,7 +216,6 @@ global last_output := OUT_INTERRUPTED  ; last output in the current typing seque
 global UI_STR_PAUSE := "&Pause ZipChord"
     , UI_STR_RESUME := "&Resume ZipChord"
 
-
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
@@ -227,8 +226,8 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     global app_shortcuts
-    if (A_IsCompiled)
-        FileInstall, ..\LICENSE, "LICENSE.txt", true ; overwrite existing license file (this goes into ZipChord's directory)
+    ; save license file
+    ini.SaveLicense()
     app_shortcuts.Init()
     settings.Read()
     SetWorkingDir, % settings.dictionary_dir
@@ -1088,10 +1087,7 @@ UI_Main_Close() {
 }
 
 LinkToLicense() {
-    if (FileExist("LICENSE.txt"))
-        Run % "LICENSE.txt"
-    else
-        Run https://raw.githubusercontent.com/psoukie/zipchord/main/LICENSE
+    ini.ShowLicense()
 }
 Return
 LinkToDocumentation:
