@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -41,7 +41,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #KeyHistory 0
 ListLines Off
 SetKeyDelay -1, -1
-SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
 
@@ -232,7 +231,7 @@ Initialize() {
         FileInstall, ..\LICENSE, "LICENSE.txt", true ; overwrite existing license file (this goes into ZipChord's directory)
     app_shortcuts.Init()
     settings.Read()
-    SetWorkingDir % settings.dictionary_dir
+    SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
