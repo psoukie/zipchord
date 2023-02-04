@@ -226,6 +226,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     global app_shortcuts
+    global locale
     ; save license file
     ini.SaveLicense()
     app_shortcuts.Init()
@@ -234,13 +235,13 @@ Initialize() {
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
-    UI_locale_InitLocale()
-    UI_Locale_Load(settings.locale)
     UI_Main_Build()
+    locale.Init()
+    locale.Load(settings.locale)
     Gui, UI_Main:+Disabled ; for loading
     UI_Main_Show()
     UI_Tray_Build()
-    UI_Locale_Build()
+    locale.Build()
     UI_OSD_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
@@ -295,7 +296,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    app_shortcuts._WireHotkeys("On")
+    app_shortcuts.WireHotkeys("On")
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
@@ -853,7 +854,7 @@ UI_Tray_Build() {
     Menu, Tray, Add, % "Add Shortcut", AddShortcut
     Menu, Tray, Add, % "Pause ZipChord", PauseApp
     Menu, Tray, Add  ;  adds a horizontal line
-    fn := ObjBindMethod(app_shortcuts, "ShowUI")
+    fn := ObjBindMethod(app_shortcuts, "Show")
     Menu, Tray, Add, % "Customize app shortcuts", % fn
     Menu, Tray, Add  ;  adds a horizontal line
     if (A_Args[1] == "dev") {
@@ -998,7 +999,7 @@ ShowHintCustomization(show_controls := true) {
 }
 
 UpdateLocaleInMainUI(selected_loc) {
-    sections := UI_Locale_GetSectionNames()
+    sections := ini.LoadSections()
     Gui, UI_Main:Default
     GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_selected_locale, % selected_loc
@@ -1015,6 +1016,7 @@ return
 
 ApplyMainSettings() {
     global hint_delay
+    global locale
     previous_mode := settings.mode 
     Gui, Submit, NoHide
     ; gather new settings from UI...
@@ -1043,7 +1045,7 @@ ApplyMainSettings() {
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
-    UI_Locale_Load(settings.locale)
+    locale.Load(settings.locale)
     if (settings.mode > MODE_ZIPCHORD_ENABLED) {
         if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
             ShowHint("ZipChord Keyboard", "On", , false)
@@ -1152,10 +1154,11 @@ BtnReloadShorthandDictionary() {
 }
 
 ButtonCustomizeLocale() {
+    global locale
     WireHotkeys("Off")  ; so the user can edit the values without interference
     Gui, Submit, NoHide ; to get the currently selected UI_selected_locale
     Gui, +Disabled
-    UI_Locale_Show(UI_selected_locale)
+    locale.Show(UI_selected_locale)
 }
 
 ;; Closing Tip UI
