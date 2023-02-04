@@ -148,16 +148,3 @@ Class clsAppShortcuts {
         this.UI.Destroy()
     }
 }
-
-; Shared functions
-
-HotkeyToText(HK) {
-    if (StrLen(RegExReplace(HK, "[\+\^\!]")) == 1) {
-        StringUpper, last_char, % SubStr(HK, 0)
-        text := SubStr(HK, 1, StrLen(HK)-1) . last_char
-    } else text := HK
-    text := StrReplace(text, "+", "Shift+")
-    text := StrReplace(text, "^", "Ctrl+")
-    text := StrReplace(text, "!", "Alt+")
-    return text
-}

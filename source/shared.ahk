@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -225,13 +225,16 @@ GuiEscape(handle) {
 *    TextInPixels     Returns the length of text in pixels.
 */
 Class clsStringFunctions {
-*        text         String to shorten.
-*        limit        Limit in pixel length.
-*        to_end       [true|false] add ellipsis to the end (or start), default is false (left).
-*        font         Font to use for adjustment calculation. Default is Segoe UI.    
-*        size         Font size used for adjustment calculation. Default is 10.
-*/
-Class clsStringFunctions {
+    HotkeyToText(HK) {
+        if (StrLen(RegExReplace(HK, "[\+\^\!]")) == 1) {
+            StringUpper, last_char, % SubStr(HK, 0)
+            text := SubStr(HK, 1, StrLen(HK)-1) . last_char
+        } else text := HK
+        text := StrReplace(text, "+", "Shift+")
+        text := StrReplace(text, "^", "Ctrl+")
+        text := StrReplace(text, "!", "Alt+")
+        return text
+    }
     /** Ellipsis
     *        text         String to shorten.
     *        limit        Limit in pixel length.
