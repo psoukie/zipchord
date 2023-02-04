@@ -744,7 +744,7 @@ AddShortcut() {
     copied_text := Trim(Clipboard)
     Clipboard := clipboard_backup
     clipboard_backup := ""
-    UI_AddShortcut_Show(copied_text)
+    add_shortcut.Show(copied_text)
 }
 
 ;; Main Dialog UI
@@ -1188,114 +1188,6 @@ UI_ClosingTipGuiClose() {
 }
 UI_ClosingTipGuiEscape() {
     Gui, UI_ClosingTip:Submit
-}
-
-;; Add Shortcut UI
-; -----------------
-
-global UI_AddShortcut_text
-    , UI_AddShortcut_chord
-    , UI_AddShortcut_shorthand
-    , UI_AddShortcut_btnSaveChord
-    , UI_AddShortcut_btnSaveShorthand
-    , UI_AddShortcut_btnAdjust
-UI_AddShortcut_Build() {
-    Gui, UI_AddShortcut:New, , % "Add Shortcut"
-    Gui, Margin, 25, 25
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Text, Section, % "&Expanded text"
-    Gui, Margin, 15, 15
-    Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text
-    Gui, Add, Button, x+20 yp w100 vUI_AddShortcut_btnAdjust gUI_AddShortcut_Adjust, % "&Adjust"
-    Gui, Add, GroupBox, xs h120 w360, % "&Chord"
-    Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord gUI_AddShortcut_Focus_Chord
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveChord vUI_AddShortcut_btnSaveChord, % "&Save"
-    Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
-    Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
-    Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand gUI_AddShortcut_Focus_Shorthand
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
-    Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
-    Gui, Margin, 25, 25
-    Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
-}
-UI_AddShortcut_Show(exp) {
-    call := Func("OpenHelp").Bind("AddShortcut")
-    Hotkey, F1, % call, On
-    WireHotkeys("Off")  ; so the user can edit values without interference
-    UI_AddShortcut_Build()
-    Gui, UI_AddShortcut:Default
-    if (exp=="") {
-        GuiControl, Hide, UI_AddShortcut_btnAdjust
-        GuiControl, Focus, UI_AddShortcut_text
-    } else {
-        GuiControl, Disable, UI_AddShortcut_text
-        GuiControl,, UI_AddShortcut_text, % exp
-        if (shorthand := shorthands.ReverseLookUp(exp)) {
-            GuiControl, Disable, UI_AddShortcut_shorthand
-            GuiControl, , UI_AddShortcut_shorthand, % shorthand
-            GuiControl, Disable, UI_AddShortcut_btnSaveShorthand
-        } else GuiControl, Focus, UI_AddShortcut_shorthand
-        if (chord := chords.ReverseLookUp(exp)) {
-            GuiControl, Disable, UI_AddShortcut_chord
-            GuiControl, , UI_AddShortcut_chord, % chord
-            GuiControl, Disable, UI_AddShortcut_btnSaveChord
-        } else GuiControl, Focus, UI_AddShortcut_chord
-    }
-    Gui, Show, w410
-}
-UI_AddShortcut_Focus_Chord() {
-        GuiControlGet, isEnabled, Enabled, UI_AddShortcut_chord
-    GuiControlGet, UI_AddShortcut_chord
-    if (isEnabled && UI_AddShortcut_chord != "")
-        GuiControl, +Default, UI_AddShortcut_btnSaveChord
-}
-UI_AddShortcut_Focus_Shorthand() {
-    GuiControlGet, isEnabled, Enabled, UI_AddShortcut_shorthand
-    GuiControlGet, UI_AddShortcut_shorthand
-    if (isEnabled && UI_AddShortcut_shorthand != "")
-        GuiControl, +Default, UI_AddShortcut_btnSaveShorthand
-}
-UI_AddShortcutGuiClose() {
-    UI_AddShortcut_Close()
-}
-UI_AddShortcutGuiEscape() {
-    UI_AddShortcut_Close()
-}
-UI_AddShortcut_Close() {
-    Hotkey, F1, Off
-    Gui, UI_AddShortcut:Destroy
-    if (settings.mode > MODE_ZIPCHORD_ENABLED)
-        WireHotkeys("On")  ; resume normal mode
-}
-UI_AddShortcut_SaveChord(){
-    Gui, Submit, NoHide
-    if (chords.Add(UI_AddShortcut_chord, UI_AddShortcut_text)) {
-        UI_AddShortcut_Close()
-        UpdateDictionaryUI()
-    }
-}
-UI_AddShortcut_SaveShorthand(){
-    Gui, Submit, NoHide
-    if (shorthands.Add(UI_AddShortcut_shorthand, UI_AddShortcut_text)) {
-        UI_AddShortcut_Close()
-        UpdateDictionaryUI()
-    }
-}
-UI_AddShortcut_Adjust(){
-    GuiControl, Disable, UI_AddShortcut_btnAdjust
-    GuiControl, , UI_AddShortcut_chord, % ""
-    GuiControl, , UI_AddShortcut_shorthand, % ""
-    Sleep 10
-    GuiControl, Enable, UI_AddShortcut_chord
-    GuiControl, Enable, UI_AddShortcut_btnSaveChord
-    GuiControl, Enable, UI_AddShortcut_shorthand
-    GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
-    GuiControl, Enable, UI_AddShortcut_text
-    GuiControl, Focus, UI_AddShortcut_text
 }
 
 ;; Shortcut Hint UI
