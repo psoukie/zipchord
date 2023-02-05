@@ -23,7 +23,7 @@ Class clsAppShortcuts {
     MD_SHORT := 1
     MD_LONG := 2
 
-    shortcuts := { 1: { target:  "UI_Main_Show"
+    shortcuts := { 1: { target:  "ShowMainUI"
                       , display: "Open main ZipChord window"
                       , HK:      "^+z"
                       , mode:    this.MD_LONG}

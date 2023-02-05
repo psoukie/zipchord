@@ -51,7 +51,8 @@ Class clsLocaleInterface {
     }
     _Build() {
         UI := new clsUI("Keyboard and language settings")
-        Gui, +OwnerUI_Main
+        handle := main_UI.UI._handle
+        Gui, +Owner%handle%
         UI.on_close := ObjBindMethod(this, "_Close")
         UI.Add("Text", "Section", "&Locale name")
         UI.Add(this.name, "w120")
@@ -158,7 +159,8 @@ Class clsLocaleInterface {
         ini.SaveProperties(new_loc, this.name.value)
     }
     _Close() {
-        Gui, UI_Main:-Disabled
+        handle := main_UI.UI._handle
+        Gui, %handle%:-Disabled
         UpdateLocaleInMainUI(this.name.value)
         this.UI.Hide()
     }
