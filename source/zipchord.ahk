@@ -76,6 +76,8 @@ CloseApp() {
 ; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 special_key_map := {}
 
+global main_UI := new clsMainUI
+
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
     , AFFIX_PREFIX := 1 ; expansion is a prefix
@@ -226,6 +228,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 Initialize() {
     global app_shortcuts
+    global locale
     ; save license file
     ini.SaveLicense()
     app_shortcuts.Init()
@@ -234,18 +237,19 @@ Initialize() {
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
-    UI_locale_InitLocale()
-    UI_Locale_Load(settings.locale)
-    UI_Main_Build()
-    Gui, UI_Main:+Disabled ; for loading
-    UI_Main_Show()
+    main_UI.Build()
+    locale.Init()
+    locale.Load(settings.locale)
+    handle := main_UI.UI._handle
+    Gui, %handle%:+Disabled ; for loading
+    main_UI.Show()
     UI_Tray_Build()
-    UI_Locale_Build()
+    locale.Build()
     UI_OSD_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
-    Gui, UI_Main:-Disabled
+    Gui, %handle%:-Disabled
     WireHotkeys("On")
 }
 
@@ -295,7 +299,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    app_shortcuts._WireHotkeys("On")
+    app_shortcuts.WireHotkeys("On")
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
@@ -743,11 +747,8 @@ AddShortcut() {
     copied_text := Trim(Clipboard)
     Clipboard := clipboard_backup
     clipboard_backup := ""
-    UI_AddShortcut_Show(copied_text)
+    add_shortcut.Show(copied_text)
 }
-
-;; Main Dialog UI
-; ----------------
 
 ; variables holding the UI elements and selections (These should technically all be named UI_Main_xyz but I am using UI_xyz as a shortcut for the main dialog vars)
 global UI_input_delay
@@ -769,91 +770,155 @@ global UI_input_delay
     , UI_selected_locale
     , UI_debugging
 
-; Prepare UI
-UI_Main_Build() {
-    global zc_version
-    Gui, UI_Main:New, , ZipChord
-    Gui, Font, s10, Segoe UI
-    Gui, Margin, 15, 15
-    Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
-    Gui, Add, Text, y+20 Section, % "&Keyboard and language"
-    Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
-    Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
-    Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
-    Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
-    Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "Rel&oad"
-    Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
-    Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Op&en"
-    Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
-    Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
-    Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
-    Gui, Tab, 2
-    Gui, Add, GroupBox, y+20 w310 h175, Chords
-    Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
-    Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40 Number, 99
-    Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
-    Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
-    Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
-    Gui, Add, GroupBox, xs-20 y+40 w310 h70, % "Shorthands"
-    Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
-    Gui, Tab, 3
-    Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
-    Gui, Add, Text, , % "Hint &location"
-    Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
-    Gui, Add, Text, xs, % "Hints &frequency"
-    Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
-    Gui, Add, Button, gShowHintCustomization vUI_btnCustomize xs w100, % "&Adjust >>"
-    Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
-    Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
-    Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
-    Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
-    Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
-    Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
-    Gui, Add, Edit, vUI_hint_offset_y w70 Right
-    Gui, Add, Edit, vUI_hint_size w70 Right Number
-    Gui, Add, Edit, vUI_hint_color w70 Right
-    Gui, Tab, 4
-    Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
-    Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
-    Gui, Add, Checkbox, vUI_space_after xp y+10, % "&After chords and shorthands"
-    Gui, Add, Checkbox, vUI_space_punctuation xp y+10, % "After &punctuation"
-    Gui, Add, Text, xs y+30, % "Auto-&capitalization"
-    Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
-    Gui, Add, Text, xs y+m, % "&Output delay (ms)"
-    Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
-    Gui, Tab
-    Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
-    fn := Func("PauseApp").Bind(true)
-    GuiControl +g, % temp, % fn
-    Gui, Add, Button, w80 xm+160 ym+450 gUI_btnApply, % "Apply"
-    Gui, Add, Button, Default w80 xm+260 ym+450 gUI_btnOK, % "OK"
-    Gui, Tab, 5
-    Gui, Add, Text, Y+20, % "ZipChord"
-    Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
-    Gui, Add, Text, , % "version " . zc_version
-    ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
-    Gui, Font, Underline cBlue
-    Gui, Add, Text, gLinkToLicense, % "License information"
-    Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
-    Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
-    Gui, Font, norm cDefault
-    if (A_Args[1] == "dev")
-        Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+/**
+* Main Dialog UI Class
+*
+*/
+Class clsMainUI {
+    UI := {}
+    ; Prepare UI
+    Build() {
+        global zc_version
+        this.UI := new clsUI("ZipChord")
+        this.UI.on_close := ObjBindMethod(this, "_Close")
+        Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
+        Gui, Add, Text, y+20 Section, % "&Keyboard and language"
+        Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
+        Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
+        Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
+        Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
+        Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
+        Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
+        Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "Rel&oad"
+        Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
+        Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
+        Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
+        Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Op&en"
+        Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
+        Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
+        Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
+        Gui, Tab, 2
+        Gui, Add, GroupBox, y+20 w310 h175, Chords
+        Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
+        Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40 Number, 99
+        Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
+        Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
+        Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
+        Gui, Add, GroupBox, xs-20 y+40 w310 h70, % "Shorthands"
+        Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
+        Gui, Tab, 3
+        Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
+        Gui, Add, Text, , % "Hint &location"
+        Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
+        Gui, Add, Text, xs, % "Hints &frequency"
+        Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
+        Gui, Add, Button, gShowHintCustomization vUI_btnCustomize xs w100, % "&Adjust >>"
+        Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
+        Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
+        Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
+        Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
+        Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
+        Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
+        Gui, Add, Edit, vUI_hint_offset_y w70 Right
+        Gui, Add, Edit, vUI_hint_size w70 Right Number
+        Gui, Add, Edit, vUI_hint_color w70 Right
+        Gui, Tab, 4
+        Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
+        Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
+        Gui, Add, Checkbox, vUI_space_after xp y+10, % "&After chords and shorthands"
+        Gui, Add, Checkbox, vUI_space_punctuation xp y+10, % "After &punctuation"
+        Gui, Add, Text, xs y+30, % "Auto-&capitalization"
+        Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
+        Gui, Add, Text, xs y+m, % "&Output delay (ms)"
+        Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
+        Gui, Tab
+        Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
+        fn := Func("PauseApp").Bind(true)
+        GuiControl +g, % temp, % fn
+        Gui, Add, Button, w80 xm+160 ym+450 gUI_btnApply, % "Apply"
+        Gui, Add, Button, Default w80 xm+260 ym+450 gUI_btnOK, % "OK"
+        Gui, Tab, 5
+        Gui, Add, Text, Y+20, % "ZipChord"
+        Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
+        Gui, Add, Text, , % "version " . zc_version
+        ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
+        Gui, Font, Underline cBlue
+        Gui, Add, Text, gLinkToLicense, % "License information"
+        Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
+        Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
+        Gui, Font, norm cDefault
+        if (A_Args[1] == "dev")
+            Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+    }
+    Show() {
+        if (A_Args[1] == "dev")
+            if (UI_debugging)
+                FinishDebugging()
+        call := ObjBindMethod(this, "_Help")
+        Hotkey, F1, % call, On
+        handle := this.UI._handle
+        Gui, %handle%:Default
+        GuiControl Text, UI_input_delay, % settings.input_delay
+        GuiControl Text, UI_output_delay, % settings.output_delay
+        GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
+        GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
+        GuiControl , , UI_immediate_shorthands, % (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) ? 1 : 0
+        GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
+        GuiControl , Choose, UI_capitalization, % settings.capitalization
+        GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
+        GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
+        GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
+        GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
+        GuiControl , , UI_chords_enabled, % (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+        GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+        ; debugging is always set to disabled
+        GuiControl , , UI_debugging, 0
+        GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
+        GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
+        GuiControl , Choose, UI_hint_frequency, % OrdinalOfHintFrequency()
+        GuiControl Text, UI_hint_offset_x, % settings.hint_offset_x
+        GuiControl Text, UI_hint_offset_y, % settings.hint_offset_y
+        GuiControl Text, UI_hint_size, % settings.hint_size
+        GuiControl Text, UI_hint_color, % settings.hint_color
+        ShowHintCustomization(false)
+        GuiControl, Choose, UI_tab, 1 ; switch to first tab
+        UpdateLocaleInMainUI(settings.locale)
+        Gui, Show,, ZipChord
+    }
+    EnableTabs(mode) {
+        handle := main_UI.UI._handle
+        Gui, %handle%:Default
+        GuiControl, Enable%mode%, UI_tab
+    }
+    _Close() {
+        Hotkey, F1, Off
+        handle := this.UI._handle
+        Gui, %handle%:Default
+        Gui, Submit
+        if (settings.preferences & PREF_SHOW_CLOSING_TIP)
+            UI_ClosingTip_Show()
+    }
+    _Help() {
+        handle := this.UI._handle
+        Gui, %handle%:Default
+        GuiControlGet, current_tab,, UI_tab
+        OpenHelp("Main-" . Trim(current_tab))
+    }
+}
+
+ShowMainUI() {
+    main_UI.Show()
 }
 
     ; Create taskbar tray menu:
 UI_Tray_Build() {
     global app_shortcuts
     Menu, Tray, NoStandard
-    Menu, Tray, Add, % "Open ZipChord", UI_Main_Show
+    Menu, Tray, Add, % "Open ZipChord", ShowMainUI
     Menu, Tray, Add, % "Add Shortcut", AddShortcut
     Menu, Tray, Add, % "Pause ZipChord", PauseApp
     Menu, Tray, Add  ;  adds a horizontal line
-    fn := ObjBindMethod(app_shortcuts, "ShowUI")
+    fn := ObjBindMethod(app_shortcuts, "Show")
     Menu, Tray, Add, % "Customize app shortcuts", % fn
     Menu, Tray, Add  ;  adds a horizontal line
     if (A_Args[1] == "dev") {
@@ -870,7 +935,7 @@ UI_Tray_Build() {
 
 UI_Tray_Update() {
     global app_shortcuts
-    Menu, Tray, Rename, 1&, % "Open ZipChord`t" . app_shortcuts.GetHotkeyText("UI_Main_Show")
+    Menu, Tray, Rename, 1&, % "Open ZipChord`t" . app_shortcuts.GetHotkeyText("ShowMainUI")
     Menu, Tray, Rename, 2&, % "Add Shortcut`t" . app_shortcuts.GetHotkeyText("AddShortcut")
     string :=  (settings.mode & MODE_ZIPCHORD_ENABLED) ? "Pause" : "Resume"
     Menu, Tray, Rename, 3&, % string . " ZipChord`t" . app_shortcuts.GetHotkeyText("PauseApp")
@@ -881,7 +946,8 @@ UI_Tray_Update() {
 }
 
 PauseApp(from_button := false) {
-    Gui, UI_Main:Default
+    handle := main_UI.UI._handle
+    Gui, %handle%:Default
     if (settings.mode & MODE_ZIPCHORD_ENABLED) {
         settings.mode := settings.mode & ~MODE_ZIPCHORD_ENABLED
         mode := false
@@ -897,12 +963,7 @@ PauseApp(from_button := false) {
     }
     WireHotkeys(state)
     UI_Tray_Update()
-    UI_Main_EnableTabs(mode)
-}
-
-UI_Main_EnableTabs(mode) {
-    Gui, UI_Main:Default
-    GuiControl, Enable%mode%, UI_tab
+    main_UI.EnableTabs(mode)
 }
 
 QuitApp() {
@@ -910,47 +971,6 @@ QuitApp() {
     ShowHint("Closing ZipChord", state, , false)
     Sleep 1100
     ExitApp
-}
-
-UI_Main_Show() {
-    if (A_Args[1] == "dev")
-        if (UI_debugging)
-            FinishDebugging() 
-    Hotkey, F1, UI_MainHelp, On
-    Gui, UI_Main:Default
-    GuiControl Text, UI_input_delay, % settings.input_delay
-    GuiControl Text, UI_output_delay, % settings.output_delay
-    GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
-    GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
-    GuiControl , , UI_immediate_shorthands, % (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) ? 1 : 0
-    GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
-    GuiControl , Choose, UI_capitalization, % settings.capitalization
-    GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
-    GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
-    GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-    GuiControl , , UI_chords_enabled, % (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
-    GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
-    ; debugging is always set to disabled
-    GuiControl , , UI_debugging, 0
-    GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
-    GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
-    GuiControl , Choose, UI_hint_frequency, % OrdinalOfHintFrequency()
-    GuiControl Text, UI_hint_offset_x, % settings.hint_offset_x
-    GuiControl Text, UI_hint_offset_y, % settings.hint_offset_y
-    GuiControl Text, UI_hint_size, % settings.hint_size
-    GuiControl Text, UI_hint_color, % settings.hint_color
-    ShowHintCustomization(false)
-    GuiControl, Choose, UI_tab, 1 ; switch to first tab
-    UpdateLocaleInMainUI(settings.locale)
-    Gui, Show,, ZipChord
-}
-
-UI_MainHelp() {
-    Gui, UI_Main:Default
-    ; Gui, Submit, NoHide
-    GuiControlGet, current_tab,, UI_tab
-    OpenHelp("Main-" . Trim(current_tab))
 }
 
 OpenKeyVisualizer() {
@@ -998,15 +1018,16 @@ ShowHintCustomization(show_controls := true) {
 }
 
 UpdateLocaleInMainUI(selected_loc) {
-    sections := UI_Locale_GetSectionNames()
-    Gui, UI_Main:Default
+    sections := ini.LoadSections()
+    handle := main_UI.UI._handle
+    Gui, %handle%:Default
     GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_selected_locale, % selected_loc
 }
 
 UI_btnOK:
     if (ApplyMainSettings())
-        UI_Main_Close()    
+        main_UI.Close()    
 return
 
 UI_btnApply:
@@ -1015,6 +1036,7 @@ return
 
 ApplyMainSettings() {
     global hint_delay
+    global locale
     previous_mode := settings.mode 
     Gui, Submit, NoHide
     ; gather new settings from UI...
@@ -1043,7 +1065,7 @@ ApplyMainSettings() {
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
-    UI_Locale_Load(settings.locale)
+    locale.Load(settings.locale)
     if (settings.mode > MODE_ZIPCHORD_ENABLED) {
         if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
             ShowHint("ZipChord Keyboard", "On", , false)
@@ -1071,21 +1093,6 @@ ApplyMainSettings() {
     Return true
 }
 
-UI_MainGuiClose() {
-    UI_Main_Close()
-}
-UI_MainGuiEscape() {
-    UI_Main_Close()
-}
-
-UI_Main_Close() {
-    Hotkey, F1, Off
-    Gui, UI_Main:Default
-    Gui, Submit
-    if (settings.preferences & PREF_SHOW_CLOSING_TIP)
-        UI_ClosingTip_Show()
-}
-
 LinkToLicense() {
     ini.ShowLicense()
 }
@@ -1101,7 +1108,8 @@ Return
 
 ; Update UI with dictionary details
 UpdateDictionaryUI() {
-    Gui, UI_Main:Default
+    handle := main_UI.UI._handle
+    Gui, %handle%:Default
     GuiControl Text, UI_chord_file, % str.Ellipsisize(settings.chord_file, 270)
     entriesstr := "Chord dictionary (" chords.entries
     entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
@@ -1152,10 +1160,11 @@ BtnReloadShorthandDictionary() {
 }
 
 ButtonCustomizeLocale() {
+    global locale
     WireHotkeys("Off")  ; so the user can edit the values without interference
     Gui, Submit, NoHide ; to get the currently selected UI_selected_locale
     Gui, +Disabled
-    UI_Locale_Show(UI_selected_locale)
+    locale.Show(UI_selected_locale)
 }
 
 ;; Closing Tip UI
@@ -1168,7 +1177,7 @@ UI_ClosingTip_Show() {
     Gui, UI_ClosingTip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("UI_Main_Show", "Press ", "Press and hold "))
+    Gui, Add, Text, +Wrap w430, % Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold "))
     Gui, Add, Checkbox, vUI_ClosingTip_dont_show, % "Do &not show this tip again."
     Gui, Add, Button, gUI_ClosingTip_btnOK x370 w80 Default, OK
     Gui, Show, w470
@@ -1185,114 +1194,6 @@ UI_ClosingTipGuiClose() {
 }
 UI_ClosingTipGuiEscape() {
     Gui, UI_ClosingTip:Submit
-}
-
-;; Add Shortcut UI
-; -----------------
-
-global UI_AddShortcut_text
-    , UI_AddShortcut_chord
-    , UI_AddShortcut_shorthand
-    , UI_AddShortcut_btnSaveChord
-    , UI_AddShortcut_btnSaveShorthand
-    , UI_AddShortcut_btnAdjust
-UI_AddShortcut_Build() {
-    Gui, UI_AddShortcut:New, , % "Add Shortcut"
-    Gui, Margin, 25, 25
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Text, Section, % "&Expanded text"
-    Gui, Margin, 15, 15
-    Gui, Add, Edit, y+10 w220 vUI_AddShortcut_text
-    Gui, Add, Button, x+20 yp w100 vUI_AddShortcut_btnAdjust gUI_AddShortcut_Adjust, % "&Adjust"
-    Gui, Add, GroupBox, xs h120 w360, % "&Chord"
-    Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_chord gUI_AddShortcut_Focus_Chord
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveChord vUI_AddShortcut_btnSaveChord, % "&Save"
-    Gui, Add, Text, xs +Wrap w320, % "Individual keys that make up the chord, without pressing Shift or other modifier keys."
-    Gui, Add, GroupBox, xs-20 y+30 h120 w360, % "S&horthand"
-    Gui, Font, s10, Consolas
-    Gui, Add, Edit, xp+20 yp+30 Section w200 vUI_AddShortcut_shorthand gUI_AddShortcut_Focus_Shorthand
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Button, x+20 yp w100 gUI_AddShortcut_SaveShorthand vUI_AddShortcut_btnSaveShorthand, % "Sa&ve"
-    Gui, Add, Text, xs +Wrap w320, % "Sequence of keys of the shorthand, without pressing Shift or other modifier keys."
-    Gui, Margin, 25, 25
-    Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
-}
-UI_AddShortcut_Show(exp) {
-    call := Func("OpenHelp").Bind("AddShortcut")
-    Hotkey, F1, % call, On
-    WireHotkeys("Off")  ; so the user can edit values without interference
-    UI_AddShortcut_Build()
-    Gui, UI_AddShortcut:Default
-    if (exp=="") {
-        GuiControl, Hide, UI_AddShortcut_btnAdjust
-        GuiControl, Focus, UI_AddShortcut_text
-    } else {
-        GuiControl, Disable, UI_AddShortcut_text
-        GuiControl,, UI_AddShortcut_text, % exp
-        if (shorthand := shorthands.ReverseLookUp(exp)) {
-            GuiControl, Disable, UI_AddShortcut_shorthand
-            GuiControl, , UI_AddShortcut_shorthand, % shorthand
-            GuiControl, Disable, UI_AddShortcut_btnSaveShorthand
-        } else GuiControl, Focus, UI_AddShortcut_shorthand
-        if (chord := chords.ReverseLookUp(exp)) {
-            GuiControl, Disable, UI_AddShortcut_chord
-            GuiControl, , UI_AddShortcut_chord, % chord
-            GuiControl, Disable, UI_AddShortcut_btnSaveChord
-        } else GuiControl, Focus, UI_AddShortcut_chord
-    }
-    Gui, Show, w410
-}
-UI_AddShortcut_Focus_Chord() {
-        GuiControlGet, isEnabled, Enabled, UI_AddShortcut_chord
-    GuiControlGet, UI_AddShortcut_chord
-    if (isEnabled && UI_AddShortcut_chord != "")
-        GuiControl, +Default, UI_AddShortcut_btnSaveChord
-}
-UI_AddShortcut_Focus_Shorthand() {
-    GuiControlGet, isEnabled, Enabled, UI_AddShortcut_shorthand
-    GuiControlGet, UI_AddShortcut_shorthand
-    if (isEnabled && UI_AddShortcut_shorthand != "")
-        GuiControl, +Default, UI_AddShortcut_btnSaveShorthand
-}
-UI_AddShortcutGuiClose() {
-    UI_AddShortcut_Close()
-}
-UI_AddShortcutGuiEscape() {
-    UI_AddShortcut_Close()
-}
-UI_AddShortcut_Close() {
-    Hotkey, F1, Off
-    Gui, UI_AddShortcut:Destroy
-    if (settings.mode > MODE_ZIPCHORD_ENABLED)
-        WireHotkeys("On")  ; resume normal mode
-}
-UI_AddShortcut_SaveChord(){
-    Gui, Submit, NoHide
-    if (chords.Add(UI_AddShortcut_chord, UI_AddShortcut_text)) {
-        UI_AddShortcut_Close()
-        UpdateDictionaryUI()
-    }
-}
-UI_AddShortcut_SaveShorthand(){
-    Gui, Submit, NoHide
-    if (shorthands.Add(UI_AddShortcut_shorthand, UI_AddShortcut_text)) {
-        UI_AddShortcut_Close()
-        UpdateDictionaryUI()
-    }
-}
-UI_AddShortcut_Adjust(){
-    GuiControl, Disable, UI_AddShortcut_btnAdjust
-    GuiControl, , UI_AddShortcut_chord, % ""
-    GuiControl, , UI_AddShortcut_shorthand, % ""
-    Sleep 10
-    GuiControl, Enable, UI_AddShortcut_chord
-    GuiControl, Enable, UI_AddShortcut_btnSaveChord
-    GuiControl, Enable, UI_AddShortcut_shorthand
-    GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
-    GuiControl, Enable, UI_AddShortcut_text
-    GuiControl, Focus, UI_AddShortcut_text
 }
 
 ;; Shortcut Hint UI

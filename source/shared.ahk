@@ -13,7 +13,6 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 global ini := new clsIniFile
 global str := new clsStringFunctions
-global UI := new clsUIBuilder
 
 OpenHelp(topic) {
     Switch topic {
@@ -38,21 +37,148 @@ OpenHelp(topic) {
     }
 }
 
-class clsUIBuilder {
-    name := "" ; UI name
-    controls := {}
+/**
+* UI class -- custom, object-oriented methods for working with windows and controls
+* 
+* Public properties:
+*   on_close      callback function to use when user closes the window or escapes from it
+*   controls      collection of controls in this window, see clsControl below 
+*
+* Public methods:
+*   new clsUI     Creates a new window object.
+*   Show          Shows the window.
+*   Destroy       Destroys the window.
+*   Hide          Hides the window.
+*   Add           Adds a control.
+*/
+class clsUI {
+    static _windows := {}   ; key-value array with handles pointing to UI objects
+    _handle := ""           ; handle of the UI instance
+    controls := {}          ; key-value array with handles pointing to controls within the UI instance
+    on_close := ""          ; callback function when user closes or escapes the window
+
+    /**
+    * UI Control class for defining and working with controls
+    *
+    * Properties:
+    *    type, text,          Can be used with Add as shorthand definition using object  
+    *      function, state
+    *    value                Retrieves or sets the value of the control 
+    *
+    * Methods:
+    *    Enable([true|false]) Enables the control, unless called with Enable(false).             
+    *    Disable              Disables the control.
+    *    Choose
+    *    Focus
+    *    Hide
+    */    
     class clsControl {
         type := ""
         text := ""
+        function := ""
         state := 0
-        disabled := false  ; Enabled - true / Disabled - false
+        _handle := ""
+        value[] {
+            get {
+                GuiControlGet, val, , % this._handle
+                return val
+            }
+            set {
+                GuiControl, , % this._handle, % value
+            }
+        }
+        is_enabled[] {
+            get {
+                GuiControlGet, val, Enabled, % this._handle
+                return val
+            }
+        }
+        Enable(state := true) {
+            GuiControl, Enable%state%, % this._handle
+            this.state := state
+        }
+        Disable() {
+            this.Enable(false)
+        }
+        Show() {
+            GuiControl, Show, % this._handle
+        }
+        Hide() {
+            GuiControl, Hide, % this._handle
+        }
+        Focus() {
+            GuiControl, Focus, % this._handle
+        }
+        Choose(option) {
+            handle := this._handle
+            if option is not integer
+                Controlget, option, FindString, % option, , ahk_id %handle%  ; to get exact match 
+            GuiControl, Choose, % handle, % option
+        }
+        MakeDefault() {
+            GuiControl, +Default, % this._handle
+        }
     }
-    Add(control_or_type, text:="", param:="", state:="", fn:="") {
+
+    /**
+    * __New is used to create new window objects:
+    *
+    *    <obj> := new clsUI(<name>, [options])
+    *
+    *         <obj>          The returned new object
+    *         <name>         Title of the new window       
+    *         [options]      String with Gui options
+    */
+    __New(name:="", options:="") {
+        Gui, New, %options% +Hwndwindow_handle, %name%
+        this._handle := window_handle
+        clsUI._windows[window_handle] := this ; create an entry for this UI in the class to look it up when handling built-in, non-object AHK functions like CloseGui
+        Gui, Margin, 15, 15
+        Gui, Font, s10, Segoe UI
+    }
+    Show(options := "") {
+        window_handle := this._handle
+        Gui, %window_handle%:Show, % options
+    }
+    Destroy() {
+        window_handle := this._handle
+        Gui, %window_handle%:Destroy
+    }
+    Hide() {
+        window_handle := this._handle
+        Gui, %window_handle%:Hide
+    }
+    ; Called when user closes or escapes the window.
+    ; Calls the on_close function, if defined, or hides the window.
+    _Close() {
+        on_close_fn := this.on_close 
+        if (IsObject(on_close_fn))
+            %on_close_fn%()
+        else
+            this.Hide()
+    }
+
+    /** 
+    * Adds a new control to the window.
+    *
+    *   Add(<controlobject>, [options])
+    *   Add(<type>, [options], [text], [function], [state]) 
+    *
+    *      <controlobject>    a clsControl object
+    *      <type>             A control type: Text, Button, Checkbox, Radio,
+    *                         GroupBox, DropDownList etc.
+    *      [options]          String with Gui options
+    *      [text]             String for the controls text or value
+    *      [function]         Function to call upon user interaction
+    *      [state]            Boolean for starting as checked or selected
+    */
+    Add(control_or_type, options:="", text:="", function:="", state:="") {
+        window_handle := this._handle
         new_control := new this.clsControl
         if (IsObject(control_or_type)) {
-            param := text
             type := control_or_type.type
             text := control_or_type.text
+            function := control_or_type.function
             state := control_or_type.state ? true : false
         } else {
             type := control_or_type
@@ -61,35 +187,65 @@ class clsUIBuilder {
             new_control.state := state
         }
         Switch type {
-            Case "Text", "Button":
-                Gui, Add, %type%, %param% Hwndhandle, %text%
+            Case "Checkbox", "Radio":
+                Gui, %window_handle%:Add, %type%, %options% Hwndcontrol_handle Checked%state%, %text%
+            Case "Button":
+                if (!InStr(options, "w"))
+                    options .= " w" . str.TextInPixels(text) + 30
+                Gui, %window_handle%:Add, %type%, %options% Hwndcontrol_handle, %text%
             Default:
-                Gui, Add, %type%, %param% Hwndhandle Checked%state%, %text%
+                Gui, %window_handle%:Add, %type%, %options% Hwndcontrol_handle, %text%
         }
-        this.controls[handle] := new_control
-        if (fn)
-            GuiControl +g, % handle, % fn
-        if (IsObject(control_or_type))
-            control_or_type.handle := handle
-        return handle
+        new_control._handle := control_handle
+        this.controls[control_handle] := new_control
+        if (function)
+            GuiControl +g, %control_handle%, %function%
+        if (IsObject(control_or_type)) {
+            control_or_type._handle := control_handle
+            ObjSetBase(control_or_type, this.clsControl)
+        }
+        return new_control
     }
+}
+
+; We catch and process all the AHK-generated calls when a user closes or escapes _any_ UI. 
+
+GuiClose(handle) {
+    clsUI._windows[handle]._Close()
+}
+GuiEscape(handle) {
+    clsUI._windows[handle]._Close()
 }
 
 /**
 * String Functions
 * Methods:
+*    HotkeyToText     Returns a human-readable hotkey text.
 *    Ellipsisize      Returns a shortened string (if it exceeds the limit) with ellipsis added.
-*        text         String to shorten.
-*        limit        Limit in pixel length.
-*        to_end       [true|false] add ellipsis to the end (or start), default is false (left).
-*        font         Font to use for adjustment calculation. Default is Segoe UI.    
-*        size         Font size used for adjustment calculation. Default is 10.
+*    TextInPixels     Returns the length of text in pixels.
 */
 Class clsStringFunctions {
+    HotkeyToText(HK) {
+        if (StrLen(RegExReplace(HK, "[\+\^\!]")) == 1) {
+            StringUpper, last_char, % SubStr(HK, 0)
+            text := SubStr(HK, 1, StrLen(HK)-1) . last_char
+        } else text := HK
+        text := StrReplace(text, "+", "Shift+")
+        text := StrReplace(text, "^", "Ctrl+")
+        text := StrReplace(text, "!", "Alt+")
+        return text
+    }
+    /** Ellipsis
+    *        text         String to shorten.
+    *        limit        Limit in pixel length.
+    *        to_end       [true|false] add ellipsis to the end (or start), default is false (left).
+    *        font         Font to use for adjustment calculation. Default is Segoe UI.    
+    *        size         Font size used for adjustment calculation. Default is 10.
+    */
     Ellipsisize(text, limit, to_end:=false, font:="Segoe UI", size:=10) {
-        if (this._TextInPixels(text, font, size) < limit)
+        if (this.TextInPixels(text, font, size) < limit)
             return text
-        While ( (length := this._TextInPixels(text . "...", font, size)) > limit) {
+        While ( (length := this.TextInPixels(text . "...", font, size)) > limit) {
             new_length := Round(StrLen(text)*(limit/length))
             ; but we always decrease by at least a character
             if (new_length >= StrLen(text))
@@ -104,7 +260,7 @@ Class clsStringFunctions {
         else
             return "..." . text
     }
-    _TextInPixels(string, font_name, size)
+    TextInPixels(string, font_name:="Segoe UI", size:=10)
     {
         Gui, strFunc:Font, s%size%, %font_name%
         Gui, strFunc:Add, Text, Hwndtemp, %string%

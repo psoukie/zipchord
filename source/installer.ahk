@@ -45,6 +45,7 @@ Class clsInstaller {
                                         , state: true}}
 
     options := {}
+    UI := {}
 
     __New() {
         if (A_Args[1] == "/elevate") {
@@ -58,25 +59,25 @@ Class clsInstaller {
     }
     ShowUI() {
         global zc_version
+        UI := new clsUI("ZipChord Setup")
+        UI.on_close := ObjBindMethod(this, "_CloseUI")
         call := Func("OpenHelp").Bind("Installation")
         Hotkey, F1, % call, On
-        Gui, New, , % "ZipChord Setup"
-        Gui, Margin, 15, 15
-        Gui, Font, s10, Segoe UI
-        Gui, Add, GroupBox, w370 h90 Section, % "Application installation folder"
+        UI.Add("GroupBox", "w370 h90 Section", "Application installation folder")
         UI.Add(this.controls.destination_Programs, "xs+20 ys+30")
         UI.Add(this.controls.destination_current, "y+10")
-        Gui, Add, GroupBox, xs w370 h100 Section, % "Default dictionary folder"
+        UI.Add("GroupBox", "xs w370 h100 Section", "Default dictionary folder")
         UI.Add(this.controls.dictionary_dir, "xs+20 ys+30 w330")
-        UI.Add("Button", "Change Folder", "y+10 w150", , ObjBindMethod(this, "_btnSelectFolder"))
+        UI.Add("Button", "y+10 w150", "Change Folder", ObjBindMethod(this, "_btnSelectFolder"))
         UI.Add(this.controls.zipchord_shortcut, "xs")
         UI.Add(this.controls.autostart)
         UI.Add(this.controls.developer_shortcut)
         UI.Add(this.controls.open_after)
-        UI.Add("Text", "v" . zc_version, "yp+50")
-        UI.Add("Button", "Cancel", "w80 xm+170 yp", , ObjBindMethod(this, "_CloseUI"))
-        UI.Add("Button", "Install", "Default w80 xm+270 yp", , ObjBindMethod(this, "_btnInstall"))
-        Gui, Show
+        UI.Add("Text", "yp+50", "v" . zc_version)
+        UI.Add("Button", "w80 xm+170 yp", "Cancel", ObjBindMethod(this, "_CloseUI"))
+        UI.Add("Button", "Default w80 xm+270 yp", "Install", ObjBindMethod(this, "_btnInstall"))
+        UI.Show()
+        this.UI := UI
     }
     _btnInstall() {
         this._UpdateOptions()
@@ -95,7 +96,7 @@ Class clsInstaller {
         if (A_IsAdmin) {
             return
         } else {
-            Gui, Destroy
+            this.UI.Destroy()
             try
                 RunWait *RunAs "%A_ScriptFullPath%" /elevate, % A_Temp
             catch _
@@ -105,24 +106,20 @@ Class clsInstaller {
     }
     _LocalOption() {
         this.ShowUI()
-        GuiControl, Disable, % this.controls.destination_Programs.handle
-        GuiControl, , % this.controls.destination_Programs.handle, % False
-        GuiControl, , % this.controls.destination_current.handle, % True
+        this.controls.destination_Programs.Disable()
+        this.controls.destination_Programs.value := False
+        this.controls.destination_current.value := True
     }
     _CloseUI() {
         Hotkey, F1, Off
-        Gui, Destroy
         ExitApp
     }
     _UpdateOptions() {
         For key, control in this.controls
-        {
-            GuiControlGet, val, , % control.handle
-            this.options[key] := val
-        }
+            this.options[key] := control.value
+        this.options.dictionary_dir := this.dictionary_dir_full  ; override the potentially abbreviated path from the UI with the actual value
     }
     _SaveOptions() {
-        this.options.dictionary_dir := this.dictionary_dir_full  ; override the potentially abbreviated path from the UI with the actual value
         this.options.installation_dir := this.options.destination_Programs ? A_ProgramFiles . "\ZipChord" : A_ScriptDir
         this.options.programs_dir := A_Programs
         this.options.startup_dir := A_Startup
@@ -136,7 +133,7 @@ Class clsInstaller {
         FileSelectFolder dict_path, % "*" . A_MyDocuments, , % "Select a folder for ZipChord dictionaries:"
         if (dict_path != "") {
             this.dictionary_dir_full := dict_path
-            GuiControl, , % this.controls.dictionary_dir.handle, %  str.Ellipsisize(dict_path, 330)
+            this.controls.dictionary_dir.value := str.Ellipsisize(dict_path, 330)
         }
     }
     _SaveRegistryInfo() {
@@ -195,13 +192,4 @@ Class clsInstaller {
         }
         ExitApp 
     }
-}
-
-GuiClose() {
-    global installer
-    installer._CloseUI()
-}
-GuiEscape() {
-    global installer
-    installer._CloseUI()
 }
