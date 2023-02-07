@@ -54,6 +54,7 @@ if (A_Args[1] == "dev") {
 #Include app_shortcuts.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
+#Include io.ahk
 
 OutputKeys(output) {
     if (A_Args[1] == "dev") {
@@ -304,12 +305,15 @@ WireHotkeys(state) {
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
-;; Shortcuts Detection
+;; Shortcuts Detection 
 ; ---------------------
 
 KeyDown:
     key := A_ThisHotkey
     tick := A_TickCount
+    ; TK qpc_start := QPC()
+    classifier.Input(key, tick)
+    ; TK OutputDebug, % "`nKey call (ms): " . QPC() - qpc_start
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := test_key
@@ -468,6 +472,9 @@ Return
 KeyUp:
     Critical
     tick_up := A_TickCount
+    QPC()
+    classifier.Input(A_ThisHotkey, tick_up)
+    QPC()
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING)
             tick_up := test_timestamp
@@ -1027,7 +1034,7 @@ UpdateLocaleInMainUI(selected_loc) {
 
 UI_btnOK:
     if (ApplyMainSettings())
-        main_UI.Close()    
+        main_UI._Close()    
 return
 
 UI_btnApply:

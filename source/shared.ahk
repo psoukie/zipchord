@@ -332,3 +332,17 @@ UpdateVarFromRegistry(ByRef var, key) {
 SaveVarToRegistry(key, value) {
     RegWrite % "REG_SZ", % "HKEY_CURRENT_USER\Software\ZipChord", % key, % value
 }
+
+QPC()
+{
+	static frequency
+    static start
+    if (! frequency)
+        DllCall("kernel32\QueryPerformanceFrequency", Int64P, frequency)
+	DllCall("kernel32\QueryPerformanceCounter", Int64P, count)
+    if (start) {
+        OutputDebug, % Format("`n`nKey up (ms): {:.2f}",  ((count / frequency) - start) * 1000)
+        start := 0
+    }
+    else start := count / frequency
+}
