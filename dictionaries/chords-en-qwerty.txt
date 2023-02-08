@@ -82,6 +82,7 @@ wa	was
 er	were
 be	be
 hv	have
+hv ;g	having
 hz	has
 hd	had
 nt	not
@@ -92,24 +93,31 @@ cd	could
 wd	would
 sd	should
 li	like
+li ;g   liking
 bn	been
 ge	get
+ge ;g   getting
 may	may
 mad	made
 mk	make
+mk ;g   making
 ai	said
 wk	work
 uz	use
+uz ;g   using
 sy	say
  g	go
 kn	know
 tk	take
+tk ;g   taking
 se	see
 lk	look
 cm	come
+cm ;g   coming
 thk	think
 wnt	want
 gi	give
+gi ;g   giving
 ct	cannot
 de	does
 di	did
@@ -151,7 +159,14 @@ way	way
  t	two
 yr	year
 bk	back
-day	day
+da	day
+da 1	Monday
+da 2	Tuesday
+da 3	Wednesday
+da 4	Thursday
+da 5	Friday
+da 6	Saturday
+da 7	Sunday
 qn	question
 sc	second
 dg	thing
@@ -161,18 +176,24 @@ dif	different
 dgh	though
 tru	through
 sr	sorry
- 1	Monday
- 2	Tuesday
- 3	Wednesday
- 4	Thursday
- 5	Friday
- 6	Saturday
- 7	Sunday
 mv	move
 dir	direction
 nx	next
 sam	same
 tp	top
+mon	month
+mon 1	January
+mon 2	February
+mon 3	March
+mon 4	April
+mon 5	May
+mon 6	June
+mon 7	July
+mon 8	August
+mon 9	September
+mon 1 0 October
+mon 1 1	November
+mon 1 2	December
 
 Prefixes
 --------
