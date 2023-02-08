@@ -1,29 +1,37 @@
-/**
-*
-*  ZipChord
-* 
-*  A customizable hybrid keyboard input method that augments regular
-*  typing with chords and shorthands.
-*  
-*  Copyright © 2021-2023 Pavel Soukenik
-*  
-*  This program is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*  
-*  This program is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*  
-*  You should have received a copy of the GNU General Public License
-*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*  
-*  
-*  See the official GitHub page for the documentation, source code, and
-*  to contact the author: https://github.com/psoukie/zipchord/
-*  
+﻿/*
+
+ZipChord
+
+A customizable hybrid keyboard input method that augments regular typing with
+chords and shorthands.
+
+Copyright (c) 2021-2023 Pavel Soukenik
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 */
 
 #NoEnv
@@ -33,31 +41,37 @@
 #KeyHistory 0
 ListLines Off
 SetKeyDelay -1, -1
-SetWorkingDir %A_ScriptDir%
 CoordMode ToolTip, Screen
+OnExit("CloseApp")
 
-global version = "2.0.1"
-;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
-;@Ahk2Exe-SetName ZipChord
-;@Ahk2Exe-SetDescription ZipChord 2.0
-;@Ahk2Exe-SetCopyright Pavel Soukenik (2021-2023)
+#Include version.ahk
+if (A_Args[1] == "dev") {
+    #Include *i visualizer.ahk
+    #Include *i testing.ahk
+}
+
+#Include shared.ahk
+#Include app_shortcuts.ahk
+#Include locale.ahk
+#Include dictionaries.ahk
+
+OutputKeys(output) {
+    if (A_Args[1] == "dev") {
+        test.Log(output)
+        if (test.mode == TEST_RUNNING)
+            return
+    }
+    SendInput % output
+}
+
+CloseApp() {
+    WireHotkeys("Off")
+    ExitApp
+}
 
 ;; Classes and Variables
 ; -----------------------
 
-; Locale settings (keyboard and language settings) with default values (US English)
-Class localeClass {
-    all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
-    remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
-    remove_space_shift := "1/;'-.235678]=\"  ; keys combined with Shift that delete any smart space before them.
-    space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
-    space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
-    capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
-    capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-    other_plain := "[" ; unmodified keys for other punctuation
-    other_shift := "9,["  ; other punctuation keys when modified by Shift
-}
-keys := New localeClass
 
 ; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 special_key_map := {}
@@ -126,13 +140,18 @@ Class HintTimingClass {
 hint_delay := New HintTimingClass
 
 ; Other preferences constants
-global PREF_FIRST_RUN := 1          ; first run of the application (no entry in Registry)
-    , PREF_SHOW_CLOSING_TIP := 2    ; show tip about re-opening the main dialog and adding chords
+global PREF_PREVIOUS_INSTALLATION := 1  ; this registry value means that the app has been installed before
+    , PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
+    , PREF_FIRST_RUN := 4               ; this value means this is the first run of 2.1.0-beta.2 or higher)
+
+global MODE_CHORDS_ENABLED := 1
+    , MODE_SHORTHANDS_ENABLED := 2
+    , MODE_ZIPCHORD_ENABLED := 4
 
 ; Current application settings
 Class settingsClass {
-    chords_enabled := 1
-    shorthands_enabled := 1
+    version := zc_version
+    mode := MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
     preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
     hints := HINT_ON | HINT_NORMAL | HINT_OSD
@@ -144,10 +163,10 @@ Class settingsClass {
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
     chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
-    shorthand_file := "shorthands-english-starting.txt" ; file name for the shorthand dictionary
+    shorthand_file := "shorthands-en-starting.txt" ; file name for the shorthand dictionary
+    dictionary_dir := A_ScriptDir
     input_delay := 70
     output_delay := 0
-    ; Read settings from Windows Registry and locate dictionary file
     Read() {
         For key in this
         {
@@ -155,133 +174,14 @@ Class settingsClass {
             if (! ErrorLevel)
                 this[key] := new_value
         }
+        this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Write() {
         For key, value in this
-        RegWrite REG_SZ, HKEY_CURRENT_USER\Software\ZipChord, %key%, %value%
+            SaveVarToRegistry(key, value)       
     }
 }
 global settings := New settingsClass
- 
-/**
-* Class for dictionaries.
-* Initializing:
-*    Create the dictionary object with "chorded_keys := true" for it to behave like a dictionary of chords.
-* Properties:
-*    entries - number of entries in the dictionary
-* Methods:
-*    LookUp(shortcut)     - returns expanded text or false if not found
-*    ReverseLookUp(text)  - returns corresponding shortcut or false if not found
-*    Load([file])         - Reloads the dictionary entries from the current dictionary file or from the specified file
-*    Add(shortcut, text)  - Adds the entry into the dictionary
-*/
-Class DictionaryClass {
-    _chorded := false
-    _file := ""
-    _entries := {}
-    _reverse_entries := {}
-    _pause_loading := true
-    ; Public properties and methods
-    entries {
-        get { 
-            return this._entries.Count() 
-        }
-    }
-    LookUp(shortcut) {
-        if ( this._entries.HasKey(shortcut) )
-            return this._entries[shortcut]
-        else
-            return false
-    }
-    ReverseLookUp(text) {
-        if ( this._reverse_entries.HasKey(text) )
-            return this._reverse_entries[text]
-        else
-            return false
-    }
-    Load(filename := "") {
-        this._pause_loading := true
-        if (filename == "")
-            filename := this._file
-        if (filename != "") {
-            this._file := filename
-            this._LoadShortcuts()
-        } else {
-            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
-        }
-    }
-    Add(shortcut, text) {
-        if( ! this._RegisterShortcut(shortcut, text, true) )
-            return False
-        return True
-    }
-    ; Private functions
-    __New(chorded_keys := false) {
-        this._chorded := chorded_keys
-    }
-    ; Load chords from a dictionary file
-    _LoadShortcuts() {
-        this._entries := {}
-        this._reverse_entries := {}
-        Loop, Read, % this._file
-        {
-            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
-            if (columns[2] && columns[1] != "") {
-                if (! this._RegisterShortcut(columns[1], columns[2]))  {
-                    if this._AskWhetherToStop()
-                        Break
-                }
-            }
-        }
-    }
-    ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
-        if (this._chorded)
-            newch := Arrange(newch_unsorted)
-        else
-            newch := newch_unsorted
-        if (! this._IsShortcutOK(newch, newword))
-            return false
-        if (this._chorded && StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
-            MsgBox ,, % "ZipChord", % "Each key can be entered only once in the same chord."
-            Return false
-        }
-        ObjRawSet(this._entries, newch, newword)
-        if ( ! InStr(newword, " ") )
-            ObjRawSet(this._reverse_entries, newword, newch_unsorted)
-        if (write_to_file)
-            FileAppend % "`r`n" newch_unsorted "`t" newword, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
-        return true
-    }
-    _IsShortcutOK(shortcut, word) {
-        dest := this._chorded ? "chord" : "shorthand"
-        if (occupied := this.LookUp(shortcut)) {
-            MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, shortcut, occupied, word)
-            Return false
-        }
-        if (StrLen(shortcut)<2) {
-            MsgBox ,, % "ZipChord", % Format("The {1} for '{2}' needs to be at least two characters.", dest, word)
-            Return false
-        }
-        if (word=="") {
-            MsgBox ,, % "ZipChord", % "There is no word being provided for the shortcut."
-            Return false
-        }
-        Return True
-    }
-    _AskWhetherToStop() {
-        if (this._pause_loading) {
-        MsgBox, 4, % "ZipChord", % "Would you like to continue loading the dictionary file?`n`nIf Yes, you'll see all errors in the dictionary.`nIf No, the rest of the dictionary will be ignored."
-        IfMsgBox Yes
-            this._pause_loading := false
-        else
-            Return True
-        }
-        Return False
-    }
-}
-global chords := New DictionaryClass(true)
-global shorthands := New DictionaryClass
 
 ; Processing input and output 
 chord_buffer := ""   ; stores the sequence of simultanously pressed keys
@@ -311,25 +211,13 @@ global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing c
 global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
 ; also "new_output" local variable is used to track the current key / output
 
+
+; UI string constants
+global UI_STR_PAUSE := "&Pause ZipChord"
+    , UI_STR_RESUME := "&Resume ZipChord"
+
 Initialize()
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
-
-;; Permanent Hotkeys
-; -------------------
-
-; An always enabled Ctrl+Shift+C hotkey held long to open ZipChord menu.
-~^+c::
-    Sleep 300
-    if GetKeyState("c","P")
-        ShowMainDialog()
-    Return
-
-; An always-on Ctrl+C hotkey held long to add a new chord to the dictionary.
-~^c::
-    Sleep 300
-    if GetKeyState("c","P")
-        AddShortcut()
-    Return
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
@@ -337,36 +225,27 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
-    global keys
-    if (A_IsCompiled)
-        FileInstall, ..\LICENSE, % "LICENSE.txt"
+    global app_shortcuts
+    ; save license file
+    ini.SaveLicense()
+    app_shortcuts.Init()
     settings.Read()
-    if (settings.preferences & PREF_FIRST_RUN) {
-        settings.preferences &= ~PREF_FIRST_RUN
-        if (A_IsCompiled) {
-            FileInstall, ..\dictionaries\chords-en-qwerty.txt, % "chords-en-starting.txt"
-            FileInstall, ..\dictionaries\shorthands-english.txt, % "shorthands-english-starting.txt"
-        }
-    }
+    SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.Write()
-    if (!FileExist("locales.ini")) {
-        default_locale := new localeClass
-        SavePropertiesToIni(default_locale, "English US", "locales.ini")
-    } else {
-        LoadPropertiesFromIni(keys, settings.locale, "locales.ini")
-    }
-    BuildMainDialog()
-    Gui, UI_main_window:+Disabled ; for loading
-    ShowMainDialog()
+    UI_locale_InitLocale()
+    UI_Locale_Load(settings.locale)
+    UI_Main_Build()
+    Gui, UI_Main:+Disabled ; for loading
+    UI_Main_Show()
     UI_Tray_Build()
-    BuildLocaleDialog()
-    BuildOSD()
+    UI_Locale_Build()
+    UI_OSD_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     UpdateDictionaryUI()
-    Gui, UI_main_window:-Disabled
+    Gui, UI_Main:-Disabled
     WireHotkeys("On")
 }
 
@@ -374,6 +253,7 @@ Initialize() {
 WireHotkeys(state) {
     global keys
     global special_key_map
+    global app_shortcuts
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
@@ -415,6 +295,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
+    app_shortcuts._WireHotkeys("On")
 }
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
@@ -423,7 +304,19 @@ WireHotkeys(state) {
 ; ---------------------
 
 KeyDown:
-    key := StrReplace(A_ThisHotkey, "Space", " ")
+    key := A_ThisHotkey
+    tick := A_TickCount
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            key := test_key
+            tick := test_timestamp
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
+    }
+    key := StrReplace(key, "Space", " ")
     if (SubStr(key, 1, 1) == "~")
         key := SubStr(key, 2)
     ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
@@ -435,20 +328,22 @@ KeyDown:
     }
     if (special_key_map.HasKey(key))
         key := special_key_map[key]
+    if (visualizer.IsOn())
+        visualizer.Pressed(key)
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
     }
-    if (settings.chords_enabled)
+    if (settings.mode & MODE_CHORDS_ENABLED)
         chord_buffer .= key ; adds to the keys pressed so far (the buffer is emptied upon each key-up)
     ; and when we have two keys, we start the clock for chord recognition sensitivity:
     if (StrLen(chord_buffer)==2) {
-        start := A_TickCount
+        start := tick
         if (shifted)
             chord_buffer .= "+"  ; hack to communicate Shift was pressed
     }
     ; Deal with shorthands and showing hints for defined shortcuts if needed
-    if (settings.shorthands_enabled || (settings.hints & HINT_ON) ) {
+    if ( (settings.mode & MODE_SHORTHANDS_ENABLED) || (settings.hints & HINT_ON) ) {
         if (last_output & OUT_AUTOMATIC)
             shorthand_buffer := ""
         if (last_output & OUT_INTERRUPTED & ~OUT_AUTOMATIC)
@@ -460,9 +355,9 @@ KeyDown:
                     chord_hint := ""
                     shorthand_hint := ""
                     if (hint_delay.HasElapsed()) {
-                        if (settings.chords_enabled)
+                        if (settings.mode & MODE_CHORDS_ENABLED)
                             chord_hint := chords.ReverseLookUp(shorthand_buffer)
-                        if (settings.shorthands_enabled)
+                        if (settings.mode & MODE_SHORTHANDS_ENABLED)
                             shorthand_hint := shorthands.ReverseLookUp(shorthand_buffer)
                         chord_hint := chord_hint ? chord_hint : "" 
                         shorthand_hint := shorthand_hint ? shorthand_hint : "" 
@@ -471,7 +366,7 @@ KeyDown:
                     }
                 }
                 ; then, we test if it's a shorthand to be expanded 
-                if ( settings.shorthands_enabled && expanded := shorthands.LookUp(shorthand_buffer) )
+                if ( (settings.mode & MODE_SHORTHANDS_ENABLED) && expanded := shorthands.LookUp(shorthand_buffer) )
                     OutputShorthand(expanded, key, shifted)
             }
             shorthand_buffer := ""
@@ -504,9 +399,11 @@ KeyDown:
     if (key==" ") {
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. if last output is a smart space
             DelayOutput()
-            SendInput {Backspace} ; delete any smart-space
+            OutputKeys("{Backspace}") ; delete any smart-space
             difference |= DIF_IGNORED_SPACE  ; and account for the output being one character shorter than the chord
         }
+        if (visualizer.IsOn())
+            visualizer.NewLine()
         new_output := new_output & ~OUT_AUTOMATIC & ~OUT_CHARACTER | OUT_SPACE
     }
     
@@ -518,12 +415,12 @@ KeyDown:
         new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
         if ( (last_output & OUT_SPACE) && (last_output & OUT_AUTOMATIC) ) {  ; i.e. a smart space
             DelayOutput()
-            SendInput {Backspace}{Backspace}
+            OutputKeys("{Backspace 2}")
             difference |= DIF_REMOVED_SMART_SPACE
             if (shifted)
-                SendInput +%key%
+                OutputKeys("+" . key)
             else
-                SendInput %key%
+                OutputKeys(key)
         }
     }
 
@@ -533,7 +430,7 @@ KeyDown:
         ; if smart spacing for punctuation is enabled, insert a smart space
         if ( settings.spacing & SPACE_PUNCTUATION ) {
             DelayOutput()
-            SendInput {Space}
+            OutputKeys("{Space}")
             difference |= DIF_EXTRA_SPACE
             new_output |= OUT_SPACE | OUT_AUTOMATIC
         } else {
@@ -557,7 +454,7 @@ KeyDown:
             if ( settings.capitalization==CAP_ALL && (! shifted) && (last_output & OUT_CAPITALIZE) ) {
                 DelayOutput()
                 cap_key := RegExReplace(key, "(.*)", "$U1")
-                SendInput % "{Backspace}{Text}" RegExReplace(key, "(.*)", "$U1") ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
+                OutputKeys("{Backspace}{Text}" . RegExReplace(key, "(.*)", "$U1")) ; deletes the character and sends its uppercase version. Uses {Text} because otherwise, Unicode extended characters could not be upper-cased correctly
                 new_output := new_output & ~OUT_CAPITALIZE  ; automatically capitalized, and the flag gets turned off
             }
     }
@@ -566,8 +463,31 @@ Return
 
 KeyUp:
     Critical
+    tick_up := A_TickCount
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING)
+            tick_up := test_timestamp
+        if (test.mode > TEST_STANDBY)
+            test.Log(A_ThisHotkey, true)
+    }
+
+    if (visualizer.IsOn()) {
+        key := StrReplace(A_ThisHotkey, "Space", " ")
+        if (SubStr(key, 1, 1) == "~")
+            key := SubStr(key, 2)
+        if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
+            shifted := true
+            key := SubStr(key, 2)
+        } else {
+            shifted := false
+        }
+        if (special_key_map.HasKey(key))
+            key := special_key_map[key]
+        visualizer.Lifted(SubStr(key, 1, 1))
+    }
+
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
-    if ( start && chord_candidate == "" && (A_TickCount - start > settings.input_delay) ) {
+    if ( start && chord_candidate == "" && (tick_up - start > settings.input_delay) ) {
         chord_candidate := chord_buffer
         final_difference := difference
         chord_buffer := ""
@@ -595,23 +515,25 @@ KeyUp:
                 DelayOutput()
                 hint_delay.Shorten()
                 RemoveRawChord(chord)
+                if (visualizer.IsOn())
+                    visualizer.NewLine()
                 OpeningSpace(affixes & AFFIX_SUFFIX)
                 if (InStr(expanded, "{")) {
                     ; we send any expanded text that includes { as straight directives:
-                    SendInput % expanded
+                    OutputKeys(expanded)
                 } else {
                     ; and there rest as {Text} that gets capitalized if needed:
                     if ( ((fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF)) || chord_shifted )
-                        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
+                        OutputKeys("{Text}" . RegExReplace(expanded, "(^.)", "$U1"))
                     else
-                        SendInput % "{Text}" expanded
+                        OutputKeys("{Text}" . expanded)
                 }
                 last_output := OUT_CHARACTER | OUT_AUTOMATIC  ; i.e. a chord (automated typing)
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
                     last_output |= OUT_PREFIX
                 } else if (settings.spacing & SPACE_AFTER_CHORD) {
-                    SendInput {Space}
+                    OutputKeys("{Space}")
                     last_output := OUT_SPACE | OUT_AUTOMATIC
                 }
             }
@@ -648,6 +570,8 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
     global hint_delay
     global special_key_map
     DelayOutput()
+    if (visualizer.IsOn())
+        visualizer.NewLine()
     hint_delay.Shorten()
     affixes := ProcessAffixes(expanded)
     For _, k in special_key_map
@@ -657,23 +581,23 @@ OutputShorthand(expanded, key, shifted, immediate := false) {
         adj++
     if (affixes & AFFIX_SUFFIX)
         adj++
-    SendInput {Backspace %adj%}
+    OutputKeys("{Backspace " . adj . "}")
     if (capitalize_shorthand)
-        SendInput % "{Text}" RegExReplace(expanded, "(^.)", "$U1")
+        OutputKeys("{Text}" . RegExReplace(expanded, "(^.)", "$U1"))
     else
-        SendInput % "{Text}" expanded
+        OutputKeys("{Text}" . expanded)
     if (immediate) {
         if ( (settings.spacing & SPACE_AFTER_CHORD) && !(affixes & AFFIX_PREFIX) ) {
-            SendInput {Space}
+            OutputKeys("{Space}")
             last_output := OUT_SPACE | OUT_AUTOMATIC
         }
     } else {
         if (shifted)
-            SendInput +%key%
+            OutputKeys("+" . key)
         else
-            SendInput %key%
+            OutputKeys(key)
         if (key == " " && (affixes & AFFIX_PREFIX))
-            SendInput {Backspace}
+            OutputKeys("{Backspace}")
     }
 }
 
@@ -705,9 +629,9 @@ RemoveRawChord(output) {
     if (final_difference & DIF_IGNORED_SPACE)
         adj--
     adj += StrLen(output)
-    SendInput {Backspace %adj%}
+    OutputKeys("{Backspace " . adj . "}")
     if (final_difference & DIF_REMOVED_SMART_SPACE)
-        SendInput {Space}
+        OutputKeys("{Space}")
 }
 
 ; check we can output chord here
@@ -726,7 +650,7 @@ OpeningSpace(attached) {
     ; if there is a smart space, we remove it for suffixes, and we're done
     if ( (fixed_output & OUT_SPACE) && (fixed_output & OUT_AUTOMATIC) ) {
         if (attached)
-            SendInput {Backspace}
+            OutputKeys("{Backspace}")
         Return
     }
     ; if adding smart spaces before is disabled, we are done too
@@ -739,7 +663,7 @@ OpeningSpace(attached) {
     if (fixed_output & OUT_INTERRUPTED || fixed_output & OUT_SPACE || fixed_output & OUT_PREFIX || attached)
         Return
     ; if we get here, we probably need a space in front of the chord
-    SendInput {Space}
+    OutputKeys("{Space}")
 }
 
 ; Sort the string alphabetically
@@ -785,13 +709,25 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 Interrupt:
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log("*Interrupt*", true)
+            test.Log("*Interrupt*")
+        }
+    }
 Return
 
 Enter_key:
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
-    if (key_monitor.IsOn())
-        key_monitor.NewLine()
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log("~Enter", true)
+            test.Log("~Enter")
+        }
+        if (visualizer.IsOn())
+            visualizer.NewLine()
+    }
 Return
 
 ;;  Adding shortcuts 
@@ -810,17 +746,17 @@ AddShortcut() {
     UI_AddShortcut_Show(copied_text)
 }
 
-;; Main UI
-; ---------
+;; Main Dialog UI
+; ----------------
 
-; variables holding the UI elements and selections
+; variables holding the UI elements and selections (These should technically all be named UI_Main_xyz but I am using UI_xyz as a shortcut for the main dialog vars)
 global UI_input_delay
     , UI_output_delay
     , UI_space_before, UI_space_after, UI_space_punctuation
     , UI_delete_unrecognized
     , UI_hints_show, UI_hint_destination, UI_hint_frequency
     , UI_hint_offset_x, UI_hint_offset_y, UI_hint_size, UI_hint_color 
-    , UI_btn_customize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
+    , UI_btnCustomize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
     , UI_immediate_shorthands
     , UI_capitalization
     , UI_allow_shift
@@ -828,28 +764,30 @@ global UI_input_delay
     , UI_chord_file, UI_shorthand_file
     , UI_chord_entries
     , UI_shorthand_entries
-    , UI_chords_enabled, UI_shorthands_enabled
+    , UI_zipchord_btnPause, UI_chords_enabled, UI_shorthands_enabled
     , UI_tab
-    , UI_locale
+    , UI_selected_locale
+    , UI_debugging
 
 ; Prepare UI
-BuildMainDialog() {
-    Gui, UI_main_window:New, , ZipChord
+UI_Main_Build() {
+    global zc_version
+    Gui, UI_Main:New, , ZipChord
     Gui, Font, s10, Segoe UI
     Gui, Margin, 15, 15
     Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
     Gui, Add, Text, y+20 Section, % "&Keyboard and language"
-    Gui, Add, DropDownList, y+10 w150 vUI_locale
+    Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
     Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
     Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
+    Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "Rel&oad"
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
-    Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
+    Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Op&en"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
     Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
@@ -868,7 +806,7 @@ BuildMainDialog() {
     Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
     Gui, Add, Text, xs, % "Hints &frequency"
     Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
-    Gui, Add, Button, gShowHintCustomization vUI_btn_customize xs w100, % "&Adjust >>"
+    Gui, Add, Button, gShowHintCustomization vUI_btnCustomize xs w100, % "&Adjust >>"
     Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
     Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
     Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
@@ -888,40 +826,98 @@ BuildMainDialog() {
     Gui, Add, Text, xs y+m, % "&Output delay (ms)"
     Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
     Gui, Tab
-    Gui, Add, Button, w80 xm+140 ym+450 gButtonApply, % "Apply"
-    Gui, Add, Button, Default w80 xm+240 ym+450 gButtonOK, % "OK"
+    Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
+    fn := Func("PauseApp").Bind(true)
+    GuiControl +g, % temp, % fn
+    Gui, Add, Button, w80 xm+160 ym+450 gUI_btnApply, % "Apply"
+    Gui, Add, Button, Default w80 xm+260 ym+450 gUI_btnOK, % "OK"
     Gui, Tab, 5
     Gui, Add, Text, Y+20, % "ZipChord"
-    Gui, Margin, 15, 5
     Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
-    Gui, Add, Text, , % "version " . version
-    Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
+    Gui, Add, Text, , % "version " . zc_version
+    ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
     Gui, Font, Underline cBlue
-    Gui, Add, Text, gLinkToLicense, % "Open the license"
-    Gui, Margin, 15, 15
+    Gui, Add, Text, gLinkToLicense, % "License information"
     Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
     Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
     Gui, Font, norm cDefault
+    if (A_Args[1] == "dev")
+        Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
 }
 
     ; Create taskbar tray menu:
 UI_Tray_Build() {
+    global app_shortcuts
     Menu, Tray, NoStandard
-    Menu, Tray, Add, % "Open ZipChord`t(hold Ctrl+Shift+Z)", ShowMainDialog
-    Menu, Tray, Add, % "Add Shortcut`t(hold Ctrl+C)", AddShortcut
+    Menu, Tray, Add, % "Open ZipChord", UI_Main_Show
+    Menu, Tray, Add, % "Add Shortcut", AddShortcut
+    Menu, Tray, Add, % "Pause ZipChord", PauseApp
     Menu, Tray, Add  ;  adds a horizontal line
+    fn := ObjBindMethod(app_shortcuts, "ShowUI")
+    Menu, Tray, Add, % "Customize app shortcuts", % fn
+    Menu, Tray, Add  ;  adds a horizontal line
+    if (A_Args[1] == "dev") {
+        Menu, Tray, Add, % "Open Key Visualizer", OpenKeyVisualizer
+        Menu, Tray, Add, % "Open Test Console", OpenTestConsole
+        Menu, Tray, Add
+    }
     Menu, Tray, Add, % "Quit", QuitApp
     Menu, Tray, Default, 1&
     Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
+    UI_Tray_Update()
+}
+
+UI_Tray_Update() {
+    global app_shortcuts
+    Menu, Tray, Rename, 1&, % "Open ZipChord`t" . app_shortcuts.GetHotkeyText("UI_Main_Show")
+    Menu, Tray, Rename, 2&, % "Add Shortcut`t" . app_shortcuts.GetHotkeyText("AddShortcut")
+    string :=  (settings.mode & MODE_ZIPCHORD_ENABLED) ? "Pause" : "Resume"
+    Menu, Tray, Rename, 3&, % string . " ZipChord`t" . app_shortcuts.GetHotkeyText("PauseApp")
+    i := 7
+    if (A_Args[1] == "dev")
+        i += 3
+    Menu, Tray, Rename, %i%&, % "Quit`t" . app_shortcuts.GetHotkeyText("QuitApp")
+}
+
+PauseApp(from_button := false) {
+    Gui, UI_Main:Default
+    if (settings.mode & MODE_ZIPCHORD_ENABLED) {
+        settings.mode := settings.mode & ~MODE_ZIPCHORD_ENABLED
+        mode := false
+    } else {
+        settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
+        mode := true
+    }
+    state := mode ? UI_STR_PAUSE : UI_STR_RESUME
+    GuiControl , , UI_zipchord_btnPause, % state
+    state := mode ? "On" : "Off"
+    if (from_button != true) {
+        ShowHint("ZipChord Keyboard", state, , false)
+    }
+    WireHotkeys(state)
+    UI_Tray_Update()
+    UI_Main_EnableTabs(mode)
+}
+
+UI_Main_EnableTabs(mode) {
+    Gui, UI_Main:Default
+    GuiControl, Enable%mode%, UI_tab
 }
 
 QuitApp() {
+    WireHotkeys("Off")
+    ShowHint("Closing ZipChord", state, , false)
+    Sleep 1100
     ExitApp
 }
 
-ShowMainDialog() {
-    Gui, UI_main_window:Default
+UI_Main_Show() {
+    if (A_Args[1] == "dev")
+        if (UI_debugging)
+            FinishDebugging() 
+    Hotkey, F1, UI_MainHelp, On
+    Gui, UI_Main:Default
     GuiControl Text, UI_input_delay, % settings.input_delay
     GuiControl Text, UI_output_delay, % settings.output_delay
     GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
@@ -932,8 +928,11 @@ ShowMainDialog() {
     GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
     GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
     GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-    GuiControl , , UI_chords_enabled, % settings.chords_enabled
-    GuiControl , , UI_shorthands_enabled, % settings.shorthands_enabled
+    GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
+    GuiControl , , UI_chords_enabled, % (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+    GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+    ; debugging is always set to disabled
+    GuiControl , , UI_debugging, 0
     GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
     GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
     GuiControl , Choose, UI_hint_frequency, % OrdinalOfHintFrequency()
@@ -947,6 +946,38 @@ ShowMainDialog() {
     Gui, Show,, ZipChord
 }
 
+UI_MainHelp() {
+    Gui, UI_Main:Default
+    ; Gui, Submit, NoHide
+    GuiControlGet, current_tab,, UI_tab
+    OpenHelp("Main-" . Trim(current_tab))
+}
+
+OpenKeyVisualizer() {
+    visualizer.Init()
+}
+OpenTestConsole() {
+    if (test.mode==TEST_OFF)
+        test.Init()
+}
+FinishDebugging() {
+    global zc_version
+    test.Stop()
+    test.Path("restore")
+    test._mode := TEST_OFF
+    FileDelete, % "debug.txt"
+    FileAppend % "Configuration Settings`n----------------------`nZipChord version: " . zc_version . "`n", % "debug.txt", UTF-8
+    FileRead file_content, % A_Temp . "\debug.cfg"
+    FileAppend % file_content, % "debug.txt", UTF-8
+    FileAppend % "`nInput`n-----`n", % "debug.txt", UTF-8
+    FileRead file_content, % A_Temp . "\debug.in"
+    FileAppend % file_content, % "debug.txt", UTF-8
+    FileAppend % "`nOutput`n------`n", % "debug.txt", UTF-8
+    FileRead file_content, % A_Temp . "\debug.out"
+    FileAppend % file_content, % "debug.txt", UTF-8
+    Run % "debug.txt"
+}
+
 OrdinalOfHintFrequency(offset := 0) {
     hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
     hint_frequency := Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
@@ -955,7 +986,7 @@ OrdinalOfHintFrequency(offset := 0) {
 
 ; Shows or hides controls for hints customization (1 = show, 0 = hide)
 ShowHintCustomization(show_controls := true) {
-    GuiControl, Disable%show_controls%, UI_btn_customize
+    GuiControl, Disable%show_controls%, UI_btnCustomize
     GuiControl, Show%show_controls%, UI_hint_offset_x
     GuiControl, Show%show_controls%, UI_hint_offset_y
     GuiControl, Show%show_controls%, UI_hint_size
@@ -967,24 +998,24 @@ ShowHintCustomization(show_controls := true) {
 }
 
 UpdateLocaleInMainUI(selected_loc) {
-    IniRead, sections, locales.ini
-    Gui, UI_main_window:Default
-    GuiControl, , UI_locale, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, Choose, UI_locale, % selected_loc
+    sections := UI_Locale_GetSectionNames()
+    Gui, UI_Main:Default
+    GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
+    GuiControl, Choose, UI_selected_locale, % selected_loc
 }
 
-ButtonOK:
+UI_btnOK:
     if (ApplyMainSettings())
-        CloseMainDialog()
+        UI_Main_Close()    
 return
 
-ButtonApply:
+UI_btnApply:
     ApplyMainSettings()
 return
 
 ApplyMainSettings() {
-    global keys
     global hint_delay
+    previous_mode := settings.mode 
     Gui, Submit, NoHide
     ; gather new settings from UI...
     settings.input_delay := UI_input_delay + 0
@@ -992,9 +1023,8 @@ ApplyMainSettings() {
     settings.capitalization := UI_capitalization
     settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
     settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
-    settings.locale := UI_locale
-    settings.chords_enabled := UI_chords_enabled
-    settings.shorthands_enabled := UI_shorthands_enabled
+    settings.locale := UI_selected_locale
+    settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED) + UI_chords_enabled * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED  ; carries over the current ZIPCHORD_ENABLED setting 
     settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
     if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
         MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
@@ -1013,35 +1043,51 @@ ApplyMainSettings() {
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")
-    LoadPropertiesFromIni(keys, UI_locale, "locales.ini")
-    if (UI_chords_enabled || UI_shorthands_enabled)
+    UI_Locale_Load(settings.locale)
+    if (settings.mode > MODE_ZIPCHORD_ENABLED) {
+        if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
+            ShowHint("ZipChord Keyboard", "On", , false)
         WireHotkeys("On")
+    }
+    else if (settings.mode & MODE_ZIPCHORD_ENABLED)
+        ShowHint("ZipChord Keyboard", "Off", , false)
+    if (A_Args[1] == "dev") {
+        if (UI_debugging) {
+            if (FileExist("debug.txt")) {
+                MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
+                IfMsgBox No
+                    Return false
+            }
+            FileDelete, % A_Temp . "\debug.cfg"
+            FileDelete, % A_Temp . "\debug.in"
+            FileDelete, % A_Temp . "\debug.out"
+            test.Path("set", A_Temp)
+            test.Config("save", "debug")
+            test.Record("both", "debug")
+        }
+    }
     ; to reflect any changes to OSD UI
-    Gui, UI_OSD:Destroy
-    hint_delay.Reset()
-    BuildOSD()
+    SetTimer,  UI_OSD_Reset, -2000
     Return true
 }
 
-UI_main_windowGuiClose() {
-    CloseMainDialog()
+UI_MainGuiClose() {
+    UI_Main_Close()
 }
-UI_main_windowGuiEscape() {
-    CloseMainDialog()
+UI_MainGuiEscape() {
+    UI_Main_Close()
 }
 
-CloseMainDialog() {
-    Gui, UI_main_window:Default
+UI_Main_Close() {
+    Hotkey, F1, Off
+    Gui, UI_Main:Default
     Gui, Submit
     if (settings.preferences & PREF_SHOW_CLOSING_TIP)
-        ShowClosingTipDialog()
+        UI_ClosingTip_Show()
 }
 
 LinkToLicense() {
-    if (FileExist("LICENSE.txt"))
-        Run % "LICENSE.txt"
-    else
-        Run https://www.gnu.org/licenses/gpl-3.0.html
+    ini.ShowLicense()
 }
 Return
 LinkToDocumentation:
@@ -1055,20 +1101,12 @@ Return
 
 ; Update UI with dictionary details
 UpdateDictionaryUI() {
-    if StrLen(settings.chord_file) > 40
-        filestr := "..." SubStr(settings.chord_file, -34)
-    else
-        filestr := settings.chord_file
-    Gui, UI_main_window:Default
-    GuiControl Text, UI_chord_file, %filestr%
+    Gui, UI_Main:Default
+    GuiControl Text, UI_chord_file, % str.Ellipsisize(settings.chord_file, 270)
     entriesstr := "Chord dictionary (" chords.entries
     entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
     GuiControl Text, UI_chord_entries, %entriesstr%
-    if StrLen(settings.shorthand_file) > 40
-        filestr := "..." SubStr(settings.shorthand_file, -34)
-    else
-        filestr := settings.shorthand_file
-    GuiControl Text, UI_shorthand_file, %filestr%
+    GuiControl Text, UI_shorthand_file, % str.Ellipsisize(settings.shorthand_file, 270)
     entriesstr := "Shorthand dictionary (" shorthands.entries
     entriesstr .= (shorthands.entries==1) ? " shorthand)" : " shorthands)"
     GuiControl Text, UI_shorthand_entries, %entriesstr%
@@ -1076,7 +1114,7 @@ UpdateDictionaryUI() {
 
 ; Run Windows File Selection to open a dictionary
 BtnSelectChordDictionary() {
-    FileSelectFile dict, , %A_ScriptDir%, Open Chord Dictionary, Text files (*.txt)
+    FileSelectFile dict, , % settings.dictionary_dir , Open Chord Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.chord_file := dict
         chords.Load(dict)
@@ -1086,7 +1124,7 @@ BtnSelectChordDictionary() {
 }
 
 BtnSelectShorthandDictionary() {
-    FileSelectFile dict, , %A_ScriptDir%, Open Shorthand Dictionary, Text files (*.txt)
+    FileSelectFile dict, , % settings.dictionary_dir, Open Shorthand Dictionary, Text files (*.txt)
     if (dict != "") {
         settings.shorthand_file := dict
         shorthands.Load(dict)
@@ -1115,187 +1153,38 @@ BtnReloadShorthandDictionary() {
 
 ButtonCustomizeLocale() {
     WireHotkeys("Off")  ; so the user can edit the values without interference
-    Gui, Submit, NoHide ; to get the currently selected UI_locale
+    Gui, Submit, NoHide ; to get the currently selected UI_selected_locale
     Gui, +Disabled
-    ShowLocaleDialog(UI_locale)
+    UI_Locale_Show(UI_selected_locale)
 }
 
 ;; Closing Tip UI
 ; ----------------
 
-global UI_dont_show_again := 0
+global UI_ClosingTip_dont_show := 0
 
-ShowClosingTipDialog() {
-    Gui, UI_closing_tip:New, , % "ZipChord"
+UI_ClosingTip_Show() {
+    global app_shortcuts
+    Gui, UI_ClosingTip:New, , % "ZipChord"
     Gui, Margin, 20, 20
     Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % "Select a word and press and hold Ctrl-C to define a shortcut for it or to see its existing shortcuts.`n`nPress and hold Ctrl-Shift-C to open the ZipChord menu again.`n"
-    Gui, Add, Checkbox, vUI_dont_show_again, % "Do &not show this tip again."
-    Gui, Add, Button, gBtnCloseTip x370 w80 Default, OK
+    Gui, Add, Text, +Wrap w430, % Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("UI_Main_Show", "Press ", "Press and hold "))
+    Gui, Add, Checkbox, vUI_ClosingTip_dont_show, % "Do &not show this tip again."
+    Gui, Add, Button, gUI_ClosingTip_btnOK x370 w80 Default, OK
     Gui, Show, w470
 }
-BtnCloseTip() {
-    Gui, UI_closing_tip:Submit
-    if (UI_dont_show_again) {
+UI_ClosingTip_btnOK() {
+    Gui, UI_ClosingTip:Submit
+    if (UI_ClosingTip_dont_show) {
         settings.preferences &= ~PREF_SHOW_CLOSING_TIP
         settings.Write()
     }
 }
-UI_closing_tipGuiClose() {
-    Gui, UI_closing_tip:Submit
+UI_ClosingTipGuiClose() {
+    Gui, UI_ClosingTip:Submit
 }
-UI_closing_tipGuiEscape() {
-    Gui, UI_closing_tip:Submit
-}
-
-;; Locale UI
-; -----------
-
-global UI_locale_window
-    , UI_loc_name
-    , UI_loc_all
-    , UI_loc_space_after_plain
-    , UI_loc_space_after_shift
-    , UI_loc_capitalizing_plain
-    , UI_loc_capitalizing_shift
-    , UI_loc_remove_space_plain
-    , UI_loc_remove_space_shift
-    , UI_loc_other_plain
-    , UI_loc_other_shift
-
-BuildLocaleDialog() {
-    Gui, UI_locale_window:New, , Keyboard and language settings
-    Gui, UI_locale_window:+OwnerUI_main_window
-    Gui, Margin, 15, 15
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Text, Section, &Locale name
-    Gui, Add, DropDownList, w120 vUI_loc_name gChangeLocaleUI
-    Gui, Add, Button, y+30 w80 gButtonRenameLocale, &Rename
-    Gui, Add, Button, w80 gButtonDeleteLocale, &Delete 
-    Gui, Add, Button, w80 gButtonNewLocale, &New
-    Gui, Add, Button, y+90 w80 gClose_Locale_Window Default, Close
-    Gui, Add, GroupBox, ys h330 w460, Locale settings
-    Gui, Add, Text, xp+20 yp+30 Section, &All keys (except spacebar and dead keys)
-    Gui, Font, s10, Consolas
-    Gui, Add, Edit, y+10 w420 r1 vUI_loc_all
-    Gui, Font, s10 w700, Segoe UI
-    Gui, Add, Text, yp+40, Punctuation
-    Gui, Add, Text, xs+160 yp, Unmodified keys
-    Gui, Add, Text, xs+300 yp, If Shift was pressed
-    Gui, Font, w400
-    Gui, Add, Text, xs Section, Remove space before
-    Gui, Add, Text, y+20, Follow by a space
-    Gui, Add, Text, y+20, Capitalize after
-    Gui, Add, Text, y+20, Other
-    Gui, Add, Button, xs+240 yp+40 w100 gButtonSaveLocale, Save Changes
-    Gui, Font, s10, Consolas
-    Gui, Add, Edit, xs+160 ys Section w120 r1 vUI_loc_remove_space_plain
-    Gui, Add, Edit, xs w120 r1 vUI_loc_space_after_plain
-    Gui, Add, Edit, xs w120 r1 vUI_loc_capitalizing_plain
-    Gui, Add, Edit, xs w120 r1 vUI_loc_other_plain
-    Gui, Add, Edit, xs+140 ys Section w120 r1 vUI_loc_remove_space_shift
-    Gui, Add, Edit, xs w120 r1 vUI_loc_space_after_shift
-    Gui, Add, Edit, xs w120 r1 vUI_loc_capitalizing_shift
-    Gui, Add, Edit, xs w120 r1 vUI_loc_other_shift
-}
-
-; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.  
-ShowLocaleDialog(locale_name) {
-    Gui, UI_locale_window:Default
-    loc_obj := new localeClass
-    IniRead, sections, locales.ini
-    if (locale_name) {
-        LoadPropertiesFromIni(loc_obj, locale_name, "locales.ini")
-    } else {
-        locales := StrSplit(sections, "`n")
-        locale_name := locales[1]
-    }
-    GuiControl, , UI_loc_name, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, Choose, UI_loc_name, % locale_name
-    GuiControl, , UI_loc_all, % loc_obj.all
-    GuiControl, , UI_loc_remove_space_plain, % loc_obj.remove_space_plain
-    GuiControl, , UI_loc_remove_space_shift, % loc_obj.remove_space_shift
-    GuiControl, , UI_loc_space_after_plain, % loc_obj.space_after_plain
-    GuiControl, , UI_loc_space_after_shift, % loc_obj.space_after_shift
-    GuiControl, , UI_loc_capitalizing_plain, % loc_obj.capitalizing_plain
-    GuiControl, , UI_loc_capitalizing_shift, % loc_obj.capitalizing_shift
-    GuiControl, , UI_loc_other_plain, % loc_obj.other_plain
-    GuiControl, , UI_loc_other_shift, % loc_obj.other_shift
-    Gui Submit, NoHide
-    Gui, Show
-}
-
-; when the locale name dropdown changes: 
-ChangeLocaleUI() {
-    Gui, UI_locale_window:Submit
-    ShowLocaleDialog(UI_loc_name)
-}
-
-ButtonNewLocale() {
-    InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
-        if ErrorLevel
-            Return
-    new_loc := New localeClass
-    SavePropertiesToIni(new_loc, new_name, "locales.ini")
-    ShowLocaleDialog(new_name)
-}
-
-ButtonDeleteLocale(){
-    IniRead, sections, locales.ini
-    If (! InStr(sections, "`n")) {
-        MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", UI_loc_name)
-        Return
-    }
-    MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", UI_loc_name)
-    IfMsgBox Yes
-    {
-        IniDelete, locales.ini, % UI_loc_name
-        ShowLocaleDialog(false)
-    }
-}
-
-ButtonRenameLocale() {
-    InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", UI_loc_name)
-    if ErrorLevel
-        Return
-    IniRead, locale_exists, locales.ini, %new_name%, all
-    if (locale_exists != "ERROR") {
-        MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
-            IfMsgBox No
-                Return
-    }
-    temp_loc := new localeClass
-    LoadPropertiesFromIni(temp_loc, UI_loc_name, "locales.ini")
-    IniDelete, locales.ini, % UI_loc_name
-    SavePropertiesToIni(temp_loc, new_name, "locales.ini")
-    ShowLocaleDialog(new_name)
-}
-
-UI_locale_windowGuiClose() {
-    Close_Locale_Window()
-}
-UI_locale_windowGuiEscape() {
-    Close_Locale_Window()
-}
-Close_Locale_Window() {
-    Gui, UI_main_window:-Disabled
-    Gui, UI_locale_window:Submit
-    UpdateLocaleInMainUI(global UI_loc_name)
-}
-
-ButtonSaveLocale() {
-    new_loc := new localeClass
-    Gui, UI_locale_window:Submit, NoHide
-    new_loc.all := UI_loc_all
-    new_loc.space_after_plain := UI_loc_space_after_plain
-    new_loc.space_after_shift := UI_loc_space_after_shift
-    new_loc.capitalizing_plain := UI_loc_capitalizing_plain
-    new_loc.capitalizing_shift := UI_loc_capitalizing_shift
-    new_loc.remove_space_plain := UI_loc_remove_space_plain
-    new_loc.remove_space_shift := UI_loc_remove_space_shift
-    new_loc.other_plain := UI_loc_other_plain
-    new_loc.other_shift := UI_loc_other_shift
-    SavePropertiesToIni(new_loc, UI_loc_name, "locales.ini")
+UI_ClosingTipGuiEscape() {
+    Gui, UI_ClosingTip:Submit
 }
 
 ;; Add Shortcut UI
@@ -1331,6 +1220,8 @@ UI_AddShortcut_Build() {
     Gui, Add, Button, gUI_AddShortcut_Close Default x265 y+30 w100, % "Close" 
 }
 UI_AddShortcut_Show(exp) {
+    call := Func("OpenHelp").Bind("AddShortcut")
+    Hotkey, F1, % call, On
     WireHotkeys("Off")  ; so the user can edit values without interference
     UI_AddShortcut_Build()
     Gui, UI_AddShortcut:Default
@@ -1372,8 +1263,9 @@ UI_AddShortcutGuiEscape() {
     UI_AddShortcut_Close()
 }
 UI_AddShortcut_Close() {
+    Hotkey, F1, Off
     Gui, UI_AddShortcut:Destroy
-    if (settings.chords_enabled || settings.shorthands_enabled)
+    if (settings.mode > MODE_ZIPCHORD_ENABLED)
         WireHotkeys("On")  ; resume normal mode
 }
 UI_AddShortcut_SaveChord(){
@@ -1415,7 +1307,7 @@ global UI_OSD_line1
     , UI_OSD_pos_x, UI_OSD_pos_y
     , UI_OSD_hwnd
 
-BuildOSD() {
+UI_OSD_Build() {
     hint_color := settings.hint_color
     UI_OSD_transparent_color := ShiftHexColor(hint_color, 1)
     Gui, UI_OSD:Default
@@ -1435,11 +1327,14 @@ BuildOSD() {
     UI_OSD_pos_y += settings.hint_offset_y
     Gui, Hide
 }
-ShowHint(line1, line2:="", line3 :="") {
+ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
     active_window_handle := WinExist("A")
     global hint_delay
+    if (A_Args[1] == "dev")
+        if (test.mode > TEST_STANDBY)
+            test.Log("*Hint*")
     hint_delay.Extend()
-    if (settings.hints & HINT_TOOLTIP) {
+    if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
         GetCaret(x, y, , h)
         ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " ", x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
         SetTimer, HideToolTip, -1800
@@ -1448,7 +1343,7 @@ ShowHint(line1, line2:="", line3 :="") {
         UI_OSD_transparency := 150
         Gui, UI_OSD:Default
         GuiControl,, UI_OSD_line1, % line1
-        GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, true)
+        GuiControl,, UI_OSD_line2, % ReplaceWithVariants(line2, follow_settings)
         GuiControl,, UI_OSD_line3, % ReplaceWithVariants(line3)
         Gui, %UI_OSD_hwnd%: Show, Hide NoActivate, ZipChord_OSD
         GetMonitorCenterForWindow(active_window_handle, UI_OSD_hwnd, pos_x, pos_y)
@@ -1456,28 +1351,33 @@ ShowHint(line1, line2:="", line3 :="") {
         pos_y := pos_y ? pos_y+settings.hint_offset_y : UI_OSD_pos_y
         Gui, %UI_OSD_hwnd%: Show, NoActivate X%pos_x% Y%pos_y%, ZipChord_OSD
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        SetTimer, HideOSD, -900
+        SetTimer, UI_OSD_Hide, -1900
     }
+}
+
+UI_OSD_Reset() {
+    hint_delay.Reset()
+    Gui, UI_OSD:Destroy
+    UI_OSD_Build()
 }
 
 HideToolTip:
     ToolTip
 Return
 
-HideOSD:
+UI_OSD_Hide:
     UI_OSD_fading := true
-    Sleep 1000
     Gui, UI_OSD:Default
-    while(UI_OSD_fading && UI_OSD_transparency) {
+    if (UI_OSD_fading && UI_OSD_transparency > 1) {
         UI_OSD_transparency -= 10
         WinSet, TransColor, %UI_OSD_transparent_color% %UI_OSD_transparency%, ZipChord_OSD
-        Sleep 100
+        SetTimer, UI_OSD_Hide, -100
+        Return
     }
-    if (UI_OSD_fading)
-        Gui, Hide
+    Gui, Hide
 Return
 
-; Process input to ensure it is an integer or a color hex code, return number or "ERROR" 
+; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR" 
 SanitizeNumber(orig, hex_color := false) {
     sanitized := Trim(orig)
     format := "integer"
@@ -1561,47 +1461,5 @@ GetMonitorCenterForWindow(window_Handle, OSD_handle, ByRef pos_x, ByRef pos_y ) 
     } else {
         pos_x := 0
         pos_y := 0
-    }
-}
-
-;; File and registry functions
-; -----------------------------
-
-CheckDictionaryFileExists(dictionary_file, dictionary_type) {
-    if (! FileExist(dictionary_file) ) {
-        errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
-        ; If we don't have the dictionary, try opening the first file with a matching naming convention.
-        new_file := dictionary_type "s*.txt"
-        if FileExist(new_file) {
-            Loop, Files, %new_file%
-                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-            Sort flist
-            new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", new_file)
-        }
-        else {
-            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in its own folder.", dictionary_type)
-            new_file := dictionary_type "s.txt"
-            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
-        }
-        new_file := A_ScriptDir "\" new_file
-        MsgBox ,, ZipChord, %errmsg%
-        Return new_file
-    }
-    Return dictionary_file
-}
-
-SavePropertiesToIni(object_to_save, ini_section, ini_filename) {
-    For key, value in object_to_save
-        IniWrite %value%, %ini_filename%, %ini_section%, %key%
-}
-
-LoadPropertiesFromIni(object_destination, ini_section, ini_filename) {
-    IniRead, properties, %ini_filename%, %ini_section%
-    Loop, Parse, properties, `n
-    {
-        key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
-        value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
-        object_destination[key] := value
     }
 }
