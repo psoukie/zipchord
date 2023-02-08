@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -234,6 +234,25 @@ Class clsStringFunctions {
         text := StrReplace(text, "^", "Ctrl+")
         text := StrReplace(text, "!", "Alt+")
         return text
+    }
+    ; Sort the string alphabetically
+    Arrange(raw) {
+        raw := RegExReplace(raw, "(.)", "$1`n")
+        Sort raw
+        Return StrReplace(raw, "`n")
+    }
+    ; Convert to ASCII
+    ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
+    ToAscii(Key, Modifiers := "") {
+    VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
+    VK := GetKeyVK(Key)
+    SC := GetKeySC(Key)
+    VarSetCapacity(ModStates, 256, 0)
+    For _, Modifier In Modifiers
+        If VK_MOD.HasKey(Modifier)
+            NumPut(0x80, ModStates, VK_MOD[Modifier], "UChar")
+    DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
+    Return Chr(Ascii)
     }
     /** Ellipsis
     *        text         String to shorten.

@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -685,13 +685,6 @@ OpeningSpace(attached) {
         Return
     ; if we get here, we probably need a space in front of the chord
     OutputKeys("{Space}")
-}
-
-; Sort the string alphabetically
-Arrange(raw) {
-    raw := RegExReplace(raw, "(.)", "$1`n")
-    Sort raw
-    Return StrReplace(raw, "`n")
 }
 
 ReplaceWithVariants(text, enclose_latin_letters:=false) {
