@@ -1,4 +1,4 @@
-﻿zc_version := "2.1.0-beta.2"
+﻿zc_version := "2.2.0-alpha"
 ;@Ahk2Exe-SetVersion %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%
 zc_app_name := "ZipChord"
 ;@Ahk2Exe-SetName %A_PriorLine~U)^(.+"){1}(.+)".*$~$2%

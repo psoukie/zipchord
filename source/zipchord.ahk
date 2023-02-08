@@ -54,6 +54,8 @@ if (A_Args[1] == "dev") {
 #Include app_shortcuts.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
+#Include io.ahk
+#Include modules.ahk
 
 OutputKeys(output) {
     if (A_Args[1] == "dev") {
@@ -304,12 +306,32 @@ WireHotkeys(state) {
 
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
-;; Shortcuts Detection
+;; Shortcuts Detection 
 ; ---------------------
 
 KeyDown:
-    key := A_ThisHotkey
+    Critical
+    orig_key := A_ThisHotkey
     tick := A_TickCount
+    if (visualizer.IsOn()) {
+        key := StrReplace(orig_key, "Space", " ")
+        if (SubStr(key, 1, 1) == "~")
+            key := SubStr(key, 2)
+        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
+        if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
+            shifted := true
+            key := SubStr(key, 2)
+        } else {
+            shifted := false
+        }
+        visualizer.Pressed(key)
+    }
+    ; QPC()
+    classifier.Input(orig_key, tick)
+    ; QPC()
+    Critical Off
+Return  ; TK bypassing all the rest
+
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := test_key
@@ -320,20 +342,8 @@ KeyDown:
             test.Log(key)
         }
     }
-    key := StrReplace(key, "Space", " ")
-    if (SubStr(key, 1, 1) == "~")
-        key := SubStr(key, 2)
-    ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
-    if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
-        shifted := true
-        key := SubStr(key, 2)
-    } else {
-        shifted := false
-    }
     if (special_key_map.HasKey(key))
         key := special_key_map[key]
-    if (visualizer.IsOn())
-        visualizer.Pressed(key)
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -468,15 +478,9 @@ Return
 KeyUp:
     Critical
     tick_up := A_TickCount
-    if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING)
-            tick_up := test_timestamp
-        if (test.mode > TEST_STANDBY)
-            test.Log(A_ThisHotkey, true)
-    }
-
+    orig_key := A_ThisHotkey
     if (visualizer.IsOn()) {
-        key := StrReplace(A_ThisHotkey, "Space", " ")
+        key := StrReplace(orig_key, "Space", " ")
         if (SubStr(key, 1, 1) == "~")
             key := SubStr(key, 2)
         if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
@@ -489,6 +493,19 @@ KeyUp:
             key := special_key_map[key]
         visualizer.Lifted(SubStr(key, 1, 1))
     }
+    ; QPC()
+    classifier.Input(orig_key, tick_up)
+    ; QPC()
+    Critical Off
+Return  ; TK -- switching to new design
+
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING)
+            tick_up := test_timestamp
+        if (test.mode > TEST_STANDBY)
+            test.Log(A_ThisHotkey, true)
+    }
+
 
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
     if ( start && chord_candidate == "" && (tick_up - start > settings.input_delay) ) {
@@ -511,7 +528,7 @@ KeyUp:
                 chord_candidate := StrReplace(chord_candidate, "+")
             }
         }
-        chord := Arrange(chord_candidate)
+        chord := str.Arrange(chord_candidate)
         if ( expanded := chords.LookUp(chord)) {
             affixes := ProcessAffixes(expanded)
             ; if we aren't restricted, we print a chord
@@ -526,7 +543,7 @@ KeyUp:
                     ; we send any expanded text that includes { as straight directives:
                     OutputKeys(expanded)
                 } else {
-                    ; and there rest as {Text} that gets capitalized if needed:
+                    ; and the rest as {Text} that gets capitalized if needed:
                     if ( ((fixed_output & OUT_CAPITALIZE) && (settings.capitalization != CAP_OFF)) || chord_shifted )
                         OutputKeys("{Text}" . RegExReplace(expanded, "(^.)", "$U1"))
                     else
@@ -619,7 +636,7 @@ ProcessAffixes(ByRef phrase) {
     Return affixes
 }
 
-;remove raw chord output
+; remove raw chord output
 RemoveRawChord(output) {
     global special_key_map
     adj :=0
@@ -670,13 +687,6 @@ OpeningSpace(attached) {
     OutputKeys("{Space}")
 }
 
-; Sort the string alphabetically
-Arrange(raw) {
-    raw := RegExReplace(raw, "(.)", "$1`n")
-    Sort raw
-    Return StrReplace(raw, "`n")
-}
-
 ReplaceWithVariants(text, enclose_latin_letters:=false) {
     new_str := text
     new_str := StrReplace(new_str, "+", Chr(0x21E7))
@@ -711,6 +721,7 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 } 
 
 Interrupt:
+    classifier.Interrupt()
     last_output := OUT_INTERRUPTED
     fixed_output := last_output
     if (A_Args[1] == "dev") {
@@ -722,6 +733,7 @@ Interrupt:
 Return
 
 Enter_key:
+    classifier.Interrupt()
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
     if (A_Args[1] == "dev") {
@@ -1027,7 +1039,7 @@ UpdateLocaleInMainUI(selected_loc) {
 
 UI_btnOK:
     if (ApplyMainSettings())
-        main_UI.Close()    
+        main_UI._Close()    
 return
 
 UI_btnApply:

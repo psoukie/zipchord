@@ -235,6 +235,25 @@ Class clsStringFunctions {
         text := StrReplace(text, "!", "Alt+")
         return text
     }
+    ; Sort the string alphabetically
+    Arrange(raw) {
+        raw := RegExReplace(raw, "(.)", "$1`n")
+        Sort raw
+        Return StrReplace(raw, "`n")
+    }
+    ; Convert to ASCII
+    ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
+    ToAscii(Key, Modifiers := "") {
+    VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
+    VK := GetKeyVK(Key)
+    SC := GetKeySC(Key)
+    VarSetCapacity(ModStates, 256, 0)
+    For _, Modifier In Modifiers
+        If VK_MOD.HasKey(Modifier)
+            NumPut(0x80, ModStates, VK_MOD[Modifier], "UChar")
+    DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
+    Return Chr(Ascii)
+    }
     /** Ellipsis
     *        text         String to shorten.
     *        limit        Limit in pixel length.
@@ -331,4 +350,18 @@ UpdateVarFromRegistry(ByRef var, key) {
 
 SaveVarToRegistry(key, value) {
     RegWrite % "REG_SZ", % "HKEY_CURRENT_USER\Software\ZipChord", % key, % value
+}
+
+QPC()
+{
+	static frequency
+    static start
+    if (! frequency)
+        DllCall("kernel32\QueryPerformanceFrequency", Int64P, frequency)
+	DllCall("kernel32\QueryPerformanceCounter", Int64P, count)
+    if (start) {
+        OutputDebug, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
+        start := 0
+    }
+    else start := count / frequency
 }
