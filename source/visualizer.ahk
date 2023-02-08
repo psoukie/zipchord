@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -119,7 +119,7 @@ Class clsVisualizer {
         Loop 10
         {
             if (this._statuses[A_Index] > 0 && this._statuses[A_Index] != 255) {
-                this._statuses[A_Index] -= 18
+                this._statuses[A_Index] -= 9
                 changed := true
             }
         }
