@@ -93,31 +93,31 @@ cd	could
 wd	would
 sd	should
 li	like
-li ;g   liking
+li ;g	liking
 bn	been
 ge	get
-ge ;g   getting
+ge ;g	getting
 may	may
 mad	made
 mk	make
-mk ;g   making
+mk ;g	making
 ai	said
 wk	work
 uz	use
-uz ;g   using
+uz ;g	using
 sy	say
  g	go
 kn	know
 tk	take
-tk ;g   taking
+tk ;g	taking
 se	see
 lk	look
 cm	come
-cm ;g   coming
+cm ;g	coming
 thk	think
 wnt	want
 gi	give
-gi ;g   giving
+gi ;g	giving
 ct	cannot
 de	does
 di	did
@@ -191,7 +191,7 @@ mon 6	June
 mon 7	July
 mon 8	August
 mon 9	September
-mon 1 0 October
+mon 1 0	October
 mon 1 1	November
 mon 1 2	December
 

@@ -93,31 +93,31 @@ cou	could
 wou	would
 sou	should
 li	like
-li .n   liking
+li .n	liking
 bn	been
 ge	get
-ge .n   getting
+ge .n	getting
 ay	may
 md	made
 mk	make
-mk .n   making
+mk .n	making
 ai	said
 wk	work
 uz	use
-uz .n   using
+uz .n	using
 sy	say
  g	go
 kn	know
 tk	take
-tk .n   taking
+tk .n	taking
 se	see
 lk	look
 cm	come
-cm .n   coming
+cm .n	coming
 thk	think
 jnt	want
 gi	give
-gi .n   giving
+gi .n	giving
 cn	cannot
 de	does
 di	did
@@ -198,7 +198,7 @@ mon 6	June
 mon 7	July
 mon 8	August
 mon 9	September
-mon 1 0 October
+mon 1 0	October
 mon 1 1	November
 mon 1 2	December
 
