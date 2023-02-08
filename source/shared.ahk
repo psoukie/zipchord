@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -341,7 +341,7 @@ QPC()
         DllCall("kernel32\QueryPerformanceFrequency", Int64P, frequency)
 	DllCall("kernel32\QueryPerformanceCounter", Int64P, count)
     if (start) {
-        OutputDebug, % Format("`n`nKey up (ms): {:.2f}",  ((count / frequency) - start) * 1000)
+        OutputDebug, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
         start := 0
     }
     else start := count / frequency

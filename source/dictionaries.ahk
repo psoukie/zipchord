@@ -86,16 +86,33 @@ Class clsDictionary {
     }
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
-        if (this._chorded)
-            newch := Arrange(newch_unsorted)
+        if (this._chorded) {
+            ; deal with combined chords (those that have a space _after_ the first character)
+            if (InStr(SubStr(newch_unsorted, 2), " ")) {
+                replaced := StrReplace(newch_unsorted, " ", "|")
+                replaced := StrReplace(replaced, "||", "| ")
+                replaced := SubStr(newch_unsorted, 1, 1) . SubStr(replaced, 2)
+                chunks := StrSplit(replaced, "|")
+                For _, chunk in chunks {
+                    newch .= "|" . str.Arrange(chunk)
+                    if (StrLen(RegExReplace(chunk,"(.)(?=.*\1)")) != StrLen(chunk)) {  ; the RegEx removes duplicate letters to check for repetition of characters
+                        MsgBox ,, % "ZipChord", % Format("In entry for {}, each key can be entered only once in the same chord.", newword)
+                        Return false
+                    }
+                }
+                newch := SubStr(newch, 2)
+            } else {
+                newch := str.Arrange(newch_unsorted)
+                if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
+                    MsgBox ,, % "ZipChord", % Format("In entry for {}, each key can be entered only once in the same chord.", newword)
+                    Return false
+                }
+            }
+        }
         else
             newch := newch_unsorted
         if (! this._IsShortcutOK(newch, newword))
             return false
-        if (this._chorded && StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
-            MsgBox ,, % "ZipChord", % "Each key can be entered only once in the same chord."
-            Return false
-        }
         ObjRawSet(this._entries, newch, newword)
         if ( ! InStr(newword, " ") )
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
