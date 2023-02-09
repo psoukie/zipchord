@@ -81,8 +81,12 @@ Class DictionaryClass {
     }
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
-        if (this._chorded)
+        if (this._chorded) {
+            ; skip compound chords if present
+            if (InStr(SubStr(newch_unsorted, 2), " "))
+                return true
             newch := Arrange(newch_unsorted)
+        }
         else
             newch := newch_unsorted
         if (! this._IsShortcutOK(newch, newword))
@@ -153,10 +157,10 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
                 flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
             Sort flist
             new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
-            errmsg .= Format("ZipChord detected the dictionary '{}' and is going to open it.", new_file)
+            errmsg .= Format("ZipChord found the dictionary '{}' and is going to open it.", new_file)
         }
         else {
-            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in its own folder.", dictionary_type)
+            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary under '{}'.", dictionary_type, A_WorkingDir)
             new_file := dictionary_type "s.txt"
             FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
         }
