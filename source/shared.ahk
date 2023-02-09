@@ -119,9 +119,11 @@ Class clsStringFunctions {
 class clsIniFile {
     default_folder := A_AppData . "\ZipChord"
     default_ini := A_AppData . "\ZipChord\locales.ini"
-    SaveLicense() {
+    __New() {
         if ( ! InStr(FileExist(this.default_folder), "D"))
             FileCreateDir,  % this.default_folder
+    }
+    SaveLicense() {
         FileInstall, ..\LICENSE, % this.default_folder . "\LICENSE.txt", true
     }
     ShowLicense() {
@@ -130,12 +132,20 @@ class clsIniFile {
         else
             Run https://raw.githubusercontent.com/psoukie/zipchord/main/LICENSE
     }
+    SaveProperty(value, key, filename, section:="Default") {
+        IniWrite %value%, %filename%, %section%, %key%
+    }
+    ; LoadProperty returns "ERROR" if key not found
+    LoadProperty(key, filename, section:="Default") {
+        IniRead value, %filename%, %section%, %key%
+        Return value  
+    }
     SaveProperties(object_to_save, ini_section, ini_filename := "") {
         if (!ini_filename) {
             ini_filename := this.default_ini
         }
         For key, value in object_to_save
-            IniWrite %value%, %ini_filename%, %ini_section%, %key%
+            this.SaveProperty(value, key, ini_filename, ini_section)
     }
     ; return true if section not found
     LoadProperties(ByRef object_destination, ini_section, ini_filename := "") {
@@ -167,12 +177,12 @@ class clsIniFile {
     }
 }
 
-UpdateVarFromRegistry(ByRef var, key) {
-    RegRead new_value, % "HKEY_CURRENT_USER\Software\ZipChord", % key
-    if (! ErrorLevel)
+UpdateVarFromConfig(ByRef var, key) {
+    new_value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
+    if (new_value != "ERROR")
         var := new_value
 }
 
-SaveVarToRegistry(key, value) {
-    RegWrite % "REG_SZ", % "HKEY_CURRENT_USER\Software\ZipChord", % key, % value
+SaveVarToConfig(key, value) {
+    ini.SaveProperty(value, key, A_AppData . "\ZipChord\config.ini")
 }

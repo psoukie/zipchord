@@ -128,6 +128,23 @@ Class DictionaryClass {
 
 CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     if (! FileExist(dictionary_file) ) {
+        ; On the first run only (if we cannot find the dictionary file), offer to download and store dictionaries under My Documents
+        if (settings.preferences & PREF_FIRST_RUN) {
+            settings.preferences &= ~PREF_FIRST_RUN
+            settings.Write()
+            dictionary_dir := A_MyDocuments . "\ZipChord"
+            MsgBox, 4, % "ZipChord", % Format("Would you like to download starting dictionary files and save them in the '{}' folder?", dictionary_dir)
+            IfMsgBox Yes
+                if ( ! InStr(FileExist(dictionary_dir), "D"))
+                FileCreateDir,  % dictionary_dir
+                settings.dictionary_dir := dictionary_dir
+                SetWorkingDir, % settings.dictionary_dir
+                settings.Write()
+                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/chords-en-qwerty.txt, % dictionary_dir . "\chords-en-starting.txt"
+                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/shorthands-english.txt, % dictionary_dir . "\shorthands-en-starting.txt"
+                new_file := CheckDictionaryFileExists(dictionary_file, dictionary_type)
+                return new_file
+        }
         errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
         ; If we don't have the dictionary, try opening the first file with a matching naming convention.
         new_file := dictionary_type "s*.txt"
