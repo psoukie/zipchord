@@ -144,7 +144,7 @@ Class HintTimingClass {
 hint_delay := New HintTimingClass
 
 ; Other preferences constants
-global PREF_PREVIOUS_INSTALLATION := 1  ; this registry value means that the app has been installed before
+global PREF_PREVIOUS_INSTALLATION := 1  ; this config value means that the app has been installed before
     , PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
     , PREF_FIRST_RUN := 4               ; this value means this is the first run of 2.1.0-beta.2 or higher)
 
@@ -172,17 +172,15 @@ Class settingsClass {
     input_delay := 70
     output_delay := 0
     Read() {
-        For key in this
-        {
-            RegRead new_value, HKEY_CURRENT_USER\Software\ZipChord, %key%
-            if (! ErrorLevel)
-                this[key] := new_value
+        For key, value in this {
+            UpdateVarFromConfig(value, key)
+            this[key] := value
         }
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Write() {
         For key, value in this
-            SaveVarToRegistry(key, value)       
+            SaveVarToConfig(key, value)       
     }
 }
 global settings := New settingsClass
@@ -1073,7 +1071,7 @@ ApplyMainSettings() {
         MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
         Return false
     } else settings.hint_color := temp
-    ; ...and save them to Windows Registry
+    ; ...and save them to config.ini
     settings.Write()
     ; We always want to rewire hotkeys in case the keys have changed.
     WireHotkeys("Off")

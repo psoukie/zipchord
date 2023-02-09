@@ -69,13 +69,13 @@ Class clsAppShortcuts {
     }
     _SaveSettings() {
         For _, shortcut in this.shortcuts
-            SaveVarToRegistry("hk_" . shortcut.target, shortcut.HK . "|" shortcut.mode)
+            SaveVarToConfig("hk_" . shortcut.target, shortcut.HK . "|" shortcut.mode)
     }
     _LoadSettings() {
         For _, shortcut in this.shortcuts
         {
             setting := ""
-            UpdateVarFromRegistry(setting, "hk_" . shortcut.target)
+            UpdateVarFromConfig(setting, "hk_" . shortcut.target
             if (setting) {
                 setting := StrSplit(setting, "|")
                 shortcut.HK := setting[1]
