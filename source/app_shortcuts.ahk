@@ -75,7 +75,7 @@ Class clsAppShortcuts {
         For _, shortcut in this.shortcuts
         {
             setting := ""
-            UpdateVarFromConfig(setting, "hk_" . shortcut.target
+            UpdateVarFromConfig(setting, "hk_" . shortcut.target)
             if (setting) {
                 setting := StrSplit(setting, "|")
                 shortcut.HK := setting[1]

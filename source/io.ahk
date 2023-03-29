@@ -84,11 +84,11 @@ Class clsClassifier {
             this._index[key] := this._buffer.Length()
         }
     }
-    Interrupt() {
+    Interrupt(type := "*Interrupt*") {
         global io
         this._buffer := []
         this._index := {}
-        io.Clear()
+        io.Clear(type)
     }
     _Classify(index, timestamp) {
         ; This classification mirrors the 2.1 version of detecting chords.
@@ -127,10 +127,21 @@ Class clsClassifier {
 } 
 
 Class clsIOrepresentation {
+    static NONE := 0
+         , WITH_SHIFT := 1
+         , ADDED_SPACE_BEFORE := 2 
+         , ADDED_SPACE_AFTER := 4
+         , EXPECTS_SPACE := 8
+         , IS_CHORD := 16
+         , IS_PREFIX := 32
+         , IS_SUFFIX := 64
+         , WAS_CAPITALIZED := 128
+         , IS_ENTER := 256
+         , IS_INTERRUPT := 512
     _sequence := []
     length [] {
         get {
-            return this._sequence.Length() 
+            return this._sequence.Length()
         }
     }
     _shift_in_last_get := 0
@@ -148,7 +159,10 @@ Class clsIOrepresentation {
     Class clsChunk {
         input := ""
         output := ""
-        with_shift := false
+        attributes := clsIOrepresentation.NONE
+    }
+    __New() {
+        this.Clear("*Interrupt*")
     }
     Add(in, with_shift) {
         global keys
@@ -162,25 +176,37 @@ Class clsIOrepresentation {
             in := str.Arrange(in)
         }
         chunk.input := in
-        chunk.with_shift := with_shift
+        chunk.attributes := this.WITH_SHIFT
         if (StrLen(in)==1 && with_shift)
             chunk.output := str.ToAscii(in, ["Shift"])
         else
-            chunk.output := in          ; TK - temporary, will update to reflect actual text
+            chunk.output := in
         this._sequence.Push(chunk)
+        this._Show()
         this._PingModules()
         last := this.GetInput(this.length)
         ; if the last character is space or punctuation
         if (StrLen(last)==1 && ( last == " " || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last)) || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) )
             this.Clear()
     }
-    Clear() {
+    Clear(type := "") {
+        first_chunk := new this.clsChunk
+        if (type=="~Enter")
+            first_chunk.attributes := this.IS_ENTER
+        if (type=="*Interrupt*")
+            first_chunk.attributes := this.IS_INTERRUPT
+        if (type=="") {
+            first_chunk := this._sequence[this.length]
+        }
         this._sequence := []
+        this._sequence.Push(first_chunk)
+        this._Show()
         if (visualizer.IsOn())
             visualizer.NewLine()
     }
     SetChunk(index, new_output) {
         this._sequence[index].output := new_output
+        this._sequence[index].automated := true
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end)
@@ -206,6 +232,9 @@ Class clsIOrepresentation {
             sequence.RemoveAt(following)
         }
     }
+    GetChunk(index) {
+        return this._sequence[index] 
+    }
     GetInput(start := 1, end := 0) {
         return this._Get(start, end)
     }
@@ -228,7 +257,7 @@ Class clsIOrepresentation {
         i := start
         Loop, %count%
         {
-            if (sequence[i].with_shift)
+            if (sequence[i].attributes & this.WITH_SHIFT)
                 this._shift_in_last_get := true
             if (StrLen(sequence[i].input) > 1)
                 this._chord_in_last_get := true
@@ -238,12 +267,13 @@ Class clsIOrepresentation {
     }
     _PingModules() {
         global modules
-        modules.Run(this)
+        modules.Run()
     }
     _ReplaceOutput(old_output, new_output, start) {
         if (start != this.length)
             backup_content := this.GetOutput(start+1)
         adj := StrLen(old_output . backup_content)
+        DelayOutput()
         OutputKeys("{Backspace " . adj . "}")
         ; we send any expanded text that includes { as straight directives:
         if (InStr(new_output, "{"))
@@ -251,7 +281,7 @@ Class clsIOrepresentation {
         else
             OutputKeys("{Text}" . new_output . backup_content)
     }
-    Show() {
+    _Show() {
         OutputDebug, % "`n`nIO sequence:" 
         For i, chunk in this._sequence
             OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output

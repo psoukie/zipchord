@@ -45,17 +45,17 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 
 #Include version.ahk
-if (A_Args[1] == "dev") {
-    #Include *i visualizer.ahk
-    #Include *i testing.ahk
-}
-
 #Include shared.ahk
 #Include app_shortcuts.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
 #Include io.ahk
 #Include modules.ahk
+
+if (A_Args[1] == "dev") {
+    #Include *i visualizer.ahk
+    #Include *i testing.ahk
+}
 
 OutputKeys(output) {
     if (A_Args[1] == "dev") {
@@ -731,7 +731,7 @@ Interrupt:
 Return
 
 Enter_key:
-    classifier.Interrupt()
+    classifier.Interrupt("~Enter")
     last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
     fixed_output := last_output
     if (A_Args[1] == "dev") {
