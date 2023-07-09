@@ -426,7 +426,7 @@ KeyDown:
      if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
         new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
         ; if smart spacing for punctuation is enabled, insert a smart space
-        if ( settings.spacing & SPACE_PUNCTUATION ) {
+        if ( (settings.spacing & SPACE_PUNCTUATION) && ! (fixed_output & OUT_INTERRUPTED) ) {
             DelayOutput()
             OutputKeys("{Space}")
             difference |= DIF_EXTRA_SPACE
@@ -543,8 +543,10 @@ KeyUp:
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
-            if (settings.chording & CHORD_DELETE_UNRECOGNIZED)
+            if (settings.chording & CHORD_DELETE_UNRECOGNIZED) {
                 RemoveRawChord(chord)
+                last_output := last_output | OUT_SPACE
+            }
         }
         chord_candidate := ""
     }
