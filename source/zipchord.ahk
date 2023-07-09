@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -543,8 +543,10 @@ KeyUp:
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
-            if (settings.chording & CHORD_DELETE_UNRECOGNIZED)
+            if (settings.chording & CHORD_DELETE_UNRECOGNIZED) {
                 RemoveRawChord(chord)
+                last_output := last_output | OUT_SPACE
+            }
         }
         chord_candidate := ""
     }
