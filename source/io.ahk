@@ -176,7 +176,8 @@ Class clsIOrepresentation {
             in := str.Arrange(in)
         }
         chunk.input := in
-        chunk.attributes := this.WITH_SHIFT
+        if (with_shift)
+            chunk.attributes |= this.WITH_SHIFT
         if (StrLen(in)==1 && with_shift)
             chunk.output := str.ToAscii(in, ["Shift"])
         else
