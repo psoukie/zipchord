@@ -37,6 +37,7 @@ Class clsSubstitutionModules {
         {
             If (StrLen(candidate := io.GetInput(A_Index)) < 2)
                 Break
+            candidate := StrReplace(candidate, "||", "|")
             chunk := io.GetChunk(A_Index)
             if (expanded := chords.LookUp(candidate)) {
                 hint_delay.Shorten()
@@ -44,8 +45,44 @@ Class clsSubstitutionModules {
                     chunk.attributes |= io.WAS_CAPITALIZED
                     expanded := RegExReplace(expanded, "(^.)", "$U1")
                 }
-                expanded := this.OpeningSpace(expanded, chunk)
-                io.Replace(expanded, A_Index)
+                ; detect affixes to handle opening and closing smart spaces correctly
+                affixes := ProcessAffixes(expanded)
+                previous_chunk := io.GetChunk(A_Index-1)
+                add_space := true
+                replace_offset := 0
+                ; if there is a smart space, we remove it for suffixes, and we're done
+                if ( previous_chunk.input == "" && previous_chunk.output == " " ) {
+                    if (affixes & AFFIX_SUFFIX)
+                        replace_offset := -1
+                    add_space := false
+                }
+                ; if adding smart spaces before is disabled, we are done too
+                if (! (settings.spacing & SPACE_BEFORE_CHORD))
+                    add_space := false
+                ; TK ; if the last output was punctuation that does not ask for a space, we are done 
+                ; if ( (fixed_output & OUT_PUNCTUATION) && ! (fixed_output & OUT_SPACE_AFTER) )
+                ;     Return
+                ; and we don't start with a smart space after interruption, a space, after a prefix, and for suffix
+                if (previous_chunk.attributes == io.IS_INTERRUPT || previous_chunk.output == " " || previous_chunk.attributes == io.IS_PREFIX || affixes & AFFIX_SUFFIX)
+                    add_space := false
+                ; if we get here, we probably need a space in front of the chord
+                if (add_space) {
+                    expanded := " " . expanded
+                    chunk.attributes |= io.ADDED_SPACE_BEFORE
+                }
+
+                io.Replace(expanded, A_Index - replace_offset)
+                ; ending smart space
+                if (affixes & AFFIX_PREFIX) {
+                    chunk.attributes |= io.IS_PREFIX
+                } else if (settings.spacing & SPACE_AFTER_CHORD) {
+                    smart_space := new io.clsChunk
+                    smart_space.input := ""
+                    smart_space.output := " "
+                    io._sequence.Push(smart_space)
+                    last_output := OUT_SPACE | OUT_AUTOMATIC
+                    OutputKeys(" ")
+                }
                 Break
             }
         }
@@ -80,28 +117,5 @@ Class clsSubstitutionModules {
         shorthand_hint := shorthand_hint ? shorthand_hint : "" 
         if (chord_hint || shorthand_hint)
             ShowHint(text, chord_hint, shorthand_hint)
-    }
-
-    OpeningSpace(expanded, ByRef chunk) {
-        global io
-        attached := ProcessAffixes(expanded) & AFFIX_SUFFIX
-        ; if there is a smart space, we remove it for suffixes, and we're done
-        ; if ( (fixed_output & OUT_SPACE) && (fixed_output & OUT_AUTOMATIC) ) {
-        ;     if (attached)
-        ;         OutputKeys("{Backspace}")
-        ;     Return
-        ; }
-        ; ; if adding smart spaces before is disabled, we are done too
-        ; if (! (settings.spacing & SPACE_BEFORE_CHORD))
-        ;     Return
-        ; ; if the last output was punctuation that does not ask for a space, we are done 
-        ; if ( (fixed_output & OUT_PUNCTUATION) && ! (fixed_output & OUT_SPACE_AFTER) )
-        ;     Return
-        ; ; and we don't start with a smart space after intrruption, a space, after a prefix, and for suffix
-        ; if (fixed_output & OUT_INTERRUPTED || fixed_output & OUT_SPACE || fixed_output & OUT_PREFIX || attached)
-        ;     Return
-        ; ; if we get here, we probably need a space in front of the chord
-        chunk.attributes |= io.ADDED_SPACE_BEFORE | io.ADDED_SPACE_AFTER
-        return " " . expanded . " "
     }
 }
