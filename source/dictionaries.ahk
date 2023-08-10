@@ -216,6 +216,8 @@ Class clsAddShortcut {
     Show(exp) {
         call := Func("OpenHelp").Bind("AddShortcut")
         Hotkey, F1, % call, On
+        call := ObjBindMethod(this, "_Backspace")
+        Hotkey, $^Backspace, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference
         this._Build()
         if (exp=="") {
@@ -258,6 +260,7 @@ Class clsAddShortcut {
     }
     Close() {
         Hotkey, F1, Off
+        Hotkey, $^Backspace, Off
         this.UI.Destroy()
         if (settings.mode > MODE_ZIPCHORD_ENABLED)
             WireHotkeys("On")  ; resume normal mode
@@ -280,5 +283,11 @@ Class clsAddShortcut {
     _FocusControl(ctrl) {
         if (this.controls[ctrl].is_enabled && this.controls[ctrl].value != "")
             this.controls["save_" . ctrl].MakeDefault()
+    }
+    _Backspace() {
+        if WinActive("Add Shortcut")
+            SendInput ^+{Left}{Del}
+        else
+            SendInput ^{Backspace}
     }
 }
