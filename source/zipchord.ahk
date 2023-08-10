@@ -1222,6 +1222,7 @@ UI_AddShortcut_Build() {
 UI_AddShortcut_Show(exp) {
     call := Func("OpenHelp").Bind("AddShortcut")
     Hotkey, F1, % call, On
+    Hotkey, $^Backspace, UI_AddShortcut_Backspace, On
     WireHotkeys("Off")  ; so the user can edit values without interference
     UI_AddShortcut_Build()
     Gui, UI_AddShortcut:Default
@@ -1264,6 +1265,7 @@ UI_AddShortcutGuiEscape() {
 }
 UI_AddShortcut_Close() {
     Hotkey, F1, Off
+    Hotkey, $^Backspace, Off
     Gui, UI_AddShortcut:Destroy
     if (settings.mode > MODE_ZIPCHORD_ENABLED)
         WireHotkeys("On")  ; resume normal mode
@@ -1293,6 +1295,12 @@ UI_AddShortcut_Adjust(){
     GuiControl, Enable, UI_AddShortcut_btnSaveShorthand
     GuiControl, Enable, UI_AddShortcut_text
     GuiControl, Focus, UI_AddShortcut_text
+}
+UI_AddShortcut_Backspace() {
+    if WinActive("Add Shortcut")
+        SendInput ^+{Left}{Del}
+    else
+        SendInput ^{Backspace}
 }
 
 ;; Shortcut Hint UI
