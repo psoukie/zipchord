@@ -425,7 +425,7 @@ KeyDown:
     ; if it's punctuation that should be followed by a space
      if ( (!shifted && InStr(keys.space_after_plain, key)) || (shifted && InStr(keys.space_after_shift, key)) ) {
         new_output := new_output & ~OUT_CHARACTER | OUT_PUNCTUATION
-        ; if smart spacing for punctuation is enabled, insert a smart space
+        ; if smart spacing for punctuation is enabled and output is not interrupted, insert a smart space
         if ( (settings.spacing & SPACE_PUNCTUATION) && ! (fixed_output & OUT_INTERRUPTED) ) {
             DelayOutput()
             OutputKeys("{Space}")
@@ -543,7 +543,8 @@ KeyUp:
             ; Here, we are not deleting the keys because we assume it was rolled typing.
         }
         else {
-            if (settings.chording & CHORD_DELETE_UNRECOGNIZED) {
+            ; Take care of the 'delete mistyped chords' option
+            if ((settings.chording & CHORD_DELETE_UNRECOGNIZED) && IsUnrestricted()) {
                 RemoveRawChord(chord)
                 last_output := last_output | OUT_SPACE
             }
@@ -783,11 +784,11 @@ UI_Main_Build() {
     Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "Rel&oad"
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
     Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Op&en"
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Ope&n"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
     Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
