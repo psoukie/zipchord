@@ -857,11 +857,11 @@ BuildMainDialog() {
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_chord_file Left, % "Loading..."
     Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
     Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
-    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
+    Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload" ; force update to fix regression bug
     Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
     Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
     Gui, Add, Text, xp+20 yp+30 Section w260 vUI_shorthand_file Left, % "Loading..."
-    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "O&pen"
+    Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Ope&n"
     Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
     Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
     Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
