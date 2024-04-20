@@ -68,7 +68,6 @@ Class clsSubstitutionModules {
             if (StrLen(candidate) < 2) {
                 break
             }
-            candidate := str.Arrange(candidate)
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
@@ -117,6 +116,7 @@ Class clsSubstitutionModules {
                     last_output := OUT_SPACE | OUT_AUTOMATIC
                     OutputKeys(" ")
                 }
+                break
             }
         }
     }
