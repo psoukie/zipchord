@@ -12,18 +12,34 @@ modules := new clsSubstitutionModules
 
 Class clsSubstitutionModules {
     Run() {
-        global io
-        global keys
         this.ChordModule()
         this.RemoveRawChord()
-        last := io.GetInput(io.length)
+        this.DoShorthandsAndHints()
+    }
+
+    DoShorthandsAndHints() {
+        global io
+        global keys
+        last_chunk_output := io.GetOutput(io.length)
         with_shift := io.shift_in_last_get
-        ; if the last character is space or punctuation
-        if (StrLen(last)==1 && ( last == " " || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last)) || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) ) {
-            text := io.GetOutput(2, io.length-1)
-            if (! io.chord_in_last_get) {
-                this.ShorthandModule(text)
-                this.HintModule(text)
+        ; We check if the last character is a space or punctuation
+        OutputDebug, % "`nLast chunk>" . last_chunk_output . "<"
+        last := SubStr(last_chunk_output, StrLen(last_chunk_output), 1)
+        offset := last_chunk_output > 1 ? 1 : 0
+        if ( StrLen(last)==1 && ( last == " "
+            || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last))
+            || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) ) {
+            if (StrLen(last_chunk_output) < 2) {
+                text := io.GetOutput(2, io.length-1)
+            } else {
+                text_with_trailing := io.GetOutput(2, io.length)
+                text := SubStr(text_with_trailing, 1, StrLen(text_with_trailing) - 1)
+            }
+            starting_chunk := this.GetStartingChunkOfText(text)
+            if (! io.chord_in_last_get && starting_chunk) {
+                trimmed_text := Trim(text)
+                this.ShorthandModule(trimmed_text, starting_chunk)
+                this.HintModule(trimmed_text)
             }
         }
     }
@@ -140,32 +156,52 @@ Class clsSubstitutionModules {
         }
     }
 
-    ShorthandModule(text) {
+    GetStartingChunkOfText(text) {
+        global io
+        if ( SubStr(text, 1, 1) == " " ) {
+            text := SubStr(text, 2)
+            first_chunk := 3
+        } else {
+            first_chunk := 2
+        }
+        ; don't do shorthand for interrupts
+        preceding_chunk := io.GetChunk(first_chunk-1)
+        if (preceding_chunk.attributes & io.IS_INTERRUPT) {
+            return false
+        }
+        return first_chunk
+    }
+
+    ShorthandModule(text, first_chunk) {
         global io
         global hint_delay
-        if (! (settings.mode & MODE_SHORTHANDS_ENABLED))
+        if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
-        If ( expanded := shorthands.LookUp(text) ) {
+        }
+        if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            io.GetOutput(1, 1)
+            io.GetOutput(first_chunk, first_chunk)
             if (io.shift_in_last_get)
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
-            io.Replace(expanded, 1, io.length-1)
+            io.Replace(expanded, first_chunk, io.length-1)
         }
     }
 
     HintModule(text) {
-        global io
         global hint_delay
-        if (! (settings.hints & HINT_ON) || ! hint_delay.HasElapsed())
+        if (! (settings.hints & HINT_ON) || ! hint_delay.HasElapsed()) {
             return
-        if (settings.mode & MODE_CHORDS_ENABLED)
+        }
+        if (settings.mode & MODE_CHORDS_ENABLED) {
             chord_hint := chords.ReverseLookUp(text)
-        if (settings.mode & MODE_SHORTHANDS_ENABLED)
+        }
+        if (settings.mode & MODE_SHORTHANDS_ENABLED) {
             shorthand_hint := shorthands.ReverseLookUp(text)
+        }
         chord_hint := chord_hint ? chord_hint : "" 
         shorthand_hint := shorthand_hint ? shorthand_hint : "" 
-        if (chord_hint || shorthand_hint)
+        if (chord_hint || shorthand_hint) {
             ShowHint(text, chord_hint, shorthand_hint)
+        }
     }
 }
