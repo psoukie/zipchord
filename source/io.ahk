@@ -290,10 +290,12 @@ Class clsIOrepresentation {
         i := start
         Loop, %count%
         {
-            if (sequence[i].attributes & this.WITH_SHIFT)
+            if (sequence[i].attributes & this.WITH_SHIFT) {
                 this._shift_in_last_get := true
-            if (StrLen(sequence[i].input) > 1)
+            }
+            if (sequence[i].attributes & this.IS_CHORD) {
                 this._chord_in_last_get := true
+            }
             representation .= separator . sequence[i++][what]
         }
         Return SubStr(representation, StrLen(separator)+1)
