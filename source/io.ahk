@@ -2,7 +2,7 @@
 
 This file is part of ZipChord.
 
-Copyright (c) 2023 Pavel Soukenik
+Copyright (c) 2023-2024 Pavel Soukenik
 
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 
@@ -155,9 +155,11 @@ Class clsIOrepresentation {
         }
     }
     Class clsChunk {
-        input := ""
-        output := ""
-        attributes := clsIOrepresentation.NONE
+        __New() {
+            this.input := ""
+            this.output := ""
+            this.attributes := 0
+        }
     }
     __New() {
         this.Clear("*Interrupt*")
@@ -219,6 +221,7 @@ Class clsIOrepresentation {
         sequence := this._sequence
         if (count>1) {
             start := 1 + this.length - count
+            count -= 1
             Loop, %count%
             {
                 sequence[start].input .= sequence[start+1].input 
@@ -308,6 +311,6 @@ Class clsIOrepresentation {
     _Show() {
         OutputDebug, % "`n`nIO sequence:" 
         For i, chunk in this._sequence
-            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output
+            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
     }
 }
