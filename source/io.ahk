@@ -54,7 +54,7 @@ Class clsClassifier {
         return false
     }
     Input(key, timestamp) {
-        global modules
+        global io
 
         key := SubStr(key, 2)
         if (SubStr(key, 1, 1) == "+") {
@@ -78,18 +78,18 @@ Class clsClassifier {
                 this._index.Delete(key)
                 this._Classify(index, timestamp)
             }
-            return
             ; otherwise, the lifted key was already classified and removed from buffer.
+            return
         }
         ; Process a key down:
-        modules.CapitalizeTyping(key)
-
         event := new this.clsKeyEvent
         event.key := key
         event.start := timestamp
         event.with_shift := with_shift
         this._buffer.Push(event)
         this._index[key] := this._buffer.Length()
+
+        io.Add(key, with_shift)
     }
     Interrupt(type := "*Interrupt*") {
         global io
@@ -102,26 +102,17 @@ Class clsClassifier {
         global io
         static first_up
         if (this.length == 1) {
-            input :=  this._buffer[1].key
-            if (this._buffer[1].with_shift)
-                with_shift := true
             this._buffer.RemoveAt(1)
-            io.Add(input, with_shift)
+            io.Chord(0)
             return
         }
         if (this.lifted == 1)
             first_up := index
         if (this.lifted == 2) {
             if (this._GetOverlap(1, 2, timestamp) > settings.input_delay && ! this._DetectRoll(first_up)) {
-                For _, event in this._buffer {
-                    input .= event.key
-                    if (event.with_shift)
-                        with_shift := true
-                }
-                io.Add(input, with_shift)
+                io.Chord(this.length)
             } else {
-                For _, event in this._buffer
-                    io.Add(event.key, with_shift)
+                io.Chord(0)
             }
             this._buffer := []
             this._index := {}
@@ -171,31 +162,23 @@ Class clsIOrepresentation {
     __New() {
         this.Clear("*Interrupt*")
     }
+
     Add(entry, with_shift) {
-        global keys
+        global modules
+
         chunk := new this.clsChunk
-        if (StrLen(entry)>1) {
-            ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry.
-            if (with_shift && (settings.chording & CHORD_ALLOW_SHIFT)) {
-                entry := "+" . entry
-                with_shift := false
-            }
-        }
         chunk.input := entry
-        if (with_shift)
+        if (with_shift) {
             chunk.attributes |= this.WITH_SHIFT
-        if (StrLen(entry)==1 && with_shift)
             chunk.output := str.ToAscii(entry, ["Shift"])
-        else
+        } else {
             chunk.output := entry
+        }
         this._sequence.Push(chunk)
         this._Show()
-        this._PingModules()
-        last := this.GetInput(this.length)
-        ; if the last character is space or punctuation
-        if (StrLen(last)==1 && ( last == " " || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last)) || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) )
-            this.Clear()
+        modules.CapitalizeTyping(entry)
     }
+
     Clear(type := "") {
         first_chunk := new this.clsChunk
         if (type=="~Enter")
@@ -228,6 +211,36 @@ Class clsIOrepresentation {
         this.SetChunk(start, new_output)
         this._ReplaceOutput(old_output, new_output, start)
     }
+
+    Chord(count) {
+        global keys
+        global modules
+
+        sequence := this._sequence
+        if (count>1) {
+            start := 1 + this.length - count
+            Loop, %count%
+            {
+                sequence[start].input .= sequence[start+1].input 
+                sequence[start].output .= sequence[start+1].output
+                sequence[start].attributes |= sequence[start+1].attributes
+                sequence.RemoveAt(start+1)
+            }
+                 
+            ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
+            if ( (settings.chording & CHORD_ALLOW_SHIFT) && (sequence[start].attributes & this.WITH_SHIFT) ) {
+                entry := "+" . entry
+                sequence[start].attributes := sequence[start].attributes & ~this.WITH_SHIFT
+            }
+        }
+        this._Show()
+        this._PingModules()
+        last := this.GetInput(this.length)
+        ; if the last character is space or punctuation
+        if (StrLen(last)==1 && ( last == " " || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last)) || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) )
+            this.Clear()
+    }
+
     Combine(start, end) {
         sequence := this._sequence
         if (start > sequence.Length() || end > sequence.Length()) {
