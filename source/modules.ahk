@@ -14,6 +14,7 @@ Class clsSubstitutionModules {
     Run() {
         this.ChordModule()
         this.RemoveRawChord()
+        ; TK Add separating spaces and punctuation when it gets glued with preceding characters in a false chunk
         this.DoShorthandsAndHints()
     }
 
@@ -25,7 +26,6 @@ Class clsSubstitutionModules {
         ; We check if the last character is a space or punctuation
         OutputDebug, % "`nLast chunk>" . last_chunk_output . "<"
         last := SubStr(last_chunk_output, StrLen(last_chunk_output), 1)
-        offset := last_chunk_output > 1 ? 1 : 0
         if ( StrLen(last)==1 && ( last == " "
             || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last))
             || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) ) {
