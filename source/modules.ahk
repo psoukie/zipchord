@@ -30,28 +30,29 @@ Class clsSubstitutionModules {
     CapitalizeTyping(key) {
         global io
         global keys
-        static wasSpaceLast
-        if (key == " ") {
-            wasSpaceLast := true
+        if (settings.capitalization != CAP_ALL) {
             return
         }
-        if (!wasSpaceLast || settings.capitalization != CAP_ALL || io.length < 1 || (io._sequence[io.length].attributes & io.WITH_SHIFT) ) {
-            return
+        capitalize := False
+        if (io.length == 2 && io._sequence[io.length - 1].attributes & io.IS_ENTER) {
+            capitalize := True
+        } else {
+            if (io.length > 2 && io.GetInput(io.length - 1, io.length - 1) == " ") {
+                punctuation := io.GetInput(io.length - 2, io.length - 2)
+                with_shift := io.shift_in_last_get
+                if ( StrLen(punctuation)==1 && (! with_shift && InStr(keys.capitalizing_plain, punctuation))
+                    || (with_shift && InStr(keys.capitalizing_shift, potential_punctuation)) ) {
+                    capitalize := True
+                }
+            }
         }
-
-        if (io._sequence[io.length].attributes & io.IS_ENTER ) {
-            OutputDebug, % "`nwith Enter..."
+        if (capitalize) {
+            key := io.GetInput(io.length)
+            if (!io.shift_in_last_get) {
+                upper_cased := RegExReplace(key, "(^.)", "$U1")
+                io.Replace(upper_cased, io.length)
+            }
         }
-
-        potential_punctuation := io.GetInput(io.length - 1, io.length - 1)
-        with_shift := io.shift_in_last_get
-        if ( StrLen(potential_punctuation)==1 && (! with_shift && InStr(keys.capitalizing_plain, potential_punctuation))
-            || (with_shift && InStr(keys.capitalizing_shift, potential_punctuation)) ) {
-            ; OutputDebug, % "`nCapping with: " . io.GetInput()
-            upper_cased := RegExReplace(key, "(^.)", "$U1")
-            OutputKeys("{Backspace}{Text}" . upper_cased)
-        }
-        wasSpaceLast := false
     }
 
     ChordModule() {
