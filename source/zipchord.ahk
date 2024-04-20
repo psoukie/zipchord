@@ -5,7 +5,7 @@ ZipChord
 A customizable hybrid keyboard input method that augments regular typing with
 chords and shorthands.
 
-Copyright (c) 2021-2023 Pavel Soukenik
+Copyright (c) 2021-2024 Pavel Soukenik
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -186,7 +186,7 @@ Class settingsClass {
 global settings := New settingsClass
 
 ; Processing input and output 
-chord_buffer := ""   ; stores the sequence of simultanously pressed keys
+chord_buffer := ""       ; stores the sequence of simultanously pressed keys
 chord_candidate := ""    ; chord candidate which qualifies for chord
 shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
 capitalize_shorthand := false  ; should the shorthand be capitalized
@@ -561,10 +561,13 @@ Return  ; TK -- switching to new design
                 fixed_output := last_output
                 chord_candidate := ""
             }
-            ; Here, we are not deleting the keys because we assume it was rolled typing.
+            ; Here, we are not deleting the keys because we assume it was rolled typing
         }
         else {
-            ; Take care of the 'delete mistyped chords' option
+            ; Take care of the 'delete mistyped chords' option.
+            ; When "Restrict chords while typing" and "Delete mistyped words" are both enabled and a non-existing chord
+            ; is registered while typing a word, this input is left alone because it is safe to assume it was intended
+            ; as normal typing.
             if ((settings.chording & CHORD_DELETE_UNRECOGNIZED) && IsUnrestricted()) {
                 RemoveRawChord(chord)
                 last_output := last_output | OUT_SPACE
