@@ -2,7 +2,7 @@
 
 This file is part of ZipChord.
 
-Copyright (c) 2023 Pavel Soukenik
+Copyright (c) 2023-2024 Pavel Soukenik
 
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 
@@ -15,6 +15,7 @@ Class clsSubstitutionModules {
         global io
         global keys
         this.ChordModule()
+        this.RemoveRawChord()
         last := io.GetInput(io.length)
         with_shift := io.shift_in_last_get
         ; if the last character is space or punctuation
@@ -69,8 +70,9 @@ Class clsSubstitutionModules {
             }
             candidate := str.Arrange(candidate)
             candidate := StrReplace(candidate, "||", "|")
-            chunk := io.GetChunk(A_Index)
-            if (expanded := chords.LookUp(candidate)) {
+            expanded := chords.LookUp(candidate)
+            if (expanded) {
+                chunk := io.GetChunk(A_Index)
                 hint_delay.Shorten()
                 if (io.shift_in_last_get) {
                     chunk.attributes |= io.WAS_CAPITALIZED
@@ -103,6 +105,7 @@ Class clsSubstitutionModules {
                 }
 
                 io.Replace(expanded, A_Index - replace_offset)
+                chunk.attributes |= io.IS_CHORD
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
                     chunk.attributes |= io.IS_PREFIX
@@ -114,10 +117,27 @@ Class clsSubstitutionModules {
                     last_output := OUT_SPACE | OUT_AUTOMATIC
                     OutputKeys(" ")
                 }
-                Break
             }
         }
-        ; io.Show()
+    }
+
+    /**
+    * Remove characters of non-existing chord if 'delete mistyped chords' option is enabled.
+    * 
+    * Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled and a non-existing chord is
+    * registered while typing a word, this input is left alone because it is safe to assume it was intended as normal
+    * typing.
+    */
+    RemoveRawChord() {
+        global io
+        if ((settings.chording & CHORD_DELETE_UNRECOGNIZED)) {
+            ; TK Should check for && IsUnrestricted() above but it does not exist yet
+            chunk := io.GetChunk(io.length)
+            OutputDebug, % "`nRawremover: " . StrLen(chunk.input)
+            if ( StrLen(chunk.input) > 1 && !(chunk.attributes & io.IS_CHORD) ) {
+                io.Replace("", io.length)
+            }
+        }
     }
 
     ShorthandModule(text) {
