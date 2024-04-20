@@ -65,7 +65,9 @@ Class clsClassifier {
         if (SubStr(key, -2)==" Up") {
             key := SubStr(key, 1, StrLen(key)-3)
             lifted := true
-        } else lifted := false
+        } else {
+            lifted := false
+        }
 
         if (lifted) {
             index := this._index[key]
@@ -164,24 +166,23 @@ Class clsIOrepresentation {
     __New() {
         this.Clear("*Interrupt*")
     }
-    Add(in, with_shift) {
+    Add(entry, with_shift) {
         global keys
         chunk := new this.clsChunk
-        if (StrLen(in)>1) {
+        if (StrLen(entry)>1) {
             ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry.
             if (with_shift && (settings.chording & CHORD_ALLOW_SHIFT)) {
-                in := "+" . in
+                entry := "+" . entry
                 with_shift := false
             }
-            in := str.Arrange(in)
         }
-        chunk.input := in
+        chunk.input := entry
         if (with_shift)
             chunk.attributes |= this.WITH_SHIFT
-        if (StrLen(in)==1 && with_shift)
-            chunk.output := str.ToAscii(in, ["Shift"])
+        if (StrLen(entry)==1 && with_shift)
+            chunk.output := str.ToAscii(entry, ["Shift"])
         else
-            chunk.output := in
+            chunk.output := entry
         this._sequence.Push(chunk)
         this._Show()
         this._PingModules()

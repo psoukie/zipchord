@@ -16,7 +16,7 @@ Class clsSubstitutionModules {
         global keys
         this.ChordModule()
         last := io.GetInput(io.length)
-        with_shift := io._sequence[io.length].attributes & io.WITH_SHIFT 
+        with_shift := io.shift_in_last_get
         ; if the last character is space or punctuation
         if (StrLen(last)==1 && ( last == " " || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last)) || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) ) {
             text := io.GetOutput(2, io.length-1)
@@ -35,8 +35,11 @@ Class clsSubstitutionModules {
         count := io.length
         Loop %count%
         {
-            If (StrLen(candidate := io.GetInput(A_Index)) < 2)
-                Break
+            candidate := io.GetInput(A_Index)
+            if (StrLen(candidate) < 2) {
+                break
+            }
+            candidate := str.Arrange(candidate)
             candidate := StrReplace(candidate, "||", "|")
             chunk := io.GetChunk(A_Index)
             if (expanded := chords.LookUp(candidate)) {
@@ -92,7 +95,6 @@ Class clsSubstitutionModules {
     ShorthandModule(text) {
         global io
         global hint_delay
-        OutputDebug, % "`nHint for: " . text
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED))
             return
         If ( expanded := shorthands.LookUp(text) ) {
