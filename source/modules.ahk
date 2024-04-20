@@ -27,6 +27,33 @@ Class clsSubstitutionModules {
         }
     }
 
+    CapitalizeTyping(key) {
+        global io
+        global keys
+        static wasSpaceLast
+        if (key == " ") {
+            wasSpaceLast := true
+            return
+        }
+        if (!wasSpaceLast || settings.capitalization != CAP_ALL || io.length < 1 || (io._sequence[io.length].attributes & io.WITH_SHIFT) ) {
+            return
+        }
+
+        if (io._sequence[io.length].attributes & io.IS_ENTER ) {
+            OutputDebug, % "`nwith Enter..."
+        }
+
+        potential_punctuation := io.GetInput(io.length - 1, io.length - 1)
+        with_shift := io.shift_in_last_get
+        if ( StrLen(potential_punctuation)==1 && (! with_shift && InStr(keys.capitalizing_plain, potential_punctuation))
+            || (with_shift && InStr(keys.capitalizing_shift, potential_punctuation)) ) {
+            ; OutputDebug, % "`nCapping with: " . io.GetInput()
+            upper_cased := RegExReplace(key, "(^.)", "$U1")
+            OutputKeys("{Backspace}{Text}" . upper_cased)
+        }
+        wasSpaceLast := false
+    }
+
     ChordModule() {
         global io
         global hint_delay

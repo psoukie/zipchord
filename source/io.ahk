@@ -54,6 +54,8 @@ Class clsClassifier {
         return false
     }
     Input(key, timestamp) {
+        global modules
+
         key := SubStr(key, 2)
         if (SubStr(key, 1, 1) == "+") {
             with_shift := True
@@ -76,15 +78,18 @@ Class clsClassifier {
                 this._index.Delete(key)
                 this._Classify(index, timestamp)
             }
+            return
             ; otherwise, the lifted key was already classified and removed from buffer.
-        } else {
-            event := new this.clsKeyEvent
-            event.key := key
-            event.start := timestamp
-            event.with_shift := with_shift
-            this._buffer.Push(event)
-            this._index[key] := this._buffer.Length()
         }
+        ; Process a key down:
+        modules.CapitalizeTyping(key)
+
+        event := new this.clsKeyEvent
+        event.key := key
+        event.start := timestamp
+        event.with_shift := with_shift
+        this._buffer.Push(event)
+        this._index[key] := this._buffer.Length()
     }
     Interrupt(type := "*Interrupt*") {
         global io
@@ -198,10 +203,14 @@ Class clsIOrepresentation {
         if (type=="*Interrupt*")
             first_chunk.attributes := this.IS_INTERRUPT
         if (type=="") {
-            first_chunk := this._sequence[this.length]
+            first_chunk := this._sequence[this.length-1]
+            second_chunk := this._sequence[this.length]
         }
         this._sequence := []
         this._sequence.Push(first_chunk)
+        if (type=="") {
+            this._sequence.Push(second_chunk)
+        }
         this._Show()
         if (visualizer.IsOn())
             visualizer.NewLine()
