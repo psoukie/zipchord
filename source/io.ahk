@@ -128,9 +128,9 @@ Class clsIOrepresentation {
     static NONE := 0
          , WITH_SHIFT := 1
          , SMART_SPACE_AFTER := 2
-         , PUNCTUATION_SPACE := 4
-         , IS_PUNCTUATION := 8
-         , WAS_EXPANDED := 16
+         , IS_PUNCTUATION := 4
+         , WAS_EXPANDED := 8
+         , WAS_CAPITALIZED := 16
          , IS_PREFIX := 32
          , IS_MANUAL_SPACE := 64
          , IS_CHORD := 128
@@ -393,23 +393,17 @@ Class clsIOrepresentation {
     }
 
     AddSpaceAfterPunctuation(attribs, chunk) {
-        if ( (settings.spacing & SPACE_PUNCTUATION) && (attribs & this.IS_PUNCTUATION)
+        if ( settings.spacing & SPACE_PUNCTUATION && attribs & this.IS_PUNCTUATION
                 && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
-                    || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
-            punctuation_space := new this.clsChunk
-            punctuation_space.input := ""
-            punctuation_space.output := " "
-            punctuation_space.attributes |= this.PUNCTUATION_SPACE
-            this._sequence.Push(punctuation_space)
-            OutputKeys(" ")
-            return
+                || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
+            this._AddSmartSpace()
         }
     }
 
     ; Remove a double space if the user types a space after punctuation space
     DeDoubleSpace() {
         last_chunk_attrib := this.GetChunk(this.length-1).attributes 
-        if ( (last_chunk_attrib & this.PUNCTUATION_SPACE) || (last_chunk_attrib & this.SMART_SPACE_AFTER) ) {
+        if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
             this.Replace("", this.length)
             this._sequence.RemoveAt(this.length)
             this._Show() 
@@ -486,12 +480,7 @@ Class clsIOrepresentation {
                 if (affixes & AFFIX_PREFIX) {
                     chunk.attributes |= this.IS_PREFIX
                 } else if (settings.spacing & SPACE_AFTER_CHORD) {
-                    smart_space := new this.clsChunk
-                    smart_space.input := ""
-                    smart_space.output := " "
-                    smart_space.attributes |= this.SMART_SPACE_AFTER
-                    this._sequence.Push(smart_space)
-                    OutputKeys(" ")
+                    this._AddSmartSpace()
                 }
                 break
             }
@@ -572,7 +561,7 @@ Class clsIOrepresentation {
         attribs := chunk.attributes
         if ( attribs & this.WAS_EXPANDED || attribs & this.IS_PUNCTUATION || attribs & this.IS_PREFIX
                 || attribs & this.IS_INTERRUPT || attribs & this.IS_MANUAL_SPACE || attribs & this.IS_ENTER 
-                || attribs & this.PUNCTUATION_SPACE || attribs & this.SMART_SPACE_AFTER ) {
+                || attribs & this.SMART_SPACE_AFTER ) {
             return false
         }
         return true
@@ -594,5 +583,14 @@ Class clsIOrepresentation {
         end_offset := affixes & AFFIX_PREFIX ? -1 : 0
         sanitized_text := SubStr(expanded_text, start, StrLen(expanded_text) + end_offset)
         Return sanitized_text
+    }
+
+    _AddSmartSpace() {
+        smart_space := new this.clsChunk
+        smart_space.input := ""
+        smart_space.output := " "
+        smart_space.attributes |= this.SMART_SPACE_AFTER
+        this._sequence.Push(smart_space)
+        OutputKeys(" ")
     }
 }
