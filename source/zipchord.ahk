@@ -50,7 +50,6 @@ OnExit("CloseApp")
 #Include locale.ahk
 #Include dictionaries.ahk
 #Include io.ahk
-#Include modules.ahk
 
 if (A_Args[1] == "dev") {
     #Include *i visualizer.ahk
