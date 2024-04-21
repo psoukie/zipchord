@@ -128,8 +128,8 @@ Class clsIOrepresentation {
     static NONE := 0
          , WITH_SHIFT := 1
          , ADDED_SPACE_BEFORE := 2 
-         , ADDED_SPACE_AFTER := 4
-         , EXPECTS_SPACE := 8
+         , SMART_SPACE_AFTER := 4
+         , PUNCTUATION_SPACE := 8
          , IS_CHORD := 16
          , IS_PREFIX := 32
          , IS_SUFFIX := 64
@@ -178,7 +178,7 @@ Class clsIOrepresentation {
         }
         this._sequence.Push(chunk)
         this._Show()
-        modules.CapitalizeTyping(entry)
+        modules.CapitalizeTyping()
     }
 
     Clear(type := "") {
@@ -243,10 +243,6 @@ Class clsIOrepresentation {
         }
         this._Show()
         this._PingModules()
-        last := this.GetInput(this.length)
-        ; if the last character is space or punctuation
-        if (StrLen(last)==1 && ( last == " " || (! with_shift && InStr(keys.remove_space_plain . keys.space_after_plain . keys.capitalizing_plain . keys.other_plain, last)) || (with_shift && InStr(keys.remove_space_shift . keys.space_after_shift . keys.capitalizing_shift . keys.other_shift, last)) ) )
-            this.Clear()
     }
 
     Combine(start, end) {
