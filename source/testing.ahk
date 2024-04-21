@@ -56,7 +56,6 @@ Class TestingClass {
         this._Prompt()
     }
     Config(mode:="", ByRef filename:="") {
-        global keys        
         Switch mode {
             Case "", "show":
                 this.Write("Current ZipChord configuration:")

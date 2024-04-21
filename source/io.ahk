@@ -166,8 +166,6 @@ Class clsIOrepresentation {
     }
 
     Add(entry, with_shift) {
-        global keys
-
         chunk := new this.clsChunk
         chunk.input := entry
         if (with_shift) {
@@ -193,8 +191,6 @@ Class clsIOrepresentation {
     * Transform chord key presses received from Classifier into chunks
     */
     Chord(count) {
-        global keys
-
         sequence := this._sequence
         if (count>1) {
             start := 1 + this.length - count
@@ -336,44 +332,40 @@ Class clsIOrepresentation {
     }
 
     DoShorthandsAndHints() {
-        global io
-        global keys
-        last_chunk := io.GetChunk(io.length)
+        last_chunk := this.GetChunk(this.length)
         attribs := last_chunk.attributes
         ; We check if the last character is a space or punctuation
-        if ( attribs & io.IS_MANUAL_SPACE || attribs & io.IS_PUNCTUATION ) {
-            text := io.GetOutput(2, io.length-1)
+        if ( attribs & this.IS_MANUAL_SPACE || attribs & this.IS_PUNCTUATION ) {
+            text := this.GetOutput(2, this.length-1)
             starting_chunk := this.GetStartingChunkOfText(text)
-            if (! io.chord_in_last_get && starting_chunk) {
+            if (! this.chord_in_last_get && starting_chunk) {
                 trimmed_text := Trim(text)
                 this.ShorthandModule(trimmed_text, starting_chunk)
                 this.HintModule(trimmed_text)
             }
             this.AddSpaceAfterPunctuation(attribs, last_chunk)
             dont_clear := false
-            if (attribs & io.IS_MANUAL_SPACE) {
+            if (attribs & this.IS_MANUAL_SPACE) {
                 dont_clear := this.DeDoubleSpace()
             }
             if (! dont_clear) {
-                io.Clear()
+                this.Clear()
             }
         }
     }
 
     CapitalizeTyping(character, attribs) {
-        global io
-        global keys
-        if ( settings.capitalization != CAP_ALL || (attribs & io.IS_PUNCTUATION)
-                || (attribs & io.IS_MANUAL_SPACE) || (attribs & io.WITH_SHIFT) ) {
+        if ( settings.capitalization != CAP_ALL || (attribs & this.IS_PUNCTUATION)
+                || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.WITH_SHIFT) ) {
             return
         }
         capitalize := False
-        if (io.length == 2 && (io._sequence[io.length - 1].attributes & io.IS_ENTER) ) {
+        if (this.length == 2 && (this._sequence[this.length - 1].attributes & this.IS_ENTER) ) {
             capitalize := True
         } else {
-            if (io.length > 2 && io.GetOutput(io.length - 1, io.length - 1) == " ") {
-                preceding := io.GetInput(io.length - 2, io.length - 2)
-                with_shift := io.shift_in_last_get
+            if (this.length > 2 && this.GetOutput(this.length - 1, this.length - 1) == " ") {
+                preceding := this.GetInput(this.length - 2, this.length - 2)
+                with_shift := this.shift_in_last_get
                 if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
                     || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
                     capitalize := True
@@ -382,37 +374,33 @@ Class clsIOrepresentation {
         }
         if (capitalize) {
             upper_cased := RegExReplace(character, "(^.)", "$U1")
-            io.Replace(upper_cased, io.length)
+            this.Replace(upper_cased, this.length)
         }
     }
 
     PrePunctuation(attribs) {
-        global io
-        global keys
-        if !( (attribs & io.IS_PUNCTUATION) && (io.GetChunk(io.length-1).attributes & io.SMART_SPACE_AFTER) ) {
+        if !( (attribs & this.IS_PUNCTUATION) && (this.GetChunk(this.length-1).attributes & this.SMART_SPACE_AFTER) ) {
             return
         }
-        chunk := io.GetChunk(io.length)
-        if ( (!(chunk.attributes & io.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
-                || ((chunk.attributes & io.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
-            io.Replace(chunk.output, io.length-1)
-            new_chunk := io.GetChunk(io.length)
+        chunk := this.GetChunk(this.length)
+        if ( (!(chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
+                || ((chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
+            this.Replace(chunk.output, this.length-1)
+            new_chunk := this.GetChunk(this.length)
             new_chunk.input := chunk.input
             new_chunk.attributes := chunk.attributes
         }
     }
 
     AddSpaceAfterPunctuation(attribs, chunk) {
-        global keys
-        global io
-        if ( (settings.spacing & SPACE_PUNCTUATION) && (attribs & io.IS_PUNCTUATION)
-                && (( !(attribs & io.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
-                    || (attribs & io.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
-            punctuation_space := new io.clsChunk
+        if ( (settings.spacing & SPACE_PUNCTUATION) && (attribs & this.IS_PUNCTUATION)
+                && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
+                    || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
+            punctuation_space := new this.clsChunk
             punctuation_space.input := ""
             punctuation_space.output := " "
-            punctuation_space.attributes |= io.PUNCTUATION_SPACE
-            io._sequence.Push(punctuation_space)
+            punctuation_space.attributes |= this.PUNCTUATION_SPACE
+            this._sequence.Push(punctuation_space)
             OutputKeys(" ")
             return
         }
@@ -420,42 +408,39 @@ Class clsIOrepresentation {
 
     ; Remove a double space if the user types a space after punctuation space
     DeDoubleSpace() {
-        global io
-        last_chunk_attrib := io.GetChunk(io.length-1).attributes 
-        if ( (last_chunk_attrib & io.PUNCTUATION_SPACE) || (last_chunk_attrib & io.SMART_SPACE_AFTER) ) {
-            io.Replace("", io.length)
-            io._sequence.RemoveAt(io.length)
-            io._Show() 
+        last_chunk_attrib := this.GetChunk(this.length-1).attributes 
+        if ( (last_chunk_attrib & this.PUNCTUATION_SPACE) || (last_chunk_attrib & this.SMART_SPACE_AFTER) ) {
+            this.Replace("", this.length)
+            this._sequence.RemoveAt(this.length)
+            this._Show() 
             return true
         }
         return false
     }
 
     ChordModule() {
-        global io
-        global keys
         global hint_delay
         if (! (settings.mode & MODE_CHORDS_ENABLED))
             return
-        count := io.length
+        count := this.length
         Loop %count%
         {
-            candidate := io.GetInput(A_Index)
+            candidate := this.GetInput(A_Index)
             if (StrLen(candidate) < 2) {
                 break
             }
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
-                chunk := io.GetChunk(A_Index)
+                chunk := this.GetChunk(A_Index)
                 hint_delay.Shorten()
-                if (io.shift_in_last_get) {
+                if (this.shift_in_last_get) {
                     expanded := RegExReplace(expanded, "(^.)", "$U1")
                 }
                 ; detect affixes to handle opening and closing smart spaces correctly
                 affixes := this._DetectAffixes(expanded)
                 expanded := this._RemoveAffixSymbols(expanded, affixes)
-                previous_chunk := io.GetChunk(A_Index-1)
+                previous_chunk := this.GetChunk(A_Index-1)
 
                 if ( this._IsRestricted(previous_chunk) && !(affixes & AFFIX_SUFFIX) ) {
                     return
@@ -464,7 +449,7 @@ Class clsIOrepresentation {
                 add_leading_space := true
                 replace_offset := 0
                 ; if there is a smart space, we have to delete it for suffixes
-                if (previous_chunk.attributes & io.SMART_SPACE_AFTER) {
+                if (previous_chunk.attributes & this.SMART_SPACE_AFTER) {
                     add_leading_space := false
                     if (affixes & AFFIX_SUFFIX) {
                         replace_offset := -1
@@ -476,36 +461,36 @@ Class clsIOrepresentation {
                 }
                 
                 ; if the last output was punctuation that does not ask for a space
-                if ( ( !(previous_chunk.attributes & io.WITH_SHIFT)
+                if ( ( !(previous_chunk.attributes & this.WITH_SHIFT)
                         && InStr(keys.punctuation_plain, previous_chunk.input)
                         && !InStr(keys.space_after_plain, previous_chunk.input) )
-                        || (previous_chunk.attributes & io.WITH_SHIFT)
+                        || (previous_chunk.attributes & this.WITH_SHIFT)
                         && InStr(keys.punctuation_shift, previous_chunk.input)
                         && !InStr(keys.space_after_shift, previous_chunk.input) )  {
                     add_leading_space := false
                 }
                 
                 ; and we don't start with a smart space after interruption, a space, after a prefix, and for suffix
-                if (previous_chunk.attributes & io.IS_INTERRUPT || previous_chunk.output == " "
-                        || previous_chunk.attributes & io.IS_PREFIX || affixes & AFFIX_SUFFIX) {
+                if (previous_chunk.attributes & this.IS_INTERRUPT || previous_chunk.output == " "
+                        || previous_chunk.attributes & this.IS_PREFIX || affixes & AFFIX_SUFFIX) {
                     add_leading_space := false
                 }
                 if (add_leading_space) {
                     expanded := " " . expanded
                 }
 
-                io.Replace(expanded, A_Index + replace_offset)
-                chunk.attributes |= io.WAS_EXPANDED
+                this.Replace(expanded, A_Index + replace_offset)
+                chunk.attributes |= this.WAS_EXPANDED
 
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
-                    chunk.attributes |= io.IS_PREFIX
+                    chunk.attributes |= this.IS_PREFIX
                 } else if (settings.spacing & SPACE_AFTER_CHORD) {
-                    smart_space := new io.clsChunk
+                    smart_space := new this.clsChunk
                     smart_space.input := ""
                     smart_space.output := " "
-                    smart_space.attributes |= io.SMART_SPACE_AFTER
-                    io._sequence.Push(smart_space)
+                    smart_space.attributes |= this.SMART_SPACE_AFTER
+                    this._sequence.Push(smart_space)
                     OutputKeys(" ")
                 }
                 break
@@ -521,18 +506,16 @@ Class clsIOrepresentation {
     * typing.
     */
     RemoveRawChord() {
-        global io
         if ((settings.chording & CHORD_DELETE_UNRECOGNIZED)) {
             ; TK Should check for && IsUnrestricted() above but it does not exist yet
-            chunk := io.GetChunk(io.length)
-            if ( StrLen(chunk.input) > 1 && !(chunk.attributes & io.WAS_EXPANDED) ) {
-                io.Replace("", io.length)
+            chunk := this.GetChunk(this.length)
+            if ( StrLen(chunk.input) > 1 && !(chunk.attributes & this.WAS_EXPANDED) ) {
+                this.Replace("", this.length)
             }
         }
     }
 
     GetStartingChunkOfText(text) {
-        global io
         if ( SubStr(text, 1, 1) == " " ) {
             text := SubStr(text, 2)
             first_chunk := 3
@@ -540,25 +523,24 @@ Class clsIOrepresentation {
             first_chunk := 2
         }
         ; don't do shorthand for interrupts
-        preceding_chunk := io.GetChunk(first_chunk-1)
-        if (preceding_chunk.attributes & io.IS_INTERRUPT) {
+        preceding_chunk := this.GetChunk(first_chunk-1)
+        if (preceding_chunk.attributes & this.IS_INTERRUPT) {
             return false
         }
         return first_chunk
     }
 
     ShorthandModule(text, first_chunk) {
-        global io
         global hint_delay
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
         }
         if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            io.GetOutput(first_chunk, first_chunk)
-            if (io.shift_in_last_get)
+            this.GetOutput(first_chunk, first_chunk)
+            if (this.shift_in_last_get)
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
-            io.Replace(expanded, first_chunk, io.length-1)
+            this.Replace(expanded, first_chunk, this.length-1)
         }
     }
 
@@ -582,16 +564,15 @@ Class clsIOrepresentation {
 
     ; check we can output a chord in this context
     _IsRestricted(chunk) {
-        global io
         if !(settings.chording & CHORD_RESTRICT) {
             return false
         }
         ; If last output was automated (smart space or chord), punctuation, a 'prefix' (which  includes opening
         ; punctuation), it was interrupted, or it was a space, we can also go ahead.
         attribs := chunk.attributes
-        if ( (attribs & io.WAS_EXPANDED) || (attribs & io.IS_PUNCTUATION) || (attribs & io.IS_PREFIX)
-                || (attribs & io.IS_INTERRUPT) || (attribs & io.IS_MANUAL_SPACE) || (attribs & io.PUNCTUATION_SPACE)
-                || (attribs & io.SMART_SPACE_AFTER) ) {
+        if ( (attribs & this.WAS_EXPANDED) || (attribs & this.IS_PUNCTUATION) || (attribs & this.IS_PREFIX)
+                || (attribs & this.IS_INTERRUPT) || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.PUNCTUATION_SPACE)
+                || (attribs & this.SMART_SPACE_AFTER) ) {
             return false
         }
         return true

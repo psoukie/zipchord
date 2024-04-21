@@ -10,7 +10,7 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 ; Locale settings (keyboard and language settings) with default values (US English)
 
-keys := new clsLocale
+global keys := new clsLocale
 locale := new clsLocaleInterface
 
 Class clsLocale {
@@ -57,7 +57,6 @@ Class clsLocaleInterface {
         this._Build()
     }
     Load(setting) {
-        global keys
         ini.LoadProperties(keys, setting)
     }
     _Build() {
