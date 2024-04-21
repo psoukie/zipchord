@@ -266,20 +266,23 @@ Class clsIOrepresentation {
         this._ReplaceOutput(old_output, new_output, start)
     }
 
-    SetChunkAttributes(chunk_number, bitmask, set := true) {
+    SetChunkAttributes(chunk_id, bitmask, set := true) {
         if (set) {
-            this._sequence[chunk_number].attributes |= bitmask
+            this._sequence[chunk_id].attributes |= bitmask
         } else {
-            this._sequence[chunk_number].attributes &= ~bitmask
+            this._sequence[chunk_id].attributes &= ~bitmask
         }
     }
-
-    ClearChunkAttributes(chunk_number, bitmask) {
-        this.SetChunkAttributes(chunk_number, bitmask, false)
+    ClearChunkAttributes(chunk_id, bitmask) {
+        this.SetChunkAttributes(chunk_id, bitmask, false)
+    }
+    TestChunkAttributes(chunk_id, bitmask) {
+        ; purposefully return true if one of the bitmask conditions are true (therefore, not comparing to bitmask)
+        return (this._sequence[chunk_id].attributes & bitmask)
     }
 
-    GetChunk(index) {
-        return this._sequence[index] 
+    GetChunk(chunk_id) {
+        return this._sequence[chunk_id]
     }
     GetInput(start := 1, end := 0) {
         return this._Get(start, end)
@@ -349,10 +352,10 @@ Class clsIOrepresentation {
         ; We check if the last character is a space or punctuation
         if ( attribs & this.IS_MANUAL_SPACE || attribs & this.IS_PUNCTUATION ) {
             text := this.GetOutput(2, this.length-1)
-            starting_chunk := this.GetStartingChunkOfText(text)
-            if (! this.chord_in_last_get && starting_chunk) {
+            starting_chunk_id := this.GetStartingChunkOfText(text)
+            if (! this.chord_in_last_get && starting_chunk_id) {
                 trimmed_text := Trim(text)
-                this.ShorthandModule(trimmed_text, starting_chunk)
+                this.ShorthandModule(trimmed_text, starting_chunk_id)
                 this.HintModule(trimmed_text)
             }
             this.AddSpaceAfterPunctuation(attribs, last_chunk)
@@ -387,6 +390,7 @@ Class clsIOrepresentation {
         if (capitalize) {
             upper_cased := RegExReplace(character, "(^.)", "$U1")
             this.Replace(upper_cased, this.length)
+            this.SetChunkAttributes(this.length, this.WAS_CAPITALIZED)
         }
     }
 
@@ -438,10 +442,14 @@ Class clsIOrepresentation {
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
-                chunk := this.GetChunk(A_Index)
+                mark_as_capitalized := false
+                add_leading_space := true
+                replace_offset := 0
+
                 hint_delay.Shorten()
-                if (this.shift_in_last_get) {
+                if ( this.TestChunkAttributes(A_Index, this.WITH_SHIFT | this.WAS_CAPITALIZED) ) {
                     expanded := RegExReplace(expanded, "(^.)", "$U1")
+                    mark_as_capitalized := true
                 }
                 ; detect affixes to handle opening and closing smart spaces correctly
                 affixes := this._DetectAffixes(expanded)
@@ -452,8 +460,6 @@ Class clsIOrepresentation {
                     return
                 }
                 
-                add_leading_space := true
-                replace_offset := 0
                 ; if there is a smart space, we have to delete it for suffixes
                 if (previous.attributes & this.SMART_SPACE_AFTER) {
                     add_leading_space := false
@@ -487,6 +493,9 @@ Class clsIOrepresentation {
 
                 this.Replace(expanded, A_Index + replace_offset)
                 this.SetChunkAttributes(A_Index + replace_offset, this.WAS_EXPANDED)
+                if (mark_as_capitalized) {
+                    this.SetChunkAttributes(A_Index + replace_offset, this.WAS_CAPITALIZED)
+                }
 
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
@@ -531,17 +540,18 @@ Class clsIOrepresentation {
         return first_chunk
     }
 
-    ShorthandModule(text, first_chunk) {
+    ShorthandModule(text, first_chunk_id) {
         global hint_delay
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
         }
         if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            this.GetOutput(first_chunk, first_chunk)
-            if (this.shift_in_last_get)
+            if ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
-            this.Replace(expanded, first_chunk, this.length-1)
+                this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
+            }
+            this.Replace(expanded, first_chunk_id, this.length-1)
         }
     }
 
