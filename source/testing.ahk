@@ -358,7 +358,7 @@ Class TestingClass {
         Loop, Read, % testset
         {
             this.Write(Format("Test case '{}':", A_LoopReadLine))
-            this.Retest(Trim(A_LoopReadLine))
+            this.Test(Trim(A_LoopReadLine))
         }
     }
     Write(output, terminator:="`n") {
