@@ -37,7 +37,7 @@ Class TestingClass {
         global zc_version
         this._mode := TEST_STANDBY
         WireHotkeys("Off")
-        if (A_Args[1] != "test-vs") {
+        if (A_Args[2] != "test-vs") {
             DllCall("AllocConsole")
             DllCall("SetConsoleTitle", Str, "ZipChord Test Console")
             this._stdin  := FileOpen("*", "r `n")
@@ -364,7 +364,7 @@ Class TestingClass {
     Write(output, terminator:="`n") {
         if (this.mode == TEST_OFF)
             return  ; we don't want to ouput anything if the method is called without the console open
-        if (A_Args[1] == "test-vs") {
+        if (A_Args[2] == "test-vs") {
             OutputDebug, % output . terminator
         } else {
             this._stdout.Write(output . terminator)
@@ -377,7 +377,7 @@ Class TestingClass {
             this.Stop()
         }
         this.Write("`n>", "")
-        if (A_Args[1] == "test-vs")
+        if (A_Args[2] == "test-vs")
             InputBox, raw,% "ZipChord Console", % ">"
         else
             raw := Trim(this._stdin.ReadLine(), " `n")
@@ -431,7 +431,7 @@ Class TestingClass {
         } else {
             if (FileExist(filename)) {
                 this.Write(Format("The file '{}' already exists. Overwrite [y/n]?", filename), " ")
-                if (A_Args[1] == "test-vs")
+                if (A_Args[2] == "test-vs")
                     InputBox, answer,% "Overwrite? [y/n]", % ">"
                 else
                     answer := SubStr(Trim(this._stdin.ReadLine()), 1, 1)
