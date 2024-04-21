@@ -16,7 +16,7 @@ locale := new clsLocaleInterface
 Class clsLocale {
     all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
     remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
-    remove_space_shift := "1/;'-.235678]=\"  ; keys combined with Shift that delete any smart space before them.
+    remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
     space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
     space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
     capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
