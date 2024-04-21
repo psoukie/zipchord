@@ -129,7 +129,7 @@ Class clsIOrepresentation {
          , WITH_SHIFT := 1
          , SMART_SPACE_AFTER := 2
          , PUNCTUATION_SPACE := 4
-         , IS_PUNCTUATION := 8 
+         , IS_PUNCTUATION := 8
          , WAS_EXPANDED := 16
          , IS_PREFIX := 32
          , IS_MANUAL_SPACE := 64
@@ -440,16 +440,16 @@ Class clsIOrepresentation {
                 ; detect affixes to handle opening and closing smart spaces correctly
                 affixes := this._DetectAffixes(expanded)
                 expanded := this._RemoveAffixSymbols(expanded, affixes)
-                previous_chunk := this.GetChunk(A_Index-1)
+                previous := this.GetChunk(A_Index-1)
 
-                if ( this._IsRestricted(previous_chunk) && !(affixes & AFFIX_SUFFIX) ) {
+                if ( this._IsRestricted(previous) && !(affixes & AFFIX_SUFFIX) ) {
                     return
                 }
                 
                 add_leading_space := true
                 replace_offset := 0
                 ; if there is a smart space, we have to delete it for suffixes
-                if (previous_chunk.attributes & this.SMART_SPACE_AFTER) {
+                if (previous.attributes & this.SMART_SPACE_AFTER) {
                     add_leading_space := false
                     if (affixes & AFFIX_SUFFIX) {
                         replace_offset := -1
@@ -461,18 +461,18 @@ Class clsIOrepresentation {
                 }
                 
                 ; if the last output was punctuation that does not ask for a space
-                if ( ( !(previous_chunk.attributes & this.WITH_SHIFT)
-                        && InStr(keys.punctuation_plain, previous_chunk.input)
-                        && !InStr(keys.space_after_plain, previous_chunk.input) )
-                        || (previous_chunk.attributes & this.WITH_SHIFT)
-                        && InStr(keys.punctuation_shift, previous_chunk.input)
-                        && !InStr(keys.space_after_shift, previous_chunk.input) )  {
+                if ( ( !(previous.attributes & this.WITH_SHIFT)
+                        && InStr(keys.punctuation_plain, previous.input)
+                        && !InStr(keys.space_after_plain, previous.input) )
+                        || (previous.attributes & this.WITH_SHIFT)
+                        && InStr(keys.punctuation_shift, previous.input)
+                        && !InStr(keys.space_after_shift, previous.input) )  {
                     add_leading_space := false
                 }
                 
-                ; and we don't start with a smart space after interruption, a space, after a prefix, and for suffix
-                if (previous_chunk.attributes & this.IS_INTERRUPT || previous_chunk.output == " "
-                        || previous_chunk.attributes & this.IS_PREFIX || affixes & AFFIX_SUFFIX) {
+                ; and we don't add a space after interruption, Enter, a space, after a prefix, and for suffix
+                if (previous.attributes & this.IS_INTERRUPT || previous.output == " " || previous.attributes & this.IS_ENTER 
+                        || previous.attributes & this.IS_PREFIX || affixes & AFFIX_SUFFIX) {
                     add_leading_space := false
                 }
                 if (add_leading_space) {
@@ -568,11 +568,11 @@ Class clsIOrepresentation {
             return false
         }
         ; If last output was automated (smart space or chord), punctuation, a 'prefix' (which  includes opening
-        ; punctuation), it was interrupted, or it was a space, we can also go ahead.
+        ; punctuation), it was interrupted, after Enter, or it was a space, we can also go ahead.
         attribs := chunk.attributes
-        if ( (attribs & this.WAS_EXPANDED) || (attribs & this.IS_PUNCTUATION) || (attribs & this.IS_PREFIX)
-                || (attribs & this.IS_INTERRUPT) || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.PUNCTUATION_SPACE)
-                || (attribs & this.SMART_SPACE_AFTER) ) {
+        if ( attribs & this.WAS_EXPANDED || attribs & this.IS_PUNCTUATION || attribs & this.IS_PREFIX
+                || attribs & this.IS_INTERRUPT || attribs & this.IS_MANUAL_SPACE || attribs & this.IS_ENTER 
+                || attribs & this.PUNCTUATION_SPACE || attribs & this.SMART_SPACE_AFTER ) {
             return false
         }
         return true
