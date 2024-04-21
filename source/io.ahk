@@ -342,29 +342,37 @@ Class clsIOrepresentation {
     RunModules() {
         this.ChordModule()
         this.RemoveRawChord()
-        ; TK Add separating spaces and punctuation when it gets glued with preceding characters in a false chunk
-        this.DoShorthandsAndHints()
-    }
-
-    DoShorthandsAndHints() {
+        
         last_chunk := this.GetChunk(this.length)
         attribs := last_chunk.attributes
         ; We check if the last character is a space or punctuation
-        if ( attribs & this.IS_MANUAL_SPACE || attribs & this.IS_PUNCTUATION ) {
-            text := this.GetOutput(2, this.length-1)
-            starting_chunk_id := this.GetStartingChunkOfText(text)
-            if (! this.chord_in_last_get && starting_chunk_id) {
-                trimmed_text := Trim(text)
-                this.ShorthandModule(trimmed_text, starting_chunk_id)
-                this.HintModule(trimmed_text)
+        if !( attribs & this.IS_MANUAL_SPACE || attribs & this.IS_PUNCTUATION ) {
+            return
+        }
+        this.DoShorthandsAndHints()
+        dont_clear := false
+        if (attribs & this.IS_MANUAL_SPACE) {
+            dont_clear := this.DeDoubleSpace()
+        }
+        this.AddSpaceAfterPunctuation()
+        if (! dont_clear) {
+            this.Clear()
+        }
+    }
+
+    DoShorthandsAndHints() {
+        loop_length := this.length - 1
+        Loop %loop_length%
+        {
+            text := this.GetOutput(A_Index+1, this.length-1)
+            if ( this.chord_in_last_get || this._IsRestricted(A_Index) ) {
+                continue
             }
-            this.AddSpaceAfterPunctuation(attribs, last_chunk)
-            dont_clear := false
-            if (attribs & this.IS_MANUAL_SPACE) {
-                dont_clear := this.DeDoubleSpace()
+            if ( this.ShorthandModule(text, A_Index+1) ) {
+                break
             }
-            if (! dont_clear) {
-                this.Clear()
+            if ( this.HintModule(text) ) {
+                break
             }
         }
     }
@@ -408,7 +416,9 @@ Class clsIOrepresentation {
         }
     }
 
-    AddSpaceAfterPunctuation(attribs, chunk) {
+    AddSpaceAfterPunctuation() {
+        chunk := this.GetChunk(this.length)
+        attribs := chunk.attributes
         if ( settings.spacing & SPACE_PUNCTUATION && attribs & this.IS_PUNCTUATION
                 && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
                 || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
@@ -422,6 +432,8 @@ Class clsIOrepresentation {
         if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
             this.Replace("", this.length)
             this._sequence.RemoveAt(this.length)
+            this.ClearChunkAttributes(this.length, this.SMART_SPACE_AFTER)
+            this.SetChunkAttributes(this.length, this.IS_MANUAL_SPACE)
             this._Show() 
             return true
         }
@@ -456,7 +468,7 @@ Class clsIOrepresentation {
                 expanded := this._RemoveAffixSymbols(expanded, affixes)
                 previous := this.GetChunk(A_Index-1)
 
-                if ( this._IsRestricted(previous) && !(affixes & AFFIX_SUFFIX) ) {
+                if ( this._IsRestricted(A_Index-1) && !(affixes & AFFIX_SUFFIX) ) {
                     return
                 }
                 
@@ -525,24 +537,12 @@ Class clsIOrepresentation {
         }
     }
 
-    GetStartingChunkOfText(text) {
-        if ( SubStr(text, 1, 1) == " " ) {
-            text := SubStr(text, 2)
-            first_chunk := 3
-        } else {
-            first_chunk := 2
-        }
-        ; don't do shorthand for interrupts
-        preceding_chunk := this.GetChunk(first_chunk-1)
-        if (preceding_chunk.attributes & this.IS_INTERRUPT) {
-            return false
-        }
-        return first_chunk
-    }
-
     ShorthandModule(text, first_chunk_id) {
         global hint_delay
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
+            return
+        }
+        if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {
             return
         }
         if ( expanded := shorthands.LookUp(text) ) {
@@ -552,6 +552,7 @@ Class clsIOrepresentation {
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
             this.Replace(expanded, first_chunk_id, this.length-1)
+            return true
         }
     }
 
@@ -570,20 +571,19 @@ Class clsIOrepresentation {
         shorthand_hint := shorthand_hint ? shorthand_hint : "" 
         if (chord_hint || shorthand_hint) {
             ShowHint(text, chord_hint, shorthand_hint)
+            return true
         }
     }
 
     ; check we can output a chord in this context
-    _IsRestricted(chunk) {
+    _IsRestricted(chunk_id) {
         if !(settings.chording & CHORD_RESTRICT) {
             return false
         }
         ; If last output was automated (smart space or chord), punctuation, a 'prefix' (which  includes opening
         ; punctuation), it was interrupted, after Enter, or it was a space, we can also go ahead.
-        attribs := chunk.attributes
-        if ( attribs & this.WAS_EXPANDED || attribs & this.IS_PUNCTUATION || attribs & this.IS_PREFIX
-                || attribs & this.IS_INTERRUPT || attribs & this.IS_MANUAL_SPACE || attribs & this.IS_ENTER 
-                || attribs & this.SMART_SPACE_AFTER ) {
+        if ( this.TestChunkAttributes(chunk_id, this.WAS_EXPANDED | this.IS_PUNCTUATION | this.IS_PREFIX
+                | this.IS_INTERRUPT | this.IS_MANUAL_SPACE | this.IS_ENTER | this.SMART_SPACE_AFTER) ) {
             return false
         }
         return true
