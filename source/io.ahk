@@ -266,6 +266,18 @@ Class clsIOrepresentation {
         this._ReplaceOutput(old_output, new_output, start)
     }
 
+    SetChunkAttributes(chunk_number, bitmask, set := true) {
+        if (set) {
+            this._sequence[chunk_number].attributes |= bitmask
+        } else {
+            this._sequence[chunk_number].attributes &= ~bitmask
+        }
+    }
+
+    ClearChunkAttributes(chunk_number, bitmask) {
+        this.SetChunkAttributes(chunk_number, bitmask, false)
+    }
+
     GetChunk(index) {
         return this._sequence[index] 
     }
@@ -474,7 +486,7 @@ Class clsIOrepresentation {
                 }
 
                 this.Replace(expanded, A_Index + replace_offset)
-                chunk.attributes |= this.WAS_EXPANDED
+                this.SetChunkAttributes(A_Index + replace_offset, this.WAS_EXPANDED)
 
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
