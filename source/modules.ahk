@@ -21,28 +21,20 @@ Class clsSubstitutionModules {
     DoShorthandsAndHints() {
         global io
         global keys
-        last_chunk_input := io.GetInput(io.length)
-        with_shift := io.shift_in_last_get
+        last_chunk := io.GetChunk(io.length)
+        attribs := last_chunk.attributes
         ; We check if the last character is a space or punctuation
-        last := SubStr(last_chunk_input, StrLen(last_chunk_input), 1)
-        if ( StrLen(last)==1 && ( last == " "
-                || (! with_shift && InStr(keys.punctuation_plain, last))
-                || (with_shift && InStr(keys.punctuation_shift, last)) ) ) {
-            if (StrLen(last_chunk_input) < 2) {
-                text := io.GetOutput(2, io.length-1)
-            } else {
-                text_with_trailing := io.GetOutput(2, io.length)
-                text := SubStr(text_with_trailing, 1, StrLen(text_with_trailing) - 1)
-            }
+        if ( attribs & io.IS_MANUAL_SPACE || attribs & io.IS_PUNCTUATION ) {
+            text := io.GetOutput(2, io.length-1)
             starting_chunk := this.GetStartingChunkOfText(text)
             if (! io.chord_in_last_get && starting_chunk) {
                 trimmed_text := Trim(text)
                 this.ShorthandModule(trimmed_text, starting_chunk)
                 this.HintModule(trimmed_text)
             }
-            this.PunctuationSpace(with_shift, last)
+            this.AddSpaceAfterPunctuation(attribs, last_chunk)
             dont_clear := false
-            if (last == " ") {
+            if (attribs & io.IS_MANUAL_SPACE) {
                 dont_clear := this.DeDoubleSpace()
             }
             if (! dont_clear) {
@@ -51,41 +43,54 @@ Class clsSubstitutionModules {
         }
     }
 
-    CapitalizeTyping() {
+    CapitalizeTyping(character, attribs) {
         global io
         global keys
-        if (settings.capitalization != CAP_ALL) {
+        if ( settings.capitalization != CAP_ALL || (attribs & io.IS_PUNCTUATION)
+                || (attribs & io.IS_MANUAL_SPACE) || (attribs & io.WITH_SHIFT) ) {
             return
         }
         capitalize := False
-        if (io.length == 2 && io._sequence[io.length - 1].attributes & io.IS_ENTER) {
+        if (io.length == 2 && (io._sequence[io.length - 1].attributes & io.IS_ENTER) ) {
             capitalize := True
         } else {
             if (io.length > 2 && io.GetOutput(io.length - 1, io.length - 1) == " ") {
-                punctuation := io.GetOutput(io.length - 2, io.length - 2)
+                preceding := io.GetInput(io.length - 2, io.length - 2)
                 with_shift := io.shift_in_last_get
-                if ( StrLen(punctuation)==1 && (! with_shift && InStr(keys.capitalizing_plain, punctuation))
-                    || (with_shift && InStr(keys.capitalizing_shift, punctuation)) ) {
+                if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
+                    || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
                     capitalize := True
                 }
             }
         }
         if (capitalize) {
-            chunk := io.GetChunk(io.length)
-            if !(chunk.attributes & io.WITH_SHIFT) {
-                upper_cased := RegExReplace(chunk.output, "(^.)", "$U1")
-                io.Replace(upper_cased, io.length)
-                chunk.attributes |= io.WAS_CAPITALIZED
-            }
+            upper_cased := RegExReplace(character, "(^.)", "$U1")
+            io.Replace(upper_cased, io.length)
         }
     }
 
-    PunctuationSpace(with_shift, last) {
+    PrePunctuation(attribs) {
+        global io
+        global keys
+        if !( (attribs & io.IS_PUNCTUATION) && (io.GetChunk(io.length-1).attributes & io.SMART_SPACE_AFTER) ) {
+            return
+        }
+        chunk := io.GetChunk(io.length)
+        if ( (!(chunk.attributes & io.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
+                || ((chunk.attributes & io.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
+            io.Replace(chunk.output, io.length-1)
+            new_chunk := io.GetChunk(io.length)
+            new_chunk.input := chunk.input
+            new_chunk.attributes := chunk.attributes
+        }
+    }
+
+    AddSpaceAfterPunctuation(attribs, chunk) {
         global keys
         global io
-        if ( (settings.spacing & SPACE_PUNCTUATION)
-                && ( ( !with_shift && InStr(keys.punctuation_plain, last) )
-                || ( with_shift && InStr(keys.punctuation_shift, last) ) ) ) {
+        if ( (settings.spacing & SPACE_PUNCTUATION) && (attribs & io.IS_PUNCTUATION)
+                && (( !(attribs & io.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
+                    || (attribs & io.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
             punctuation_space := new io.clsChunk
             punctuation_space.input := ""
             punctuation_space.output := " "
@@ -128,13 +133,16 @@ Class clsSubstitutionModules {
                 chunk := io.GetChunk(A_Index)
                 hint_delay.Shorten()
                 if (io.shift_in_last_get) {
-                    chunk.attributes |= io.WAS_CAPITALIZED
                     expanded := RegExReplace(expanded, "(^.)", "$U1")
                 }
                 ; detect affixes to handle opening and closing smart spaces correctly
                 affixes := this._DetectAffixes(expanded)
                 expanded := this._RemoveAffixSymbols(expanded, affixes)
                 previous_chunk := io.GetChunk(A_Index-1)
+
+                if ( this._IsRestricted(previous_chunk) && !(affixes & AFFIX_SUFFIX) ) {
+                    return
+                }
                 
                 add_leading_space := true
                 replace_offset := 0
@@ -167,11 +175,10 @@ Class clsSubstitutionModules {
                 }
                 if (add_leading_space) {
                     expanded := " " . expanded
-                    chunk.attributes |= io.ADDED_SPACE_BEFORE
                 }
 
                 io.Replace(expanded, A_Index + replace_offset)
-                chunk.attributes |= io.IS_CHORD
+                chunk.attributes |= io.WAS_EXPANDED
 
                 ; ending smart space
                 if (affixes & AFFIX_PREFIX) {
@@ -201,7 +208,7 @@ Class clsSubstitutionModules {
         if ((settings.chording & CHORD_DELETE_UNRECOGNIZED)) {
             ; TK Should check for && IsUnrestricted() above but it does not exist yet
             chunk := io.GetChunk(io.length)
-            if ( StrLen(chunk.input) > 1 && !(chunk.attributes & io.IS_CHORD) ) {
+            if ( StrLen(chunk.input) > 1 && !(chunk.attributes & io.WAS_EXPANDED) ) {
                 io.Replace("", io.length)
             }
         }
@@ -254,6 +261,23 @@ Class clsSubstitutionModules {
         if (chord_hint || shorthand_hint) {
             ShowHint(text, chord_hint, shorthand_hint)
         }
+    }
+
+    ; check we can output a chord in this context
+    _IsRestricted(chunk) {
+        global io
+        if !(settings.chording & CHORD_RESTRICT) {
+            return false
+        }
+        ; If last output was automated (smart space or chord), punctuation, a 'prefix' (which  includes opening
+        ; punctuation), it was interrupted, or it was a space, we can also go ahead.
+        attribs := chunk.attributes
+        if ( (attribs & io.WAS_EXPANDED) || (attribs & io.IS_PUNCTUATION) || (attribs & io.IS_PREFIX)
+                || (attribs & io.IS_INTERRUPT) || (attribs & io.IS_MANUAL_SPACE) || (attribs & io.PUNCTUATION_SPACE)
+                || (attribs & io.SMART_SPACE_AFTER) ) {
+            return false
+        }
+        return true
     }
 
     ; detect and adjust expansion for suffixes and prefixes

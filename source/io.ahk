@@ -127,13 +127,13 @@ Class clsClassifier {
 Class clsIOrepresentation {
     static NONE := 0
          , WITH_SHIFT := 1
-         , ADDED_SPACE_BEFORE := 2 
-         , SMART_SPACE_AFTER := 4
-         , PUNCTUATION_SPACE := 8
-         , IS_CHORD := 16
+         , SMART_SPACE_AFTER := 2
+         , PUNCTUATION_SPACE := 4
+         , IS_PUNCTUATION := 8 
+         , WAS_EXPANDED := 16
          , IS_PREFIX := 32
-         , IS_SUFFIX := 64
-         , WAS_CAPITALIZED := 128
+         , IS_MANUAL_SPACE := 64
+         , IS_CHORD := 128
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
     _sequence := []
@@ -167,6 +167,7 @@ Class clsIOrepresentation {
 
     Add(entry, with_shift) {
         global modules
+        global keys
 
         chunk := new this.clsChunk
         chunk.input := entry
@@ -176,9 +177,68 @@ Class clsIOrepresentation {
         } else {
             chunk.output := entry
         }
+        if ( !with_shift && InStr(keys.punctuation_plain, entry) )
+                || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
+            chunk.attributes |= this.IS_PUNCTUATION
+        }
+        if ( entry == " ") {
+            chunk.attributes |= this.IS_MANUAL_SPACE
+        }
         this._sequence.Push(chunk)
         this._Show()
-        modules.CapitalizeTyping()
+        modules.CapitalizeTyping(entry, chunk.attributes)
+        modules.PrePunctuation(chunk.attributes)
+    }
+
+    /**
+    * Transform chord key presses received from Classifier into chunks
+    */
+    Chord(count) {
+        global keys
+        global modules
+
+        sequence := this._sequence
+        if (count>1) {
+            start := 1 + this.length - count
+            count -= 1
+            chunk := sequence[start]
+            Loop, %count%
+            {
+                next_chunk := sequence[start+1] 
+                chunk.input .= next_chunk.input 
+                chunk.output .= next_chunk.output
+                chunk.attributes |= next_chunk.attributes
+                sequence.RemoveAt(start+1)
+            }
+            ; Sort to allow matching against chord dictionaries
+            chunk.input := str.Arrange(chunk.input)
+            ; Set as chords, and clear punctuation and manual space attributes 
+            chunk.attributes := chunk.attributes & ~this.IS_PUNCTUATION & ~this.IS_MANUAL_SPACE | this.IS_CHORD
+                 
+            ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
+            if ( (settings.chording & CHORD_ALLOW_SHIFT) && (chunk.attributes & this.WITH_SHIFT) ) {
+                chunk.input := "+" . chunk.input
+                chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
+            }
+        }
+        this._Show()
+        this._PingModules()
+    }
+
+    Combine(start, end) {
+        sequence := this._sequence
+        if (start > sequence.Length() || end > sequence.Length()) {
+            MsgBox, , % "ZipChord", "IO Representation error: Requested combining chunks that exceed the length of _sequence."
+            Return true
+        }
+        following := start + 1
+        count := end - start
+        Loop, %count%
+        {
+            sequence[start].input .= "|" . sequence[following].input 
+            sequence[start].output .= sequence[following].output
+            sequence.RemoveAt(following)
+        }
     }
 
     Clear(type := "") {
@@ -212,54 +272,6 @@ Class clsIOrepresentation {
         this._ReplaceOutput(old_output, new_output, start)
     }
 
-    /**
-    * Combines chord presses that Classifier identifies as a chord into one chunk
-    */
-    Chord(count) {
-        global keys
-        global modules
-
-        sequence := this._sequence
-        if (count>1) {
-            start := 1 + this.length - count
-            count -= 1
-            chunk := sequence[start]
-            Loop, %count%
-            {
-                next_chunk := sequence[start+1] 
-                chunk.input .= next_chunk.input 
-                chunk.output .= next_chunk.output
-                chunk.attributes |= next_chunk.attributes
-                sequence.RemoveAt(start+1)
-            }
-            ; Sort to allow matching against chord dictionaries
-            chunk.input := str.Arrange(chunk.input) 
-                 
-            ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
-            if ( (settings.chording & CHORD_ALLOW_SHIFT) && (chunk.attributes & this.WITH_SHIFT) ) {
-                chunk.input := "+" . chunk.input
-                chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
-            }
-        }
-        this._Show()
-        this._PingModules()
-    }
-
-    Combine(start, end) {
-        sequence := this._sequence
-        if (start > sequence.Length() || end > sequence.Length()) {
-            MsgBox, , % "ZipChord", "IO Representation error: Requested combining chunks that exceed the length of _sequence."
-            Return true
-        }
-        following := start + 1
-        count := end - start
-        Loop, %count%
-        {
-            sequence[start].input .= "|" . sequence[following].input 
-            sequence[start].output .= sequence[following].output
-            sequence.RemoveAt(following)
-        }
-    }
     GetChunk(index) {
         return this._sequence[index] 
     }
@@ -289,7 +301,7 @@ Class clsIOrepresentation {
             if (sequence[i].attributes & this.WITH_SHIFT) {
                 this._shift_in_last_get := true
             }
-            if (sequence[i].attributes & this.IS_CHORD) {
+            if (sequence[i].attributes & this.WAS_EXPANDED) {
                 this._chord_in_last_get := true
             }
             representation .= separator . sequence[i++][what]
