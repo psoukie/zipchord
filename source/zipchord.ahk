@@ -308,27 +308,8 @@ WireHotkeys(state) {
 
 KeyDown:
     Critical
-    orig_key := A_ThisHotkey
+    key := A_ThisHotkey
     tick := A_TickCount
-    if (visualizer.IsOn()) {
-        key := StrReplace(orig_key, "Space", " ")
-        if (SubStr(key, 1, 1) == "~")
-            key := SubStr(key, 2)
-        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'key':
-        if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
-            shifted := true
-            key := SubStr(key, 2)
-        } else {
-            shifted := false
-        }
-        visualizer.Pressed(key)
-    }
-    ; QPC()
-    classifier.Input(orig_key, tick)
-    ; QPC()
-    Critical Off
-Return  ; TK bypassing all the rest
-
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := test_key
@@ -339,8 +320,29 @@ Return  ; TK bypassing all the rest
             test.Log(key)
         }
     }
-    if (special_key_map.HasKey(key))
-        key := special_key_map[key]
+    if ( special_key_map.HasKey(key) ) {
+        orign_key := special_key_map[key]
+    }
+    if (visualizer.IsOn()) {
+        modified_key := StrReplace(key, "Space", " ")
+        if (SubStr(modified_key, 1, 1) == "~")
+            modified_key := SubStr(modified_key, 2)
+        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
+        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
+            shifted := true
+            modified_key := SubStr(modified_key, 2)
+        } else {
+            shifted := false
+        }
+        visualizer.Pressed(modified_key)
+    }
+    ; QPC()
+    classifier.Input(key, tick)
+    ; QPC()
+    Critical Off
+Return  ; TK bypassing all the rest
+
+
     if (chord_candidate != "") {  ; if there is an existing potential chord that is being interrupted with additional key presses
         start := 0
         chord_candidate := ""
@@ -475,33 +477,36 @@ Return
 KeyUp:
     Critical
     tick_up := A_TickCount
-    orig_key := A_ThisHotkey
+    key := A_ThisHotkey
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            tick_up := test_timestamp
+            key := test_key
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(A_ThisHotkey, true)
+        }
+    }
+    if (special_key_map.HasKey(key)) {
+        key := special_key_map[key]
+    }
     if (visualizer.IsOn()) {
-        key := StrReplace(orig_key, "Space", " ")
-        if (SubStr(key, 1, 1) == "~")
-            key := SubStr(key, 2)
-        if ( StrLen(key)>1 && SubStr(key, 1, 1) == "+" ) {
+        modified_key := StrReplace(key, "Space", " ")
+        if (SubStr(modified_key, 1, 1) == "~")
+            modified_key := SubStr(modified_key, 2)
+        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
             shifted := true
-            key := SubStr(key, 2)
+            modified_key := SubStr(modified_key, 2)
         } else {
             shifted := false
         }
-        if (special_key_map.HasKey(key))
-            key := special_key_map[key]
-        visualizer.Lifted(SubStr(key, 1, 1))
+        visualizer.Lifted(SubStr(modified_key, 1, 1))
     }
     ; QPC()
-    classifier.Input(orig_key, tick_up)
+    classifier.Input(key, tick_up)
     ; QPC()
     Critical Off
 Return  ; TK -- switching to new design
-
-    if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING)
-            tick_up := test_timestamp
-        if (test.mode > TEST_STANDBY)
-            test.Log(A_ThisHotkey, true)
-    }
 
 
     ; if at least two keys were held at the same time for long enough, let's save our candidate chord and exit
