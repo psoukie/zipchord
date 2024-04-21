@@ -2,7 +2,7 @@
 
 This file is part of ZipChord.
 
-Copyright (c) 2021-2023 Pavel Soukenik
+Copyright (c) 2021-2024 Pavel Soukenik
 
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 
@@ -23,6 +23,17 @@ Class clsLocale {
     capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
     other_plain := "[" ; unmodified keys for other punctuation
     other_shift := "9,["  ; other punctuation keys when modified by Shift
+
+    punctuation_plain [] {
+        get {
+            return (this.remove_space_plain . this.space_after_plain . this.capitalizing_plain . this.other_plain)
+        }
+    }
+    punctuation_shift [] {
+        get {
+            return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
+        }
+    }
 }
 
 Class clsLocaleInterface {
