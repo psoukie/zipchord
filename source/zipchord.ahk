@@ -1366,6 +1366,7 @@ GetCaret(ByRef X:="", ByRef Y:="", ByRef W:="", ByRef H:="") {
 GetMonitorCenterForWindow(window_Handle, OSD_handle, ByRef pos_x, ByRef pos_y ) {
     ; Uses code for getting monitor info by "kon" from https://www.autohotkey.com/boards/viewtopic.php?t=15501
     VarSetCapacity(monitor_info, 40), NumPut(40, monitor_info)
+    ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:51:25 AM ; var is assigned but never used.
     if ((monitorHandle := DllCall("MonitorFromWindow", "Ptr", window_Handle, "UInt", 1)) 
         && DllCall("GetMonitorInfo", "Ptr", monitorHandle, "Ptr", &monitor_info)) {
         monitor_left   := NumGet(monitor_info,  4, "Int")

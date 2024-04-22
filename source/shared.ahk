@@ -245,7 +245,9 @@ Class clsStringFunctions {
     ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
     ToAscii(Key, Modifiers := "") {
         VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
+        ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:50:51 AM ; var is assigned but never used.
         VK := GetKeyVK(Key)
+        ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:51:05 AM ; var is assigned but never used.
         SC := GetKeySC(Key)
         VarSetCapacity(ModStates, 256, 0)
         For _, Modifier In Modifiers
