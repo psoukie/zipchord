@@ -336,7 +336,7 @@ Class TestingClass {
             Case "outputs":
                 opts := "dir /b *.out | find /v ""__"""
             Case "sets":
-                opts := "dir /b *.out | find /v ""__"""
+                opts := "dir /b *.set"
             Case "cases":
                 opts := "dir /b *__*.out"
             Case "help":
