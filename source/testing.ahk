@@ -587,7 +587,7 @@ compare <output1> <output2>
             Case "compose":
                 this.Write("
 (
-Creates a test case from the specified configartion and input files.
+Creates a test case from the specified configuration and input files.
 If you don't specify the output file, the result is saved in an
 automatically named test case file.  
 
@@ -772,7 +772,7 @@ Available commands:
 
 add         Adds an existing test case to a test set.
 compare     Shows differences between two output files.     
-compose     Creates a test case from a given configartion and input file.
+compose     Creates a test case from a given configuration and input file.
 config      Shows, saves or loads app configuration and keyboard settings.
 delete      Deletes the specified file.
 exit        Exits the console and ZipChord.
