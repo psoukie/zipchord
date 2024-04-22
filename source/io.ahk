@@ -369,7 +369,7 @@ Class clsIOrepresentation {
             if ( this.ShorthandModule(text, A_Index+1) ) {
                 break
             }
-            if ( this.HintModule(text) ) {
+            if ( this.HintModule(text, A_Index+1) ) {
                 break
             }
         }
@@ -555,9 +555,12 @@ Class clsIOrepresentation {
         }
     }
 
-    HintModule(text) {
+    HintModule(text, first_chunk_id) {
         global hint_delay
         if (! (settings.hints & HINT_ON) || ! hint_delay.HasElapsed()) {
+            return
+        }
+        if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {
             return
         }
         if (settings.mode & MODE_CHORDS_ENABLED) {
