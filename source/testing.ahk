@@ -300,7 +300,7 @@ Class TestingClass {
             return
         RunWait %ComSpec% /c del %file%
     }
-    Path(mode:="", path:="") {        
+    Path(mode:="", path:="") {
         Switch mode {
             Case "", "show":
                 this.Write(Format("The working folder is {}", A_WorkingDir))
@@ -387,10 +387,11 @@ Class TestingClass {
             this.Stop()
         }
         this.Write("`n>", "")
-        if (A_Args[2] == "test-vs")
+        if (A_Args[2] == "test-vs") {
             InputBox, raw,% "ZipChord Console", % ">"
-        else
+        } else {
             raw := Trim(this._stdin.ReadLine(), " `n")
+        }
         ; following line is adapted from teadrinker's code from https://www.autohotkey.com/boards/viewtopic.php?p=422922
         escaped := RegExReplace(raw, "s).*?([^""]+(?=""( |$))|[^"" ]+).*?(?=(?1)|$)", "$1`n")
         parsed := StrSplit(escaped, "`n")
