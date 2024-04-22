@@ -468,7 +468,7 @@ Class clsIOrepresentation {
         expanded := this._RemoveAffixSymbols(expanded, affixes)
         previous := this.GetChunk(chunk_id-1)
 
-        if ( this._IsRestricted(chunk_id-1) && !(affixes & AFFIX_SUFFIX) ) {
+        if ( (settings.chording & CHORD_RESTRICT) && this._IsRestricted(chunk_id-1) && !(affixes & AFFIX_SUFFIX) ) {
             return false
         }
         
@@ -534,19 +534,21 @@ Class clsIOrepresentation {
         }
     }
 
-    /**
-    * Remove characters of non-existing chord if 'delete mistyped chords' option is enabled.
-    * 
-    * Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled and a non-existing chord is
-    * registered while typing a word, this input is left alone because it is safe to assume it was intended as normal
-    * typing.
-    */
+    
+    ; Remove characters of non-existing chord if 'delete mistyped chords' option is enabled.
     RemoveRawChord() {
-        if ( (settings.chording & CHORD_DELETE_UNRECOGNIZED) && !( this._IsRestricted(this.length-1) ) ) {
-            chunk := this.GetChunk(this.length)
-            if ( StrLen(chunk.input) > 1 && !(chunk.attributes & this.WAS_EXPANDED) ) {
-                this.Replace("", this.length)
-            }
+        if !(settings.chording & CHORD_DELETE_UNRECOGNIZED) {
+            return
+        }
+        ; Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled and a non-existing chord is
+        ; registered while typing a word, this input is left alone because it is safe to assume it was intended as normal
+        ; typing.
+        if (settings.chording & CHORD_RESTRICT && this._IsRestricted(this.length-1) ) {
+            return
+        }
+        if (        this.TestChunkAttributes(this.length, this.IS_CHORD)
+                && !this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
+            this.Replace("", this.length)
         }
     }
 
@@ -594,11 +596,7 @@ Class clsIOrepresentation {
         }
     }
 
-    ; check we can output a chord in this context
     _IsRestricted(chunk_id) {
-        if !(settings.chording & CHORD_RESTRICT) {
-            return false
-        }
         ; If last output was automated (smart space or chord), punctuation, a 'prefix' (which  includes opening
         ; punctuation), it was interrupted, after Enter, or it was a space, we can also go ahead.
         if ( this.TestChunkAttributes(chunk_id, this.WAS_EXPANDED | this.IS_PUNCTUATION | this.IS_PREFIX
