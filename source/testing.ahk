@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -287,13 +287,16 @@ Class TestingClass {
         RunWait % "fc.exe /a /n " . a . " " . b
     }
     Add(testcase:="", testset:="") {
-        if (this._IsBasicHelp(testcase, A_ThisFunc))
+        if ( this._IsBasicHelp(testcase, A_ThisFunc) ) {
             return
-        if (! this._CheckFilename(testcase, "testcase", true))
-            Return
-        if (! this._CheckFilename(testset, "set", true))
-            this.Write(Format("...Creating new test set '{}' and adding '{}'.", testset, testcase))
-        FileAppend % testcase, % testset
+        }
+        if (! this._CheckFilename(testcase, "testcase", true) ) {
+            return
+        }
+        if (! this._CheckFilename(testset, "set", true)) {
+            this.Write(Format("Creating new test set '{}' and adding '{}'.", testset, testcase))
+        }
+        FileAppend % testcase . "`n", % testset
     }
     Delete(file:="") {
         if (this._IsBasicHelp(file, A_ThisFunc))
