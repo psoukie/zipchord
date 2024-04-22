@@ -159,7 +159,7 @@ Class clsIOrepresentation {
         this.Clear("*Interrupt*")
     }
 
-    Add(entry, with_shift) {
+    Add(entry, with_shift, adjustment := false) {
         chunk := new this.clsChunk
         chunk.input := entry
         if (with_shift) {
@@ -172,11 +172,14 @@ Class clsIOrepresentation {
                 || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
             chunk.attributes |= this.IS_PUNCTUATION
         }
-        if ( entry == " ") {
+        if (entry == " ") {
             chunk.attributes |= this.IS_MANUAL_SPACE
         }
         this._sequence.Push(chunk)
         this._Show()
+        if (adjustment) {
+            return
+        }
         this.CapitalizeTyping(entry, chunk.attributes)
         this.PrePunctuation(chunk.attributes)
     }
@@ -338,7 +341,10 @@ Class clsIOrepresentation {
     ; When I recreate modules, it should be pure functions only.
 
     RunModules() {
-        this.ChordModule()
+        if (! this.ChordModule() ) {
+            ; If no replacement, we separate any space or punctuation from the last chunk
+            this._FixLastChunk()
+        }
         this.RemoveRawChord()
         
         last_chunk := this.GetChunk(this.length)
@@ -426,83 +432,101 @@ Class clsIOrepresentation {
     }
 
     ChordModule() {
-        global hint_delay
-        if (! (settings.mode & MODE_CHORDS_ENABLED))
+        if (! (settings.mode & MODE_CHORDS_ENABLED)) {
             return
+        }
         count := this.length
         Loop %count%
         {
             candidate := this.GetInput(A_Index)
-            if (StrLen(candidate) < 2) {
-                break
-            }
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
-                mark_as_capitalized := false
-                add_leading_space := true
-                replace_offset := 0
-
-                hint_delay.Shorten()
-                if ( this.TestChunkAttributes(A_Index, this.WITH_SHIFT | this.WAS_CAPITALIZED) 
-                        || this._ShouldCapitalize(A_Index) ) {
-                    expanded := RegExReplace(expanded, "(^.)", "$U1")
-                    mark_as_capitalized := true
-                }
-                ; detect affixes to handle opening and closing smart spaces correctly
-                affixes := this._DetectAffixes(expanded)
-                expanded := this._RemoveAffixSymbols(expanded, affixes)
-                previous := this.GetChunk(A_Index-1)
-
-                if ( this._IsRestricted(A_Index-1) && !(affixes & AFFIX_SUFFIX) ) {
-                    return
-                }
-                
-                ; if there is a smart space, we have to delete it for suffixes
-                if (previous.attributes & this.SMART_SPACE_AFTER) {
-                    add_leading_space := false
-                    if (affixes & AFFIX_SUFFIX) {
-                        replace_offset := -1
-                    }
-                }
-                ; if adding smart spaces before is disabled, we don't add it
-                if (! (settings.spacing & SPACE_BEFORE_CHORD)) {
-                    add_leading_space := false
-                }
-                
-                ; if the last output was punctuation that does not ask for a space
-                if ( ( !(previous.attributes & this.WITH_SHIFT)
-                        && InStr(keys.punctuation_plain, previous.input)
-                        && !InStr(keys.space_after_plain, previous.input) )
-                        || (previous.attributes & this.WITH_SHIFT)
-                        && InStr(keys.punctuation_shift, previous.input)
-                        && !InStr(keys.space_after_shift, previous.input) )  {
-                    add_leading_space := false
-                }
-                
-                ; and we don't add a space after interruption, Enter, a space, after a prefix, and for suffix
-                if (previous.attributes & this.IS_INTERRUPT || previous.output == " " || previous.attributes & this.IS_ENTER 
-                        || previous.attributes & this.IS_PREFIX || affixes & AFFIX_SUFFIX) {
-                    add_leading_space := false
-                }
-                if (add_leading_space) {
-                    expanded := " " . expanded
-                }
-
-                this.Replace(expanded, A_Index + replace_offset)
-                this.SetChunkAttributes(A_Index + replace_offset, this.WAS_EXPANDED)
-                if (mark_as_capitalized) {
-                    this.SetChunkAttributes(A_Index + replace_offset, this.WAS_CAPITALIZED)
-                }
-
-                ; ending smart space
-                if (affixes & AFFIX_PREFIX) {
-                    chunk.attributes |= this.IS_PREFIX
-                } else if (settings.spacing & SPACE_AFTER_CHORD) {
-                    this._AddSmartSpace()
-                }
-                break
+                return this._ProcessChord(A_Index, expanded)
             }
+        }
+    }
+
+    _ProcessChord(chunk_id, expanded) {
+        global hint_delay
+        mark_as_capitalized := false
+        add_leading_space := true
+        replace_offset := 0
+
+        hint_delay.Shorten()
+        if ( this.TestChunkAttributes(chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED) 
+                || this._ShouldCapitalize(chunk_id) ) {
+            expanded := RegExReplace(expanded, "(^.)", "$U1")
+            mark_as_capitalized := true
+        }
+        ; detect affixes to handle opening and closing smart spaces correctly
+        affixes := this._DetectAffixes(expanded)
+        expanded := this._RemoveAffixSymbols(expanded, affixes)
+        previous := this.GetChunk(chunk_id-1)
+
+        if ( this._IsRestricted(chunk_id-1) && !(affixes & AFFIX_SUFFIX) ) {
+            return false
+        }
+        
+        ; if there is a smart space, we have to delete it for suffixes
+        if (previous.attributes & this.SMART_SPACE_AFTER) {
+            add_leading_space := false
+            if (affixes & AFFIX_SUFFIX) {
+                replace_offset := -1
+            }
+        }
+        ; if adding smart spaces before is disabled, we don't add it
+        if (! (settings.spacing & SPACE_BEFORE_CHORD)) {
+            add_leading_space := false
+        }
+        
+        ; if the last output was punctuation that does not ask for a space
+        if ( ( !(previous.attributes & this.WITH_SHIFT)
+                && InStr(keys.punctuation_plain, previous.input)
+                && !InStr(keys.space_after_plain, previous.input) )
+                || (previous.attributes & this.WITH_SHIFT)
+                && InStr(keys.punctuation_shift, previous.input)
+                && !InStr(keys.space_after_shift, previous.input) )  {
+            add_leading_space := false
+        }
+        
+        ; and we don't add a space after interruption, Enter, a space, after a prefix, and for suffix
+        if (previous.attributes & this.IS_INTERRUPT || previous.output == " " || previous.attributes & this.IS_ENTER 
+                || previous.attributes & this.IS_PREFIX || affixes & AFFIX_SUFFIX) {
+            add_leading_space := false
+        }
+        if (add_leading_space) {
+            expanded := " " . expanded
+        }
+
+        this.Replace(expanded, chunk_id + replace_offset)
+        this.SetChunkAttributes(chunk_id + replace_offset, this.WAS_EXPANDED)
+        if (mark_as_capitalized) {
+            this.SetChunkAttributes(chunk_id + replace_offset, this.WAS_CAPITALIZED)
+        }
+
+        ; ending smart space
+        if (affixes & AFFIX_PREFIX) {
+            chunk.attributes |= this.IS_PREFIX
+        } else if (settings.spacing & SPACE_AFTER_CHORD) {
+            this._AddSmartSpace()
+        }
+        return true
+    }
+
+    _FixLastChunk() {
+        if ( ! this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
+            return
+        }
+        chunk := this.GetChunk(this.length)
+        last_character := SubStr(chunk.output, StrLen(chunk.output), 1)
+        if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
+            chunk.input := StrReplace(chunk.input, last_character)
+            chunk.output := StrReplace(chunk.output, last_character)
+            if( StrLen(chunk.input) == 1 ) {
+                this.ClearChunkAttributes(this.length, this.IS_CHORD)
+            }
+            this.Add(last_character, false, true)
         }
     }
 
