@@ -439,6 +439,9 @@ Class clsIOrepresentation {
         Loop %count%
         {
             candidate := this.GetInput(A_Index)
+            if (StrLen(candidate) < 2) {
+                return false
+            }
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
