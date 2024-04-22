@@ -113,8 +113,8 @@ Class TestingClass {
     Monitor(what:="", ByRef destination:="console") {
         Switch what {
             Case "", "show":
-                this.Write(Format("ZipChord input is monitored to {}.", this._input))
-                this.Write(Format("ZipChord output is monitored to {}.", this._output))
+                this.Write( Format("Keyboard input is logged to {}.", this._DestinationName(this._input) ) )
+                this.Write( Format("ZipChord output is logged to {}.", this._DestinationName(this._output) ) )
             Case "input", "output":
                 target_var := "_" . what
                 extension := what=="input" ? "in" : "out" 
@@ -141,6 +141,16 @@ Class TestingClass {
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
                 this._MessageTryHelp(A_ThisFunc)
+        }
+    }
+    _DestinationName(destination) {
+        Switch destination {
+            Case 0:
+                return "null"
+            Case "off":
+                return "console"
+            Default:
+                return "destination"
         }
     }
     Record(what:="", filename:="", out_file:="") {
@@ -545,11 +555,11 @@ Class TestingClass {
     _MessageTryHelp(fn) {
         this.Write( Format("Could not understand the command. Try 'help {}'.", ObjFnName(fn)) )
     }
+;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 8:51:56 AM ; param is assigned but never used.
     __Call(name, params*) {
         if (!IsFunc(this[name])) {
             this.Write("Error, command not recognized.")
         }
-        params := 0  ; to remove compiler warning
     }
     Help(topic:="") {
         Switch topic {
