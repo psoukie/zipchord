@@ -313,12 +313,20 @@ Class clsIOrepresentation {
         }
         adj := StrLen(old_output . backup_content)
         DelayOutput()
-        OutputKeys("{Backspace " . adj . "}")
+        if (adj != 1) {  ; this test is for compatibility with ZipChord 2.1 sending often just "{Backspace}" - TK: simplify later
+            OutputKeys("{Backspace " . adj . "}")
+        } else {
+            OutputKeys("{Backspace}")
+        }
+        if (! new_output) {
+            return
+        }
         ; we send any expanded text that includes { as straight directives:
-        if (InStr(new_output, "{"))
-            OutputKeys(new_output)
-        else
+        if (! InStr(new_output, "{")) {
             OutputKeys("{Text}" . new_output . backup_content)
+        } else {
+            OutputKeys(new_output)
+        }
     }
     _Show() {
         OutputDebug, % "`n`nIO sequence:" 
