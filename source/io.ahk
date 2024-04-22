@@ -552,6 +552,7 @@ Class clsIOrepresentation {
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
             this.Replace(expanded, first_chunk_id, this.length-1)
+            this.SetChunkAttributes(first_chunk_id, this.WAS_EXPANDED)
             return true
         }
     }
