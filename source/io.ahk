@@ -380,20 +380,7 @@ Class clsIOrepresentation {
                 || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.WITH_SHIFT) ) {
             return
         }
-        capitalize := False
-        if (this.length == 2 && (this._sequence[this.length - 1].attributes & this.IS_ENTER) ) {
-            capitalize := True
-        } else {
-            if (this.length > 2 && this.GetOutput(this.length - 1, this.length - 1) == " ") {
-                preceding := this.GetChunk(this.length - 2).input
-                with_shift := this.TestChunkAttributes(this.length - 2, this.WITH_SHIFT)
-                if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
-                    || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
-                    capitalize := True
-                }
-            }
-        }
-        if (capitalize) {
+        if ( this._ShouldCapitalize() ) {
             upper_cased := RegExReplace(character, "(^.)", "$U1")
             this.Replace(upper_cased, this.length)
             this.SetChunkAttributes(this.length, this.WAS_CAPITALIZED)
@@ -457,7 +444,8 @@ Class clsIOrepresentation {
                 replace_offset := 0
 
                 hint_delay.Shorten()
-                if ( this.TestChunkAttributes(A_Index, this.WITH_SHIFT | this.WAS_CAPITALIZED) ) {
+                if ( this.TestChunkAttributes(A_Index, this.WITH_SHIFT | this.WAS_CAPITALIZED) 
+                        || this._ShouldCapitalize(A_Index) ) {
                     expanded := RegExReplace(expanded, "(^.)", "$U1")
                     mark_as_capitalized := true
                 }
@@ -545,7 +533,8 @@ Class clsIOrepresentation {
         }
         if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            if ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED) ) {
+            if ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED)
+                    || this._ShouldCapitalize(first_chunk_id) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
@@ -591,6 +580,25 @@ Class clsIOrepresentation {
         return true
     }
 
+    _ShouldCapitalize(start := 0) {
+        if (start == 0) {
+            start := this.length
+        } 
+        ; first character after Enter
+        if (start == 2 && (this._sequence[start - 1].attributes & this.IS_ENTER) ) {
+            return true
+        }
+        if (start > 2 && this.GetOutput(start - 1, start - 1) == " ") {
+            preceding := this.GetChunk(start - 2).input
+            with_shift := this.TestChunkAttributes(start - 2, this.WITH_SHIFT)
+            if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
+                || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
+                return true
+            }
+        }
+        return false
+    }
+
     ; detect and adjust expansion for suffixes and prefixes
     _DetectAffixes(phrase) {
         affixes := AFFIX_NONE
@@ -615,6 +623,6 @@ Class clsIOrepresentation {
         smart_space.output := " "
         smart_space.attributes |= this.SMART_SPACE_AFTER
         this._sequence.Push(smart_space)
-        OutputKeys(" ")
+        OutputKeys("{Space}")
     }
 }
