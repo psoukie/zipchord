@@ -142,16 +142,10 @@ Class clsIOrepresentation {
             return this._sequence.Length()
         }
     }
-    _shift_in_last_get := 0
-    _chord_in_last_get := 0
-    shift_in_last_get [] {
+    _expansion_in_last_get := 0
+    expansion_in_last_get [] {
         get {
-            return this._shift_in_last_get 
-        }
-    }
-    chord_in_last_get [] {
-        get {
-            return this._chord_in_last_get 
+            return this._expansion_in_last_get 
         }
     }
     Class clsChunk {
@@ -291,8 +285,7 @@ Class clsIOrepresentation {
         return this._Get(start, end, true)
     }
     _Get(start := 1, end := 0, get_output := false) {
-        this._shift_in_last_get := false
-        this._chord_in_last_get := false
+        this._expansion_in_last_get := false
         sequence := this._sequence
         what := get_output ? "output" : "input" 
         separator := get_output ? "" : "|"
@@ -307,11 +300,8 @@ Class clsIOrepresentation {
         i := start
         Loop, %count%
         {
-            if (sequence[i].attributes & this.WITH_SHIFT) {
-                this._shift_in_last_get := true
-            }
             if (sequence[i].attributes & this.WAS_EXPANDED) {
-                this._chord_in_last_get := true
+                this._expansion_in_last_get := true
             }
             representation .= separator . sequence[i++][what]
         }
@@ -365,7 +355,7 @@ Class clsIOrepresentation {
         Loop %loop_length%
         {
             text := this.GetOutput(A_Index+1, this.length-1)
-            if ( this.chord_in_last_get || this._IsRestricted(A_Index) ) {
+            if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
                 continue
             }
             if ( this.ShorthandModule(text, A_Index+1) ) {
@@ -387,8 +377,8 @@ Class clsIOrepresentation {
             capitalize := True
         } else {
             if (this.length > 2 && this.GetOutput(this.length - 1, this.length - 1) == " ") {
-                preceding := this.GetInput(this.length - 2, this.length - 2)
-                with_shift := this.shift_in_last_get
+                preceding := this.GetChunk(this.length - 2).input
+                with_shift := this.TestChunkAttributes(this.length - 2, this.WITH_SHIFT)
                 if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
                     || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
                     capitalize := True
