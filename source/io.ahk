@@ -457,7 +457,8 @@ Class clsIOrepresentation {
         replace_offset := 0
 
         hint_delay.Shorten()
-        if ( this.TestChunkAttributes(chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED) 
+        if ( ( settings.capitalization != CAP_OFF) )
+                && ( this.TestChunkAttributes(chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED) 
                 || this._ShouldCapitalize(chunk_id) ) {
             expanded := RegExReplace(expanded, "(^.)", "$U1")
             mark_as_capitalized := true
@@ -559,7 +560,8 @@ Class clsIOrepresentation {
         }
         if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            if ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED)
+            if ( ( settings.capitalization != CAP_OFF) )
+                &&  ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED)
                     || this._ShouldCapitalize(first_chunk_id) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
