@@ -514,8 +514,7 @@ Class clsIOrepresentation {
     * typing.
     */
     RemoveRawChord() {
-        if ((settings.chording & CHORD_DELETE_UNRECOGNIZED)) {
-            ; TK Should check for && IsUnrestricted() above but it does not exist yet
+        if ( (settings.chording & CHORD_DELETE_UNRECOGNIZED) && !( this._IsRestricted(this.length-1) ) ) {
             chunk := this.GetChunk(this.length)
             if ( StrLen(chunk.input) > 1 && !(chunk.attributes & this.WAS_EXPANDED) ) {
                 this.Replace("", this.length)
