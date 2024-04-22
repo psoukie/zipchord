@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -409,13 +409,22 @@ Class TestingClass {
         }
     }
     Exit(a:="") {
-        if (a!="help")
+        if (a!="help") {
             ExitApp
+        }
         this.Help(ObjFnName(A_ThisFunc))
     }
     License(a:="") {
         if (a!="help") {
             LinkToLicense()
+            return
+        }
+        this.Help(ObjFnName(A_ThisFunc))
+    }
+    Version(opt:="") {
+        global zc_version
+        if (opt != "help") {
+            this.Write( Format("Version {}", zc_version) )
             return
         }
         this.Help(ObjFnName(A_ThisFunc))
@@ -768,6 +777,11 @@ test set <testset>
   <testset>     Run a set of test cases listed in the specified test set.
                 (Use 'add' to add test cases to a test set.)
 )")
+            Case "version":
+                this.Write("
+(
+Shows the version of ZipChord and ZipChord Test Console.
+)")
             Default:
                 this.Write("
 (
@@ -789,6 +803,7 @@ play        Sends recorded input to ZipChord for processing.
 record      Records input and/or output of your interaction to a file.
 show        Shows the contents of a file.
 test        Runs and compares results of a test case or a set of cases.
+version     Show version of ZipChord.
 
 For all commands:
    Including file extensions in file names is optional except in
