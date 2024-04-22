@@ -121,7 +121,7 @@ Class TestingClass {
                 Switch destination {
                     Case "console":
                         this[target_var] := TEST_DEST_CONSOLE
-                    Case "off":
+                    Case "null":
                         if (this[target_var] == TEST_DEST_NONE)
                             return
                         if (this[target_var . "_obj"]) {
@@ -147,7 +147,7 @@ Class TestingClass {
         Switch destination {
             Case 0:
                 return "null"
-            Case "off":
+            Case 1:
                 return "console"
             Default:
                 return "destination"
@@ -192,8 +192,8 @@ Class TestingClass {
             this.Write("Stopped interactive mode.")
         }
         this._mode := TEST_STANDBY
-        this.Monitor("input", "off")
-        this.Monitor("output", "off")
+        this.Monitor("input", "null")
+        this.Monitor("output", "null")
     }
     Log(output, is_input := false) {
         if (this._input && is_input) {
@@ -256,7 +256,7 @@ Class TestingClass {
             return
         if (out_file="")
            out_file := SubStr(cfg, 1, StrLen(cfg)-4) . "__" . SubStr(in_file, 1, StrLen(in_file)-3)
-        this.Monitor("input", "off")
+        this.Monitor("input", "null")
         if (this.Monitor("output", out_file) == -1)
             return
         if (this.Play(in_file) == -1)
@@ -690,14 +690,14 @@ presses) and output streams. The input and output destinations can be
 individually sent to console, a file, or turned off.
 
 monitor [show]
-monitor {input | output} {console | off | <filename>}
+monitor {input | output} {console | null | <filename>}
 
    show          Shows current destinations of input and output streams.
                  (Default behavior when used without parameters.)
    input         Changes the destination of the input stream.
    output        Changes the destination of the output stream.
    console       The specified stream will be shown on the console.
-   off           The stream will be ignored. 
+   null          The stream will be ignored.
    <filename>    The stream will be recorded to the specified file.
 )")
             Case "path":
