@@ -122,10 +122,6 @@ Class clsClassifier {
             this._index := {}
         }
     }
-    Show() {
-         For _, event in this._buffer
-            OutputDebug, % "`nBuffer: " . event.key . "(" . event.with_shift . ")"
-    }
 } 
 
 Class clsIOrepresentation {
@@ -183,7 +179,7 @@ Class clsIOrepresentation {
             chunk.attributes |= this.IS_MANUAL_SPACE
         }
         this._sequence.Push(chunk)
-        this._Show()
+        ; this._Show()
         if (adjustment) {
             return
         }
@@ -223,7 +219,7 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
-        this._Show()
+        ; this._Show()
         this.RunModules()
     }
 
@@ -258,7 +254,7 @@ Class clsIOrepresentation {
         if (type=="") {
             this._sequence.Push(second_chunk)
         }
-        this._Show()
+        ; this._Show()
         if (visualizer.IsOn())
             visualizer.NewLine()
     }
@@ -326,7 +322,7 @@ Class clsIOrepresentation {
             backup_content := this.GetOutput(start+1)
         }
         adj := StrLen(old_output . backup_content)
-        DelayOutput()
+        this._DelayOutput()
         if (adj != 1) {  ; this test is for compatibility with ZipChord 2.1 sending often just "{Backspace}" - TK: simplify later
             OutputKeys("{Backspace " . adj . "}")
         } else {
@@ -342,11 +338,18 @@ Class clsIOrepresentation {
             OutputKeys(new_output)
         }
     }
-    _Show() {
-        OutputDebug, % "`n`nIO sequence:" 
-        For i, chunk in this._sequence
-            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
+
+    ; Delay output by defined delay
+    _DelayOutput() {
+        if (settings.output_delay) {
+            Sleep settings.output_delay
+        }
     }
+    ; _Show() {
+    ;     OutputDebug, % "`n`nIO sequence:" 
+    ;     For i, chunk in this._sequence
+    ;         OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
+    ; }
 
     ; Below are the functions that were first attempt at modules.
     ; When I recreate modules, it should be pure functions only.
@@ -436,7 +439,7 @@ Class clsIOrepresentation {
             this._sequence.RemoveAt(this.length)
             this.ClearChunkAttributes(this.length, this.SMART_SPACE_AFTER)
             this.SetChunkAttributes(this.length, this.IS_MANUAL_SPACE)
-            this._Show() 
+            ; this._Show() 
             return true
         }
         return false
