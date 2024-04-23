@@ -87,16 +87,20 @@ Class clsDictionary {
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
         if (this._chorded) {
+            if ( InStr(newch_unsorted, "|") ) {
+                MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes a '|'. Please use other Shift-accessed characters, such as '*' or '&', for special keys instead.", newword)
+                Return false
+            }
             ; deal with combined chords (those that have a space _after_ the first character)
             if (InStr(SubStr(newch_unsorted, 2), " ")) {
                 replaced := StrReplace(newch_unsorted, " ", "|")
-                replaced := StrReplace(replaced, "||", "| ")
+                replaced := StrReplace(replaced, "||", "| ") ; handles situations where the second chord starts with a space
                 replaced := SubStr(newch_unsorted, 1, 1) . SubStr(replaced, 2)
                 chunks := StrSplit(replaced, "|")
                 For _, chunk in chunks {
                     newch .= "|" . str.Arrange(chunk)
                     if (StrLen(RegExReplace(chunk,"(.)(?=.*\1)")) != StrLen(chunk)) {  ; the RegEx removes duplicate letters to check for repetition of characters
-                        MsgBox ,, % "ZipChord", % Format("In entry for {}, each key can be entered only once in the same chord.", newword)
+                        MsgBox ,, % "ZipChord", % Format("In entry for '{}', each key can be entered only once in the same chord.", newword)
                         Return false
                     }
                 }
@@ -104,7 +108,7 @@ Class clsDictionary {
             } else {
                 newch := str.Arrange(newch_unsorted)
                 if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
-                    MsgBox ,, % "ZipChord", % Format("In entry for {}, each key can be entered only once in the same chord.", newword)
+                    MsgBox ,, % "ZipChord", % Format("In entry for '{}', each key can be entered only once in the same chord.", newword)
                     Return false
                 }
             }

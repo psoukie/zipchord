@@ -55,7 +55,11 @@ Class clsClassifier {
     }
     Input(key, timestamp) {
         global io
-
+        is_special_key := false
+        
+        if ( SubStr(key, 1, 1) == "|" ) {
+            is_special_key := true
+        }
         key := SubStr(key, 2)
         if (SubStr(key, 1, 1) == "+") {
             with_shift := True
@@ -89,7 +93,7 @@ Class clsClassifier {
         this._buffer.Push(event)
         this._index[key] := this._buffer.Length()
 
-        io.Add(key, with_shift)
+        io.Add(key, with_shift, false, is_special_key)
     }
     Interrupt(type := "*Interrupt*") {
         global io
@@ -159,7 +163,7 @@ Class clsIOrepresentation {
         this.Clear("*Interrupt*")
     }
 
-    Add(entry, with_shift, adjustment := false) {
+    Add(entry, with_shift, adjustment := false, is_special_key := false) {
         chunk := new this.clsChunk
         chunk.input := entry
         if (with_shift) {
@@ -167,6 +171,9 @@ Class clsIOrepresentation {
             chunk.output := str.ToAscii(entry, ["Shift"])
         } else {
             chunk.output := entry
+        }
+        if (is_special_key) {
+            chunk.output := ""
         }
         if ( !with_shift && InStr(keys.punctuation_plain, entry) )
                 || ( with_shift && InStr(keys.punctuation_shift, entry) ) {

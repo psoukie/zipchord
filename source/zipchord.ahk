@@ -321,7 +321,7 @@ KeyDown:
         }
     }
     if ( special_key_map.HasKey(key) ) {
-        orign_key := special_key_map[key]
+        key := "|" . special_key_map[key]
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
@@ -487,8 +487,9 @@ KeyUp:
             test.Log(A_ThisHotkey, true)
         }
     }
-    if (special_key_map.HasKey(key)) {
-        key := special_key_map[key]
+    stripped := SubStr(key, 1, StrLen(key) - 3)
+    if ( special_key_map.HasKey(stripped) ) {
+        key := "|" . special_key_map[stripped] . " Up"
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
