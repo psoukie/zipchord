@@ -1,0 +1,36 @@
+*Interrupt*
+~+t
+~e
+~s
+~t
+~Space
+~e
+~u
+~s
+{Backspace 3}
+{Text}this
+{Space}
+~f
+~r
+~m
+~.
+{Backspace 4}
+{Text}from
+.
+{Space}
+~f
+{Backspace}{Text}F
+~r
+~m
+~Space
+{Backspace 4}
+{Text}From
+ 
+~f
+~r
+~m
+~.
+{Backspace 4}
+{Text}from
+.
+{Space}
