@@ -1,0 +1,4395 @@
+﻿This is a sample starting English-language shorthand dictionary for ZipChord. It contains the most frequent English words.
+See https://github.com/psoukie/zipchord for details.
+
+This dictionary is based on the list of 5,000 most frequent English words at https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/A_Frequency_Dictionary_of_Contemporary_American_English) which has 4374 entries after removing duplicates.
+
+Sequences of typed keys that trigger the shorthand recognition are separated from the expanded full words by Tab. ZipChord ignores lines without Tab, lines starting with Tab (i.e. where the first column is empty), and text in additional columns.
+
+You can change existing shorthands and add your own.
+
+To make this shorthand dictionary predictable, these default shortcuts adheres to consistent principles:
+1. If the word is three characters or less, no shorthand is predefined
+2. Doubled consonants (two consonants immediately following each other) are replaced with only one consonant
+3. If the word starts with a vowel, the vowel is retained in the shorthand
+4. All remaining vowels are removed
+5. If the resulting shorthand is already in use or is a word in its own right, no shorthand is predefined
+
+Following these principles, "actually" is defined as "actl", and "career" as "crr" (and slightly trickier: "attitude" is "attd")
+
+Entries by frequency
+--------------------
+
+	the	(undefined)
+	be	(undefined)
+	and	(undefined)
+	of	(undefined)
+	a	(undefined)
+	in	(undefined)
+	to	(undefined)
+hv	have
+	it	(undefined)
+	I	(undefined)
+tht	that
+	for	(undefined)
+	you	(undefined)
+	he	(undefined)
+wth	with
+	on	(undefined)
+	do	(undefined)
+	's	(undefined)
+	say	(undefined)
+th	they
+ths	this
+	but	(undefined)
+	at	(undefined)
+	we	(undefined)
+	his	(undefined)
+frm	from
+	not	(undefined)
+	n't	(undefined)
+	by	(undefined)
+	or	(undefined)
+	she	(undefined)
+	as	(undefined)
+wht	what
+	go	(undefined)
+thr	their
+wl	will
+	who	(undefined)
+	can	(undefined)
+	get	(undefined)
+	if	(undefined)
+	all	(undefined)
+wld	would
+	her	(undefined)
+mk	make
+abt	about
+	my	(undefined)
+knw	know
+	there	(undefined)
+	one	(undefined)
+	up	(undefined)
+tm	time
+yr	year
+	so	(undefined)
+thnk	think
+	see	(undefined)
+whch	which
+whn	when
+sm	some
+thm	them
+ppl	people
+tk	take
+	me	(undefined)
+	out	(undefined)
+int	into
+jst	just
+	him	(undefined)
+cm	come
+	your	(undefined)
+	now	(undefined)
+cld	could
+thn	than
+lk	like
+othr	other
+	then	(undefined)
+	how	(undefined)
+	its	(undefined)
+	two	(undefined)
+	our	(undefined)
+mr	more
+	these	(undefined)
+wnt	want
+	way	(undefined)
+	no	(undefined)
+	look	(undefined)
+frst	first
+als	also
+	new	(undefined)
+bcs	because
+	day	(undefined)
+	use	(undefined)
+	man	(undefined)
+hr	here
+fnd	find
+gv	give
+thng	thing
+	well	(undefined)
+mn	many
+onl	only
+	those	(undefined)
+tl	tell
+vr	very
+evn	even
+bck	back
+	any	(undefined)
+gd	good
+	us	(undefined)
+thrgh	through
+wmn	woman
+lf	life
+chld	child
+dwn	down
+wrk	work
+aftr	after
+cl	call
+	may	(undefined)
+wrld	world
+ovr	over
+shld	should
+stl	still
+	try	(undefined)
+schl	school
+lst	last
+	ask	(undefined)
+	too	(undefined)
+nd	need
+	three	(undefined)
+fl	feel
+bcm	become
+stt	state
+nvr	never
+btwn	between
+hgh	high
+smthng	something
+rl	really
+mst	most
+anthr	another
+mch	much
+	own	(undefined)
+fml	family
+hs	house
+lv	leave
+	put	(undefined)
+	old	(undefined)
+whl	while
+	mean	(undefined)
+	let	(undefined)
+	why	(undefined)
+prsdnt	president
+kp	keep
+	same	(undefined)
+grt	great
+bgn	begin
+	big	(undefined)
+	seem	(undefined)
+grp	group
+cntr	country
+tlk	talk
+prblm	problem
+whr	where
+trn	turn
+stdnt	student
+evr	every
+hnd	hand
+hlp	help
+agnst	against
+strt	start
+amrcn	American
+prt	part
+shw	show
+mght	might
+sch	such
+plc	place
+agn	again
+ct	city
+cs	case
+	few	(undefined)
+sstm	system
+wk	week
+cmpn	company
+ech	each
+prcnt	percent
+	hear	(undefined)
+drng	during
+qstn	question
+rght	right
+prgrm	program
+	run	(undefined)
+nmbr	number
+sml	small
+gvrnmnt	government
+pl	play
+	off	(undefined)
+mv	move
+alws	always
+nght	night
+blv	believe
+td	today
+hld	hold
+pnt	point
+	live	(undefined)
+hpn	happen
+brng	bring
+nxt	next
+wtht	without
+bfr	before
+lrg	large
+	must	(undefined)
+	war	(undefined)
+hm	home
+undr	under
+rm	room
+fct	fact
+ar	area
+ntnl	national
+wrt	write
+	money	(undefined)
+str	story
+wtr	water
+mthr	mother
+dfrnt	different
+yng	young
+mnth	month
+	lot	(undefined)
+bk	book
+	eye	(undefined)
+std	study
+	job	(undefined)
+knd	kind
+wrd	word
+	issue	(undefined)
+sd	side
+fr	four
+bsns	business
+thgh	though
+hd	head
+	far	(undefined)
+lng	long
+blck	black
+mln	million
+bth	both
+ltl	little
+	yes	(undefined)
+snc	since
+arnd	around
+prvd	provide
+srvc	service
+imprtnt	important
+	sit	(undefined)
+aw	away
+frnd	friend
+hwvr	however
+pwr	power
+	yet	(undefined)
+fthr	father
+	hour	(undefined)
+oftn	often
+untl	until
+pltcl	political
+ln	line
+	end	(undefined)
+stnd	stand
+amng	among
+gm	game
+	ever	(undefined)
+ls	lose
+	bad	(undefined)
+mmbr	member
+mt	meet
+	pay	(undefined)
+	law	(undefined)
+almst	almost
+	car	(undefined)
+ltr	later
+nm	name
+incld	include
+fv	five
+	center	(undefined)
+onc	once
+unvrst	university
+cntn	continue
+	least	(undefined)
+	real	(undefined)
+	white	(undefined)
+chng	change
+	set	(undefined)
+svrl	several
+	ago	(undefined)
+infrmtn	information
+nthng	nothing
+cmnt	community
+bst	best
+id	idea
+ld	lead
+bd	body
+lrn	learn
+	kid	(undefined)
+mnt	minute
+tbl	table
+whthr	whether
+undrstnd	understand
+	team	(undefined)
+wtch	watch
+tgthr	together
+flw	follow
+stp	stop
+fc	face
+anthng	anything
+pblc	public
+scl	social
+alrd	already
+prnt	parent
+spk	speak
+crt	create
+ofc	office
+alw	allow
+lvl	level
+rd	read
+spnd	spend
+prsn	person
+dr	door
+sr	sure
+	add	(undefined)
+	street	(undefined)
+hstr	history
+	party	(undefined)
+grw	grow
+rsn	reason
+mrnng	morning
+opn	open
+wthn	within
+althgh	although
+wlk	walk
+nws	news
+hlth	health
+	court	(undefined)
+frc	force
+erl	early
+hmslf	himself
+	air	(undefined)
+	low	(undefined)
+	art	(undefined)
+rslt	result
+mmnt	moment
+ofr	offer
+rmmbr	remember
+rsrch	research
+engh	enough
+grl	girl
+	boy	(undefined)
+	win	(undefined)
+fd	food
+acrs	across
+	guy	(undefined)
+scnd	second
+abl	able
+twrd	toward
+mb	maybe
+prcs	process
+evrthng	everything
+apr	appear
+	age	(undefined)
+	policy	(undefined)
+cnsdr	consider
+incldng	including
+prbbl	probably
+edctn	education
+	love	(undefined)
+actl	actually
+	buy	(undefined)
+wt	wait
+	die	(undefined)
+hmn	human
+snd	send
+	fee	(undefined)
+expct	expect
+srv	serve
+sns	sense
+tchr	teacher
+mrkt	market
+st	stay
+bld	build
+ntn	nation
+	fall	(undefined)
+	oh	(undefined)
+dth	death
+pln	plan
+intrst	interest
+smn	someone
+exprnc	experience
+	cut	(undefined)
+kl	kill
+bhnd	behind
+rch	reach
+	six	(undefined)
+lcl	local
+rmn	remain
+efct	effect
+sgst	suggest
+cntrl	control
+prhps	perhaps
+rs	raise
+cls	class
+lt	late
+mjr	major
+yh	yeah
+els	else
+ps	pass
+pht	photo
+sl	sell
+thmslvs	themselves
+fld	field
+clg	college
+smtms	sometimes
+frmr	former
+dvlpmnt	development
+rqr	require
+alng	along
+dcd	decide
+scrt	security
+psbl	possible
+efrt	effort
+	role	(undefined)
+btr	better
+rt	rate
+strng	strong
+msc	music
+rprt	report
+ldr	leader
+lght	light
+	whole	(undefined)
+vc	voice
+clr	color
+hrt	heart
+cr	care
+	police	(undefined)
+ecnmc	economic
+wf	wife
+mnd	mind
+fnl	finally
+drg	drug
+	less	(undefined)
+rtrn	return
+acrdng	according
+	pull	(undefined)
+dcsn	decision
+expln	explain
+	carry	(undefined)
+dvlp	develop
+vw	view
+	free	(undefined)
+hp	hope
+drv	drive
+	son	(undefined)
+	arm	(undefined)
+dprtmnt	department
+tr	true
+prc	price
+mltr	military
+fdrl	federal
+brk	break
+actn	action
+vl	value
+	thank	(undefined)
+rltnshp	relationship
+twn	town
+bldng	building
+rcv	receive
+sct	society
+dfrnc	difference
+chrch	church
+	full	(undefined)
+jn	join
+	road	(undefined)
+intrntnl	international
+mdl	model
+pstn	position
+	tax	(undefined)
+drctr	director
+agr	agree
+mtr	matter
+espcl	especially
+	form	(undefined)
+rcrd	record
+spcl	special
+grnd	ground
+whs	whose
+hrd	hard
+pck	pick
+ppr	paper
+ofcl	official
+ssn	season
+wr	wear
+evnt	event
+sprt	support
+spc	space
+plr	player
+evrn	everyone
+cpl	couple
+bs	base
+prjct	project
+prdc	produce
+	site	(undefined)
+sttn	situation
+	hit	(undefined)
+indstr	industry
+hlf	half
+actvt	activity
+	eat	(undefined)
+itslf	itself
+fgr	figure
+cst	cost
+es	easy
+qt	quite
+pctr	picture
+	clear	(undefined)
+cvr	cover
+dscrb	describe
+img	image
+tch	teach
+	wall	(undefined)
+dctr	doctor
+rcnt	recent
+prdct	product
+dt	data
+prctc	practice
+phn	phone
+pc	piece
+crtn	certain
+ethr	either
+	oil	(undefined)
+smpl	simply
+tst	test
+prsnl	personal
+	star	(undefined)
+lnd	land
+thrd	third
+gnrl	general
+cmptr	computer
+	movie	(undefined)
+wrkr	worker
+ctch	catch
+tp	type
+nrth	north
+	step	(undefined)
+atnt	attention
+tchnlg	technology
+orgnztn	organization
+bb	baby
+src	source
+drw	draw
+	cause	(undefined)
+	tree	(undefined)
+flm	film
+chs	choose
+evdnc	evidence
+Rpblcn	Republican
+dfclt	difficult
+	century	(undefined)
+nrl	nearly
+	red	(undefined)
+wndw	window
+prk	park
+prd	period
+cltr	culture
+	hair	(undefined)
+lstn	listen
+chnc	chance
+avlbl	available
+brthr	brother
+smr	summer
+rlz	realize
+prvt	private
+scnc	science
+	letter	(undefined)
+cngrs	congress
+cndtn	condition
+shrt	short
+lkl	likely
+oprtnt	opportunity
+	rule	(undefined)
+chc	choice
+sngl	single
+ptnt	patient
+flr	floor
+trm	term
+mtrl	material
+ml	mile
+admnstrtn	administration
+crs	course
+dfns	defense
+plnt	plant
+enrg	energy
+cmpgn	campaign
+ppltn	population
+	fire	(undefined)
+	close	(undefined)
+dghtr	daughter
+invlv	involve
+hsbnd	husband
+wrng	wrong
+crtnl	certainly
+incrs	increase
+ftr	future
+sth	south
+mdcl	medical
+brd	board
+ann	anyone
+dl	deal
+hsptl	hospital
+rst	rest
+sk	seek
+mslf	myself
+cnt	county
+fght	fight
+sbjct	subject
+rsk	risk
+ordr	order
+wst	west
+ecnm	economy
+qckl	quickly
+thrw	throw
+	bed	(undefined)
+ofcr	officer
+rprsnt	represent
+sn	soon
+	top	(undefined)
+	fill	(undefined)
+athr	author
+pst	past
+upn	upon
+gl	goal
+bhvr	behavior
+drp	drop
+ntr	nature
+agnc	agency
+rcntl	recently
+	store	(undefined)
+frgn	foreign
+crnt	current
+prfrmnc	performance
+bnk	bank
+	sound	(undefined)
+psh	push
+fcs	focus
+rdc	reduce
+nt	note
+fn	fine
+nr	near
+mvmnt	movement
+cmn	common
+bln	billion
+	blood	(undefined)
+pg	page
+cncrn	concern
+pr	poor
+entr	enter
+shr	share
+srs	series
+usl	usually
+ntrl	natural
+	hot	(undefined)
+rc	race
+lngg	language
+rvr	river
+dd	dead
+	act	(undefined)
+sgnfcnt	significant
+rspns	response
+	rise	(undefined)
+	decade	(undefined)
+artcl	article
+	thus	(undefined)
+svn	seven
+sht	shoot
+est	east
+anml	animal
+smlr	similar
+sv	save
+fctr	factor
+	central	(undefined)
+ocr	occur
+cmt	committee
+	serious	(undefined)
+	sport	(undefined)
+	lie	(undefined)
+bnd	beyond
+exctl	exactly
+dspt	despite
+	happy	(undefined)
+eght	eight
+prtct	protect
+	list	(undefined)
+sz	size
+qlt	quality
+prsr	pressure
+acpt	accept
+	ready	(undefined)
+aprch	approach
+sgn	sign
+atck	attack
+indvdl	individual
+crr	career
+answr	answer
+	dog	(undefined)
+md	media
+thght	thought
+whtvr	whatever
+dtrmn	determine
+tlvsn	television
+mtng	meeting
+scn	scene
+scs	success
+prpr	prepare
+idntf	identify
+prs	press
+prtclrl	particularly
+rsrc	resource
+amnt	amount
+arg	argue
+rcgnz	recognize
+trtmnt	treatment
+lft	left
+dgr	degree
+stck	stock
+indct	indicate
+grwth	growth
+	simple	(undefined)
+ablt	ability
+dlr	dollar
+unn	union
+dss	disease
+evrbd	everybody
+wndr	wonder
+elctn	election
+	loss	(undefined)
+	box	(undefined)
+hrslf	herself
+	fund	(undefined)
+ms	miss
+	pretty	(undefined)
+rgn	region
+flng	feeling
+	lay	(undefined)
+trnng	training
+msg	message
+arv	arrive
+stndrd	standard
+otsd	outside
+	fail	(undefined)
+trd	trade
+stf	staff
+bnft	benefit
+chrctr	character
+	army	(undefined)
+asctn	association
+oprtn	operation
+prsnt	present
+crm	crime
+	cup	(undefined)
+islnd	island
+anlss	analysis
+chck	check
+phtgrph	photograph
+gls	glass
+frwrd	forward
+athrt	authority
+erth	earth
+stg	stage
+srt	sort
+	station	(undefined)
+clrl	clearly
+cmpr	compare
+indd	indeed
+knwldg	knowledge
+bl	blue
+exmpl	example
+strtg	strategy
+mntn	mountain
+gs	guess
+sstr	sister
+	gun	(undefined)
+vrs	various
+lgh	laugh
+envrnmnt	environment
+dsgn	design
+	sun	(undefined)
+lwr	lawyer
+	sex	(undefined)
+rthr	rather
+artst	artist
+clb	club
+prv	prove
+sctn	section
+skl	skill
+trth	truth
+	ok	(undefined)
+mngr	manager
+exctv	executive
+dstrct	district
+clm	claim
+frgt	forget
+hng	hang
+	entire	(undefined)
+	leg	(undefined)
+envrnmntl	environmental
+estblsh	establish
+dmcrtc	democratic
+rmv	remove
+	main	(undefined)
+prfsr	professor
+fnncl	financial
+enj	enjoy
+ntwrk	network
+dscs	discuss
+	final	(undefined)
+trl	trial
+lgl	legal
+	cold	(undefined)
+abv	above
+rck	rock
+	seat	(undefined)
+wpn	weapon
+sng	song
+exprt	expert
+	radio	(undefined)
+nc	nice
+avd	avoid
+mmr	memory
+mngmnt	management
+chrg	charge
+sprng	spring
+crd	card
+	maintain	(undefined)
+	theory	(undefined)
+vst	visit
+imgn	imagine
+fnsh	finish
+sttmnt	statement
+	firm	(undefined)
+hg	huge
+rspnd	respond
+pplr	popular
+phscl	physical
+trdtnl	traditional
+	contain	(undefined)
+	peace	(undefined)
+grn	green
+thnks	thanks
+Dmcrt	Democrat
+impct	impact
+strctr	structure
+tnght	tonight
+drctn	direction
+	fly	(undefined)
+ont	onto
+kng	king
+rvl	reveal
+	cell	(undefined)
+rlgs	religious
+	ball	(undefined)
+prtclr	particular
+empl	employee
+sdnl	suddenly
+apl	apply
+shk	shake
+cltrl	cultural
+chr	chair
+	PM	(undefined)
+jstc	justice
+dscvr	discover
+msr	measure
+pltcs	politics
+mng	manage
+trt	treat
+yrslf	yourself
+pn	pain
+evnng	evening
+unt	unit
+afct	affect
+prdctn	production
+	bit	(undefined)
+insd	inside
+rng	range
+	worry	(undefined)
+prfrm	perform
+ncsr	necessary
+cnfrnc	conference
+cnddt	candidate
+msm	museum
+spcfc	specific
+thrght	throughout
+hl	hall
+fsh	fish
+trp	trip
+	mention	(undefined)
+edg	edge
+trbl	trouble
+intrvw	interview
+	style	(undefined)
+	middle	(undefined)
+	ten	(undefined)
+wght	weight
+adlt	adult
+drm	dream
+	fear	(undefined)
+drk	dark
+mthd	method
+smbd	somebody
+mgzn	magazine
+rflct	reflect
+	heavy	(undefined)
+sldr	soldier
+prprt	property
+btfl	beautiful
+wrtr	writer
+	stuff	(undefined)
+cmr	camera
+imprv	improve
+shldr	shoulder
+	bar	(undefined)
+htl	hotel
+instd	instead
+	hill	(undefined)
+exst	exist
+	sea	(undefined)
+instttn	institution
+prps	purpose
+ptrn	pattern
+dtl	detail
+mchn	machine
+chlng	challenge
+ownr	owner
+agnt	agent
+tgh	tough
+ahd	ahead
+gnrtn	generation
+cmrcl	commercial
+whm	whom
+srfc	surface
+bdgt	budget
+sntr	senator
+	bag	(undefined)
+rlt	reality
+edtr	editor
+tnd	tend
+adrs	address
+cvl	civil
+dscsn	discussion
+	mom	(undefined)
+vlnc	violence
+ttl	total
+skn	skin
+ht	heat
+cncl	council
+ntc	notice
+bt	beat
+	nor	(undefined)
+mdrn	modern
+vt	vote
+	sing	(undefined)
+cncr	cancer
+fngr	finger
+	lake	(undefined)
+wsh	wish
+mrg	marriage
+vctm	victim
+tsk	task
+yrd	yard
+ktchn	kitchen
+itm	item
+rspnsblt	responsibility
+mth	mouth
+agrmnt	agreement
+atrn	attorney
+cptl	capital
+thrt	threat
+	smile	(undefined)
+	gas	(undefined)
+pstv	positive
+trck	track
+invstmnt	investment
+acnt	account
+	rich	(undefined)
+ctzn	citizen
+adnc	audience
+	lady	(undefined)
+dnr	dinner
+wstrn	western
+dbt	debate
+cnsmr	consumer
+mjrt	majority
+intrstng	interesting
+prvnt	prevent
+trvl	travel
+brn	born
+	relate	(undefined)
+asm	assume
+nn	none
+admt	admit
+frnt	front
+cch	coach
+prtnr	partner
+	shot	(undefined)
+scntst	scientist
+snr	senior
+sfr	suffer
+aln	alone
+clctn	collection
+scsfl	successful
+spch	speech
+evntl	eventually
+	key	(undefined)
+msn	mission
+scr	score
+nwsppr	newspaper
+wnd	wind
+rfrm	reform
+cncrnd	concerned
+prfsnl	professional
+rltn	relation
+trps	troops
+grdn	garden
+acs	access
+pblsh	publish
+rcl	recall
+Svt	Soviet
+sthrn	southern
+snt	senate
+opnn	opinion
+optn	option
+jdg	judge
+orgnl	original
+cstmr	customer
+crtcl	critical
+crnr	corner
+bsc	basic
+incm	income
+drctl	directly
+rls	release
+rstrnt	restaurant
+nghbrhd	neighborhood
+efctv	effective
+lbr	labor
+nbd	nobody
+	stare	(undefined)
+imdtl	immediately
+achv	achieve
+	forest	(undefined)
+	dad	(undefined)
+	hurt	(undefined)
+vd	video
+strk	strike
+sft	safety
+absltl	absolutely
+thrfr	therefore
+frdm	freedom
+vrsn	version
+	plane	(undefined)
+attd	attitude
+sxl	sexual
+rfr	refer
+frsh	fresh
+invlvd	involved
+pwrfl	powerful
+	bird	(undefined)
+	touch	(undefined)
+vrt	variety
+dp	deep
+txt	text
+wd	wide
+crdt	credit
+	nine	(undefined)
+slp	sleep
+invstgtn	investigation
+annc	announce
+cmpltl	completely
+cndct	conduct
+cnflct	conflict
+rplc	replace
+atnd	attend
+prtcpnt	participant
+argmnt	argument
+objct	object
+pls	please
+nclr	nuclear
+	sky	(undefined)
+aftrnn	afternoon
+hndrd	hundred
+encrg	encourage
+prfct	perfect
+psblt	possibility
+Brtsh	British
+exmn	examine
+cnvrstn	conversation
+	generally	(undefined)
+bgnng	beginning
+scrtr	secretary
+bch	beach
+sf	safe
+	spirit	(undefined)
+wknd	weekend
+	date	(undefined)
+dfn	define
+	feature	(undefined)
+glbl	global
+elmnt	element
+atmpt	attempt
+slwl	slowly
+gvrnr	governor
+cncpt	concept
+	sorry	(undefined)
+esl	easily
+btl	battle
+lg	league
+cmp	camp
+intrdc	introduce
+stts	status
+insrnc	insurance
+cmplt	complete
+	stick	(undefined)
+sltn	solution
+	web	(undefined)
+vsn	vision
+stn	stone
+lck	lack
+drvr	driver
+nrml	normal
+	truck	(undefined)
+mnstr	minister
+hndl	handle
+	hole	(undefined)
+	fan	(undefined)
+spt	spot
+crss	crisis
+spsd	supposed
+rfs	refuse
+drnk	drink
+rsrchr	researcher
+trdtn	tradition
+cmnctn	communication
+dstnc	distance
+shp	ship
+gn	gain
+exprs	express
+indpndnt	independent
+	ice	(undefined)
+	scale	(undefined)
+	brain	(undefined)
+wntr	winter
+cmsn	commission
+	wood	(undefined)
+dvsn	division
+spcs	species
+	AM	(undefined)
+	roll	(undefined)
+	hide	(undefined)
+clnt	client
+rsdnt	resident
+cntrct	contract
+gld	gold
+ptntl	potential
+prsnc	presence
+insttt	institute
+scrn	screen
+Chns	Chinese
+hrs	horse
+EErpn	European
+trgt	target
+wlng	willing
+	survey	(undefined)
+intrstd	interested
+chf	chief
+crwd	crowd
+	prison	(undefined)
+trms	terms
+obvsl	obviously
+bss	basis
+aprtmnt	apartment
+	farm	(undefined)
+flght	flight
+	shape	(undefined)
+dmnd	demand
+strngth	strength
+vlg	village
+oprt	operate
+rprtr	reporter
+grd	guard
+obsrv	observe
+dlvr	deliver
+	count	(undefined)
+advntg	advantage
+	wild	(undefined)
+prvs	previous
+avrg	average
+emrg	emerge
+cntrbt	contribute
+ldrshp	leadership
+	boat	(undefined)
+fclt	facility
+ern	earn
+hghl	highly
+vhcl	vehicle
+pnd	pound
+tn	tiny
+undrstndng	understanding
+	settle	(undefined)
+unls	unless
+tmrw	tomorrow
+fndtn	foundation
+qck	quick
+	block	(undefined)
+rdr	reader
+clct	collect
+gst	guest
+lvng	living
+	tool	(undefined)
+prtctn	protection
+	fair	(undefined)
+adtnl	additional
+prmt	promote
+eqpmnt	equipment
+mstl	mostly
+pntng	painting
+	feed	(undefined)
+prncpl	principle
+bwl	bowl
+tchnq	technique
+lmt	limit
+idntt	identity
+	title	(undefined)
+crtc	critic
+srvv	survive
+	cry	(undefined)
+brdr	border
+	lift	(undefined)
+pth	path
+aspct	aspect
+	marry	(undefined)
+	shop	(undefined)
+	failure	(undefined)
+	ride	(undefined)
+rspnsbl	responsible
+gthr	gather
+jmp	jump
+	sample	(undefined)
+afr	affair
+wrth	worth
+	fit	(undefined)
+chrmn	chairman
+lsn	lesson
+Chrstms	Christmas
+insst	insist
+anbd	anybody
+flk	folk
+	band	(undefined)
+	ear	(undefined)
+prcdr	procedure
+asct	associate
+	inch	(undefined)
+wrm	warm
+AAfrcn	African
+Frnch	French
+bsbl	baseball
+dmnstrt	demonstrate
+ft	foot
+Chrstn	Christian
+cmpttn	competition
+afrd	afraid
+sprd	spread
+ignr	ignore
+	soft	(undefined)
+anl	annual
+wndrfl	wonderful
+thrtn	threaten
+	commit	(undefined)
+dn	deny
+intlgnc	intelligence
+rglr	regular
+inflnc	influence
+rctn	reaction
+	cross	(undefined)
+mstr	master
+	suit	(undefined)
+blw	blow
+dstr	destroy
+gft	gift
+cf	coffee
+anw	anyway
+blf	belief
+	comment	(undefined)
+aprntl	apparently
+twc	twice
+bckgrnd	background
+qrtr	quarter
+rvw	review
+fth	faith
+spd	speed
+engg	engage
+	broad	(undefined)
+prspctv	perspective
+slghtl	slightly
+grwng	growing
+fnctn	function
+cnstrctn	construction
+	egg	(undefined)
+wv	wave
+	female	(undefined)
+mrdr	murder
+	tape	(undefined)
+	burn	(undefined)
+mns	means
+awr	aware
+mstk	mistake
+	quiet	(undefined)
+cnctn	connection
+sh	shoe
+clths	clothes
+prms	promise
+rlgn	religion
+untd	united
+cntxt	context
+actv	active
+yth	youth
+lctn	location
+nghbr	neighbor
+drs	dress
+IIntrnt	Internet
+ctgr	category
+dngrs	dangerous
+extnd	extend
+cmbn	combine
+	coast	(undefined)
+rltvl	relatively
+	bus	(undefined)
+	hey	(undefined)
+flwng	following
+dpnd	depend
+	hell	(undefined)
+bn	bone
+ck	cook
+drct	direct
+ntv	native
+	cool	(undefined)
+rmnd	remind
+hstrcl	historical
+mrl	moral
+vtr	voter
+aprprt	appropriate
+fms	famous
+	hire	(undefined)
+vctr	victory
+cntct	contact
+	fully	(undefined)
+ngtv	negative
+mdcn	medicine
+prtcpt	participate
+	grade	(undefined)
+estrn	eastern
+spl	supply
+ystrd	yesterday
+fmlr	familiar
+dmcrc	democracy
+	pair	(undefined)
+	healthy	(undefined)
+	tie	(undefined)
+brth	birth
+prgrs	progress
+dmg	damage
+exchng	exchange
+btm	bottom
+	daily	(undefined)
+dcmnt	document
+	grand	(undefined)
+jrnl	journal
+kn	knee
+prmr	primary
+othrws	otherwise
+	train	(undefined)
+grb	grab
+crcl	circle
+	lean	(undefined)
+wn	wine
+mnrt	minority
+flwr	flower
+dvc	device
+IIrq	Iraqi
+plt	plate
+cln	clean
+alv	alive
+actr	actor
+	hate	(undefined)
+exprsn	expression
+	below	(undefined)
+brght	bright
+	tour	(undefined)
+fndng	finding
+exrcs	exercise
+plstc	plastic
+dngr	danger
+nck	neck
+	valley	(undefined)
+acdmc	academic
+aplctn	application
+intnd	intend
+	male	(undefined)
+	tall	(undefined)
+	shut	(undefined)
+lts	lots
+IIndn	Indian
+rspct	respect
+	colleague	(undefined)
+wrtng	writing
+rn	rain
+fst	fast
+ftbl	football
+wlcm	welcome
+dmstc	domestic
+	pool	(undefined)
+ltrtr	literature
+extr	extra
+nrthrn	northern
+dsr	desire
+crprt	corporate
+	session	(undefined)
+sprm	supreme
+	studio	(undefined)
+	Russian	(undefined)
+	nod	(undefined)
+lrnng	learning
+clmb	climb
+imprtnc	importance
+smwhr	somewhere
+expnd	expand
+frth	fourth
+	dry	(undefined)
+dspr	disappear
+abs	abuse
+chckn	chicken
+obtn	obtain
+	map	(undefined)
+crfl	carefully
+incrsngl	increasingly
+grtst	greatest
+cmplx	complex
+mtl	metal
+jr	jury
+swt	sweet
+prpsl	proposal
+impsbl	impossible
+scntfc	scientific
+tckt	ticket
+	leaf	(undefined)
+clsrm	classroom
+srnd	surround
+lnch	lunch
+mnng	meaning
+injr	injury
+invt	invite
+enm	enemy
+rpt	repeat
+br	bear
+	lip	(undefined)
+	mayor	(undefined)
+awrd	award
+cmtmnt	commitment
+cnsqnc	consequence
+instrctn	instruction
+srprs	surprise
+	poll	(undefined)
+fvrt	favorite
+explr	explore
+	predict	(undefined)
+adpt	adopt
+sght	sight
+strm	storm
+assmnt	assessment
+wthr	weather
+pckt	pocket
+	aid	(undefined)
+rdng	reading
+	thin	(undefined)
+	soul	(undefined)
+	strange	(undefined)
+mrd	married
+orgnz	organize
+cnclsn	conclusion
+	fuel	(undefined)
+urbn	urban
+blng	belong
+slt	salt
+	farmer	(undefined)
+strght	straight
+advc	advice
+blnc	balance
+tmprtr	temperature
+empt	empty
+cncld	conclude
+smhw	somehow
+prsdntl	presidential
+prm	prime
+brst	breast
+dsk	desk
+	breath	(undefined)
+thtr	theater
+acknwldg	acknowledge
+	theme	(undefined)
+	fat	(undefined)
+sftwr	software
+sgr	sugar
+edctnl	educational
+thsnd	thousand
+cd	code
+cnct	connect
+ylw	yellow
+instrmnt	instrument
+Jpns	Japanese
+pnl	panel
+lbrr	library
+expnsv	expensive
+emtnl	emotional
+engn	engine
+	propose	(undefined)
+mntl	mental
+	difficulty	(undefined)
+brwn	brown
+bscl	basically
+	ring	(undefined)
+mrk	mark
+lct	locate
+srch	search
+lrgl	largely
+	possibly	(undefined)
+anmr	anymore
+gnrt	generate
+rgnl	regional
+obvs	obvious
+angr	angry
+anlst	analyst
+acdnt	accident
+trnd	trend
+aprnc	appearance
+crntl	currently
+shdw	shadow
+bng	being
+	moon	(undefined)
+brdg	bridge
+rcmnd	recommend
+hrng	hearing
+frt	fruit
+dnc	dance
+shft	shift
+cmfrtbl	comfortable
+strgl	struggle
+rvn	revenue
+	notion	(undefined)
+	okay	(undefined)
+pckg	package
+oght	ought
+trfc	traffic
+intrnl	internal
+prfr	prefer
+crw	crew
+prft	profit
+rgltn	regulation
+lnk	link
+thnkng	thinking
+hrdl	hardly
+arprt	airport
+extrml	extremely
+sck	sick
+cptr	capture
+unq	unique
+	actual	(undefined)
+chst	chest
+	meal	(undefined)
+	beauty	(undefined)
+extnt	extent
+dfnd	defend
+vstr	visitor
+dzn	dozen
+dclr	declare
+emrgnc	emergency
+	ad	(undefined)
+	truly	(undefined)
+	planet	(undefined)
+slct	select
+ethnc	ethnic
+ns	nose
+	loan	(undefined)
+csh	cash
+cntrbtn	contribution
+slw	slow
+cntrst	contrast
+	bottle	(undefined)
+	launch	(undefined)
+nvl	novel
+	duty	(undefined)
+	root	(undefined)
+cntnt	content
+cmpnnt	component
+aprct	appreciate
+crcmstnc	circumstance
+tchng	teaching
+	paint	(undefined)
+thck	thick
+	cat	(undefined)
+nthr	neither
+orslvs	ourselves
+crct	correct
+wrn	warn
+cpct	capacity
+cnvntn	convention
+pltcn	politician
+	pursue	(undefined)
+stng	setting
+zn	zone
+	pilot	(undefined)
+ensr	ensure
+ultmtl	ultimately
+	wake	(undefined)
+	shirt	(undefined)
+	guide	(undefined)
+AAIDS	AIDS
+	mix	(undefined)
+	slip	(undefined)
+	steal	(undefined)
+frqntl	frequently
+blm	blame
+	sheet	(undefined)
+estmt	estimate
+rlf	relief
+cmbntn	combination
+invstr	investor
+	due	(undefined)
+slnc	silence
+mnr	manner
+mscl	muscle
+brnch	branch
+chn	chain
+tlphn	telephone
+invstgt	investigate
+Grmn	German
+prcntg	percentage
+otcm	outcome
+estt	estate
+	forth	(undefined)
+strs	stress
+eql	equal
+EEnglsh	English
+wlfr	welfare
+tpcl	typical
+crz	crazy
+excpt	except
+	funny	(undefined)
+	meat	(undefined)
+	appeal	(undefined)
+lngtrm	long-term
+	eliminate	(undefined)
+usd	used
+mtn	motion
+cmpln	complain
+	row	(undefined)
+Jwsh	Jewish
+kck	kick
+snw	snow
+prdcr	producer
+slv	solve
+opstn	opposition
+bsktbl	basketball
+	rely	(undefined)
+cnsrvtv	conservative
+trst	trust
+mrr	mirror
+tnk	tank
+sgnfcntl	significantly
+smwht	somewhat
+atrct	attract
+anwhr	anywhere
+rgm	regime
+	fix	(undefined)
+entrl	entirely
+	afford	(undefined)
+lngth	length
+	secret	(undefined)
+plsr	pleasure
+	file	(undefined)
+tth	tooth
+cnfrm	confirm
+	separate	(undefined)
+gldn	golden
+mnwhl	meanwhile
+chnl	channel
+bdrm	bedroom
+rqrmnt	requirement
+ancnt	ancient
+cvrg	coverage
+	trail	(undefined)
+hst	host
+srgr	surgery
+prcptn	perception
+rr	rare
+	era	(undefined)
+grnt	grant
+ocn	ocean
+srsl	seriously
+cnfdnc	confidence
+asd	aside
+	tear	(undefined)
+jdgmnt	judgment
+indstrl	industrial
+expcttn	expectation
+rsltn	resolution
+cp	copy
+wng	wing
+	doubt	(undefined)
+	fun	(undefined)
+	totally	(undefined)
+	pour	(undefined)
+gndr	gender
+srprsd	surprised
+	beer	(undefined)
+	bond	(undefined)
+	plus	(undefined)
+	debt	(undefined)
+smrt	smart
+	terrible	(undefined)
+wtns	witness
+rfrnc	reference
+	vice	(undefined)
+	hero	(undefined)
+bmb	bomb
+rtng	rating
+	busy	(undefined)
+	cite	(undefined)
+crprtn	corporation
+rprsnttv	representative
+evrwhr	everywhere
+	soil	(undefined)
+hghw	highway
+	frame	(undefined)
+strtch	stretch
+ops	oppose
+Cthlc	Catholic
+	cloud	(undefined)
+intl	initial
+vrbl	variable
+esntl	essential
+imprvmnt	improvement
+opnng	opening
+ncsrl	necessarily
+nrs	nurse
+incdnt	incident
+abrtn	abortion
+dvd	divide
+	aim	(undefined)
+	tired	(undefined)
+	careful	(undefined)
+chp	cheap
+bsd	beside
+aprt	apart
+crmnl	criminal
+	employ	(undefined)
+rsh	rush
+usr	user
+upr	upper
+wnr	winner
+fshn	fashion
+	tip	(undefined)
+	apple	(undefined)
+	vast	(undefined)
+spcfcl	specifically
+lmtd	limited
+enrms	enormous
+	holiday	(undefined)
+eml	e-mail
+emphsz	emphasize
+	merely	(undefined)
+	core	(undefined)
+mtch	match
+lndscp	landscape
+ovrl	overall
+glf	golf
+vrtl	virtually
+	route	(undefined)
+	flow	(undefined)
+fwr	fewer
+cbl	cable
+gt	gate
+	proud	(undefined)
+dsh	dish
+bnth	beneath
+incrsd	increased
+scd	succeed
+brl	barely
+nrw	narrow
+sld	solid
+cntmprr	contemporary
+	accuse	(undefined)
+unfrtntl	unfortunately
+usfl	useful
+	noise	(undefined)
+exps	expose
+	mass	(undefined)
+mltpl	multiple
+vgtbl	vegetable
+	seed	(undefined)
+rjct	reject
+dcln	decline
+exprmnt	experiment
+lgsltn	legislation
+	hat	(undefined)
+msv	massive
+grs	grass
+dfntl	definitely
+clsr	closer
+lbrl	liberal
+	stir	(undefined)
+cptn	captain
+rvltn	revolution
+	typically	(undefined)
+sctr	sector
+aprv	approve
+uncl	uncle
+vlm	volume
+explntn	explanation
+sntnc	sentence
+escp	escape
+unsl	unusual
+dstrbtn	distribution
+rrl	rural
+	cast	(undefined)
+hshld	household
+clbrt	celebrate
+	taste	(undefined)
+chrctrstc	characteristic
+adtn	addition
+acqr	acquire
+clsl	closely
+	proper	(undefined)
+	tone	(undefined)
+tpc	topic
+twrds	towards
+	waste	(undefined)
+	wheel	(undefined)
+athlt	athlete
+cnvnc	convince
+altrntv	alternative
+	pepper	(undefined)
+	cream	(undefined)
+tchncl	technical
+sqr	square
+	plenty	(undefined)
+invst	invest
+rgrd	regard
+intrvntn	intervention
+ilgl	illegal
+	lower	(undefined)
+cmpt	compete
+tlnt	talent
+glt	guilty
+mlk	milk
+hght	height
+asstnc	assistance
+prsnlt	personality
+IIsrl	Israeli
+	gay	(undefined)
+frvr	forever
+	assess	(undefined)
+	weak	(undefined)
+cgrt	cigarette
+	permit	(undefined)
+psngr	passenger
+crtcsm	criticism
+twnt	twenty
+hnr	honor
+crtv	creative
+knck	knock
+dspl	display
+cmps	campus
+dfntn	definition
+gr	gray
+sgnl	signal
+wrnng	warning
+phscn	physician
+clmn	column
+intrctn	interaction
+drmtc	dramatic
+rpblc	republic
+prmrl	primarily
+prrt	priority
+achvmnt	achievement
+rqst	request
+wrp	wrap
+engnr	engineer
+	rice	(undefined)
+schlr	scholar
+arln	airline
+expns	expense
+obsrvtn	observation
+	gap	(undefined)
+agnd	agenda
+	creation	(undefined)
+	drag	(undefined)
+sspct	suspect
+fshng	fishing
+	bread	(undefined)
+	hi	(undefined)
+unbl	unable
+scrm	scream
+jrnlst	journalist
+cnstttn	constitution
+	lucky	(undefined)
+exclnt	excellent
+pmnt	payment
+slctn	selection
+	lab	(undefined)
+arst	arrest
+dpl	deeply
+	sad	(undefined)
+chldhd	childhood
+sps	suppose
+frl	fairly
+prsctr	prosecutor
+vlnt	violent
+rcvr	recover
+rf	roof
+amndmnt	amendment
+emtn	emotion
+exstng	existing
+grdt	graduate
+	factory	(undefined)
+schdl	schedule
+avn	avenue
+sprtl	spiritual
+	wash	(undefined)
+plnng	planning
+slf	self
+	shout	(undefined)
+slnt	silent
+brf	brief
+	error	(undefined)
+wdl	widely
+dscrptn	description
+imdt	immediate
+prchs	purchase
+ldng	leading
+	funding	(undefined)
+stlmnt	settlement
+prr	prayer
+inttv	initiative
+cltn	coalition
+cmprsn	comparison
+prtn	portion
+opnnt	opponent
+tnsn	tension
+chptr	chapter
+bthr	bother
+crclm	curriculum
+cnsst	consist
+imgrnt	immigrant
+enbl	enable
+	faculty	(undefined)
+	steel	(undefined)
+dsrt	desert
+ast	asset
+hsng	housing
+trnsfrm	transform
+rgrdng	regarding
+prcv	perceive
+dprsn	depression
+infrm	inform
+frml	formal
+abndn	abandon
+	chip	(undefined)
+dbl	double
+rmnng	remaining
+exstnc	existence
+	cheese	(undefined)
+jnt	joint
+svngs	savings
+prsrv	preserve
+	diet	(undefined)
+trtr	territory
+	tea	(undefined)
+	bend	(undefined)
+arng	arrange
+rslv	resolve
+psg	passage
+	lock	(undefined)
+rsstnc	resistance
+	stream	(undefined)
+	slide	(undefined)
+shrp	sharp
+ccl	cycle
+	pose	(undefined)
+phs	phase
+trnstn	transition
+rdctn	reduction
+ngttn	negotiation
+mnfctrr	manufacturer
+	quote	(undefined)
+dsrv	deserve
+	sale	(undefined)
+lr	layer
+wdng	wedding
+	discovery	(undefined)
+	mine	(undefined)
+acdm	academy
+	sand	(undefined)
+msl	missile
+elct	elect
+clmt	climate
+prtcptn	participation
+knf	knife
+atmsphr	atmosphere
+jk	joke
+urg	urge
+ordnr	ordinary
+vsl	visual
+nmrs	numerous
+ocsn	occasion
+phlsph	philosophy
+	suicide	(undefined)
+shl	shall
+	glad	(undefined)
+gds	goods
+mrvr	moreover
+	coat	(undefined)
+cnsstnt	consistent
+alchl	alcohol
+opst	opposite
+	cop	(undefined)
+unvrs	universe
+	breathe	(undefined)
+prctcl	practical
+thrp	therapy
+	racial	(undefined)
+elswhr	elsewhere
+	rarely	(undefined)
+	essentially	(undefined)
+dscpln	discipline
+rpl	reply
+Mxcn	Mexican
+psn	passion
+	tale	(undefined)
+dst	dust
+ks	kiss
+irn	iron
+indpndnc	independence
+Spnsh	Spanish
+advnc	advance
+	pot	(undefined)
+ptt	potato
+	motor	(undefined)
+	pack	(undefined)
+dmnt	dominate
+mrktng	marketing
+dsstr	disaster
+expsr	exposure
+cmplnt	complaint
+	cap	(undefined)
+cngrsnl	congressional
+jckt	jacket
+intns	intense
+imps	impose
+elctrc	electric
+implmnt	implement
+enfrcmnt	enforcement
+anlz	analyze
+rtr	retire
+dfct	deficit
+emphss	emphasis
+cncntrt	concentrate
+acmplsh	accomplish
+prvsl	previously
+smbl	symbol
+	bureau	(undefined)
+lbrtr	laboratory
+atch	attach
+fndmntl	fundamental
+whnvr	whenever
+arngmnt	arrangement
+invstgtr	investigator
+shck	shock
+adjst	adjust
+emplr	employer
+vsbl	visible
+prst	priest
+vlntr	volunteer
+intrprttn	interpretation
+entrtnmnt	entertainment
+hbt	habit
+ilstrt	illustrate
+	equally	(undefined)
+prspct	prospect
+enhnc	enhance
+svr	severe
+mntr	monitor
+amzng	amazing
+pvrt	poverty
+incrsng	increasing
+	boss	(undefined)
+inspr	inspire
+	anger	(undefined)
+hvl	heavily
+prkng	parking
+	print	(undefined)
+mkr	maker
+invlvmnt	involvement
+qn	queen
+	gene	(undefined)
+	vary	(undefined)
+aprxmtl	approximately
+glr	gallery
+evlt	evaluate
+trnsfr	transfer
+	usual	(undefined)
+	mystery	(undefined)
+	entry	(undefined)
+	mood	(undefined)
+	bean	(undefined)
+objctv	objective
+cpbl	capable
+cnstnt	constant
+sbstnc	substance
+strngl	strongly
+excptn	exception
+cmndr	commander
+spndng	spending
+	crucial	(undefined)
+acr	acre
+	wire	(undefined)
+cmnd	command
+nrvs	nervous
+scld	so-called
+cmpttv	competitive
+AAsn	Asian
+twr	tower
+vtrn	veteran
+crtr	creature
+smk	smoke
+AArb	Arab
+prnc	prince
+alnc	alliance
+trnsprttn	transportation
+	luck	(undefined)
+smptm	symptom
+	bury	(undefined)
+clnc	clinic
+ilnss	illness
+chmpnshp	championship
+prsnr	prisoner
+rpttn	reputation
+edtn	edition
+jc	juice
+sc	sauce
+pk	peak
+cnfrnt	confront
+brkfst	breakfast
+rcgntn	recognition
+	smell	(undefined)
+al	ally
+	pure	(undefined)
+	toy	(undefined)
+slr	salary
+elctrnc	electronic
+bthrm	bathroom
+srl	surely
+pschlgcl	psychological
+evltn	evaluation
+dmnsn	dimension
+	personnel	(undefined)
+blt	belt
+acmpn	accompany
+implctn	implication
+albm	album
+prfctl	perfectly
+	jet	(undefined)
+	hello	(undefined)
+rltv	relative
+	tourist	(undefined)
+phnmnn	phenomenon
+	fellow	(undefined)
+ts	toss
+pblctn	publication
+nrb	nearby
+cnsdrtn	consideration
+	holy	(undefined)
+entrprs	enterprise
+inr	inner
+	pray	(undefined)
+crk	creek
+	boot	(undefined)
+whspr	whisper
+rsst	resist
+jrn	journey
+flg	flag
+dsrdr	disorder
+dsgnr	designer
+ltrl	literally
+aprnt	apparent
+prmnnt	permanent
+angl	angle
+smth	smooth
+unlk	unlike
+tblspn	tablespoon
+cnsltnt	consultant
+	twin	(undefined)
+fvr	favor
+	throat	(undefined)
+cnstrct	construct
+brthd	birthday
+swng	swing
+sprtr	supporter
+tstng	testing
+rsnbl	reasonable
+	mail	(undefined)
+slvr	silver
+rtrmnt	retirement
+snstv	sensitive
+gntlmn	gentleman
+nv	navy
+trrsm	terrorism
+ocsnl	occasionally
+glnc	glance
+obsrvr	observer
+cnstntl	constantly
+	bind	(undefined)
+	wet	(undefined)
+	dig	(undefined)
+	quit	(undefined)
+dgtl	digital
+	vs	(undefined)
+asst	assist
+emplmnt	employment
+sgstn	suggestion
+rpdl	rapidly
+embrc	embrace
+jnr	junior
+stmch	stomach
+extrm	extreme
+	recovery	(undefined)
+ngtt	negotiate
+imprsn	impression
+wg	wage
+ffth	fifth
+FALSE	FALSE
+pnk	pink
+absnc	absence
+agrsv	aggressive
+crn	corn
+mxtr	mixture
+sbstntl	substantial
+grndmthr	grandmother
+qtl	quietly
+jl	jail
+spclst	specialist
+	dealer	(undefined)
+	poem	(undefined)
+	butter	(undefined)
+cnvntnl	conventional
+	pace	(undefined)
+intntn	intention
+	peer	(undefined)
+rstr	restore
+wdn	wooden
+crtcz	criticize
+nvrthls	nevertheless
+aprvl	approval
+hstrc	historic
+	secure	(undefined)
+prprtn	preparation
+Ltn	Latin
+lrd	lord
+tspn	teaspoon
+	musical	(undefined)
+wgh	weigh
+	pan	(undefined)
+asr	assure
+vwr	viewer
+ars	arise
+admnstrtr	administrator
+imgrtn	immigration
+hnst	honest
+orgn	origin
+gnt	giant
+dvrst	diversity
+tmt	tomato
+advs	advise
+blgcl	biological
+	shell	(undefined)
+	essay	(undefined)
+hstrn	historian
+dpt	deputy
+efctvl	effectively
+	buck	(undefined)
+tb	tube
+rfg	refugee
+dpth	depth
+flt	flat
+prcsl	precisely
+	mad	(undefined)
+dsblt	disability
+dstrctn	destruction
+asmptn	assumption
+	normally	(undefined)
+	angel	(undefined)
+	pop	(undefined)
+	criteria	(undefined)
+	minor	(undefined)
+crp	crop
+brr	barrier
+asgn	assign
+elmntr	elementary
+vlbl	valuable
+tstmn	testimony
+stk	stake
+cncrt	concert
+lbl	label
+rtn	routine
+wlth	wealth
+gng	gang
+incrprt	incorporate
+brnd	brand
+rcp	recipe
+vctn	vacation
+utlt	utility
+stlt	satellite
+extrrdnr	extraordinary
+ultmt	ultimate
+chmcl	chemical
+advct	advocate
+edctr	educator
+	cake	(undefined)
+phrs	phrase
+yl	yell
+	personally	(undefined)
+rspndnt	respondent
+Plstnn	Palestinian
+clsc	classic
+snp	snap
+	via	(undefined)
+lwst	lawsuit
+instl	install
+swp	sweep
+fstvl	festival
+drft	draft
+hvn	heaven
+swtch	switch
+actvst	activist
+clng	ceiling
+clck	clock
+ant	aunt
+drkns	darkness
+	daddy	(undefined)
+	royal	(undefined)
+advrtsng	advertising
+rgh	rough
+prgnnt	pregnant
+pnlt	penalty
+dstnt	distant
+dvlpng	developing
+yld	yield
+armd	armed
+mchnsm	mechanism
+rnk	rank
+klr	killer
+fnc	fence
+unvrsl	universal
+trr	terror
+wlf	wolf
+anxt	anxiety
+	found	(undefined)
+	protein	(undefined)
+engnrng	engineering
+clthng	clothing
+prcd	proceed
+fbr	fiber
+rct	react
+spn	spin
+rghl	roughly
+	drama	(undefined)
+lbrt	liberty
+ingrdnt	ingredient
+	hip	(undefined)
+prvsn	provision
+brdn	burden
+	teen	(undefined)
+srvvl	survival
+unlkl	unlikely
+IItln	Italian
+chmbr	chamber
+	lost	(undefined)
+cmnct	communicate
+stpd	stupid
+	bet	(undefined)
+Mslm	Muslim
+	bell	(undefined)
+onn	onion
+dsgr	disagree
+encntr	encounter
+cnstttnl	constitutional
+cbnt	cabinet
+rmrkbl	remarkable
+brkn	broken
+	latter	(undefined)
+ovrcm	overcome
+	virus	(undefined)
+strngr	stranger
+	retain	(undefined)
+prz	prize
+	string	(undefined)
+exhbtn	exhibition
+expnsn	expansion
+trmnds	tremendous
+bnch	bunch
+asstnt	assistant
+	initially	(undefined)
+acrt	accurate
+chk	cheek
+indx	index
+ocp	occupy
+	gear	(undefined)
+	guarantee	(undefined)
+chclt	chocolate
+crmn	ceremony
+btn	button
+shpng	shopping
+	dispute	(undefined)
+frntr	furniture
+mrn	marine
+sttstcs	statistics
+OOlmpc	Olympic
+wp	wipe
+spksmn	spokesman
+spr	super
+IIslmc	Islamic
+trnslt	translate
+intrprt	interpret
+tstf	testify
+cprtn	cooperation
+frndl	friendly
+prfl	profile
+pnts	pants
+whrs	whereas
+elt	elite
+	port	(undefined)
+cmplctd	complicated
+csn	cousin
+strtgc	strategic
+trrst	terrorist
+chrt	chart
+drwng	drawing
+gntl	gently
+od	odd
+incntv	incentive
+incnt	innocent
+impl	imply
+stdm	stadium
+scnr	scenario
+shtng	shooting
+blnd	blind
+asmbl	assembly
+wthdrw	withdraw
+strp	strip
+lvr	lover
+mnl	mainly
+arcrft	aircraft
+nwl	newly
+idl	ideal
+drt	dirt
+bndr	boundary
+rsrt	resort
+gntc	genetic
+cncntrtn	concentration
+	naturally	(undefined)
+	ministry	(undefined)
+srprsng	surprising
+advsr	adviser
+rcmndtn	recommendation
+smlrl	similarly
+jstf	justify
+wldlf	wildlife
+	bench	(undefined)
+	bullet	(undefined)
+	mode	(undefined)
+chmpn	champion
+dsms	dismiss
+dck	deck
+lftm	lifetime
+extnsv	extensive
+atrctv	attractive
+	politically	(undefined)
+rglrl	regularly
+	raw	(undefined)
+	fault	(undefined)
+clncl	clinical
+dtct	detect
+cnsdrbl	considerable
+wrkng	working
+prtl	partly
+pltfrm	platform
+rmt	remote
+frtn	fortune
+	slave	(undefined)
+	delivery	(undefined)
+rflctn	reflection
+rlvnt	relevant
+unknwn	unknown
+	pause	(undefined)
+	tissue	(undefined)
+snk	sink
+	counter	(undefined)
+Bbl	Bible
+lcns	license
+trgd	tragedy
+dlg	dialogue
+	mutual	(undefined)
+	loose	(undefined)
+extrnl	external
+	pride	(undefined)
+awrns	awareness
+elctrct	electricity
+dvrs	diverse
+advncd	advanced
+fstr	faster
+onln	online
+aslt	assault
+shrtl	shortly
+fnnc	finance
+	originally	(undefined)
+fndr	founder
+chrctrz	characterize
+prtst	protest
+	pole	(undefined)
+intlctl	intellectual
+cmnst	communist
+infctn	infection
+cntrvrs	controversy
+frz	freeze
+prtrt	portrait
+prf	proof
+stsfctn	satisfaction
+insght	insight
+hdqrtrs	headquarters
+	stair	(undefined)
+crsh	crash
+cnsttt	constitute
+	thirty	(undefined)
+altr	alter
+sdn	sudden
+	potentially	(undefined)
+	dirty	(undefined)
+evlv	evolve
+tngr	teenager
+vltn	violation
+	joy	(undefined)
+pss	possess
+hrcn	hurricane
+ofns	offense
+rlx	relax
+	mount	(undefined)
+	treaty	(undefined)
+	prior	(undefined)
+mmrl	memorial
+estblshmnt	establishment
+	tap	(undefined)
+swm	swim
+prprl	properly
+	gulf	(undefined)
+tng	tongue
+	salad	(undefined)
+shltr	shelter
+crspndnt	correspondent
+intrdctn	introduction
+fnrl	funeral
+ltrr	literary
+cnvrt	convert
+vlt	violate
+	rub	(undefined)
+entrnc	entrance
+epsd	episode
+trnmnt	tournament
+vtl	vital
+stbl	stable
+splt	split
+rprsnttn	representation
+fctn	fiction
+	lane	(undefined)
+dstnctn	distinction
+sgmnt	segment
+cmprhnsv	comprehensive
+cnfdnt	confident
+	prominent	(undefined)
+prsnttn	presentation
+	net	(undefined)
+sqz	squeeze
+tbc	tobacco
+sgnfcnc	significance
+imgntn	imagination
+prtnd	pretend
+	mere	(undefined)
+	fade	(undefined)
+	steady	(undefined)
+nwhr	nowhere
+vrtn	variation
+rdcl	radical
+advntr	adventure
+prfsn	profession
+exctng	exciting
+	fate	(undefined)
+rgrdls	regardless
+	load	(undefined)
+sngr	singer
+dstrbt	distribute
+	ton	(undefined)
+instnc	instance
+afltn	affiliation
+hntng	hunting
+	pale	(undefined)
+pt	poet
+grdl	gradually
+prtnrshp	partnership
+cpblt	capability
+Cndn	Canadian
+	tech	(undefined)
+cmrc	commerce
+grndfthr	grandfather
+	bake	(undefined)
+shlf	shelf
+hn	honey
+rnd	round
+	flee	(undefined)
+	adapt	(undefined)
+	buyer	(undefined)
+dvrc	divorce
+dfnsv	defensive
+bmbng	bombing
+scrd	scared
+gstr	gesture
+ptr	poetry
+rsrv	reserve
+stsf	satisfy
+pltn	pollution
+lwn	lawn
+dpndng	depending
+wsdm	wisdom
+cmfrt	comfort
+	plot	(undefined)
+vlnrbl	vulnerable
+explsn	explosion
+	tail	(undefined)
+dfr	differ
+sstn	sustain
+stblt	stability
+fnts	fantasy
+oblgtn	obligation
+	God	(undefined)
+	bike	(undefined)
+dnng	dining
+cstm	custom
+	ill	(undefined)
+	celebrity	(undefined)
+lthr	leather
+gvn	given
+frmwrk	framework
+	owe	(undefined)
+slght	slight
+tndnc	tendency
+crck	crack
+brfl	briefly
+	derive	(undefined)
+spkr	speaker
+scndl	scandal
+fftn	fifteen
+schm	scheme
+jz	jazz
+eldrl	elderly
+clbrtn	celebration
+	evolution	(undefined)
+fghtr	fighter
+pblcl	publicly
+trc	trace
+	rid	(undefined)
+dtctv	detective
+lmttn	limitation
+bsds	besides
+sp	soup
+ovn	oven
+rpd	rapid
+	chase	(undefined)
+sphstctd	sophisticated
+trb	tribe
+pp	pipe
+	deer	(undefined)
+ilstrtn	illustration
+mhm	mm-hmm
+unfrm	uniform
+trnsmsn	transmission
+strg	storage
+	pile	(undefined)
+srvvr	survivor
+rsmbl	resemble
+incrdbl	incredible
+imprs	impress
+ecnmst	economist
+efcnt	efficient
+fft	fifty
+shd	shade
+opr	opera
+clclt	calculate
+prfrnc	preference
+gdln	guideline
+cnsm	consume
+mntnnc	maintenance
+frmtn	formation
+glv	glove
+schlrshp	scholarship
+edct	educate
+	proportion	(undefined)
+apntmnt	appointment
+cnvctn	conviction
+	myth	(undefined)
+	solar	(undefined)
+	vessel	(undefined)
+	wealthy	(undefined)
+frndshp	friendship
+mmbrshp	membership
+crft	craft
+qlf	qualify
+ernngs	earnings
+aslp	asleep
+prch	porch
+cntrvrsl	controversial
+pnfl	painful
+cngrsmn	congressman
+mm	mama
+infnt	infant
+	cow	(undefined)
+prpsd	proposed
+sfcnt	sufficient
+	oak	(undefined)
+	mall	(undefined)
+pnshmnt	punishment
+hlpfl	helpful
+ongng	ongoing
+admsn	admission
+frqnc	frequency
+	ratio	(undefined)
+	delay	(undefined)
+prvc	privacy
+	trick	(undefined)
+	etc	(undefined)
+	circuit	(undefined)
+mscn	musician
+	sue	(undefined)
+	aide	(undefined)
+mdst	modest
+hlcptr	helicopter
+empr	empire
+dtld	detailed
+efcnc	efficiency
+hmr	humor
+snctns	sanctions
+bdl	badly
+tns	tennis
+emsn	emission
+dsprt	desperate
+grlc	garlic
+cntst	contest
+strngthn	strengthen
+dmnstrtn	demonstration
+rstrctn	restriction
+IIrsh	Irish
+hntr	hunter
+stndng	standing
+hndfl	handful
+expld	explode
+prmpt	prompt
+absrb	absorb
+egr	eager
+tmprr	temporary
+cmsnr	commissioner
+	diamond	(undefined)
+	curious	(undefined)
+dfrntl	differently
+rsrvtn	reservation
+dwntwn	downtown
+adjstmnt	adjustment
+cmpstn	composition
+tgr	tiger
+fbrc	fabric
+asrt	assert
+dscrmntn	discrimination
+	float	(undefined)
+	math	(undefined)
+ovrlk	overlook
+crps	corps
+sqnc	sequence
+	heel	(undefined)
+	successfully	(undefined)
+exmntn	examination
+hrzn	horizon
+abslt	absolute
+antcpt	anticipate
+yrs	yours
+dmnnt	dominant
+	bull	(undefined)
+prvntn	prevention
+	meter	(undefined)
+lgtmt	legitimate
+msk	mask
+	bite	(undefined)
+	stroke	(undefined)
+asgnmnt	assignment
+	lion	(undefined)
+rfl	rifle
+brlnt	brilliant
+apnt	appoint
+bm	boom
+nkd	naked
+hngr	hungry
+tght	tight
+	flame	(undefined)
+ecnmcs	economics
+cbn	cabin
+orng	orange
+	wander	(undefined)
+txpr	taxpayer
+rmntc	romantic
+dvt	devote
+infltn	inflation
+frthrmr	furthermore
+	pine	(undefined)
+agrcltr	agriculture
+lgc	legacy
+extnsn	extension
+	barrel	(undefined)
+arvl	arrival
+rgstr	register
+flvr	flavor
+vrss	versus
+flsh	flesh
+sbmt	submit
+grg	garage
+ctn	cotton
+oprtr	operator
+	nut	(undefined)
+	blade	(undefined)
+grlfrnd	girlfriend
+dpndnt	dependent
+crbn	carbon
+hrtg	heritage
+orgnc	organic
+ambsdr	ambassador
+invsn	invasion
+smt	summit
+lfstl	lifestyle
+agrcltrl	agricultural
+shrg	shrug
+cnsl	counsel
+dstngsh	distinguish
+	menu	(undefined)
+awfl	awful
+	wound	(undefined)
+mnfctrng	manufacturing
+cnsmptn	consumption
+prmsn	permission
+twlv	twelve
+ofnsv	offensive
+shwr	shower
+clps	collapse
+undrg	undergo
+cnscsns	consciousness
+frstrtn	frustration
+oprtng	operating
+	ease	(undefined)
+	carrier	(undefined)
+scp	scope
+	grain	(undefined)
+dstnct	distinct
+rnch	ranch
+wrkshp	workshop
+	auto	(undefined)
+pblshr	publisher
+nrtr	narrator
+brsh	brush
+	ban	(undefined)
+prtr	portray
+fghtng	fighting
+brw	borrow
+	seize	(undefined)
+pschlg	psychology
+sbsqnt	subsequent
+excd	exceed
+klng	killing
+ddln	deadline
+athltc	athletic
+ws	wise
+mdctn	medication
+rptdl	repeatedly
+frqnt	frequent
+rckt	rocket
+fm	fame
+	lung	(undefined)
+dpct	depict
+prsd	persuade
+tnt	tent
+	ah	(undefined)
+mtvtn	motivation
+ods	odds
+	worried	(undefined)
+	principal	(undefined)
+ugl	ugly
+adqt	adequate
+nnthls	nonetheless
+wdsprd	widespread
+trnsfrmtn	transformation
+	physically	(undefined)
+prvdr	provider
+admr	admire
+hdln	headline
+mrcl	miracle
+instttnl	institutional
+hmls	homeless
+imprsv	impressive
+	chef	(undefined)
+tctc	tactic
+msrmnt	measurement
+idntfctn	identification
+prvnc	province
+mdrt	moderate
+cnsnss	consensus
+	lovely	(undefined)
+cmd	comedy
+	shore	(undefined)
+phtgrphr	photographer
+vntr	venture
+cmpttr	competitor
+nmntn	nomination
+cnfsn	confusion
+atrbt	attribute
+hrr	horror
+ornttn	orientation
+wkl	weekly
+lgsltr	legislature
+bskt	basket
+cntnd	continued
+blnkt	blanket
+egl	eagle
+chngng	changing
+	mouse	(undefined)
+ethcs	ethics
+ghst	ghost
+evrd	everyday
+rp	rope
+	formula	(undefined)
+exhbt	exhibit
+nrv	nerve
+	cope	(undefined)
+rnng	running
+pschlgst	psychologist
+acd	acid
+	pet	(undefined)
+ptch	pitch
+ocptn	occupation
+crg	courage
+dft	defeat
+prgnnc	pregnancy
+actrs	actress
+	patch	(undefined)
+mrgn	margin
+rnfrc	reinforce
+clctv	collective
+brck	brick
+scrpt	script
+ckng	cooking
+tnl	tunnel
+	concrete	(undefined)
+rcrt	recruit
+grcr	grocery
+lmn	lemon
+	dare	(undefined)
+exct	exact
+	battery	(undefined)
+srprsngl	surprisingly
+artstc	artistic
+	shit	(undefined)
+indctn	indication
+	cookie	(undefined)
+intnst	intensity
+drmtcl	dramatically
+	piano	(undefined)
+cncrnng	concerning
+	lap	(undefined)
+inqr	inquiry
+dscrs	discourse
+lghtr	laughter
+anvrsr	anniversary
+tlscp	telescope
+swr	swear
+	charity	(undefined)
+	clue	(undefined)
+grv	grave
+nrtv	narrative
+hpthss	hypothesis
+upst	upset
+acptbl	acceptable
+	couch	(undefined)
+dfndnt	defendant
+	compose	(undefined)
+	ballot	(undefined)
+rltd	related
+clstr	cluster
+	pie	(undefined)
+rcrdng	recording
+	rail	(undefined)
+dcrs	decrease
+	rape	(undefined)
+intrpt	interrupt
+archtct	architect
+sgh	sigh
+rmrk	remark
+invnt	invent
+prscrptn	prescription
+rwrd	reward
+	sacred	(undefined)
+	organ	(undefined)
+abrd	abroad
+dvl	devil
+	dear	(undefined)
+sprr	superior
+grtl	greatly
+arpln	airplane
+hbtt	habitat
+	coal	(undefined)
+	soccer	(undefined)
+enttl	entitle
+instrctr	instructor
+intgrt	integrity
+shn	shine
+mss	mess
+nrm	norm
+algtn	allegation
+	pill	(undefined)
+plsd	pleased
+	plain	(undefined)
+inspctr	inspector
+	forum	(undefined)
+pwdr	powder
+	sin	(undefined)
+evdnt	evident
+spnsr	sponsor
+acptnc	acceptance
+prsctn	prosecution
+cgntv	cognitive
+prsdnc	presidency
+mgc	magic
+nrthwst	northwest
+rglt	regulate
+excld	exclude
+clnl	colonial
+rnt	rent
+cvln	civilian
+hrbr	harbor
+estmtd	estimated
+rhthm	rhythm
+mdnght	midnight
+cnslr	counselor
+hghlght	highlight
+	palace	(undefined)
+trdng	trading
+cmpnd	compound
+	bare	(undefined)
+	echo	(undefined)
+	integrate	(undefined)
+slc	slice
+cmbt	combat
+mdm	medium
+	log	(undefined)
+srgn	surgeon
+excs	excuse
+rtl	ritual
+rsgn	resign
+exctd	excited
+lghtl	lightly
+evl	evil
+	bitter	(undefined)
+	export	(undefined)
+	clay	(undefined)
+	logic	(undefined)
+	virtue	(undefined)
+cntnr	container
+qrtrbck	quarterback
+	beg	(undefined)
+slmn	salmon
+	greet	(undefined)
+crv	curve
+	mill	(undefined)
+clst	closet
+intrr	interior
+	rod	(undefined)
+cnd	candy
+rstrct	restrict
+intt	initiate
+rvrs	reverse
+ethcl	ethical
+scndr	secondary
+admnstrtv	administrative
+cnfs	confuse
+ddl	deadly
+	pig	(undefined)
+sbrbn	suburban
+	medal	(undefined)
+	receiver	(undefined)
+gz	gaze
+	snake	(undefined)
+mrch	march
+exprmntl	experimental
+cvlztn	civilization
+clscl	classical
+	fold	(undefined)
+wkns	weakness
+crdr	corridor
+hrsh	harsh
+	retail	(undefined)
+mrtgg	mortgage
+hrdr	harder
+dvlpr	developer
+lgnd	legend
+exctmnt	excitement
+enfrc	enforce
+	occasional	(undefined)
+cwb	cowboy
+mnmm	minimum
+	flash	(undefined)
+rlbl	reliable
+sbrb	suburb
+mlt	melt
+	contend	(undefined)
+pld	plead
+wrtn	written
+	flood	(undefined)
+stm	stem
+invtbl	inevitable
+esnc	essence
+ptchr	pitcher
+sbtl	subtle
+slm	slam
+unmplmnt	unemployment
+trnk	trunk
+prvlg	privilege
+	burst	(undefined)
+archtctr	architecture
+mnthl	monthly
+rndr	render
+mnstrm	mainstream
+frnkl	frankly
+obstcl	obstacle
+mtvt	motivate
+	trap	(undefined)
+drnkng	drinking
+elbw	elbow
+rmr	rumor
+swlw	swallow
+lgsltv	legislative
+lctr	lecture
+jns	jeans
+	duck	(undefined)
+	slope	(undefined)
+tshrt	t-shirt
+inspctn	inspection
+strct	strict
+ovrwhlmng	overwhelming
+	assemble	(undefined)
+msng	missing
+smngl	seemingly
+frd	fraud
+implmnttn	implementation
+hnt	hunt
+bfrnd	boyfriend
+intgrtn	integration
+	rat	(undefined)
+brdcst	broadcast
+Krn	Korean
+nl	nail
+	pen	(undefined)
+cnslt	consult
+cmpnn	companion
+	monster	(undefined)
+nghtmr	nightmare
+bf	beef
+srvng	serving
+glb	globe
+chlstrl	cholesterol
+prlmnt	parliament
+	suite	(undefined)
+cntnng	continuing
+hnc	hence
+	lend	(undefined)
+sxth	sixth
+	mud	(undefined)
+pmp	pump
+	flour	(undefined)
+hstg	hostage
+ownrshp	ownership
+fcltt	facilitate
+bsmnt	basement
+crltn	correlation
+	hurry	(undefined)
+insct	insect
+arn	arena
+	drift	(undefined)
+dmn	domain
+cv	cave
+afrcnamrcn	African-American
+cnsstntl	consistently
+lp	leap
+efctvns	effectiveness
+mxmm	maximum
+	array	(undefined)
+unxpctd	unexpected
+	curtain	(undefined)
+sndwch	sandwich
+pcfl	peaceful
+hmnt	humanity
+	prediction	(undefined)
+	Roman	(undefined)
+idlg	ideology
+rlrd	railroad
+pssn	possession
+hrn	horn
+rplcmnt	replacement
+anncmnt	announcement
+	pond	(undefined)
+frgv	forgive
+bshp	bishop
+uncmfrtbl	uncomfortable
+	rip	(undefined)
+rndm	random
+hrb	herb
+and/r	and/or
+dmp	dump
+	guilt	(undefined)
+ctl	cattle
+strn	strain
+shrf	sheriff
+bhv	behave
+crstl	crystal
+	execute	(undefined)
+wrst	wrist
+mtv	motive
+pntr	painter
+cnvct	convict
+smltnsl	simultaneously
+rcsn	recession
+awt	await
+hlw	hallway
+ds	dose
+endr	endure
+cnslng	counseling
+	suck	(undefined)
+acmdt	accommodate
+	traditionally	(undefined)
+	spill	(undefined)
+fscl	fiscal
+rtrd	retired
+clsd	closed
+	gentle	(undefined)
+sprtn	separation
+wrr	warrior
+cnvncd	convinced
+sthwst	southwest
+	drunk	(undefined)
+otdr	outdoor
+	tune	(undefined)
+hrm	harm
+clth	cloth
+whrvr	wherever
+admnstr	administer
+sprvsr	supervisor
+cmprms	compromise
+grtfl	grateful
+Hspnc	Hispanic
+mndt	mandate
+alrm	alarm
+	cruise	(undefined)
+	injure	(undefined)
+sclptr	sculpture
+drn	drain
+tmpl	temple
+dncr	dancer
+twl	towel
+IIslm	Islam
+cntns	continuous
+gvrn	govern
+crwn	crown
+cntrctr	contractor
+adlscnt	adolescent
+skrt	skirt
+bctr	bacteria
+adptn	adoption
+intlgnt	intelligent
+	praise	(undefined)
+otr	outer
+	grip	(undefined)
+prfnd	profound
+trgr	trigger
+uncrtnt	uncertainty
+drvng	driving
+enthssm	enthusiasm
+cmplxt	complexity
+	cafe	(undefined)
+	virtual	(undefined)
+undrmn	undermine
+	unity	(undefined)
+	chaos	(undefined)
+cmnl	commonly
+endls	endless
+rhtrc	rhetoric
+	trait	(undefined)
+pnsn	pension
+gnn	genuine
+	sweat	(undefined)
+invtn	innovation
+crnc	currency
+	forty	(undefined)
+lb	lobby
+thrtcl	theoretical
+	bat	(undefined)
+mkp	makeup
+plsnt	pleasant
+rbld	rebuild
+hrbl	horrible
+	pad	(undefined)
+sspnd	suspend
+rlv	relieve
+rsm	resume
+rspctvl	respectively
+prmtn	promotion
+tchnlgcl	technological
+glx	galaxy
+altgthr	altogether
+aplgz	apologize
+infrstrctr	infrastructure
+shtl	shuttle
+thmb	thumb
+qstnr	questionnaire
+sdwlk	sidewalk
+bsnsmn	businessman
+	weird	(undefined)
+rdtn	radiation
+frmt	format
+	scare	(undefined)
+bnc	bounce
+	doll	(undefined)
+atrctn	attraction
+ndl	needle
+cntrprt	counterpart
+cnv	convey
+cmpnstn	compensation
+exclsv	exclusive
+twst	twist
+	precise	(undefined)
+sspcn	suspicion
+sthst	southeast
+wlkng	walking
+	boost	(undefined)
+	scatter	(undefined)
+rbl	rebel
+	van	(undefined)
+idntcl	identical
+shm	shame
+dlct	delicate
+OOlmpcs	Olympics
+wdr	wider
+crptn	corruption
+hk	hook
+ltnnt	lieutenant
+	firmly	(undefined)
+strctrl	structural
+invsbl	invisible
+frhd	forehead
+trvlr	traveler
+mnngfl	meaningful
+prvdd	provided
+	colony	(undefined)
+sgntr	signature
+dtbs	database
+clrk	clerk
+ddct	dedicate
+dtrmntn	determination
+anxs	anxious
+	sum	(undefined)
+frzn	frozen
+jrr	juror
+tmng	timing
+pnsh	punish
+crwl	crawl
+cnscs	conscious
+	colonel	(undefined)
+ftns	fitness
+lndng	landing
+dctrn	doctrine
+	belly	(undefined)
+	pope	(undefined)
+thrb	thereby
+	historically	(undefined)
+plf	playoff
+pstr	poster
+acqstn	acquisition
+rsc	rescue
+dprtr	departure
+	summary	(undefined)
+chrnc	chronic
+hndsm	handsome
+	hug	(undefined)
+	wow	(undefined)
+	pursuit	(undefined)
+rsdnc	residence
+	loud	(undefined)
+prmsng	promising
+	disk	(undefined)
+	doorway	(undefined)
+dgnss	diagnosis
+	scout	(undefined)
+	cancel	(undefined)
+amd	amid
+envlp	envelope
+	sooner	(undefined)
+	beam	(undefined)
+rlctnt	reluctant
+	spouse	(undefined)
+	fluid	(undefined)
+ext	exit
+mld	mild
+elctrcl	electrical
+	bath	(undefined)
+dcnt	decent
+ankl	ankle
+trnsctn	transaction
+rprtng	reporting
+	pit	(undefined)
+	practically	(undefined)
+oxgn	oxygen
+rcsm	racism
+	fist	(undefined)
+grbg	garbage
+gtr	guitar
+exprts	expertise
+	parade	(undefined)
+explrtn	exploration
+	carve	(undefined)
+rlm	realm
+rcpnt	recipient
+rsdntl	residential
+	bias	(undefined)
+snlght	sunlight
+lmp	lamp
+	donor	(undefined)
+rpr	repair
+shrpl	sharply
+	hers	(undefined)
+gdnc	guidance
+dplmtc	diplomatic
+prpl	purple
+prncs	princess
+cndl	candle
+gnrs	generous
+ncst	necessity
+tck	tuck
+	statue	(undefined)
+elvtr	elevator
+pplrt	popularity
+indctr	indicator
+entt	entity
+lmb	limb
+	bold	(undefined)
+hstt	hesitate
+strtng	starting
+dmnsh	diminish
+rdl	readily
+elgnt	elegant
+enggmnt	engagement
+rg	rage
+dstntn	destination
+rlstc	realistic
+intnt	intent
+mtphr	metaphor
+atmbl	automobile
+prdctv	productive
+endrs	endorse
+islt	isolate
+	confess	(undefined)
+wldrns	wilderness
+mnmz	minimize
+dgns	diagnose
+hpns	happiness
+spctrm	spectrum
+	hint	(undefined)
+etng	eating
+abstrct	abstract
+rvltnr	revolutionary
+	gym	(undefined)
+dspntd	disappointed
+prtcl	particle
+dnmc	dynamic
+atmtcl	automatically
+	dawn	(undefined)
+rlng	ruling
+mchncl	mechanical
+vtmn	vitamin
+	silly	(undefined)
+artfcl	artificial
+otstndng	outstanding
+	peel	(undefined)
+orl	oral
+o'clck	o'clock
+undrtk	undertake
+lnl	lonely
+srvnt	servant
+indgns	indigenous
+cvc	civic
+fltm	full-time
+cprt	cooperate
+csl	casual
+bhvrl	behavioral
+shrtg	shortage
+rcptn	reception
+ofrng	offering
+	huh	(undefined)
+crdblt	credibility
+	chin	(undefined)
+phscs	physics
+vnsh	vanish
+	blend	(undefined)
+	noon	(undefined)
+	precious	(undefined)
+flp	flip
+	scary	(undefined)
+pz	pizza
+tlt	toilet
+slk	silk
+	bid	(undefined)
+gthrng	gathering
+sftl	softly
+	annually	(undefined)
+sfrng	suffering
+acrc	accuracy
+brkr	broker
+hpfl	hopefully
+dscnd	descend
+	tide	(undefined)
+stmbl	stumble
+	verbal	(undefined)
+clctr	collector
+jdcl	judicial
+brnng	burning
+invntr	inventory
+	fool	(undefined)
+llt	loyalty
+prfrmr	performer
+	kit	(undefined)
+rmnc	romance
+qntt	quantity
+algd	alleged
+thrpst	therapist
+lngtm	longtime
+sntmnt	sentiment
+sdm	sodium
+	seal	(undefined)
+trlr	trailer
+shrd	shared
+eqt	equity
+bnkng	banking
+rdcls	ridiculous
+prcsng	processing
+dlm	dilemma
+qst	quest
+plw	pillow
+	lately	(undefined)
+lsr	laser
+rgd	rigid
+ors	ours
+prhbt	prohibit
+gns	genius
+strtr	starter
+	cart	(undefined)
+	Cuban	(undefined)
+inmt	inmate
+scrfc	sacrifice
+	officially	(undefined)
+	slap	(undefined)
+mstrs	mysterious
+spclz	specialize
+frk	fork
+invttn	invitation
+	sail	(undefined)
+rgltr	regulatory
+	cartoon	(undefined)
+	stiff	(undefined)
+crtrm	courtroom
+imprt	import
+tghtl	tightly
+eqtn	equation
+trsr	treasure
+	jaw	(undefined)
+	scan	(undefined)
+cndmn	condemn
+imprvd	improved
+pckp	pickup
+dgnt	dignity
+insprtn	inspiration
+atmtc	automatic
+mrchnt	merchant
+grk	Greek
+hstl	hostile
+extndd	extended
+hmlnd	homeland
+gsln	gasoline
+grvt	gravity
+thrghl	thoroughly
+	bow	(undefined)
+	glory	(undefined)
+optmstc	optimistic
+srgnt	sergeant
+cslt	casualty
+cncd	concede
+	bloody	(undefined)
+	barn	(undefined)
+dnt	donate
+	unite	(undefined)
+	pro	(undefined)
+fdbck	feedback
+grf	grief
+	spite	(undefined)
+	steep	(undefined)
+prdctvt	productivity
+cncv	conceive
+tndr	tender
+cntnnt	continent
+hrdwr	hardware
+eqp	equip
+wgn	wagon
+otpt	output
+wthdrwl	withdrawal
+eldr	elder
+cg	cage
+cstl	coastal
+ptnc	patience
+shlw	shallow
+erthqk	earthquake
+vtng	voting
+inpt	input
+cnvs	canvas
+	click	(undefined)
+swrd	sword
+	mate	(undefined)
+prtfl	portfolio
+	bug	(undefined)
+rfrgrtr	refrigerator
+nrthst	northeast
+svnth	seventh
+	post	(undefined)
+cmbnd	combined
+	alien	(undefined)
+wlngns	willingness
+hdn	hidden
+acntng	accounting
+	sexually	(undefined)
+	chop	(undefined)
+ptrl	patrol
+smblc	symbolic
+	ruin	(undefined)
+	drum	(undefined)
+opsd	opposed
+	sheer	(undefined)
+idlgcl	ideological
+dscrg	discourage
+cnl	canal
+	haul	(undefined)
+prtctv	protective
+cnsprc	conspiracy
+	steam	(undefined)
+embs	embassy
+tckl	tackle
+trpcl	tropical
+instntl	instantly
+	bubble	(undefined)
+	calm	(undefined)
+	sheep	(undefined)
+	accent	(undefined)
+grsp	grasp
+mdf	modify
+	grin	(undefined)
+txc	toxic
+mxd	mixed
+mgntd	magnitude
+aftrwrd	afterward
+prgrsv	progressive
+mnplt	manipulate
+vcn	vaccine
+mnmnt	monument
+vrdct	verdict
+flxbl	flexible
+dclrtn	declaration
+	costume	(undefined)
+drwr	drawer
+bls	bless
+	rack	(undefined)
+dpr	deeper
+	neutral	(undefined)
+fscntng	fascinating
+	terrific	(undefined)
+smpth	sympathy
+spctclr	spectacular
+	ounce	(undefined)
+	rear	(undefined)
+	inn	(undefined)
+	collaboration	(undefined)
+clp	clip
+instrct	instruct
+	sock	(undefined)
+	rider	(undefined)
+	revelation	(undefined)
+acmplshmnt	accomplishment
+fnt	faint
+	spell	(undefined)
+gspl	gospel
+	whale	(undefined)
+	theatre	(undefined)
+crdntr	coordinator
+tlntd	talented
+alngsd	alongside
+	cab	(undefined)
+isltn	isolation
+	costly	(undefined)
+trgc	tragic
+instnct	instinct
+intmt	intimate
+undrlng	underlying
+inflntl	influential
+	pastor	(undefined)
+prsmbl	presumably
+skp	skip
+elvn	eleven
+	tens	(undefined)
+whvr	whoever
+ancstr	ancestor
+sfl	safely
+nmn	nominee
+extc	exotic
+mnml	minimal
+uncrtn	uncertain
+	Persian	(undefined)
+prntl	parental
+orchstr	orchestra
+	treasury	(undefined)
+tlrt	tolerate
+gln	gallon
+	thigh	(undefined)
+frtntl	fortunately
+ambts	ambitious
+actvl	actively
+flxblt	flexibility
+	jar	(undefined)
+ccn	cocaine
+	incredibly	(undefined)
+cnsqntl	consequently
+dcmntr	documentary
+insrt	insert
+ambtn	ambition
+fnctnl	functional
+bnkrptc	bankruptcy
+rnr	runner
+exctn	execution
+	crush	(undefined)
+	buddy	(undefined)
+wrkplc	workplace
+	skull	(undefined)
+	cord	(undefined)
+fxd	fixed
+eqvlnt	equivalent
+	casino	(undefined)
+rlblt	reliability
+expctd	expected
+	boil	(undefined)
+whp	whip
+dvn	divine
+prpstn	proposition
+cnss	census
+crctn	correction
+	diary	(undefined)
+nst	nest
+sttt	statute
+exm	exam
+mtrpltn	metropolitan
+ntrtn	nutrition
+brz	breeze
+ilsn	illusion
+annms	anonymous
+	coup	(undefined)
+	midst	(undefined)
+edt	edit
+exprncd	experienced
+	castle	(undefined)
+explt	exploit
+jwlr	jewelry
+dbts	diabetes
+trnsltn	translation
+Dtch	Dutch
+	irony	(undefined)
+asctd	associated
+utlz	utilize
+rbt	rabbit
+	soap	(undefined)
+	booth	(undefined)
+imn	immune
+	gut	(undefined)
+aprctn	appreciation
+scrmbl	scramble
+upstrs	upstairs
+pnch	punch
+	gross	(undefined)
+lblt	liability
+acsbl	accessible
+mchnc	mechanic
+	ass	(undefined)
+asthtc	aesthetic
+	dessert	(undefined)
+	waist	(undefined)
+alk	alike
+brv	brave
+	loop	(undefined)
+psng	passing
+	partially	(undefined)
+sttstcl	statistical
+crctl	correctly
+	pin	(undefined)
+prcttnr	practitioner
+encrgng	encouraging
+sndrm	syndrome
+	tribal	(undefined)
+prsst	persist
+trsh	trash
+	teenage	(undefined)
+slfestm	self-esteem
+prlmnr	preliminary
+snst	sunset
+hrsmnt	harassment
+rprtdl	reportedly
+	fever	(undefined)
+pnc	panic
+chrtr	charter
+otlk	outlook
+	foster	(undefined)
+cmprs	comprise
+knwn	known
+Thnksgvng	Thanksgiving
+shrttrm	short-term
+	shed	(undefined)
+cprtv	cooperative
+	alley	(undefined)
+sbsd	subsidy
+sclr	secular
+almnm	aluminum
+clf	cliff
+grm	gram
+otln	outline
+	mentally	(undefined)
+invd	invade
+cnfrnttn	confrontation
+dslv	dissolve
+	shy	(undefined)
+cn	coin
+spcltn	speculation
+crtvt	creativity
+cstd	custody
+intrfr	interfere
+	spoon	(undefined)
+	bee	(undefined)
+	rolling	(undefined)
+intrct	interact
+	damn	(undefined)
+	dam	(undefined)
+unfr	unfair
+smd	someday
+lqd	liquid
+dscls	disclose
+mshrm	mushroom
+dsbld	disabled
+ctlg	catalog
+pblct	publicity
+cmpl	compel
+	cease	(undefined)
+dcrt	decorate
+srndng	surrounding
+exclsvl	exclusively
+bns	bonus
+unprcdntd	unprecedented
+ovrs	oversee
+tchdwn	touchdown
+fdrtn	federation
+agrsn	aggression
+bhlf	behalf
+wlknwn	well-known
+dntn	donation
+dsprtl	desperately
+hghtch	high-tech
+cht	cheat
+	audio	(undefined)
+snstn	sensation
+entrprnr	entrepreneur
+prclm	proclaim
+splr	supplier
+	rival	(undefined)
+rmndr	reminder
+	heal	(undefined)
+	beast	(undefined)
+uncvr	uncover
+mrt	merit
+mmntm	momentum
+stmlt	stimulate
+rtnl	rational
+clmnst	columnist
+pnr	pioneer
+blg	biology
+	photography	(undefined)
+invtv	innovative
+	purse	(undefined)
+frnchs	franchise
+cnsnt	consent
+otft	outfit
+	eve	(undefined)
+	spray	(undefined)
+shv	shove
+fshrmn	fisherman
+snstvt	sensitivity
+crts	courtesy
+	stack	(undefined)
+	pork	(undefined)
+tmmt	teammate
+instnt	instant
+	pulse	(undefined)
+otsdr	outsider
+hlmt	helmet
+	ladder	(undefined)
+opnl	openly
+	fierce	(undefined)
+rqrd	required
+shrnk	shrink
+	cute	(undefined)
+	dot	(undefined)
+wkn	weaken
+fltr	filter
+wrldwd	worldwide
+envsn	envision
+vdtp	videotape
+	partial	(undefined)
+	patent	(undefined)
+	tray	(undefined)
+jngl	jungle
+clsf	classify
+spclt	specialty
+	nasty	(undefined)
+asl	aisle
+grph	graph
+sx	sexy
+dstrb	disturb
+excsv	excessive
+bnkr	banker
+instltn	installation
+swmng	swimming
+plcmnt	placement
+atndnc	attendance
+infrml	informal
+	sack	(undefined)
+eghth	eighth
+	premise	(undefined)
+	grill	(undefined)
+dng	dying
+clrfl	colorful
+hck	hockey
+bckrd	backyard
+	collar	(undefined)
+brthng	breathing
+lgcl	logical
+lghtnng	lightning
+drd	dried
+dscnt	discount
+	sole	(undefined)
+	boast	(undefined)
+	tag	(undefined)
+sblng	sibling
+stv	stove
+trnr	trainer
+vrtcl	vertical
+	added	(undefined)
+mrktplc	marketplace
+	cure	(undefined)
+crst	curiosity
+orgnztnl	organizational
+shrmp	shrimp
+inhrt	inherit
+	distract	(undefined)
+isltd	isolated
+plnr	planner
+spsdl	supposedly
+lkws	likewise
+mnk	monkey
+	toll	(undefined)
+embrsd	embarrassed
+dlbrtl	deliberately
+bccl	bicycle
+stnc	stance
+orbt	orbit
+hrmn	hormone
+dprsd	depressed
+orgnsm	organism
+	deploy	(undefined)
+strctl	strictly
+dm	deem
+ebrw	eyebrow
+	legally	(undefined)
+pzl	puzzle
+icn	icon
+	pat	(undefined)
+clsst	closest
+	sneak	(undefined)
+	fleet	(undefined)
+cnsrvtn	conservation
+sprtv	supportive
+cmprbl	comparable
+txtr	texture
+strkng	striking
+Chrstnt	Christianity
+	dip	(undefined)
+dspntmnt	disappointment
+	sleeve	(undefined)
+	socially	(undefined)
+	wheat	(undefined)
+chnk	chunk
+twthrds	two-thirds
+	refuge	(undefined)
+blnk	blank
+unfld	unfold
+	considerably	(undefined)
+	frontier	(undefined)
+sspcs	suspicious
+cncptn	conception
+	feather	(undefined)
+elphnt	elephant
+txtbk	textbook
+glmps	glimpse
+	inevitably	(undefined)
+trmph	triumph
+plng	plunge
+sphr	sphere
+	hunger	(undefined)
+dnst	density
+	cheer	(undefined)
+blncd	balanced
+	protocol	(undefined)
+	legislator	(undefined)
+	auction	(undefined)
+eqlt	equality
+	risky	(undefined)
+cmtr	cemetery
+bldr	builder
+awk	awake
+rtlr	retailer
+	debut	(undefined)
+tghtn	tighten
+	spare	(undefined)
+cnstrnt	constraint
+cmplnc	compliance
+emrgng	emerging
+elbrt	elaborate
+atp	atop
+chw	chew
+smlrt	similarity
+pncl	pencil
+clcltn	calculation
+tlrnc	tolerance
+astrnmr	astronomer
+blk	bulk
+intrvl	interval
+ntbk	notebook
+gnr	genre
+lklhd	likelihood
+	streak	(undefined)
+	rib	(undefined)
+scnt	scent
+vldt	validity
+	steer	(undefined)
+intct	intact
+shrk	shark
+	uh	(undefined)
+prgrmng	programming
+dmb	dumb
+frmrl	formerly
+sqd	squad
+	comply	(undefined)
+dbrs	debris
+psnt	peasant
+otlt	outlet
+	neat	(undefined)
+vld	valid
+kngdm	kingdom
+sll	solely
+elgbl	eligible
+rgrt	regret
+mncpl	municipal
+dpst	deposit
+trnsprt	transport
+dgh	dough
+	lid	(undefined)
+	voluntary	(undefined)
+jrnlsm	journalism
+impls	impulse
+plcmn	policeman
+objctn	objection
+thrv	thrive
+prvtl	privately
+	cling	(undefined)
+hlfw	halfway
+unhp	unhappy
+	rally	(undefined)
+scrtch	scratch
+	robot	(undefined)
+cnvrsn	conversion
+sprmrkt	supermarket
+	blink	(undefined)
+phlsphcl	philosophical
+hpl	happily
+	thread	(undefined)
+algdl	allegedly
+	ash	(undefined)
+dnmcs	dynamics
+dnl	denial
+	riot	(undefined)
+	soar	(undefined)
+	mentor	(undefined)
+	beard	(undefined)
+wdw	widow
+ofndr	offender
+lndmrk	landmark
+	routinely	(undefined)
+	butt	(undefined)
+frbd	forbid
+mgrtn	migration
+	carrot	(undefined)
+	harmony	(undefined)
+brtl	brutal
+prvl	prevail
+	weed	(undefined)
+exhst	exhaust
+	pasta	(undefined)
+dstnctv	distinctive
+frctn	fraction
+	emotionally	(undefined)
+	poke	(undefined)
+dncng	dancing
+frshmn	freshman
+	suitable	(undefined)
+yngstr	youngster
+	slavery	(undefined)
+	balloon	(undefined)
+	opt	(undefined)
+crwdd	crowded
+	liver	(undefined)
+lstnr	listener
+irncl	ironically
+afrmtv	affirmative
+cmdt	commodity
+	fur	(undefined)
+	freely	(undefined)
+rmvl	removal
+	goat	(undefined)
+shrhldr	shareholder
+expdtn	expedition
+	loyal	(undefined)
+cnscnc	conscience
+frgl	fragile
+clndr	calendar
+mnrl	mineral
+cmng	coming
+	fare	(undefined)
+blsng	blessing
+lbrtn	liberation
+	steak	(undefined)
+eclgcl	ecological
+bnn	banana
+stdl	steadily
+blst	blast
+nnprft	nonprofit
+mbl	mobile
+strw	straw
+prjctn	projection
+rbr	rubber
+ovrnght	overnight
+nghbrng	neighboring
+enct	enact
+fvrbl	favorable
+	severely	(undefined)
+dmgrphc	demographic
+	terrain	(undefined)
+explct	explicit
+intgrtd	integrated
+	terribly	(undefined)
+	sofa	(undefined)
+scrw	screw
+	shield	(undefined)
+invntn	invention
+prcvd	perceived
+crl	cruel
+bmbr	bomber
+prvk	provoke
+atnm	autonomy
+pblshng	publishing
+rtrt	retreat
+thlg	theology
+	substantially	(undefined)
+mnsn	mansion
+dvlpmntl	developmental
+onthrd	one-third
+trnsmt	transmit
+cntmplt	contemplate
+athrz	authorize
+mthmtcs	mathematics
+oldfshnd	old-fashioned
+lwmkr	lawmaker
+thrshld	threshold
+	radar	(undefined)
+sldm	seldom
+hdch	headache
+rntl	rental
+	spy	(undefined)
+	patron	(undefined)
+drvw	driveway
+	till	(undefined)
+ovrwhlm	overwhelm
+crdnt	coordinate
+vndr	vendor
+frgmnt	fragment
+	hammer	(undefined)
+smnr	seminar
+avlblt	availability
+	peanut	(undefined)
+fntstc	fantastic
+dprt	depart
+ctg	cottage
+spcf	specify
+frstrt	frustrate
+dstrbng	disturbing
+artfct	artifact
+bsn	basin
+	regain	(undefined)
+	grape	(undefined)
+	ego	(undefined)
+smtm	sometime
+orgnzd	organized
+chrm	charm
+swtr	sweater
+	rim	(undefined)
+	speculate	(undefined)
+dlght	delight
+ftg	fatigue
+dvsttng	devastating
+instrctnl	instructional
+	plea	(undefined)
+trsm	tourism
+wrmth	warmth
+jrsdctn	jurisdiction
+updt	update
+acstn	accusation
+dgrm	diagram
+mdlcls	middle-class
+grdtn	graduation
+sprk	spark
+cnvnnc	convenience
+chl	chill
+ecnmcl	economically
+undrgrdt	undergraduate
+dctt	dictate
+	regulator	(undefined)
+dfndr	defender
+wrkt	workout
+acrtl	accurately
+	tile	(undefined)
+frgnr	foreigner
+imprtntl	importantly
+ctznshp	citizenship
+plz	plaza
+dvs	devise
+prmm	premium
+chmstr	chemistry
+brcrc	bureaucracy
+inhrnt	inherent
+hzrd	hazard
+swl	swell
+	bride	(undefined)
+prcsr	processor
+bckt	bucket
+tmbr	timber
+fmnst	feminist
+tmr	tumor
+aplg	apology
+scrnng	screening
+arw	arrow
+mrkr	marker
+	sunny	(undefined)
+tchncn	technician
+hmwrk	homework
+	fog	(undefined)
+	soak	(undefined)
+mrtlt	mortality
+	flying	(undefined)
+acntblt	accountability
+skld	skilled
+strghtn	straighten
+sprnkl	sprinkle
+	cue	(undefined)
+epdmc	epidemic
+artclt	articulate
+rhblttn	rehabilitation
+dplmt	diplomat
+rbn	ribbon
+trnst	transit
+	militia	(undefined)
+knl	kneel
+	seller	(undefined)
+ftl	fatal
+cmplng	compelling
+wlbng	well-being
+lndr	laundry
+	confession	(undefined)
+twntth	twentieth
+dns	dense
+aclrt	accelerate
+trbt	tribute
+smkng	smoking
+	aboard	(undefined)
+mrbl	marble
+entrtn	entertain
+	boring	(undefined)
+scrtn	scrutiny
+bzr	bizarre
+brgn	bargain
+drwn	drown
+bgrph	biography
+	naval	(undefined)
+ntnwd	nationwide
+skptcl	skeptical
+shrts	shorts
+lns	lens
+	spit	(undefined)
+sxlt	sexuality
+wrhs	warehouse
+prds	paradise
+nmnt	nominate
+dvlpd	developed
+unfrtnt	unfortunate
+grndchld	grandchild
+tnr	tenure
+	preach	(undefined)
+	slot	(undefined)
+strtp	stereotype
+blb	bulb
+	weave	(undefined)
+mrgr	merger
+indqt	inadequate
+elctrncs	electronics
+	trim	(undefined)
