@@ -82,7 +82,7 @@ wa	was
 er	were
 be	be
 av	have
-hv .n	having
+av .n	having
 az	has
 ad	had
 nt	not
