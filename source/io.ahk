@@ -182,6 +182,10 @@ Class clsIOrepresentation {
         }
         this.CapitalizeTyping(entry, chunk.attributes)
         this.PrePunctuation(chunk.attributes)
+        ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
+        if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
+            this.TryImmediateShorthand()
+        }
     }
 
     /**
@@ -552,7 +556,21 @@ Class clsIOrepresentation {
         }
     }
 
-    ShorthandModule(text, first_chunk_id) {
+    TryImmediateShorthand() {
+        loop_length := this.length - 1
+        Loop %loop_length%
+        {
+            text := this.GetOutput(A_Index+1, this.length)
+            if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
+                continue
+            }
+            if ( this.ShorthandModule(text, A_Index+1, 0) ) {
+                return
+            }
+        }
+    }
+
+    ShorthandModule(text, first_chunk_id, offset := -1) {
         global hint_delay
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
@@ -568,7 +586,7 @@ Class clsIOrepresentation {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
-            this.Replace(expanded, first_chunk_id, this.length-1)
+            this.Replace(expanded, first_chunk_id, this.length + offset)
             this.SetChunkAttributes(first_chunk_id, this.WAS_EXPANDED)
             return true
         }
