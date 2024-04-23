@@ -461,9 +461,9 @@ Class clsIOrepresentation {
         replace_offset := 0
 
         hint_delay.Shorten()
-        if ( ( settings.capitalization != CAP_OFF) )
-                && ( this.TestChunkAttributes(chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED) 
-                || this._ShouldCapitalize(chunk_id) ) {
+        if (       this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)
+                || this.TestChunkAttributes(chunk_id, this.WAS_CAPITALIZED)
+                || ( ( settings.capitalization != CAP_OFF) && this._ShouldCapitalize(chunk_id) ) ) {
             expanded := RegExReplace(expanded, "(^.)", "$U1")
             mark_as_capitalized := true
         }
@@ -489,7 +489,7 @@ Class clsIOrepresentation {
         }
         
         ; if the last output was punctuation that does not ask for a space
-        if ( ( !(previous.attributes & this.WITH_SHIFT)
+        if (       ( !(previous.attributes & this.WITH_SHIFT)
                 && InStr(keys.punctuation_plain, previous.input)
                 && !InStr(keys.space_after_plain, previous.input) )
                 || (previous.attributes & this.WITH_SHIFT)
@@ -531,7 +531,7 @@ Class clsIOrepresentation {
         if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
             chunk.input := StrReplace(chunk.input, last_character)
             chunk.output := StrReplace(chunk.output, last_character)
-            if( StrLen(chunk.input) == 1 ) {
+            if ( StrLen(chunk.input) == 1 ) {
                 this.ClearChunkAttributes(this.length, this.IS_CHORD)
             }
             this.Add(last_character, false, true)
@@ -580,9 +580,9 @@ Class clsIOrepresentation {
         }
         if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            if ( ( settings.capitalization != CAP_OFF) )
-                &&  ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT | this.WAS_CAPITALIZED)
-                    || this._ShouldCapitalize(first_chunk_id) ) {
+            if (       this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT)
+                    || this.TestChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
+                    || ( ( settings.capitalization != CAP_OFF) && this._ShouldCapitalize(first_chunk_id) ) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
