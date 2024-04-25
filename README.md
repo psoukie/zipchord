@@ -8,8 +8,6 @@ You don't need to learn stenotyping though. Languages obey Zipf's law, so it tak
 
 I could not find any software that supported keyboard shortcuts of more than two keys and regular typing at the same time, so I built ZipChord to make this type of typing possible.
 
-[ZipChord version 2.0](https://github.com/psoukie/zipchord/releases/) includes several new features, including a completion of regularly typed "shorthands" and hints for available shortcuts.
-
 ## Features
 
 - Chord recognition (also known as chorded entry or chording)
