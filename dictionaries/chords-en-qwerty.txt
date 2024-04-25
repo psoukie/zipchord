@@ -160,13 +160,13 @@ way	way
 yr	year
 bk	back
 da	day
-da 1	Monday
-da 2	Tuesday
-da 3	Wednesday
-da 4	Thursday
-da 5	Friday
-da 6	Saturday
-da 7	Sunday
+1 da	Monday
+2 da	Tuesday
+3 da	Wednesday
+4 da	Thursday
+5 da	Friday
+6 da	Saturday
+7 da	Sunday
 qn	question
 sc	second
 dg	thing
@@ -181,19 +181,19 @@ dir	direction
 nx	next
 sam	same
 tp	top
-mon	month
-mon 1	January
-mon 2	February
-mon 3	March
-mon 4	April
-mon 5	May
-mon 6	June
-mon 7	July
-mon 8	August
-mon 9	September
-mon 1 0	October
-mon 1 1	November
-mon 1 2	December
+mn	month
+1 mn	January
+2 mn	February
+3 mn	March
+4 mn	April
+5 mn	May
+6 mn	June
+7 mn	July
+8 mn	August
+9 mn	September
+1 0 mn	October
+1 1 mn	November
+1 2 mn	December
 
 Prefixes
 --------
