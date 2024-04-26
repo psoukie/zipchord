@@ -21,8 +21,7 @@
 ~l
 ~+/
 {Backspace 5}
-{Text}possible
-+/
+{Text}possible?
 {Space}
 ~j
 ~w
@@ -34,7 +33,7 @@
 {Space}
 ~+/
 {Backspace 2}
-+/
+{Text}?
 {Space}
 ~r
 ~j
@@ -53,5 +52,5 @@
 {Space}
 ~+/
 {Backspace 2}
-+/
+{Text}?
 {Space}

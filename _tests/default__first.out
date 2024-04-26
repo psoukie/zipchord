@@ -88,11 +88,11 @@
 {Space}
 ~.
 {Backspace 2}
-.
+{Text}.
 {Space}
 ~.
 {Backspace 2}
-.
+{Text}.
 {Space}
 ~+b
 ~u
@@ -102,11 +102,11 @@
 {Space}
 ~.
 {Backspace 2}
-.
+{Text}.
 {Space}
 ~.
 {Backspace 2}
-.
+{Text}.
 {Space}
 ~Space
 {Backspace}

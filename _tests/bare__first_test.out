@@ -13,20 +13,15 @@
 ~r
 ~m
 ~.
-{Backspace 4}
-{Text}from
-.
 ~f
 ~r
 ~m
 ~Space
 {Backspace 4}
-{Text}from
- 
+{Text}from 
 ~f
 ~r
 ~m
 ~.
 {Backspace 4}
-{Text}from
-.
+{Text}from.

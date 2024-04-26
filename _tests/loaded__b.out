@@ -1,6 +1,10 @@
 ~h
 ~t
+{Backspace 2}
+{Text}the
+{Space}
 ~Space
+{Backspace}
 ~t
 ~h
 ~e

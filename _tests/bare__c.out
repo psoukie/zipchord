@@ -12,15 +12,13 @@
 ~e
 ~n
 ~Space
-*Hint*
 ~p
 ~s
 ~b
 ~l
 ~+/
 {Backspace 5}
-{Text}possible
-+/
+{Text}possible?
 ~j
 ~w
 ~Space
