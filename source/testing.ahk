@@ -110,7 +110,7 @@ Class TestingClass {
         this._mode := TEST_INTERACTIVE
         Return true
     }
-    Monitor(what:="", ByRef destination:="console") {
+    Monitor(what:="", ByRef destination:="console", overwrite:=false) {
         Switch what {
             Case "", "show":
                 this.Write( Format("Keyboard input is logged to {}.", this._DestinationName(this._input) ) )
@@ -122,8 +122,9 @@ Class TestingClass {
                     Case "console":
                         this[target_var] := TEST_DEST_CONSOLE
                     Case "null":
-                        if (this[target_var] == TEST_DEST_NONE)
+                        if (this[target_var] == TEST_DEST_NONE) {
                             return
+                        }
                         if (this[target_var . "_obj"]) {
                             this[target_var . "_obj"].Close()
                             this[target_var . "_obj"] := ""
@@ -131,8 +132,14 @@ Class TestingClass {
                         }
                         this[target_var] := TEST_DEST_NONE
                     Default:
-                        if (! this._CheckFilename(destination, extension))
-                            return -1
+                        if (overwrite) {
+                            destination .= ".out"
+                            FileDelete, % destination
+                        } else {
+                            if (! this._CheckFilename(destination, extension)) {
+                                return -1
+                            }
+                        }
                         this[target_var] := destination
                         this[target_var . "_obj"] := FileOpen(destination, "w")
                 }
@@ -247,7 +254,7 @@ Class TestingClass {
         }
         this.Stop()
     }
-    Compose(cfg:="", in_file:="", out_file:="") {
+    Compose(cfg:="", in_file:="", out_file:="", overwrite := false) {
         if (this._IsBasicHelp(cfg, A_ThisFunc))
             return
         if (this.Config("load", cfg) == -1)
@@ -257,25 +264,49 @@ Class TestingClass {
         if (out_file="")
            out_file := SubStr(cfg, 1, StrLen(cfg)-4) . "__" . SubStr(in_file, 1, StrLen(in_file)-3)
         this.Monitor("input", "null")
-        if (this.Monitor("output", out_file) == -1)
+        if (this.Monitor("output", out_file, overwrite) == -1)
             return
         if (this.Play(in_file) == -1)
             return
     }
-    Test(testcase:="", filename:="") {
-        if (this._IsBasicHelp(testcase, A_ThisFunc))
+
+    ; Rerun and re-save all test case files
+    Recompose(a:="") {
+        if ( a == "help") {
+            this.Help(ObjFnName(A_ThisFunc))
             return
-        if (filename && testcase=="set")
-            this._Batch(filename)
-        else {
-            if (! this._CheckFilename(testcase, "testcase", true))
-                Return
-            cfg := SubStr(testcase, 1, InStr(testcase, "__")-1)
-            in_file := SubStr(testcase, InStr(testcase, "__")+2, StrLen(testcase)-InStr(testcase, "__")-5)
-            FileDelete, % "temp.out"
-            this.Compose(cfg, in_file, "temp.out")
-            this.Compare(testcase, "temp.out")
         }
+        this.Write("This will overwrite all testcase files. Do you wish to continue [y/n]?")
+        if ( ! this._ConfirmOverwrite() ) {
+            return false
+        }
+        Loop, Files, *__*.out
+        {
+            filenames := this._GetConfigAndInFilenames(A_LoopFileName)
+            this.Compose(filenames.config, filenames.in, "", true)
+        }
+    }
+
+    Test(testcase:="", filename:="") {
+        if (this._IsBasicHelp(testcase, A_ThisFunc)) {
+            return
+        }
+        if (filename && testcase=="set") {
+            this._Batch(filename)
+            return
+        }
+        if (! this._CheckFilename(testcase, "testcase", true)) {
+            return
+        }
+        filenames := this._GetConfigAndInFilenames(testcase)
+        FileDelete, % "temp.out"
+        this.Compose(filenames.config, filenames.in, "temp.out")
+        this.Compare(testcase, "temp.out")
+    }
+    _GetConfigAndInFilenames(testcase) {
+        config_file := SubStr(testcase, 1, InStr(testcase, "__") - 1) . ".cfg"
+        in_file := SubStr(testcase, InStr(testcase, "__") + 2, StrLen(testcase) - InStr(testcase, "__") - 5) . ".in"
+        return {config: config_file, in: in_file}
     }
     Compare(a:="", b:="") {
         if (this._IsBasicHelp(a, A_ThisFunc))
@@ -454,16 +485,22 @@ Class TestingClass {
         } else {
             if (FileExist(filename)) {
                 this.Write(Format("The file '{}' already exists. Overwrite [y/n]?", filename), " ")
-                if (A_Args[2] == "test-vs")
-                    InputBox, answer,% "Overwrite? [y/n]", % ">"
-                else
-                    answer := SubStr(Trim(this._stdin.ReadLine()), 1, 1)
-                if (answer!="Y")
+                if ( ! this._ConfirmOverwrite() ) {
                     return false
+                }
             }
             FileDelete, % filename
         }
         return filename
+    }
+    _ConfirmOverwrite() {
+        if (A_Args[2] == "test-vs") {
+            InputBox, answer,% "[y/n]", % ">"
+        } else {
+            answer := SubStr(Trim(this._stdin.ReadLine()), 1, 1)
+        }
+        StringLower answer, answer
+        return (answer=="y")
     }
     _FormatInput(file) {
         p_time := 0
@@ -727,6 +764,11 @@ play [configfile] <inputfile>
 Note: The output from ZipChord may be handled depending on the output
 setting. See also 'monitor'.
 )")
+            Case "recompose":
+                this.Write("
+(
+Reruns all testcases in the working folder and overwrites all the results.
+)")
             Case "record":
                 this.Write("
 (
@@ -800,6 +842,7 @@ license     Shows the license information.
 list        Lists all files (or files of a type) in the testing folder.
 monitor     Directs the input or output of ZipChord to console or a file.
 play        Sends recorded input to ZipChord for processing.
+recompose   Recreates and overwrites all test cases. 
 record      Records input and/or output of your interaction to a file.
 show        Shows the contents of a file.
 test        Runs and compares results of a test case or a set of cases.
