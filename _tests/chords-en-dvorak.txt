@@ -8,6 +8,7 @@ Note that the category headings are for orientation only. For extended character
 
 See https://github.com/psoukie/zipchord for details.
 
+
 Articles
 --------
 th	the
@@ -215,11 +216,28 @@ Suffixes
 .t	~tion
 .l	~ly
 
-Workarounds
------------
+Infixes
+-------
+.c	~.com~
+.o	~.org~
+
+Punctuation Exceptions
+----------------------
+These exceptions are used to correct the output when using smart spaces after punctuation.
+
  .	~.~	Space+. forces a full stop without smart spaces
 e . g .	e.g.
 i . e . i.e.
+. 0	~.0~
+. 1	~.1~
+. 2	~.2~
+. 3	~.3~
+. 4	~.4~
+. 5	~.5~
+. 6	~.6~
+. 7	~.7~
+. 8	~.8~
+. 9	~.9~
 
 Newly added
 -----------
