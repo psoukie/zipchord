@@ -674,7 +674,7 @@ Class clsIOrepresentation {
             if (this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)) {
                 return true
             }
-            if (chunk_id++ > end_chunk_id) {
+            if (chunk_id++ == end_chunk_id) {
                 return false
             }
         }
