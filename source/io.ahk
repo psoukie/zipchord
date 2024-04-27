@@ -691,11 +691,14 @@ Class clsIOrepresentation {
         }
         Return affixes
     }
-    _RemoveAffixSymbols(expanded_text, affixes) {
-        start := affixes & AFFIX_SUFFIX ? 2 : 1
-        end_offset := affixes & AFFIX_PREFIX ? -1 : 0
-        sanitized_text := SubStr(expanded_text, start, StrLen(expanded_text) + end_offset)
-        Return sanitized_text
+    _RemoveAffixSymbols(text, affixes) {
+        if (affixes & AFFIX_SUFFIX) {
+            text := SubStr(text, 2)
+        }
+        if (affixes & AFFIX_PREFIX) {
+            text := SubStr(text, 1, StrLen(text) - 1)
+        }
+        Return text
     }
 
     _AddSmartSpace() {
