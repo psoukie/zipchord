@@ -38,9 +38,11 @@ Class clsClassifier {
         start := this._buffer[last].start
         end := timestamp
         count := last - first + 1
-        Loop %count%
-            if (event_end := this._buffer[first - 1 + A_Index].end)
+        Loop %count% {
+            if (event_end := this._buffer[first - 1 + A_Index].end) {
                 end := Min(end, event_end)
+            }
+        }
         Return end-start
     }
     _DetectRoll(cutoff) {
@@ -179,7 +181,7 @@ Class clsIOrepresentation {
             chunk.attributes |= this.IS_MANUAL_SPACE
         }
         this._sequence.Push(chunk)
-        ; this._Show()
+        this._Show()
         if (adjustment) {
             return
         }
@@ -219,7 +221,7 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
-        ; this._Show()
+        this._Show()
         this.RunModules()
     }
 
@@ -254,7 +256,7 @@ Class clsIOrepresentation {
         if (type=="") {
             this._sequence.Push(second_chunk)
         }
-        ; this._Show()
+        this._Show()
         if (visualizer.IsOn())
             visualizer.NewLine()
     }
@@ -345,11 +347,14 @@ Class clsIOrepresentation {
             Sleep settings.output_delay
         }
     }
-    ; _Show() {
-    ;     OutputDebug, % "`n`nIO sequence:" 
-    ;     For i, chunk in this._sequence
-    ;         OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
-    ; }
+    _Show() {
+        if (A_Args[2] != "test-vs") {
+            return
+        }
+        OutputDebug, % "`n`nIO sequence:" 
+        For i, chunk in this._sequence
+            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
+    }
 
     ; Below are the functions that were first attempt at modules.
     ; When I recreate modules, it should be pure functions only.
@@ -442,7 +447,7 @@ Class clsIOrepresentation {
             this._sequence.RemoveAt(this.length)
             this.ClearChunkAttributes(this.length, this.SMART_SPACE_AFTER)
             this.SetChunkAttributes(this.length, this.IS_MANUAL_SPACE)
-            ; this._Show() 
+            this._Show() 
             return true
         }
         return false
