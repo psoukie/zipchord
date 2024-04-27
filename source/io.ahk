@@ -439,14 +439,12 @@ Class clsIOrepresentation {
         }
     }
 
-    ; Remove a double space if the user types a space after punctuation space
+    ; Remove a double space if the user types a space after punctuation smart space
     DeDoubleSpace() {
         last_chunk_attrib := this.GetChunk(this.length-1).attributes 
         if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
-            this.Replace("", this.length)
-            this._sequence.RemoveAt(this.length)
-            this.ClearChunkAttributes(this.length, this.SMART_SPACE_AFTER)
-            this.SetChunkAttributes(this.length, this.IS_MANUAL_SPACE)
+            OutputKeys("{Backspace}")
+            this._sequence.RemoveAt(this.length - 1)
             this._Show() 
             return true
         }
