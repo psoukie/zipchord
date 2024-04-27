@@ -214,6 +214,247 @@ Suffixes
 's	~’s
 ;t	~tion
 ;l	~ly
+
+This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.
+
+Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.
+
+While ZipChord is running, chords can also be added into you active dictionary on the fly by selecting text and holding Ctrl+C.
+
+Note that the category headings are for orientation only. For extended characters to work correctly, the dictionary needs to be saved in UTF-8 encoding with BOM.
+
+See https://github.com/psoukie/zipchord for details.
+
+
+Articles
+--------
+th	the
+ a	a
+ an	an
+
+Conjunctions
+------------
+an	and
+as	as
+or	or
+bu	but
+if	if
+so	so
+thn	then
+bc	because
+
+Prepositions
+------------
+to	to
+of	of
+in	in
+ f	for
+ w	with
+on	on
+at	at
+fr	from
+by	by
+ab	about
+up	up
+io	into
+ov	over
+af	after
+wo	without
+
+Pronouns
+--------
+ i	I
+me	me
+my	my
+ou	you
+ur	your
+he	he
+hm	him
+his	his
+sh	she
+hr	her
+it	it
+ts	its
+we	we
+us	us
+our	our
+thy	they
+eur	their
+eum	them
+
+Interrogatives
+--------------
+jc	which
+jn	when
+jt	what
+jr	where
+ho	who
+jh	how
+jf	why
+
+Verbs
+-----
+is	is
+ar	are
+wa	was
+er	were
+be	be
+av	have
+av .n	having
+az	has
+ad	had
+nt	not
+ca	can
+do	do
+wi	will
+cou	could
+wou	would
+sou	should
+li	like
+li .n	liking
+bn	been
+ge	get
+ge .n	getting
+ay	may
+md	made
+mk	make
+mk .n	making
+ai	said
+wk	work
+uz	use
+uz .n	using
+sy	say
+ g	go
+kn	know
+tk	take
+tk .n	taking
+se	see
+lk	look
+cm	come
+cm .n	coming
+thk	think
+jnt	want
+gi	give
+gi .n	giving
+cn	cannot
+de	does
+di	did
+sem	seem
+cl	call
+tha	thank
+
+Other
+-----
+im	I'm
+eut	that
+eus	this
+eu-	these
+al	all
+ o	one
+mo	more
+hte	there
+out	out
+ao	also
+tm	time
+sm	some
+js	just
+ne	new
+oth	other
+pl	people
+ n	no
+eun	than
+oy	only
+ m	most
+ny	any
+ma	many
+el	well
+fs	first
+vy	very
+nw	now
+ev	even
+go	good
+wy	way
+ t	two
+yr	year
+bk	back
+dy	day
+1 dy	Monday
+2 dy	Tuesday
+3 dy	Wednesday
+4 dy	Thursday
+5 dy	Friday
+6 dy	Saturday
+7 dy	Sunday
+qn	question
+sc	second
+eug	thing
+ y	yes
+cn'	can’t
+dt	different
+eou	though
+thu	through
+sr	sorry
+mv	move
+dir	direction
+nx	next
+sam	same
+tp	top
+mon	month
+1 mon	January
+2 mon	February
+3 mon	March
+4 mon	April
+5 mon	May
+6 mon	June
+7 mon	July
+8 mon	August
+9 mon	September
+1 0 mon	October
+1 1 mon	November
+1 2 mon	December
+
+Prefixes
+--------
+r'	re~
+d'	de~
+ds'	dis~
+v'	over~
+n'	un~
+m'	mis~
+o'	out~
+p'	pre~
+
+Suffixes
+--------
+.n	~ing
+.d	~ed
+.s	~s
+'s	~’s
+.t	~tion
+.l	~ly
+
+Infixes
+-------
+.c	~.com~
+.o	~.org~
+
+Punctuation Exceptions
+----------------------
+These exceptions are used to correct the output when using smart spaces after punctuation.
+
+ .	~.~	Space+. forces a full stop without smart spaces
+e . g .	e.g.
+i . e . i.e.
+. 0	~.0~
+. 1	~.1~
+. 2	~.2~
+. 3	~.3~
+. 4	~.4~
+. 5	~.5~
+. 6	~.6~
+. 7	~.7~
+. 8	~.8~
+. 9	~.9~
 	
 Newly added
 -----------
