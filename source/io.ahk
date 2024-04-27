@@ -38,9 +38,11 @@ Class clsClassifier {
         start := this._buffer[last].start
         end := timestamp
         count := last - first + 1
-        Loop %count%
-            if (event_end := this._buffer[first - 1 + A_Index].end)
+        Loop %count% {
+            if (event_end := this._buffer[first - 1 + A_Index].end) {
                 end := Min(end, event_end)
+            }
+        }
         Return end-start
     }
     _DetectRoll(cutoff) {
@@ -99,7 +101,7 @@ Class clsClassifier {
         global io
         this._buffer := []
         this._index := {}
-        io.Clear(type)
+        io.ClearSequence(type)
     }
     _Classify(index, timestamp) {
         ; This classification mirrors the 2.1 version of detecting chords.
@@ -137,6 +139,8 @@ Class clsIOrepresentation {
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
     _sequence := []
+    SEQUENCE_WINDOW := 6 ; sequence length to maintain
+
     length [] {
         get {
             return this._sequence.Length()
@@ -156,7 +160,7 @@ Class clsIOrepresentation {
         }
     }
     __New() {
-        this.Clear("*Interrupt*")
+        this.ClearSequence("*Interrupt*")
     }
 
     Add(entry, with_shift, adjustment := false, is_special_key := false) {
@@ -179,7 +183,7 @@ Class clsIOrepresentation {
             chunk.attributes |= this.IS_MANUAL_SPACE
         }
         this._sequence.Push(chunk)
-        ; this._Show()
+        this._Show()
         if (adjustment) {
             return
         }
@@ -219,7 +223,7 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
-        ; this._Show()
+        this._Show()
         this.RunModules()
     }
 
@@ -239,24 +243,28 @@ Class clsIOrepresentation {
         }
     }
 
-    Clear(type := "") {
-        first_chunk := new this.clsChunk
-        if (type=="~Enter")
-            first_chunk.attributes := this.IS_ENTER
-        if (type=="*Interrupt*")
-            first_chunk.attributes := this.IS_INTERRUPT
+    ClearSequence(type := "") {
         if (type=="") {
-            first_chunk := this._sequence[this.length-1]
-            second_chunk := this._sequence[this.length]
+            items_to_remove := this.length - this.SEQUENCE_WINDOW
+            if (items_to_remove < 1) {
+                return
+            }
+            this._sequence.RemoveAt(1, items_to_remove)
+            return
+        }
+        new_chunk := new this.clsChunk
+        if (type=="~Enter") {
+            new_chunk.attributes := this.IS_ENTER
+        }
+        if (type=="*Interrupt*") {
+            new_chunk.attributes := this.IS_INTERRUPT
         }
         this._sequence := []
-        this._sequence.Push(first_chunk)
-        if (type=="") {
-            this._sequence.Push(second_chunk)
-        }
-        ; this._Show()
-        if (visualizer.IsOn())
+        this._sequence.Push(new_chunk)
+        this._Show()
+        if (visualizer.IsOn()) {
             visualizer.NewLine()
+        }
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end) {
@@ -345,11 +353,14 @@ Class clsIOrepresentation {
             Sleep settings.output_delay
         }
     }
-    ; _Show() {
-    ;     OutputDebug, % "`n`nIO sequence:" 
-    ;     For i, chunk in this._sequence
-    ;         OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
-    ; }
+    _Show() {
+        if (A_Args[2] != "test-vs") {
+            return
+        }
+        OutputDebug, % "`n`nIO sequence:" 
+        For i, chunk in this._sequence
+            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
+    }
 
     ; Below are the functions that were first attempt at modules.
     ; When I recreate modules, it should be pure functions only.
@@ -374,7 +385,7 @@ Class clsIOrepresentation {
         }
         this.AddSpaceAfterPunctuation()
         if (! dont_clear) {
-            this.Clear()
+            this.ClearSequence()
         }
     }
 
@@ -427,19 +438,20 @@ Class clsIOrepresentation {
         if ( settings.spacing & SPACE_PUNCTUATION && attribs & this.IS_PUNCTUATION
                 && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
                 || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
+            if ( this.TestChunkAttributes(this.length - 1, this.IS_INTERRUPT) ) {
+                return
+            }
             this._AddSmartSpace()
         }
     }
 
-    ; Remove a double space if the user types a space after punctuation space
+    ; Remove a double space if the user types a space after punctuation smart space
     DeDoubleSpace() {
         last_chunk_attrib := this.GetChunk(this.length-1).attributes 
         if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
-            this.Replace("", this.length)
-            this._sequence.RemoveAt(this.length)
-            this.ClearChunkAttributes(this.length, this.SMART_SPACE_AFTER)
-            this.SetChunkAttributes(this.length, this.IS_MANUAL_SPACE)
-            ; this._Show() 
+            OutputKeys("{Backspace}")
+            this._sequence.RemoveAt(this.length - 1)
+            this._Show() 
             return true
         }
         return false
@@ -526,8 +538,10 @@ Class clsIOrepresentation {
         ; ending smart space
         if (affixes & AFFIX_PREFIX) {
             chunk.attributes |= this.IS_PREFIX
-        } else if (settings.spacing & SPACE_AFTER_CHORD) {
-            this._AddSmartSpace()
+        } else {
+            if (settings.spacing & SPACE_AFTER_CHORD) {
+                this._AddSmartSpace()
+            }
         }
         return true
     }
@@ -596,6 +610,9 @@ Class clsIOrepresentation {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
+            if ( this._DetectShiftWithin(first_chunk_id + 1, this.length + offset) ) {
+                return
+            }
             this.Replace(expanded, first_chunk_id, this.length + offset)
             this.SetChunkAttributes(first_chunk_id, this.WAS_EXPANDED)
             return true
@@ -653,6 +670,22 @@ Class clsIOrepresentation {
         return false
     }
 
+    _DetectShiftWithin(start_chunk_id, end_chunk_id) {
+        chunk_id := start_chunk_id
+        if (end_chunk_id > this.length) {
+            MsgBox ,, % "ZipChord", % "Error: The function _DetectShiftWithin was called with incorrect end range."
+            Return false
+        }
+        Loop {
+            if (this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)) {
+                return true
+            }
+            if (chunk_id++ == end_chunk_id) {
+                return false
+            }
+        }
+    }
+
     ; detect and adjust expansion for suffixes and prefixes
     _DetectAffixes(phrase) {
         affixes := AFFIX_NONE
@@ -664,11 +697,14 @@ Class clsIOrepresentation {
         }
         Return affixes
     }
-    _RemoveAffixSymbols(expanded_text, affixes) {
-        start := affixes & AFFIX_SUFFIX ? 2 : 1
-        end_offset := affixes & AFFIX_PREFIX ? -1 : 0
-        sanitized_text := SubStr(expanded_text, start, StrLen(expanded_text) + end_offset)
-        Return sanitized_text
+    _RemoveAffixSymbols(text, affixes) {
+        if (affixes & AFFIX_SUFFIX) {
+            text := SubStr(text, 2)
+        }
+        if (affixes & AFFIX_PREFIX) {
+            text := SubStr(text, 1, StrLen(text) - 1)
+        }
+        Return text
     }
 
     _AddSmartSpace() {

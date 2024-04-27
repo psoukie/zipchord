@@ -78,7 +78,7 @@
 {Space}
 ~+'
 {Backspace 2}
-+'
+{Text}"
 ~+f
 ~o
 ~r
@@ -121,7 +121,7 @@
 {Space}
 ~+'
 {Backspace 2}
-+'
+{Text}"
 ~.
 {Space}
 ~Space

@@ -15,7 +15,8 @@
 *Hint*
 {Space}
 ~i
-{Backspace}{Text}I
+{Backspace}
+{Text}I
 ~s
 {Backspace 2}
 {Text}Is
@@ -46,7 +47,8 @@
 {Space}
 ~Enter
 ~m
-{Backspace}{Text}M
+{Backspace}
+{Text}M
 ~a
 ~y
 ~b

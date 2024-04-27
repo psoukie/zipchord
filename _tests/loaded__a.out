@@ -35,7 +35,7 @@
 {Space}
 ~+/
 {Backspace 2}
-+/
+{Text}?
 {Space}
 *Interrupt*
 *Interrupt*
@@ -47,7 +47,8 @@
 ~Space
 {Backspace}
 ~h
-{Backspace}{Text}H
+{Backspace}
+{Text}H
 ~t
 {Backspace 2}
 {Text}The

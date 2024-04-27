@@ -21,11 +21,11 @@
 ~l
 ~+/
 {Backspace 5}
-{Text}possible
-+/
+{Text}possible?
 {Space}
 ~j
-{Backspace}{Text}J
+{Backspace}
+{Text}J
 ~w
 {Backspace 2}
 ~Space
@@ -36,10 +36,11 @@
 {Space}
 ~+/
 {Backspace 2}
-+/
+{Text}?
 {Space}
 ~r
-{Backspace}{Text}R
+{Backspace}
+{Text}R
 ~j
 {Backspace 2}
 {Text}Where
@@ -56,5 +57,5 @@
 {Space}
 ~+/
 {Backspace 2}
-+/
+{Text}?
 {Space}
