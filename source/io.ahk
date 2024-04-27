@@ -604,6 +604,9 @@ Class clsIOrepresentation {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
+            if ( this._DetectShiftWithin(first_chunk_id + 1, this.length + offset) ) {
+                return
+            }
             this.Replace(expanded, first_chunk_id, this.length + offset)
             this.SetChunkAttributes(first_chunk_id, this.WAS_EXPANDED)
             return true
@@ -659,6 +662,22 @@ Class clsIOrepresentation {
             }
         }
         return false
+    }
+
+    _DetectShiftWithin(start_chunk_id, end_chunk_id) {
+        chunk_id := start_chunk_id
+        if (end_chunk_id > this.length) {
+            MsgBox ,, % "ZipChord", % "Error: The function _DetectShiftWithin was called with incorrect end range."
+            Return false
+        }
+        Loop {
+            if (this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)) {
+                return true
+            }
+            if (chunk_id++ > end_chunk_id) {
+                return false
+            }
+        }
     }
 
     ; detect and adjust expansion for suffixes and prefixes
