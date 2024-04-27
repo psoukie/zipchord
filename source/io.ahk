@@ -101,7 +101,7 @@ Class clsClassifier {
         global io
         this._buffer := []
         this._index := {}
-        io.Clear(type)
+        io.ClearSequence(type)
     }
     _Classify(index, timestamp) {
         ; This classification mirrors the 2.1 version of detecting chords.
@@ -139,6 +139,8 @@ Class clsIOrepresentation {
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
     _sequence := []
+    SEQUENCE_WINDOW := 6 ; sequence length to maintain
+
     length [] {
         get {
             return this._sequence.Length()
@@ -158,7 +160,7 @@ Class clsIOrepresentation {
         }
     }
     __New() {
-        this.Clear("*Interrupt*")
+        this.ClearSequence("*Interrupt*")
     }
 
     Add(entry, with_shift, adjustment := false, is_special_key := false) {
@@ -241,24 +243,28 @@ Class clsIOrepresentation {
         }
     }
 
-    Clear(type := "") {
-        first_chunk := new this.clsChunk
-        if (type=="~Enter")
-            first_chunk.attributes := this.IS_ENTER
-        if (type=="*Interrupt*")
-            first_chunk.attributes := this.IS_INTERRUPT
+    ClearSequence(type := "") {
         if (type=="") {
-            first_chunk := this._sequence[this.length-1]
-            second_chunk := this._sequence[this.length]
+            items_to_remove := this.length - this.SEQUENCE_WINDOW
+            if (items_to_remove < 1) {
+                return
+            }
+            this._sequence.RemoveAt(1, items_to_remove)
+            return
+        }
+        new_chunk := new this.clsChunk
+        if (type=="~Enter") {
+            new_chunk.attributes := this.IS_ENTER
+        }
+        if (type=="*Interrupt*") {
+            new_chunk.attributes := this.IS_INTERRUPT
         }
         this._sequence := []
-        this._sequence.Push(first_chunk)
-        if (type=="") {
-            this._sequence.Push(second_chunk)
-        }
+        this._sequence.Push(new_chunk)
         this._Show()
-        if (visualizer.IsOn())
+        if (visualizer.IsOn()) {
             visualizer.NewLine()
+        }
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end) {
@@ -377,12 +383,9 @@ Class clsIOrepresentation {
         if (attribs & this.IS_MANUAL_SPACE) {
             dont_clear := this.DeDoubleSpace()
         }
-        if (this.length < 6) {
-            dont_clear := true
-        }
         this.AddSpaceAfterPunctuation()
         if (! dont_clear) {
-            this.Clear()
+            this.ClearSequence()
         }
     }
 
