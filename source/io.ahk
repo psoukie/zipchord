@@ -372,6 +372,9 @@ Class clsIOrepresentation {
         if (attribs & this.IS_MANUAL_SPACE) {
             dont_clear := this.DeDoubleSpace()
         }
+        if (this.length < 4) {
+            dont_clear := true
+        }
         this.AddSpaceAfterPunctuation()
         if (! dont_clear) {
             this.Clear()
