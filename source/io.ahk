@@ -435,6 +435,9 @@ Class clsIOrepresentation {
         if ( settings.spacing & SPACE_PUNCTUATION && attribs & this.IS_PUNCTUATION
                 && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
                 || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
+            if ( this.TestChunkAttributes(this.length - 1, this.IS_INTERRUPT) ) {
+                return
+            }
             this._AddSmartSpace()
         }
     }
@@ -532,8 +535,10 @@ Class clsIOrepresentation {
         ; ending smart space
         if (affixes & AFFIX_PREFIX) {
             chunk.attributes |= this.IS_PREFIX
-        } else if (settings.spacing & SPACE_AFTER_CHORD) {
-            this._AddSmartSpace()
+        } else {
+            if (settings.spacing & SPACE_AFTER_CHORD) {
+                this._AddSmartSpace()
+            }
         }
         return true
     }
