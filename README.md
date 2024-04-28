@@ -23,9 +23,9 @@ Official [documentation](https://github.com/psoukie/zipchord/wiki) is available 
 
 ## Installation
 
-Download and extract the **zipchord-_version_.zip** file of the [latest release](https://github.com/psoukie/zipchord/releases) to a folder on your computer, and run it. Please see [Installation](https://github.com/psoukie/zipchord/wiki/Installation) for details.
+Download **zipchord-install-_version_.zip** or the stand-alone **zipchord-exe-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases). See the [Installation](https://github.com/psoukie/zipchord/wiki/Installation) page for details.
 
-Note that _ZipChord_ only works on Windows because of its dependency on AutoHotKey.
+Note that _ZipChord_ currently only works on Windows because of its dependency on AutoHotKey.
 
 ## Privacy
 
