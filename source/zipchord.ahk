@@ -548,7 +548,7 @@ Class clsMainUI {
 
         Gui, Tab, 5
         Gui, Add, Text, Y+20, % "ZipChord"
-        Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
+        Gui, Add, Text, , % "Copyright © 2021–2024 Pavel Soukenik"
         Gui, Add, Text, , % "version " . zc_version
         ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
         Gui, Font, Underline cBlue
@@ -946,11 +946,11 @@ ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Hint*")
         }
+        if (test.mode == TEST_RUNNING) {
+            return
+        }
     }
     hint_delay.Extend()
-    if (test.mode == TEST_RUNNING) {
-        return
-    }
     if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
         GetCaret(x, y, , h)
         ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " ", x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
