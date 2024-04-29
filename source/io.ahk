@@ -138,6 +138,7 @@ Class clsIOrepresentation {
          , IS_CHORD := 128
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
+         , IS_NUMERAL := 1024
     _sequence := []
     SEQUENCE_WINDOW := 6 ; sequence length to maintain
 
@@ -181,6 +182,9 @@ Class clsIOrepresentation {
         }
         if (entry == " ") {
             chunk.attributes |= this.IS_MANUAL_SPACE
+        }
+        if (!with_shift && InStr("0123456789", entry)) {
+            chunk.attributes |= this.IS_NUMERAL
         }
         this._sequence.Push(chunk)
         this._Show()
@@ -433,6 +437,13 @@ Class clsIOrepresentation {
                 return this._RemoveSmartSpace()
             }
         }
+        ; for manual_space-punctuation-numeral and numeral-punctuation-numeral
+        if (attribs & this.IS_NUMERAL && this.TestChunkAttributes(this.length - 2, this.IS_PUNCTUATION)
+                && this.TestChunkAttributes(this.length - 3, this.IS_NUMERAL | this.IS_MANUAL_SPACE | this.IS_ENTER)) {
+            return this._RemoveSmartSpace()
+        }
+    }
+
     _RemoveSmartSpace() {
         this.Replace("", this.length - 1, this.length - 1)
         this._sequence.RemoveAt(this.length - 1)
