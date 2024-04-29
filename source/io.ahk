@@ -187,8 +187,8 @@ Class clsIOrepresentation {
         if (adjustment) {
             return
         }
-        this.CapitalizeTyping(entry, chunk.attributes)
-        this.PrePunctuation(chunk.attributes)
+        this.CapitalizeTypingAsNeeded(entry, chunk.attributes)
+        this.RemoveSmartSpaceAsNeeded(chunk.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
         if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
             this.TryImmediateShorthand()
@@ -290,6 +290,9 @@ Class clsIOrepresentation {
     }
     TestChunkAttributes(chunk_id, bitmask) {
         ; purposefully return true if one of the bitmask conditions are true (therefore, not comparing to bitmask)
+        if (chunk_id > this.length || chunk_id < 1) {
+            return false
+        }
         return (this._sequence[chunk_id].attributes & bitmask)
     }
 
@@ -336,7 +339,7 @@ Class clsIOrepresentation {
         } else {
             OutputKeys("{Backspace}")
         }
-        if (! new_output) {
+        if ( new_output . backup_content == "") {
             return
         }
         ; we send any expanded text that includes { as straight directives:
@@ -406,7 +409,7 @@ Class clsIOrepresentation {
         }
     }
 
-    CapitalizeTyping(character, attribs) {
+    CapitalizeTypingAsNeeded(character, attribs) {
         if ( settings.capitalization != CAP_ALL || (attribs & this.IS_PUNCTUATION)
                 || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.WITH_SHIFT) ) {
             return
@@ -418,18 +421,22 @@ Class clsIOrepresentation {
         }
     }
 
-    PrePunctuation(attribs) {
-        if !( (attribs & this.IS_PUNCTUATION) && (this.GetChunk(this.length-1).attributes & this.SMART_SPACE_AFTER) ) {
+    RemoveSmartSpaceAsNeeded(attribs) {
+        if ! (this.TestChunkAttributes(this.length-1, this.SMART_SPACE_AFTER)) {
             return
         }
-        chunk := this.GetChunk(this.length)
-        if ( (!(chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
-                || ((chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
-            this.Replace(chunk.output, this.length-1)
-            new_chunk := this.GetChunk(this.length)
-            new_chunk.input := chunk.input
-            new_chunk.attributes := chunk.attributes
+        ; for punctuation that removes spaces
+        if (attribs & this.IS_PUNCTUATION) {
+            chunk := this.GetChunk(this.length)
+            if ( (!(chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
+                    || ((chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
+                return this._RemoveSmartSpace()
+            }
         }
+    _RemoveSmartSpace() {
+        this.Replace("", this.length - 1, this.length - 1)
+        this._sequence.RemoveAt(this.length - 1)
+        return true
     }
 
     AddSpaceAfterPunctuation() {
