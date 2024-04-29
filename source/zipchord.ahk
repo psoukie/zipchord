@@ -482,13 +482,15 @@ global UI_input_delay
 */
 Class clsMainUI {
     UI := {}
+    controls := { chords_enabled:       { type: "Checkbox"
+                                        , text: "Use &chords"}}
     ; Prepare UI
     Build() {
         global zc_version
-        this.UI := new clsUI("ZipChord")
-        this.UI.on_close := ObjBindMethod(this, "_Close")
-        Gui, Add, Tab3, vUI_tab, % " Dictionaries | Detection | Hints | Output | About "
-        Gui, Add, Text, y+20 Section, % "&Keyboard and language"
+        UI := new clsUI("ZipChord")
+        UI.on_close := ObjBindMethod(this, "_Close")
+        UI.Add("Tab3", , " Dictionaries | Detection | Hints | Output | About ")
+        UI.Add("Text", "y+20 Section", "&Keyboard and language")
         Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
         Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
         Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
@@ -496,7 +498,7 @@ Class clsMainUI {
         Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
         Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
         Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
-        Gui, Add, Checkbox, vUI_chords_enabled xs, % "Use &chords"
+        UI.Add(this.controls.chords_enabled, "xs")
         Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
         Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
         Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Ope&n"
@@ -541,8 +543,9 @@ Class clsMainUI {
         Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
         fn := Func("PauseApp").Bind(true)
         GuiControl +g, % temp, % fn
-        Gui, Add, Button, w80 xm+160 ym+450 gUI_btnApply, % "Apply"
-        Gui, Add, Button, Default w80 xm+260 ym+450 gUI_btnOK, % "OK"
+        UI.Add("Button", "w80 xm+160 ym+450", "Apply", ObjBindMethod(this, "_ApplySettings"))
+        UI.Add("Button", "Default w80 xm+260 ym+450", "OK", ObjBindMethod(this, "_btnOK"))
+
         Gui, Tab, 5
         Gui, Add, Text, Y+20, % "ZipChord"
         Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
@@ -553,8 +556,10 @@ Class clsMainUI {
         Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
         Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
         Gui, Font, norm cDefault
-        if (A_Args[1] == "dev")
+        if (A_Args[1] == "dev") {
             Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+        }
+        this.UI := UI
     }
     Show() {
         if (A_Args[1] == "dev")
@@ -575,7 +580,7 @@ Class clsMainUI {
         GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
         GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
         GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        GuiControl , , UI_chords_enabled, % (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+        this.controls.chords_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
         GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
         ; debugging is always set to disabled
         GuiControl , , UI_debugging, 0
@@ -591,6 +596,74 @@ Class clsMainUI {
         UpdateLocaleInMainUI(settings.locale)
         Gui, Show,, ZipChord
     }
+
+    _btnOK() {
+        if (this._ApplySettings()) {
+            this._Close()    
+        }
+        return
+    }
+    _ApplySettings() {
+        global hint_delay
+        global locale
+        previous_mode := settings.mode 
+        Gui, Submit, NoHide
+        ; gather new settings from UI...
+        settings.input_delay := UI_input_delay + 0
+        settings.output_delay := UI_output_delay + 0
+        settings.capitalization := UI_capitalization
+        settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
+        settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
+        settings.locale := UI_selected_locale
+        settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED) + this.controls.chords_enabled.value * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED  ; carries over the current ZIPCHORD_ENABLED setting 
+        settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
+        if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
+            MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
+            Return false
+        } else settings.hint_offset_x := temp
+        if ( (temp:=SanitizeNumber(UI_hint_offset_y)) == "ERROR") {
+            MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
+            Return false
+        } else settings.hint_offset_y := temp
+        settings.hint_size := UI_hint_size
+        if ( (temp:=SanitizeNumber(UI_hint_color, true)) =="ERROR") {
+            MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
+            Return false
+        } else settings.hint_color := temp
+        ; ...and save them to config.ini
+        settings.Write()
+        ; We always want to rewire hotkeys in case the keys have changed.
+        WireHotkeys("Off")
+        locale.Load(settings.locale)
+        if (settings.mode > MODE_ZIPCHORD_ENABLED) {
+            if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
+                ShowHint("ZipChord Keyboard", "On", , false)
+            WireHotkeys("On")
+        }
+        else if (settings.mode & MODE_ZIPCHORD_ENABLED)
+            ShowHint("ZipChord Keyboard", "Off", , false)
+        if (A_Args[1] == "dev") {
+            if (UI_debugging) {
+                if (FileExist("debug.txt")) {
+                    MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
+                    IfMsgBox No
+                        Return false
+                } else {
+                    MsgBox, , % "ZipChord", % "You can type in a text editor to create a log of input and output.`n`nSimply reopen the ZipChord dialog when done to stop the logging process and save the debug file."
+                }
+                FileDelete, % A_Temp . "\debug.cfg"
+                FileDelete, % A_Temp . "\debug.in"
+                FileDelete, % A_Temp . "\debug.out"
+                test.Path("set", A_Temp)
+                test.Config("save", "debug")
+                test.Record("both", "debug")
+            }
+        }
+        ; to reflect any changes to OSD UI
+        SetTimer,  UI_OSD_Reset, -2000
+        Return true
+    }
+
     EnableTabs(mode) {
         handle := main_UI.UI._handle
         Gui, %handle%:Default
@@ -729,76 +802,6 @@ UpdateLocaleInMainUI(selected_loc) {
     Gui, %handle%:Default
     GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
     GuiControl, Choose, UI_selected_locale, % selected_loc
-}
-
-UI_btnOK:
-    if (ApplyMainSettings())
-        main_UI._Close()    
-return
-
-UI_btnApply:
-    ApplyMainSettings()
-return
-
-ApplyMainSettings() {
-    global hint_delay
-    global locale
-    previous_mode := settings.mode 
-    Gui, Submit, NoHide
-    ; gather new settings from UI...
-    settings.input_delay := UI_input_delay + 0
-    settings.output_delay := UI_output_delay + 0
-    settings.capitalization := UI_capitalization
-    settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
-    settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
-    settings.locale := UI_selected_locale
-    settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED) + UI_chords_enabled * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED  ; carries over the current ZIPCHORD_ENABLED setting 
-    settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
-    if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
-        MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
-        Return false
-    } else settings.hint_offset_x := temp
-    if ( (temp:=SanitizeNumber(UI_hint_offset_y)) == "ERROR") {
-        MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
-        Return false
-    } else settings.hint_offset_y := temp
-    settings.hint_size := UI_hint_size
-    if ( (temp:=SanitizeNumber(UI_hint_color, true)) =="ERROR") {
-        MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
-        Return false
-    } else settings.hint_color := temp
-    ; ...and save them to config.ini
-    settings.Write()
-    ; We always want to rewire hotkeys in case the keys have changed.
-    WireHotkeys("Off")
-    locale.Load(settings.locale)
-    if (settings.mode > MODE_ZIPCHORD_ENABLED) {
-        if (previous_mode-1 < MODE_ZIPCHORD_ENABLED)
-            ShowHint("ZipChord Keyboard", "On", , false)
-        WireHotkeys("On")
-    }
-    else if (settings.mode & MODE_ZIPCHORD_ENABLED)
-        ShowHint("ZipChord Keyboard", "Off", , false)
-    if (A_Args[1] == "dev") {
-        if (UI_debugging) {
-            if (FileExist("debug.txt")) {
-                MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
-                IfMsgBox No
-                    Return false
-            } else {
-                MsgBox, , % "ZipChord", % "You can type in a text editor to create a log of input and output.`n`nSimply reopen the ZipChord dialog when done to stop the logging process and save the debug file."
-            }
-            FileDelete, % A_Temp . "\debug.cfg"
-            FileDelete, % A_Temp . "\debug.in"
-            FileDelete, % A_Temp . "\debug.out"
-            test.Path("set", A_Temp)
-            test.Config("save", "debug")
-            test.Record("both", "debug")
-        }
-    }
-    ; to reflect any changes to OSD UI
-    SetTimer,  UI_OSD_Reset, -2000
-    Return true
 }
 
 LinkToLicense() {
