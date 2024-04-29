@@ -5,7 +5,7 @@
 ~Space
 ~.
 {Backspace 2}
-{Text}.~
+{Text}.
 ~c
 ~o
 ~m
@@ -18,7 +18,7 @@
 ~l
 ~b
 {Backspace 3}
-{Text}-bleeping-~
+{Text}-bleeping-
 ~l
 ~i
 ~e
