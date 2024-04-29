@@ -148,6 +148,14 @@ class clsUI {
         window_handle := this._handle
         Gui, %window_handle%:Hide
     }
+    Disable() {
+        window_handle := this._handle
+        Gui, %window_handle%:+Disabled
+    }
+    Enable() {
+        window_handle := this._handle
+        Gui, %window_handle%:-Disabled
+    }
     ; Called when user closes or escapes the window.
     ; Calls the on_close function, if defined, or hides the window.
     _Close() {
