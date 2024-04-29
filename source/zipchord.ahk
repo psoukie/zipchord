@@ -545,7 +545,7 @@ Class clsMainUI {
         Gui, Add, Button, Default w80 xm+260 ym+450 gUI_btnOK, % "OK"
         Gui, Tab, 5
         Gui, Add, Text, Y+20, % "ZipChord"
-        Gui, Add, Text, , % "Copyright © 2021-2023 Pavel Soukenik"
+        Gui, Add, Text, , % "Copyright © 2021–2024 Pavel Soukenik"
         Gui, Add, Text, , % "version " . zc_version
         ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
         Gui, Font, Underline cBlue
