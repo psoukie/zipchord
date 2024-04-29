@@ -943,11 +943,11 @@ ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Hint*")
         }
+        if (test.mode == TEST_RUNNING) {
+            return
+        }
     }
     hint_delay.Extend()
-    if (test.mode == TEST_RUNNING) {
-        return
-    }
     if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
         GetCaret(x, y, , h)
         ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " ", x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
