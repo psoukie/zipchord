@@ -281,7 +281,7 @@ Class clsAddShortcut {
         obj_name := dictionary . "s"
         if (%obj_name%.Add(this.controls[dictionary].value, this.controls.text.value)) {
             this.Close()
-            UpdateDictionaryUI()
+            main_UI.UpdateDictionaryUI()
         }
     }
     _FocusControl(ctrl) {

@@ -247,7 +247,7 @@ Initialize() {
     UI_OSD_Build()
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
-    UpdateDictionaryUI()
+    main_UI.UpdateDictionaryUI()
     Gui, %handle%:-Disabled
     WireHotkeys("On")
 }
@@ -483,10 +483,18 @@ Class clsMainUI {
     UI := {}
     controls := { selected_locale:      { type: "DropDownList"
                                         , text: "&Keyboard and language"}
-                , chords_enabled:       { type: "Checkbox"
+                , chord_enabled:        { type: "Checkbox"
                                         , text: "Use &chords"}
-                , shorthands_enabled:   { type: "Checkbox"
-                                        , text: "Use &shorthands"}}
+                , shorthand_enabled:    { type: "Checkbox"
+                                        , text: "Use &shorthands"}
+                , chord_entries:        { type: "GroupBox"
+                                        , text: "Chord dictionary"}
+                , chord_file:           { type: "Text"
+                                        , text: "Loading..."}
+                , shorthand_entries:    { type: "GroupBox"
+                                        , text: "Shorthand dictionary"}
+                , shorthand_file:       { type: "Text"
+                                        , text: "Loading..."}}
     ; Prepare UI
     Build() {
         global zc_version
@@ -497,18 +505,10 @@ Class clsMainUI {
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
         UI.Add(cts.selected_locale, "y+10 w150")
         UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
-        Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
-        Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
-        Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
-        Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
-        Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
-        UI.Add(cts.chords_enabled, "xs")
-        Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
-        Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
-        Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Ope&n"
-        Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
-        Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
-        UI.Add(cts.shorthands_enabled, "xs")
+
+        this._BuilderHelper(UI, "chord", "&Open", "&Edit", "&Reload", "xs y+20")
+        this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "Reloa&d", "xs-20 y+30")
+
         Gui, Tab, 2
         Gui, Add, GroupBox, y+20 w310 h175, Chords
         Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
@@ -565,6 +565,16 @@ Class clsMainUI {
         }
         this.UI := UI
     }
+    _BuilderHelper(UI, name_modifier, s_open, s_edit, s_reload, options) {
+        cts := this.controls
+        UI.Add(cts[name_modifier . "_entries"], options . " w310 h135")
+        UI.Add(cts[name_modifier . "_file"], "xp+20 yp+30 Section w270")
+        UI.Add("Button", "xs w80 Section", s_open, ObjBindMethod(this, "_btnSelectDictionary", name_modifier))
+        UI.Add("Button", "ys w80", s_edit, ObjBindMethod(this, "_btnEditDictionary", name_modifier))
+        UI.Add("Button", "ys w80", s_reload, ObjBindMethod(this, "_btnReloadDictionary", name_modifier))
+        UI.Add(cts[name_modifier . "_enabled"], "xs")
+    }
+
     Show() {
         cts := this.controls
         if (A_Args[1] == "dev")
@@ -585,8 +595,8 @@ Class clsMainUI {
         GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
         GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
         GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        cts.chords_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
-        cts.shorthands_enabled.value := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+        cts.chord_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+        cts.shorthand_enabled.value := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
         ; debugging is always set to disabled
         GuiControl , , UI_debugging, 0
         GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
@@ -623,8 +633,8 @@ Class clsMainUI {
         settings.locale := cts.selected_locale.value
         ; settings.mode carries over the current ZIPCHORD_ENABLED setting
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
-                        + cts.chords_enabled.value * MODE_CHORDS_ENABLED
-                        + cts.shorthands_enabled.value * MODE_SHORTHANDS_ENABLED   
+                        + cts.chord_enabled.value * MODE_CHORDS_ENABLED
+                        + cts.shorthand_enabled.value * MODE_SHORTHANDS_ENABLED   
         settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
         if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
@@ -687,6 +697,21 @@ Class clsMainUI {
         this.controls.selected_locale.Choose(selected_loc)
     }
 
+    ; Update UI with dictionary details
+    UpdateDictionaryUI() {
+        this._UpdateDictionaryType("chord")
+        this._UpdateDictionaryType("shorthand")
+    }
+    _UpdateDictionaryType(type) {
+        cts := this.controls
+        pluralized := type . "s"
+        StringUpper, uppercased, type, T
+        cts[type . "_file"].value := str.Ellipsisize(settings[type . "_file"], 270) 
+        entriesstr := uppercased . " dictionary (" %pluralized%.entries
+        entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
+        cts[type . "_entries"].value := entriesstr 
+    }
+
     EnableTabs(mode) {
         handle := main_UI.UI._handle
         Gui, %handle%:Default
@@ -712,6 +737,29 @@ Class clsMainUI {
         WireHotkeys("Off")  ; so the user can edit the values without interference
         this.UI.Disable()
         locale.Show(this.controls.selected_locale.value)
+    }
+ 
+    _btnSelectDictionary(type_string) {
+        type := type_string == "chord" ? "chord" : "shorthand"
+        StringUpper, uppercased, type, T
+        heading := "Open " . uppercased . " Dictionary"
+        FileSelectFile dict, , % settings.dictionary_dir, %heading%, Text files (*.txt)
+        if (dict == "") {
+            return
+        }
+        settings[type . "_file"] := dict
+        pluralized := type . "s"
+        %pluralized%.Load(dict)
+        this.UpdateDictionaryUI()
+    }
+    _btnEditDictionary(type) {
+        Run % settings[type . "_file"]
+    }
+    ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
+    _btnReloadDictionary(type) {
+        pluralized := type . "s"
+        %pluralized%.Load()
+        main_UI.UpdateDictionaryUI()
     }
 }
 
@@ -839,58 +887,6 @@ Return
 
 ; Functions supporting UI
 
-; Update UI with dictionary details
-UpdateDictionaryUI() {
-    handle := main_UI.UI._handle
-    Gui, %handle%:Default
-    GuiControl Text, UI_chord_file, % str.Ellipsisize(settings.chord_file, 270)
-    entriesstr := "Chord dictionary (" chords.entries
-    entriesstr .= (chords.entries==1) ? " chord)" : " chords)"
-    GuiControl Text, UI_chord_entries, %entriesstr%
-    GuiControl Text, UI_shorthand_file, % str.Ellipsisize(settings.shorthand_file, 270)
-    entriesstr := "Shorthand dictionary (" shorthands.entries
-    entriesstr .= (shorthands.entries==1) ? " shorthand)" : " shorthands)"
-    GuiControl Text, UI_shorthand_entries, %entriesstr%
-}
-
-; Run Windows File Selection to open a dictionary
-BtnSelectChordDictionary() {
-    FileSelectFile dict, , % settings.dictionary_dir , Open Chord Dictionary, Text files (*.txt)
-    if (dict != "") {
-        settings.chord_file := dict
-        chords.Load(dict)
-        UpdateDictionaryUI()
-    }
-    Return
-}
-
-BtnSelectShorthandDictionary() {
-    FileSelectFile dict, , % settings.dictionary_dir, Open Shorthand Dictionary, Text files (*.txt)
-    if (dict != "") {
-        settings.shorthand_file := dict
-        shorthands.Load(dict)
-        UpdateDictionaryUI()
-    }
-    Return
-}
-
-; Edit a dictionary in default editor
-BtnEditChordDictionary() {
-    Run % settings.chord_file
-}
-BtnEditShorthandDictionary() {
-    Run % settings.shorthand_file
-}
-
-; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
-BtnReloadChordDictionary() {
-    chords.Load()
-    UpdateDictionaryUI()
-}
-BtnReloadShorthandDictionary() {
-    shorthands.Load()
-    UpdateDictionaryUI()
-}
 
 ;; Closing Tip UI
 ; ----------------
