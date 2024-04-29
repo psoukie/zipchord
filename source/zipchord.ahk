@@ -471,9 +471,8 @@ global UI_input_delay
     , UI_chord_file, UI_shorthand_file
     , UI_chord_entries
     , UI_shorthand_entries
-    , UI_zipchord_btnPause, UI_chords_enabled, UI_shorthands_enabled
+    , UI_zipchord_btnPause
     , UI_tab
-    , UI_selected_locale
     , UI_debugging
 
 /**
@@ -482,29 +481,34 @@ global UI_input_delay
 */
 Class clsMainUI {
     UI := {}
-    controls := { chords_enabled:       { type: "Checkbox"
-                                        , text: "Use &chords"}}
+    controls := { selected_locale:      { type: "DropDownList"
+                                        , text: "&Keyboard and language"}
+                , chords_enabled:       { type: "Checkbox"
+                                        , text: "Use &chords"}
+                , shorthands_enabled:   { type: "Checkbox"
+                                        , text: "Use &shorthands"}}
     ; Prepare UI
     Build() {
         global zc_version
+        cts := this.controls
         UI := new clsUI("ZipChord")
         UI.on_close := ObjBindMethod(this, "_Close")
         UI.Add("Tab3", , " Dictionaries | Detection | Hints | Output | About ")
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
-        Gui, Add, DropDownList, y+10 w150 vUI_selected_locale
-        Gui, Add, Button, x+20 w100 gButtonCustomizeLocale, % "C&ustomize"
+        UI.Add(cts.selected_locale, "y+10 w150")
+        UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
         Gui, Add, GroupBox, xs y+20 w310 h135 vUI_chord_entries, % "Chord dictionary"
         Gui, Add, Text, xp+20 yp+30 Section vUI_chord_file w270, % "Loading..."
         Gui, Add, Button, xs Section gBtnSelectChordDictionary w80, % "&Open"
         Gui, Add, Button, gBtnEditChordDictionary ys w80, % "&Edit"
         Gui, Add, Button, gBtnReloadChordDictionary ys w80, % "&Reload"
-        UI.Add(this.controls.chords_enabled, "xs")
+        UI.Add(cts.chords_enabled, "xs")
         Gui, Add, GroupBox, xs-20 y+30 w310 h135 vUI_shorthand_entries, % "Shorthand dictionary"
         Gui, Add, Text, xp+20 yp+30 Section vUI_shorthand_file w270, % "Loading..."
         Gui, Add, Button, xs Section gBtnSelectShorthandDictionary w80, % "Ope&n"
         Gui, Add, Button, gBtnEditShorthandDictionary ys w80, % "Edi&t"
         Gui, Add, Button, gBtnReloadShorthandDictionary ys w80, % "Reloa&d"
-        Gui, Add, Checkbox, vUI_shorthands_enabled xs, % "Use &shorthands"
+        UI.Add(cts.shorthands_enabled, "xs")
         Gui, Tab, 2
         Gui, Add, GroupBox, y+20 w310 h175, Chords
         Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
@@ -562,6 +566,7 @@ Class clsMainUI {
         this.UI := UI
     }
     Show() {
+        cts := this.controls
         if (A_Args[1] == "dev")
             if (UI_debugging)
                 FinishDebugging()
@@ -580,8 +585,8 @@ Class clsMainUI {
         GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
         GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
         GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        this.controls.chords_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
-        GuiControl , , UI_shorthands_enabled, % (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+        cts.chords_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+        cts.shorthands_enabled.value := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
         ; debugging is always set to disabled
         GuiControl , , UI_debugging, 0
         GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
@@ -593,7 +598,7 @@ Class clsMainUI {
         GuiControl Text, UI_hint_color, % settings.hint_color
         ShowHintCustomization(false)
         GuiControl, Choose, UI_tab, 1 ; switch to first tab
-        UpdateLocaleInMainUI(settings.locale)
+        this.UpdateLocaleInMainUI(settings.locale)
         Gui, Show,, ZipChord
     }
 
@@ -606,6 +611,7 @@ Class clsMainUI {
     _ApplySettings() {
         global hint_delay
         global locale
+        cts := this.controls
         previous_mode := settings.mode 
         Gui, Submit, NoHide
         ; gather new settings from UI...
@@ -614,8 +620,11 @@ Class clsMainUI {
         settings.capitalization := UI_capitalization
         settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
         settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
-        settings.locale := UI_selected_locale
-        settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED) + this.controls.chords_enabled.value * MODE_CHORDS_ENABLED + UI_shorthands_enabled * MODE_SHORTHANDS_ENABLED  ; carries over the current ZIPCHORD_ENABLED setting 
+        settings.locale := cts.selected_locale.value
+        ; settings.mode carries over the current ZIPCHORD_ENABLED setting
+        settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
+                        + cts.chords_enabled.value * MODE_CHORDS_ENABLED
+                        + cts.shorthands_enabled.value * MODE_SHORTHANDS_ENABLED   
         settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
         if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
@@ -664,6 +673,20 @@ Class clsMainUI {
         Return true
     }
 
+    ReEnable() {
+        this.UI.Enable()
+    }
+
+    UpdateLocaleInMainUI(selected_loc) {
+        sections := ini.LoadSections()
+        ; handle := this.UI._handle
+        ; Gui, %handle%:Default
+        ; GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
+        ; GuiControl, Choose, UI_selected_locale, % selected_loc
+        this.controls.selected_locale.value := "|" StrReplace(sections, "`n", "|")
+        this.controls.selected_locale.Choose(selected_loc)
+    }
+
     EnableTabs(mode) {
         handle := main_UI.UI._handle
         Gui, %handle%:Default
@@ -682,6 +705,13 @@ Class clsMainUI {
         Gui, %handle%:Default
         GuiControlGet, current_tab,, UI_tab
         OpenHelp("Main-" . Trim(current_tab))
+    }
+
+    _btnCustomizeLocale() {
+        global locale
+        WireHotkeys("Off")  ; so the user can edit the values without interference
+        this.UI.Disable()
+        locale.Show(this.controls.selected_locale.value)
     }
 }
 
@@ -796,14 +826,6 @@ ShowHintCustomization(show_controls := true) {
     }
 }
 
-UpdateLocaleInMainUI(selected_loc) {
-    sections := ini.LoadSections()
-    handle := main_UI.UI._handle
-    Gui, %handle%:Default
-    GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
-    GuiControl, Choose, UI_selected_locale, % selected_loc
-}
-
 LinkToLicense() {
     ini.ShowLicense()
 }
@@ -868,14 +890,6 @@ BtnReloadChordDictionary() {
 BtnReloadShorthandDictionary() {
     shorthands.Load()
     UpdateDictionaryUI()
-}
-
-ButtonCustomizeLocale() {
-    global locale
-    WireHotkeys("Off")  ; so the user can edit the values without interference
-    Gui, Submit, NoHide ; to get the currently selected UI_selected_locale
-    Gui, +Disabled
-    locale.Show(UI_selected_locale)
 }
 
 ;; Closing Tip UI

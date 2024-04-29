@@ -109,10 +109,9 @@ Class clsLocaleInterface {
         }
         this.name.value := "|" StrReplace(sections, "`n", "|")
         this.name.Choose(locale_name)
-        For key, option in this.options
+        For key, option in this.options {
             option.value := loc_obj[key]
-        ; handle := this.UI._handle
-        ; Gui %handle%:Submit, NoHide
+        }
         this.UI.Show()
     }
     _Change() {
@@ -169,9 +168,8 @@ Class clsLocaleInterface {
         ini.SaveProperties(new_loc, this.name.value)
     }
     _Close() {
-        handle := main_UI.UI._handle
-        Gui, %handle%:-Disabled
-        UpdateLocaleInMainUI(this.name.value)
+        main_UI.ReEnable()
+        main_UI.UpdateLocaleInMainUI(this.name.value)
         this.UI.Hide()
     }
 }
