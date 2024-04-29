@@ -457,17 +457,11 @@ AddShortcut() {
 }
 
 ; variables holding the UI elements and selections (These should technically all be named UI_Main_xyz but I am using UI_xyz as a shortcut for the main dialog vars)
-global UI_input_delay
-    , UI_output_delay
-    , UI_space_before, UI_space_after, UI_space_punctuation
-    , UI_delete_unrecognized
+global UI_space_before, UI_space_after, UI_space_punctuation
     , UI_hints_show, UI_hint_destination, UI_hint_frequency
     , UI_hint_offset_x, UI_hint_offset_y, UI_hint_size, UI_hint_color 
     , UI_btnCustomize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
-    , UI_immediate_shorthands
     , UI_capitalization
-    , UI_allow_shift
-    , UI_restrict_chords
     , UI_chord_file, UI_shorthand_file
     , UI_chord_entries
     , UI_shorthand_entries
@@ -484,9 +478,11 @@ Class clsMainUI {
     controls := { selected_locale:      { type: "DropDownList"
                                         , text: "&Keyboard and language"}
                 , chord_enabled:        { type: "Checkbox"
-                                        , text: "Use &chords"}
+                                        , text: "Use &chords"
+                                        , setting: { parent: "mode", const: "MODE_CHORDS_ENABLED"}}
                 , shorthand_enabled:    { type: "Checkbox"
-                                        , text: "Use &shorthands"}
+                                        , text: "Use &shorthands"
+                                        , setting: { parent: "mode", const: "MODE_SHORTHANDS_ENABLED"}}
                 , chord_entries:        { type: "GroupBox"
                                         , text: "Chord dictionary"}
                 , chord_file:           { type: "Text"
@@ -494,38 +490,55 @@ Class clsMainUI {
                 , shorthand_entries:    { type: "GroupBox"
                                         , text: "Shorthand dictionary"}
                 , shorthand_file:       { type: "Text"
-                                        , text: "Loading..."}}
+                                        , text: "Loading..."}
+                , input_delay:          { type: "Edit"
+                                        , text: "99"}
+                , output_delay:         { type: "Edit"
+                                        , text: "99"}
+                , restrict_chords:      { type: "Checkbox"
+                                        , text: "&Restrict chords while typing"
+                                        , setting: { parent: "chording", const: "CHORD_RESTRICT"}}
+                , allow_shift:          { type: "Checkbox"
+                                        , text: "Allow &Shift in chords"
+                                        , setting: { parent: "chording", const: "CHORD_ALLOW_SHIFT"}}
+                , delete_unrecognized:  { type: "Checkbox"
+                                        , text: "Delete &mistyped chords"
+                                        , setting: { parent: "chording", const: "CHORD_DELETE_UNRECOGNIZED"}}
+                , immediate_shorthands: { type: "Checkbox"
+                                        , text: "E&xpand shorthands immediately"
+                                        , setting: { parent: "chording", const: "CHORD_IMMEDIATE_SHORTHANDS"}} }
     ; Prepare UI
     Build() {
         global zc_version
         cts := this.controls
         UI := new clsUI("ZipChord")
         UI.on_close := ObjBindMethod(this, "_Close")
+
         UI.Add("Tab3", , " Dictionaries | Detection | Hints | Output | About ")
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
         UI.Add(cts.selected_locale, "y+10 w150")
         UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
-
         this._BuilderHelper(UI, "chord", "&Open", "&Edit", "&Reload", "xs y+20")
         this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "Reloa&d", "xs-20 y+30")
 
-        Gui, Tab, 2
-        Gui, Add, GroupBox, y+20 w310 h175, Chords
-        Gui, Add, Text, xp+20 yp+30 Section, % "&Detection delay (ms)"
-        Gui, Add, Edit, vUI_input_delay Right xp+200 yp-2 w40 Number, 99
-        Gui, Add, Checkbox, vUI_restrict_chords xs, % "&Restrict chords while typing"
-        Gui, Add, Checkbox, vUI_allow_shift, % "Allow &Shift in chords"
-        Gui, Add, Checkbox, vUI_delete_unrecognized, % "Delete &mistyped chords"
-        Gui, Add, GroupBox, xs-20 y+40 w310 h70, % "Shorthands"
-        Gui, Add, Checkbox, vUI_immediate_shorthands xp+20 yp+30 Section, % "E&xpand shorthands immediately"
-        Gui, Tab, 3
+        UI.Tab(2)
+        UI.Add("GroupBox", "y+20 w310 h175", "Chords")
+        UI.Add("Text", "xp+20 yp+30 Section", "&Detection delay (ms)")
+        UI.Add(cts.input_delay, "Right xp+200 yp-2 w40 Number")
+        UI.Add(cts.restrict_chords, "xs")
+        UI.Add(cts.allow_shift)
+        UI.Add(cts.delete_unrecognized)
+        UI.Add("GroupBox", "xs-20 y+40 w310 h70", "Shorthands")
+        UI.Add(cts.immediate_shorthands, "xp+20 yp+30 Section")
+        
+        UI.Tab(3)
         Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
-        Gui, Add, Text, , % "Hint &location"
+        UI.Add("Text", , "Hint &location")
         Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
-        Gui, Add, Text, xs, % "Hints &frequency"
+        UI.Add("Text", "xs", "Hints &frequency")
         Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
         Gui, Add, Button, gShowHintCustomization vUI_btnCustomize xs w100, % "&Adjust >>"
-        Gui, Add, GroupBox, vUI_hint_1 xs y+20 w310 h200 Section, % "Hint customization"
+        UI.Add("GroupBox", "vUI_hint_1 xs y+20 w310 h200 Section", "Hint customization")
         Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
         Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
         Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
@@ -534,27 +547,21 @@ Class clsMainUI {
         Gui, Add, Edit, vUI_hint_offset_y w70 Right
         Gui, Add, Edit, vUI_hint_size w70 Right Number
         Gui, Add, Edit, vUI_hint_color w70 Right
-        Gui, Tab, 4
-        Gui, Add, GroupBox, y+20 w310 h120 Section, Smart spaces
+        
+        UI.Tab(4)
+        UI.Add("GroupBox", "y+20 w310 h120 Section", "Smart spaces")
         Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
         Gui, Add, Checkbox, vUI_space_after xp y+10, % "&After chords and shorthands"
         Gui, Add, Checkbox, vUI_space_punctuation xp y+10, % "After &punctuation"
         Gui, Add, Text, xs y+30, % "Auto-&capitalization"
         Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
-        Gui, Add, Text, xs y+m, % "&Output delay (ms)"
-        Gui, Add, Edit, vUI_output_delay Right xp+150 w40 Number, % "99"
-        Gui, Tab
-        Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
-        fn := Func("PauseApp").Bind(true)
-        GuiControl +g, % temp, % fn
-        UI.Add("Button", "w80 xm+160 ym+450", "Apply", ObjBindMethod(this, "_ApplySettings"))
-        UI.Add("Button", "Default w80 xm+260 ym+450", "OK", ObjBindMethod(this, "_btnOK"))
+        UI.Add("Text", "xs y+m", "&Output delay (ms)")
+        UI.Add(cts.output_delay, "Right xp+150 w40 Number")
 
-        Gui, Tab, 5
+        UI.Tab(5)
         Gui, Add, Text, Y+20, % "ZipChord"
         Gui, Add, Text, , % "Copyright © 2021–2024 Pavel Soukenik"
         Gui, Add, Text, , % "version " . zc_version
-        ; Gui, Add, Text, +Wrap w300, % "This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions."
         Gui, Font, Underline cBlue
         Gui, Add, Text, gLinkToLicense, % "License information"
         Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
@@ -563,6 +570,14 @@ Class clsMainUI {
         if (A_Args[1] == "dev") {
             Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
         }
+
+        UI.Tab()
+        Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
+        fn := Func("PauseApp").Bind(true)
+        GuiControl +g, % temp, % fn
+        UI.Add("Button", "w80 xm+160 ym+450", "Apply", ObjBindMethod(this, "_ApplySettings"))
+        UI.Add("Button", "Default w80 xm+260 ym+450", "OK", ObjBindMethod(this, "_btnOK"))
+
         this.UI := UI
     }
     _BuilderHelper(UI, name_modifier, s_open, s_edit, s_reload, options) {
@@ -584,19 +599,22 @@ Class clsMainUI {
         Hotkey, F1, % call, On
         handle := this.UI._handle
         Gui, %handle%:Default
-        GuiControl Text, UI_input_delay, % settings.input_delay
-        GuiControl Text, UI_output_delay, % settings.output_delay
-        GuiControl , , UI_allow_shift, % (settings.chording & CHORD_ALLOW_SHIFT) ? 1 : 0
-        GuiControl , , UI_restrict_chords, % (settings.chording & CHORD_RESTRICT) ? 1 : 0
-        GuiControl , , UI_immediate_shorthands, % (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) ? 1 : 0
-        GuiControl , , UI_delete_unrecognized, % (settings.chording & CHORD_DELETE_UNRECOGNIZED) ? 1 : 0
+        cts.input_delay.value := settings.input_delay
+        cts.output_delay.value := settings.output_delay
+
+        ; Loop through each control and apply settings from its defined corresponding setting 
+        for _, control in this.controls {
+            if (control.HasKey("setting")) {
+                const_name := control.setting.const
+                control.value := (settings[control.setting.parent] & %const_name%) ? 1 : 0
+            }
+        }
+
         GuiControl , Choose, UI_capitalization, % settings.capitalization
         GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
         GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
         GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
         GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        cts.chord_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
-        cts.shorthand_enabled.value := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
         ; debugging is always set to disabled
         GuiControl , , UI_debugging, 0
         GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
@@ -625,11 +643,14 @@ Class clsMainUI {
         previous_mode := settings.mode 
         Gui, Submit, NoHide
         ; gather new settings from UI...
-        settings.input_delay := UI_input_delay + 0
-        settings.output_delay := UI_output_delay + 0
+        settings.input_delay := cts.input_delay.value + 0
+        settings.output_delay := cts.output_delay.value + 0
         settings.capitalization := UI_capitalization
         settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
-        settings.chording := UI_delete_unrecognized * CHORD_DELETE_UNRECOGNIZED + UI_allow_shift * CHORD_ALLOW_SHIFT + UI_restrict_chords * CHORD_RESTRICT + UI_immediate_shorthands * CHORD_IMMEDIATE_SHORTHANDS
+        settings.chording := cts.delete_unrecognized.value * CHORD_DELETE_UNRECOGNIZED
+                            + cts.allow_shift.value * CHORD_ALLOW_SHIFT
+                            + cts.restrict_chords.value * CHORD_RESTRICT
+                            + cts.immediate_shorthands.value * CHORD_IMMEDIATE_SHORTHANDS
         settings.locale := cts.selected_locale.value
         ; settings.mode carries over the current ZIPCHORD_ENABLED setting
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
@@ -689,10 +710,6 @@ Class clsMainUI {
 
     UpdateLocaleInMainUI(selected_loc) {
         sections := ini.LoadSections()
-        ; handle := this.UI._handle
-        ; Gui, %handle%:Default
-        ; GuiControl, , UI_selected_locale, % "|" StrReplace(sections, "`n", "|")
-        ; GuiControl, Choose, UI_selected_locale, % selected_loc
         this.controls.selected_locale.value := "|" StrReplace(sections, "`n", "|")
         this.controls.selected_locale.Choose(selected_loc)
     }
