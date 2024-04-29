@@ -223,21 +223,12 @@ Infixes
 
 Punctuation Exceptions
 ----------------------
-These exceptions are used to correct the output when using smart spaces after punctuation.
+These exceptions are used to help with specific output when using smart spaces after punctuation.
 
- .	~.~	Space+. forces a full stop without smart spaces
+ .	~.~	Space+. forces a full stop without a smart spaces
+ ,	~,~	Space+. forces a full stop without a smart spaces
 e . g .	e.g.
 i . e . i.e.
-. 0	~.0~
-. 1	~.1~
-. 2	~.2~
-. 3	~.3~
-. 4	~.4~
-. 5	~.5~
-. 6	~.6~
-. 7	~.7~
-. 8	~.8~
-. 9	~.9~
 
 Newly added
 -----------

@@ -138,6 +138,7 @@ Class clsIOrepresentation {
          , IS_CHORD := 128
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
+         , IS_NUMERAL := 1024
     _sequence := []
     SEQUENCE_WINDOW := 6 ; sequence length to maintain
 
@@ -182,13 +183,16 @@ Class clsIOrepresentation {
         if (entry == " ") {
             chunk.attributes |= this.IS_MANUAL_SPACE
         }
+        if (!with_shift && InStr("0123456789", entry)) {
+            chunk.attributes |= this.IS_NUMERAL
+        }
         this._sequence.Push(chunk)
         this._Show()
         if (adjustment) {
             return
         }
-        this.CapitalizeTyping(entry, chunk.attributes)
-        this.PrePunctuation(chunk.attributes)
+        this.CapitalizeTypingAsNeeded(entry, chunk.attributes)
+        this.RemoveSmartSpaceAsNeeded(chunk.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
         if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
             this.TryImmediateShorthand()
@@ -290,6 +294,9 @@ Class clsIOrepresentation {
     }
     TestChunkAttributes(chunk_id, bitmask) {
         ; purposefully return true if one of the bitmask conditions are true (therefore, not comparing to bitmask)
+        if (chunk_id > this.length || chunk_id < 1) {
+            return false
+        }
         return (this._sequence[chunk_id].attributes & bitmask)
     }
 
@@ -336,7 +343,7 @@ Class clsIOrepresentation {
         } else {
             OutputKeys("{Backspace}")
         }
-        if (! new_output) {
+        if ( new_output . backup_content == "") {
             return
         }
         ; we send any expanded text that includes { as straight directives:
@@ -406,7 +413,7 @@ Class clsIOrepresentation {
         }
     }
 
-    CapitalizeTyping(character, attribs) {
+    CapitalizeTypingAsNeeded(character, attribs) {
         if ( settings.capitalization != CAP_ALL || (attribs & this.IS_PUNCTUATION)
                 || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.WITH_SHIFT) ) {
             return
@@ -418,18 +425,29 @@ Class clsIOrepresentation {
         }
     }
 
-    PrePunctuation(attribs) {
-        if !( (attribs & this.IS_PUNCTUATION) && (this.GetChunk(this.length-1).attributes & this.SMART_SPACE_AFTER) ) {
+    RemoveSmartSpaceAsNeeded(attribs) {
+        if ! (this.TestChunkAttributes(this.length-1, this.SMART_SPACE_AFTER)) {
             return
         }
-        chunk := this.GetChunk(this.length)
-        if ( (!(chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
-                || ((chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
-            this.Replace(chunk.output, this.length-1)
-            new_chunk := this.GetChunk(this.length)
-            new_chunk.input := chunk.input
-            new_chunk.attributes := chunk.attributes
+        ; for punctuation that removes spaces
+        if (attribs & this.IS_PUNCTUATION) {
+            chunk := this.GetChunk(this.length)
+            if ( (!(chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, chunk.input))
+                    || ((chunk.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, chunk.input)) ) {
+                return this._RemoveSmartSpace()
+            }
         }
+        ; for manual_space-punctuation-numeral and numeral-punctuation-numeral
+        if (attribs & this.IS_NUMERAL && this.TestChunkAttributes(this.length - 2, this.IS_PUNCTUATION)
+                && this.TestChunkAttributes(this.length - 3, this.IS_NUMERAL | this.IS_MANUAL_SPACE | this.IS_ENTER)) {
+            return this._RemoveSmartSpace()
+        }
+    }
+
+    _RemoveSmartSpace() {
+        this.Replace("", this.length - 1, this.length - 1)
+        this._sequence.RemoveAt(this.length - 1)
+        return true
     }
 
     AddSpaceAfterPunctuation() {

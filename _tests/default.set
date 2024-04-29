@@ -8,3 +8,4 @@ default__test.out
 default__chording.out
 default__infix.out
 default__interrupts.out
+default__ss-punct.out
