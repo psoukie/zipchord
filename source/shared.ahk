@@ -156,6 +156,14 @@ class clsUI {
         window_handle := this._handle
         Gui, %window_handle%:-Disabled
     }
+    Tab(tab_number := -1) {
+        window_handle := this._handle
+        if (tab_number == -1) {
+            Gui, %window_handle%:Tab
+        } else {
+            Gui, %window_handle%:Tab, %tab_number%
+        }
+    }
     ; Called when user closes or escapes the window.
     ; Calls the on_close function, if defined, or hides the window.
     _Close() {
