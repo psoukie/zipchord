@@ -239,8 +239,6 @@ Initialize() {
     main_UI.Build()
     locale.Init()
     locale.Load(settings.locale)
-    handle := main_UI.UI._handle
-    Gui, %handle%:+Disabled ; for loading
     main_UI.Show()
     UI_Tray_Build()
     locale.Build()
@@ -248,7 +246,7 @@ Initialize() {
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     main_UI.UpdateDictionaryUI()
-    Gui, %handle%:-Disabled
+    main_UI.UI.Enable()
     WireHotkeys("On")
 }
 
@@ -583,6 +581,7 @@ Class clsMainUI {
         UI.Add("Button", "w80 xm+160 ym+450", "Apply", ObjBindMethod(this, "_ApplySettings"))
         UI.Add("Button", "Default w80 xm+260 ym+450", "OK", ObjBindMethod(this, "_btnOK"))
 
+        UI.Disable()  ; start disabled during loading
         this.UI := UI
     }
     _BuilderHelper(UI, name_modifier, s_open, s_edit, s_reload, options) {
@@ -603,8 +602,6 @@ Class clsMainUI {
         cts.debugging.value := 0 ; debugging is always set to disabled
         call := ObjBindMethod(this, "_Help")
         Hotkey, F1, % call, On
-        handle := this.UI._handle
-        Gui, %handle%:Default
         cts.input_delay.value := settings.input_delay
         cts.output_delay.value := settings.output_delay
         ; Loop through each control and apply settings from its defined corresponding setting 
@@ -625,7 +622,7 @@ Class clsMainUI {
         this.ShowHintCustomization(false)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI(settings.locale)
-        Gui, Show,, ZipChord
+        this.UI.Show()
     }
 
     _btnOK() {
@@ -639,7 +636,6 @@ Class clsMainUI {
         global locale
         cts := this.controls
         previous_mode := settings.mode 
-        Gui, Submit, NoHide
         ; gather new settings from UI...
         settings.input_delay := cts.input_delay.value + 0
         settings.output_delay := cts.output_delay.value + 0
@@ -658,16 +654,16 @@ Class clsMainUI {
                         + cts.shorthand_enabled.value * MODE_SHORTHANDS_ENABLED
         ; recalculate hint settings to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
         settings.hints := cts.hints_show.value + 16 * cts.hint_destination.value + 2**cts.hint_frequency.value
-        if ( (temp:=SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
+        if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
         } else settings.hint_offset_x := temp
-        if ( (temp:=SanitizeNumber(cts.hint_offset_y.value)) == "ERROR") {
+        if ( (temp:=this._SanitizeNumber(cts.hint_offset_y.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
         } else settings.hint_offset_y := temp
         settings.hint_size := cts.hint_size.value
-        if ( (temp:=SanitizeNumber(cts.hint_color.value, true)) =="ERROR") {
+        if ( (temp:=this._SanitizeNumber(cts.hint_color.value, true)) =="ERROR") {
             MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
             Return false
         } else settings.hint_color := temp
@@ -701,10 +697,6 @@ Class clsMainUI {
         ; to reflect any changes to OSD UI
         SetTimer,  UI_OSD_Reset, -2000
         Return true
-    }
-
-    ReEnable() {
-        this.UI.Enable()
     }
 
     UpdateLocaleInMainUI(selected_loc) {
@@ -768,6 +760,22 @@ Class clsMainUI {
         pluralized := type . "s"
         %pluralized%.Load()
         main_UI.UpdateDictionaryUI()
+    }
+    ; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR" 
+    _SanitizeNumber(orig, hex_color := false) {
+        sanitized := Trim(orig)
+        format := "integer"
+        if (hex_color) {
+            format := "xdigit"
+            if (SubStr(orig, 1, 1) == "#")
+                sanitized := SubStr(orig, 2)
+            if (StrLen(sanitized)!=6)
+                return "ERROR"
+        }
+        if sanitized is %format%
+            return sanitized
+        else
+            return "ERROR"
     }
     ; Shows or hides controls for hints customization (1 = show, 0 = hide)
     ShowHintCustomization(show_controls := true) {

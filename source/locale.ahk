@@ -168,8 +168,8 @@ Class clsLocaleInterface {
         ini.SaveProperties(new_loc, this.name.value)
     }
     _Close() {
-        main_UI.ReEnable()
         main_UI.UpdateLocaleInMainUI(this.name.value)
+        main_UI.UI.Enable()
         this.UI.Hide()
     }
 }
