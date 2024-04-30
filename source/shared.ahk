@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -165,9 +165,21 @@ class clsUI {
             Gui, %window_handle%:Tab, %tab_number%
         }
     }
+    Margin(x := 15, y := 15) {
+        window_handle := this._handle
+        Gui, %window_handle%:Margin, %x%, %y%
+    }
     Font(options := "cDefault s10 w400 norm", family := "Segoe UI") {
         window_handle := this._handle
         Gui, %window_handle%:Font, %options%, %family%
+    }
+    Color(window := "Default", control := "Default") {
+        window_handle := this._handle
+        Gui, %window_handle%:Color, %window%, %control%
+    }
+    SetTransparency(transparent_color, transparency := "Off") {
+        window_handle := this._handle
+        WinSet, TransColor, %transparent_color% %transparency%, ahk_id %window_handle%
     }
     ; Called when user closes or escapes the window.
     ; Calls the on_close function, if defined, or hides the window.
@@ -391,7 +403,7 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
     new_str := StrReplace(new_str, " ", Chr(0x2423))
     if (enclose_latin_letters) {
         Loop, 26 {
-            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(0x1F12F + A_Index)
+            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(0x1F12F + A_Index))
         }
         new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ") ; add spaces between characters
     }
