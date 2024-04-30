@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -383,6 +383,19 @@ UpdateVarFromConfig(ByRef var, key) {
 
 SaveVarToConfig(key, value) {
     ini.SaveProperty(value, key, A_AppData . "\ZipChord\config.ini")
+}
+
+ReplaceWithVariants(text, enclose_latin_letters:=false) {
+    new_str := text
+    new_str := StrReplace(new_str, "+", Chr(0x21E7))
+    new_str := StrReplace(new_str, " ", Chr(0x2423))
+    if (enclose_latin_letters) {
+        Loop, 26 {
+            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(0x1F12F + A_Index)
+        }
+        new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ") ; add spaces between characters
+    }
+    Return new_str
 }
 
 QPC() {

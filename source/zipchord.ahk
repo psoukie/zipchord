@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -301,6 +301,28 @@ WireHotkeys(state) {
     app_shortcuts.WireHotkeys("On")
 }
 
+; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
+ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
+    new := StrSplit( RegExReplace(old, "\{(.*?)\}", "") )   ; array with all text in between curly braces removed
+    segments := StrSplit(old, "{")
+    For i, segment in segments {
+        if (i > 1) {
+            key_definition := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
+            if (InStr(key_definition, ":")) {
+                divider := ":"
+                target := new
+            } else {
+                divider := "="
+                target := bypassed
+            }
+            def_components := StrSplit(key_definition, divider)
+            target.push(def_components[1])
+            ObjRawSet(map, def_components[1], def_components[2])
+        }
+    }
+}
+
+
 ; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
 
 ;; Shortcuts Detection 
@@ -376,43 +398,6 @@ KeyUp:
     ; QPC()
     Critical Off
 Return
-
-
-; Helper functions
-; ------------------
-
-ReplaceWithVariants(text, enclose_latin_letters:=false) {
-    new_str := text
-    new_str := StrReplace(new_str, "+", Chr(0x21E7))
-    new_str := StrReplace(new_str, " ", Chr(0x2423))
-    if (enclose_latin_letters) {
-        Loop, 26
-            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(0x1F12F + A_Index))
-        new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ")
-    }
-    Return new_str
-}
-
-; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
-ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
-    new := StrSplit( RegExReplace(old, "\{(.*?)\}", "") )   ; array with all text in between curly braces removed
-    segments := StrSplit(old, "{")
-    For i, segment in segments {
-        if (i > 1) {
-            key_definition := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
-            if (InStr(key_definition, ":")) {
-                divider := ":"
-                target := new
-            } else {
-                divider := "="
-                target := bypassed
-            }
-            def_components := StrSplit(key_definition, divider)
-            target.push(def_components[1])
-            ObjRawSet(map, def_components[1], def_components[2])
-        }
-    }
-} 
 
 Interrupt:
     classifier.Interrupt()
