@@ -456,26 +456,15 @@ AddShortcut() {
     add_shortcut.Show(copied_text)
 }
 
-; variables holding the UI elements and selections (These should technically all be named UI_Main_xyz but I am using UI_xyz as a shortcut for the main dialog vars)
-global UI_space_before, UI_space_after, UI_space_punctuation
-    , UI_hints_show, UI_hint_destination, UI_hint_frequency
-    , UI_hint_offset_x, UI_hint_offset_y, UI_hint_size, UI_hint_color 
-    , UI_btnCustomize, UI_hint_1, UI_hint_2, UI_hint_3, UI_hint_4, UI_hint_5
-    , UI_capitalization
-    , UI_chord_file, UI_shorthand_file
-    , UI_chord_entries
-    , UI_shorthand_entries
-    , UI_zipchord_btnPause
-    , UI_tab
-    , UI_debugging
-
 /**
 * Main Dialog UI Class
 *
 */
 Class clsMainUI {
     UI := {}
-    controls := { selected_locale:      { type: "DropDownList"
+    controls := { tabs:                 { type: "Tab3"
+                                        , text: " Dictionaries | Detection | Hints | Output | About "}
+                , selected_locale:      { type: "DropDownList"
                                         , text: "&Keyboard and language"}
                 , chord_enabled:        { type: "Checkbox"
                                         , text: "Use &chords"
@@ -506,7 +495,39 @@ Class clsMainUI {
                                         , setting: { parent: "chording", const: "CHORD_DELETE_UNRECOGNIZED"}}
                 , immediate_shorthands: { type: "Checkbox"
                                         , text: "E&xpand shorthands immediately"
-                                        , setting: { parent: "chording", const: "CHORD_IMMEDIATE_SHORTHANDS"}} }
+                                        , setting: { parent: "chording", const: "CHORD_IMMEDIATE_SHORTHANDS"}}
+                , hints_show:           { type: "Checkbox"
+                                        , text: "&Show hints for shortcuts in dictionaries"
+                                        , setting: { parent: "hints", const: "HINT_ON"}}
+                , hint_destination:     { type: "DropDownList"
+                                        , text: "On-screen display|Tooltips"}
+                , hint_frequency:       { type: "DropDownList"
+                                        , text: "Always|Normal|Relaxed"}
+                , btn_customize_hints:  { type: "Button"
+                                        , function: ObjBindMethod(this, "ShowHintCustomization")
+                                        , text: "&Adjust >>"}
+                , hint_offset_x:        { type: "Edit" }
+                , hint_offset_y:        { type: "Edit" }
+                , hint_size:            { type: "Edit" }
+                , hint_color:           { type: "Edit" }
+                , space_before:         { type: "Checkbox"
+                                        , text: "In &front of chords"
+                                        , setting: { parent: "spacing", const: "SPACE_BEFORE_CHORD"}}
+                , space_after:          { type: "Checkbox"
+                                        , text: "&After chords and shorthands"
+                                        , setting: { parent: "spacing", const: "SPACE_AFTER_CHORD"}}
+                , space_punctuation:    { type: "Checkbox"
+                                        , text: "After &punctuation"
+                                        , setting: { parent: "spacing", const: "SPACE_PUNCTUATION"}}
+                , capitalization:       { type: "DropDownList"
+                                        , text: "Off|For shortcuts|For all input"}
+                , debugging:            { type: "Checkbox"
+                                        , text: "&Log this session (debugging)"} 
+                , btn_pause:            { type: "Button"
+                                        , function: Func("PauseApp").Bind(true)
+                                        , text: UI_STR_PAUSE} }
+    labels := []
+
     ; Prepare UI
     Build() {
         global zc_version
@@ -514,7 +535,7 @@ Class clsMainUI {
         UI := new clsUI("ZipChord")
         UI.on_close := ObjBindMethod(this, "_Close")
 
-        UI.Add("Tab3", , " Dictionaries | Detection | Hints | Output | About ")
+        UI.Add(cts.tabs)
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
         UI.Add(cts.selected_locale, "y+10 w150")
         UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
@@ -532,49 +553,47 @@ Class clsMainUI {
         UI.Add(cts.immediate_shorthands, "xp+20 yp+30 Section")
         
         UI.Tab(3)
-        Gui, Add, Checkbox, y+20 vUI_hints_show Section, % "&Show hints for shortcuts in dictionaries"
+        UI.Add(cts.hints_show, "y+20 Section")
         UI.Add("Text", , "Hint &location")
-        Gui, Add, DropDownList, vUI_hint_destination AltSubmit xp+150 w140, % "On-screen display|Tooltips"
+        UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
         UI.Add("Text", "xs", "Hints &frequency")
-        Gui, Add, DropDownList, vUI_hint_frequency AltSubmit xp+150 w140, % "Always|Normal|Relaxed"
-        Gui, Add, Button, gShowHintCustomization vUI_btnCustomize xs w100, % "&Adjust >>"
-        UI.Add("GroupBox", "vUI_hint_1 xs y+20 w310 h200 Section", "Hint customization")
-        Gui, Add, Text, vUI_hint_2 xp+20 yp+30 Section, % "Horizontal offset (px)"
-        Gui, Add, Text, vUI_hint_3, % "Vertical offset (px)"
-        Gui, Add, Text, vUI_hint_4, % "OSD font size (pt)"
-        Gui, Add, Text, vUI_hint_5, % "OSD color (hex code)"
-        Gui, Add, Edit, vUI_hint_offset_x ys xp+200 w70 Right
-        Gui, Add, Edit, vUI_hint_offset_y w70 Right
-        Gui, Add, Edit, vUI_hint_size w70 Right Number
-        Gui, Add, Edit, vUI_hint_color w70 Right
-        
+        UI.Add(cts.hint_frequency, "AltSubmit xp+150 w140")
+        UI.Add(cts.btn_customize_hints, "xs w100")
+        this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h200 Section", "Hint customization")
+        this.labels[2] := UI.Add("Text", "xp+20 yp+30 Section", "Horizontal offset (px)")
+        this.labels[3] := UI.Add("Text", , "Vertical offset (px)")
+        this.labels[4] := UI.Add("Text", , "OSD font size (pt)")
+        this.labels[5] := UI.Add("Text", , "OSD color (hex code)")
+        UI.Add(cts.hint_offset_x, "ys xp+200 w70 Right")
+        UI.Add(cts.hint_offset_y, "w70 Right")
+        UI.Add(cts.hint_size, "w70 Right Number")
+        UI.Add(cts.hint_color, "w70 Right")
+
         UI.Tab(4)
         UI.Add("GroupBox", "y+20 w310 h120 Section", "Smart spaces")
-        Gui, Add, Checkbox, vUI_space_before xs+20 ys+30, % "In &front of chords"
-        Gui, Add, Checkbox, vUI_space_after xp y+10, % "&After chords and shorthands"
-        Gui, Add, Checkbox, vUI_space_punctuation xp y+10, % "After &punctuation"
-        Gui, Add, Text, xs y+30, % "Auto-&capitalization"
-        Gui, Add, DropDownList, vUI_capitalization AltSubmit xp+150 w130, % "Off|For shortcuts|For all input"
+        UI.Add(cts.space_before, "xs+20 ys+30")
+        UI.Add(cts.space_after, "xp y+10")
+        UI.Add(cts.space_punctuation, "xp y+10")
+        UI.Add("Text", "xs y+30", "Auto-&capitalization")
+        UI.Add(cts.capitalization, "AltSubmit xp+150 w130")
         UI.Add("Text", "xs y+m", "&Output delay (ms)")
         UI.Add(cts.output_delay, "Right xp+150 w40 Number")
 
         UI.Tab(5)
-        Gui, Add, Text, Y+20, % "ZipChord"
-        Gui, Add, Text, , % "Copyright © 2021–2024 Pavel Soukenik"
-        Gui, Add, Text, , % "version " . zc_version
+        UI.Add("Text", "Y+20", "ZipChord")
+        UI.Add("Text", , "Copyright © 2021–2024 Pavel Soukenik")
+        UI.Add("Text", , "version " . zc_version)
         Gui, Font, Underline cBlue
-        Gui, Add, Text, gLinkToLicense, % "License information"
-        Gui, Add, Text, gLinkToDocumentation, % "Help and documentation"
-        Gui, Add, Text, gLinkToReleases, % "Latest releases (check for updates)"
+        UI.Add("Text", , "License information", Func("LinkToLicense"))
+        UI.Add("Text", , "Help and documentation", Func("LinkToDocumentation"))
+        UI.Add("Text", , "Latest releases (check for updates)", Func("LinkToReleases"))
         Gui, Font, norm cDefault
         if (A_Args[1] == "dev") {
-            Gui, Add, Checkbox, y+30 vUI_debugging, % "&Log this session (debugging)"
+            UI.Add(cts.debugging, "y+30")
         }
 
         UI.Tab()
-        Gui, Add, Button, vUI_zipchord_btnPause Hwndtemp xm ym+450 w130, % UI_STR_PAUSE
-        fn := Func("PauseApp").Bind(true)
-        GuiControl +g, % temp, % fn
+        UI.Add(cts.btn_pause, "xm ym+450 w130")
         UI.Add("Button", "w80 xm+160 ym+450", "Apply", ObjBindMethod(this, "_ApplySettings"))
         UI.Add("Button", "Default w80 xm+260 ym+450", "OK", ObjBindMethod(this, "_btnOK"))
 
@@ -592,16 +611,16 @@ Class clsMainUI {
 
     Show() {
         cts := this.controls
-        if (A_Args[1] == "dev")
-            if (UI_debugging)
-                FinishDebugging()
+        if (A_Args[1] == "dev" && cts.debugging.value) {
+            FinishDebugging()
+        }
+        cts.debugging.value := 0 ; debugging is always set to disabled
         call := ObjBindMethod(this, "_Help")
         Hotkey, F1, % call, On
         handle := this.UI._handle
         Gui, %handle%:Default
         cts.input_delay.value := settings.input_delay
         cts.output_delay.value := settings.output_delay
-
         ; Loop through each control and apply settings from its defined corresponding setting 
         for _, control in this.controls {
             if (control.HasKey("setting")) {
@@ -609,23 +628,16 @@ Class clsMainUI {
                 control.value := (settings[control.setting.parent] & %const_name%) ? 1 : 0
             }
         }
-
-        GuiControl , Choose, UI_capitalization, % settings.capitalization
-        GuiControl , , UI_space_before, % (settings.spacing & SPACE_BEFORE_CHORD) ? 1 : 0
-        GuiControl , , UI_space_after, % (settings.spacing & SPACE_AFTER_CHORD) ? 1 : 0
-        GuiControl , , UI_space_punctuation, % (settings.spacing & SPACE_PUNCTUATION) ? 1 : 0
-        GuiControl , , UI_zipchord_btnPause, % (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        ; debugging is always set to disabled
-        GuiControl , , UI_debugging, 0
-        GuiControl , , UI_hints_show, % (settings.hints & HINT_ON) ? 1 : 0
-        GuiControl , Choose, UI_hint_destination, % Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16)
-        GuiControl , Choose, UI_hint_frequency, % OrdinalOfHintFrequency()
-        GuiControl Text, UI_hint_offset_x, % settings.hint_offset_x
-        GuiControl Text, UI_hint_offset_y, % settings.hint_offset_y
-        GuiControl Text, UI_hint_size, % settings.hint_size
-        GuiControl Text, UI_hint_color, % settings.hint_color
-        ShowHintCustomization(false)
-        GuiControl, Choose, UI_tab, 1 ; switch to first tab
+        cts.capitalization.Choose(settings.capitalization)
+        cts.btn_pause.value := (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
+        cts.hint_destination.Choose( Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16) ) ; recalculate to option's list position
+        cts.hint_frequency.Choose( OrdinalOfHintFrequency() )
+        cts.hint_offset_x.value := settings.hint_offset_x
+        cts.hint_offset_y.value := settings.hint_offset_y
+        cts.hint_size.value := settings.hint_size
+        cts.hint_color.value := settings.hint_color
+        this.ShowHintCustomization(false)
+        cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI(settings.locale)
         Gui, Show,, ZipChord
     }
@@ -645,8 +657,10 @@ Class clsMainUI {
         ; gather new settings from UI...
         settings.input_delay := cts.input_delay.value + 0
         settings.output_delay := cts.output_delay.value + 0
-        settings.capitalization := UI_capitalization
-        settings.spacing := UI_space_before * SPACE_BEFORE_CHORD + UI_space_after * SPACE_AFTER_CHORD + UI_space_punctuation * SPACE_PUNCTUATION
+        settings.capitalization := cts.capitalization.value
+        settings.spacing := cts.space_before.value * SPACE_BEFORE_CHORD
+                            + cts.space_after.value * SPACE_AFTER_CHORD
+                            + cts.space_punctuation.value * SPACE_PUNCTUATION
         settings.chording := cts.delete_unrecognized.value * CHORD_DELETE_UNRECOGNIZED
                             + cts.allow_shift.value * CHORD_ALLOW_SHIFT
                             + cts.restrict_chords.value * CHORD_RESTRICT
@@ -655,18 +669,19 @@ Class clsMainUI {
         ; settings.mode carries over the current ZIPCHORD_ENABLED setting
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
                         + cts.chord_enabled.value * MODE_CHORDS_ENABLED
-                        + cts.shorthand_enabled.value * MODE_SHORTHANDS_ENABLED   
-        settings.hints := UI_hints_show + 16 * UI_hint_destination + 2**UI_hint_frequency ; translates to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
-        if ( (temp:=SanitizeNumber(UI_hint_offset_x)) == "ERROR") {
+                        + cts.shorthand_enabled.value * MODE_SHORTHANDS_ENABLED
+        ; recalculate hint settings to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
+        settings.hints := cts.hints_show.value + 16 * cts.hint_destination.value + 2**cts.hint_frequency.value
+        if ( (temp:=SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
         } else settings.hint_offset_x := temp
-        if ( (temp:=SanitizeNumber(UI_hint_offset_y)) == "ERROR") {
+        if ( (temp:=SanitizeNumber(cts.hint_offset_y.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
         } else settings.hint_offset_y := temp
-        settings.hint_size := UI_hint_size
-        if ( (temp:=SanitizeNumber(UI_hint_color, true)) =="ERROR") {
+        settings.hint_size := cts.hint_size.value
+        if ( (temp:=SanitizeNumber(cts.hint_color.value, true)) =="ERROR") {
             MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
             Return false
         } else settings.hint_color := temp
@@ -682,22 +697,20 @@ Class clsMainUI {
         }
         else if (settings.mode & MODE_ZIPCHORD_ENABLED)
             ShowHint("ZipChord Keyboard", "Off", , false)
-        if (A_Args[1] == "dev") {
-            if (UI_debugging) {
-                if (FileExist("debug.txt")) {
-                    MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
-                    IfMsgBox No
-                        Return false
-                } else {
-                    MsgBox, , % "ZipChord", % "You can type in a text editor to create a log of input and output.`n`nSimply reopen the ZipChord dialog when done to stop the logging process and save the debug file."
-                }
-                FileDelete, % A_Temp . "\debug.cfg"
-                FileDelete, % A_Temp . "\debug.in"
-                FileDelete, % A_Temp . "\debug.out"
-                test.Path("set", A_Temp)
-                test.Config("save", "debug")
-                test.Record("both", "debug")
+        if (A_Args[1] == "dev" && cts.debugging.value) {
+            if (FileExist("debug.txt")) {
+                MsgBox, 4, % "ZipChord", % "This will overwrite an existing file with debugging output (debug.txt). Would you like to continue?`n`nSelect Yes to start debugging and overwrite the file.`nSelect No to cancel."
+                IfMsgBox No
+                    Return false
+            } else {
+                MsgBox, , % "ZipChord", % "You can type in a text editor to create a log of input and output.`n`nSimply reopen the ZipChord dialog when done to stop the logging process and save the debug file."
             }
+            FileDelete, % A_Temp . "\debug.cfg"
+            FileDelete, % A_Temp . "\debug.in"
+            FileDelete, % A_Temp . "\debug.out"
+            test.Path("set", A_Temp)
+            test.Config("save", "debug")
+            test.Record("both", "debug")
         }
         ; to reflect any changes to OSD UI
         SetTimer,  UI_OSD_Reset, -2000
@@ -729,23 +742,15 @@ Class clsMainUI {
         cts[type . "_entries"].value := entriesstr 
     }
 
-    EnableTabs(mode) {
-        handle := main_UI.UI._handle
-        Gui, %handle%:Default
-        GuiControl, Enable%mode%, UI_tab
-    }
     _Close() {
         Hotkey, F1, Off
-        handle := this.UI._handle
-        Gui, %handle%:Default
-        Gui, Submit
-        if (settings.preferences & PREF_SHOW_CLOSING_TIP)
+        this.UI.Hide()
+        if (settings.preferences & PREF_SHOW_CLOSING_TIP) {
             UI_ClosingTip_Show()
+        }
     }
     _Help() {
-        handle := this.UI._handle
-        Gui, %handle%:Default
-        GuiControlGet, current_tab,, UI_tab
+        current_tab := this.controls.tabs.value
         OpenHelp("Main-" . Trim(current_tab))
     }
 
@@ -777,6 +782,18 @@ Class clsMainUI {
         pluralized := type . "s"
         %pluralized%.Load()
         main_UI.UpdateDictionaryUI()
+    }
+    ; Shows or hides controls for hints customization (1 = show, 0 = hide)
+    ShowHintCustomization(show_controls := true) {
+        cts := this.controls
+        cts.btn_customize_hints.Disable(show_controls)
+        cts.hint_offset_x.Show(show_controls)
+        cts.hint_offset_y.Show(show_controls)
+        cts.hint_size.Show(show_controls)
+        cts.hint_color.Show(show_controls)
+        Loop 5 {
+            this.labels[A_Index].Show(show_controls)
+        }
     }
 }
 
@@ -829,15 +846,14 @@ PauseApp(from_button := false) {
         settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
         mode := true
     }
-    state := mode ? UI_STR_PAUSE : UI_STR_RESUME
-    GuiControl , , UI_zipchord_btnPause, % state
+    main_UI.controls.btn_pause.value := mode ? UI_STR_PAUSE : UI_STR_RESUME
     state := mode ? "On" : "Off"
     if (from_button != true) {
         ShowHint("ZipChord Keyboard", state, , false)
     }
     WireHotkeys(state)
     UI_Tray_Update()
-    main_UI.EnableTabs(mode)
+    main_UI.controls.tabs.Enable(mode)
 }
 
 QuitApp() {
@@ -873,37 +889,22 @@ FinishDebugging() {
 }
 
 OrdinalOfHintFrequency(offset := 0) {
-    hint_frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
-    hint_frequency := Round(Log(hint_frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
-    Return hint_frequency + offset
-}
-
-; Shows or hides controls for hints customization (1 = show, 0 = hide)
-ShowHintCustomization(show_controls := true) {
-    GuiControl, Disable%show_controls%, UI_btnCustomize
-    GuiControl, Show%show_controls%, UI_hint_offset_x
-    GuiControl, Show%show_controls%, UI_hint_offset_y
-    GuiControl, Show%show_controls%, UI_hint_size
-    GuiControl, Show%show_controls%, UI_hint_color
-    Loop 5 
-    {
-        GuiControl, Show%show_controls%, UI_hint_%A_Index%
-    }
+    frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
+    frequency := Round(Log(frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
+    Return frequency + offset
 }
 
 LinkToLicense() {
     ini.ShowLicense()
 }
-Return
-LinkToDocumentation:
+LinkToDocumentation() {
     Run https://github.com/psoukie/zipchord/wiki
-Return
-LinkToReleases:
+}
+LinkToReleases() {
     Run https://github.com/psoukie/zipchord/releases
-Return
+}
 
 ; Functions supporting UI
-
 
 ;; Closing Tip UI
 ; ----------------
