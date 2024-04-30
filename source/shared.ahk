@@ -134,7 +134,7 @@ class clsUI {
         this._handle := window_handle
         clsUI._windows[window_handle] := this ; create an entry for this UI in the class to look it up when handling built-in, non-object AHK functions like CloseGui
         Gui, Margin, 15, 15
-        Gui, Font, s10, Segoe UI
+        this.Font() ; reset to default font settings
     }
     Show(options := "") {
         window_handle := this._handle
@@ -156,6 +156,7 @@ class clsUI {
         window_handle := this._handle
         Gui, %window_handle%:-Disabled
     }
+    ; switch to a tab in tabbed dialog or out of tab (if -1)
     Tab(tab_number := -1) {
         window_handle := this._handle
         if (tab_number == -1) {
@@ -163,6 +164,10 @@ class clsUI {
         } else {
             Gui, %window_handle%:Tab, %tab_number%
         }
+    }
+    Font(options := "cDefault s10 w400 norm", family := "Segoe UI") {
+        window_handle := this._handle
+        Gui, %window_handle%:Font, %options%, %family%
     }
     ; Called when user closes or escapes the window.
     ; Calls the on_close function, if defined, or hides the window.
@@ -303,8 +308,8 @@ Class clsStringFunctions {
         Gui, strFunc:Add, Text, Hwndtemp, %string%
         GuiControlGet, values, Pos, % temp
         Gui, strFunc:Destroy
+        ; GuiControlGet weirdly creates variable names based off the passed `values` variable:
         return valuesW
-        values := values ; to get rid of a compiler warning courtesy of weird return from GuiControlGet into differently named variables
     }
 }
 

@@ -584,11 +584,11 @@ Class clsMainUI {
         UI.Add("Text", "Y+20", "ZipChord")
         UI.Add("Text", , "Copyright © 2021–2024 Pavel Soukenik")
         UI.Add("Text", , "version " . zc_version)
-        Gui, Font, Underline cBlue
+        UI.Font("underline cBlue")
         UI.Add("Text", , "License information", Func("LinkToLicense"))
         UI.Add("Text", , "Help and documentation", Func("LinkToDocumentation"))
         UI.Add("Text", , "Latest releases (check for updates)", Func("LinkToReleases"))
-        Gui, Font, norm cDefault
+        UI.Font("norm cDefault")
         if (A_Args[1] == "dev") {
             UI.Add(cts.debugging, "y+30")
         }

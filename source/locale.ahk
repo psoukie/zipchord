@@ -72,19 +72,19 @@ Class clsLocaleInterface {
         UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "_Close"))
         UI.Add("GroupBox", "ys h330 w460", "Locale settings")
         UI.Add("Text", "xp+20 yp+30 Section", "&All keys (except spacebar and dead keys)")
-        Gui, Font, s10, Consolas
+        UI.Font("s10", "Consolas")
         UI.Add(this.options.all, "y+10 w420 r1")
-        Gui, Font, s10 w700, Segoe UI
+        UI.Font("s10 w700", "Segoe UI")
         UI.Add("Text", "yp+40", "Punctuation")
         UI.Add("Text", "xs+160 yp", "Unmodified keys")
         UI.Add("Text", "xs+300 yp", "If Shift was pressed")
-        Gui, Font, w400
+        UI.Font("w400")
         UI.Add("Text", "xs Section", "Remove space before")
         UI.Add("Text", "y+20", "Follow by a space")
         UI.Add("Text", "y+20", "Capitalize after")
         UI.Add("Text", "y+20", "Other")
         UI.Add("Button", "xs+240 yp+40 w100", "&Save Changes", ObjBindMethod(this, "_Save"))
-        Gui, Font, s10, Consolas
+        UI.Font("s10", "Consolas")
         UI.Add(this.options.remove_space_plain, "xs+160 ys Section w120 r1")
         UI.Add(this.options.space_after_plain, "xs w120 r1")
         UI.Add(this.options.capitalizing_plain, "xs w120 r1")
