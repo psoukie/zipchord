@@ -527,6 +527,7 @@ Class clsMainUI {
                                         , function: Func("PauseApp").Bind(true)
                                         , text: UI_STR_PAUSE} }
     labels := []
+    closing_tip := 0
 
     ; Prepare UI
     Build() {
@@ -746,7 +747,7 @@ Class clsMainUI {
         Hotkey, F1, Off
         this.UI.Hide()
         if (settings.preferences & PREF_SHOW_CLOSING_TIP) {
-            UI_ClosingTip_Show()
+            this.closing_tip := new clsClosingTip
         }
     }
     _Help() {
@@ -909,30 +910,29 @@ LinkToReleases() {
 ;; Closing Tip UI
 ; ----------------
 
-global UI_ClosingTip_dont_show := 0
+Class clsClosingTip {
+    UI := {}
+    dont_show :=    { type: "Checkbox" 
+                    , text: "Do &not show this tip again."}
 
-UI_ClosingTip_Show() {
-    global app_shortcuts
-    Gui, UI_ClosingTip:New, , % "ZipChord"
-    Gui, Margin, 20, 20
-    Gui, Font, s10, Segoe UI
-    Gui, Add, Text, +Wrap w430, % Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold "))
-    Gui, Add, Checkbox, vUI_ClosingTip_dont_show, % "Do &not show this tip again."
-    Gui, Add, Button, gUI_ClosingTip_btnOK x370 w80 Default, OK
-    Gui, Show, w470
-}
-UI_ClosingTip_btnOK() {
-    Gui, UI_ClosingTip:Submit
-    if (UI_ClosingTip_dont_show) {
-        settings.preferences &= ~PREF_SHOW_CLOSING_TIP
-        settings.Write()
+    __New() {
+        global app_shortcuts
+        this.UI := new clsUI("ZipChord")
+        this.UI.Add("Text", "+Wrap w430", Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
+        this.UI.Add(this.dont_show)
+        this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
+        this.UI.Show("w470")
     }
-}
-UI_ClosingTipGuiClose() {
-    Gui, UI_ClosingTip:Submit
-}
-UI_ClosingTipGuiEscape() {
-    Gui, UI_ClosingTip:Submit
+    Btn_OK() {
+        if (this.dont_show.value) {
+            settings.preferences &= ~PREF_SHOW_CLOSING_TIP
+            settings.Write()
+            this.UI.Destroy()
+            this.UI := {}
+        } else {
+            this.UI.Hide()
+        }
+    }
 }
 
 ;; Shortcut Hint UI
