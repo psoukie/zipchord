@@ -187,7 +187,6 @@ Class clsIOrepresentation {
             chunk.attributes |= this.IS_NUMERAL
         }
         this._sequence.Push(chunk)
-        this._Show()
         if (adjustment) {
             return
         }
@@ -227,7 +226,6 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
-        this._Show()
         this.RunModules()
     }
 
@@ -265,7 +263,6 @@ Class clsIOrepresentation {
         }
         this._sequence := []
         this._sequence.Push(new_chunk)
-        this._Show()
         if (visualizer.IsOn()) {
             visualizer.NewLine()
         }
@@ -360,7 +357,7 @@ Class clsIOrepresentation {
             Sleep settings.output_delay
         }
     }
-    _Show() {
+    _DebugSequence() {
         if (A_Args[2] != "test-vs") {
             return
         }
@@ -376,8 +373,8 @@ Class clsIOrepresentation {
         if (! this.ChordModule() ) {
             ; If no replacement, we separate any space or punctuation from the last chunk
             this._FixLastChunk()
+            this.RemoveRawChord()
         }
-        this.RemoveRawChord()
         
         last_chunk := this.GetChunk(this.length)
         attribs := last_chunk.attributes
@@ -469,7 +466,6 @@ Class clsIOrepresentation {
         if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
             OutputKeys("{Backspace}")
             this._sequence.RemoveAt(this.length - 1)
-            this._Show() 
             return true
         }
         return false
@@ -477,7 +473,7 @@ Class clsIOrepresentation {
 
     ChordModule() {
         if (! (settings.mode & MODE_CHORDS_ENABLED)) {
-            return
+            return false
         }
         count := this.length
         Loop %count%
