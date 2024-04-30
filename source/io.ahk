@@ -654,7 +654,7 @@ Class clsIOrepresentation {
         chord_hint := chord_hint ? chord_hint : "" 
         shorthand_hint := shorthand_hint ? shorthand_hint : "" 
         if (chord_hint || shorthand_hint) {
-            ShowHint(text, chord_hint, shorthand_hint)
+            hint_UI.ShowHint(text, chord_hint, shorthand_hint)
             return true
         }
     }
