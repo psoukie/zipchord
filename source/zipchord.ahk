@@ -154,7 +154,6 @@ global MODE_CHORDS_ENABLED := 1
 
 ; Current application settings
 Class settingsClass {
-    version := zc_version
     mode := MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
     preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
     locale := "English US"
