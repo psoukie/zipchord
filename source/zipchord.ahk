@@ -326,6 +326,27 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 ;; Shortcuts Detection 
 ; ---------------------
 
+Shift::
+    Critical
+    key := "~Shift"
+    tick := A_TickCount
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            key := test_key
+            tick := test_timestamp
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+        }
+    }
+    if (visualizer.IsOn()) {
+        visualizer.Pressed("+", false)
+        visualizer.Lifted("+", false)
+    }
+    io.PreShift()
+    Critical Off
+Return
+
 KeyDown:
     Critical
     key := A_ThisHotkey
@@ -354,7 +375,7 @@ KeyDown:
         } else {
             shifted := false
         }
-        visualizer.Pressed(modified_key)
+        visualizer.Pressed(modified_key, shifted)
     }
     ; QPC()
     classifier.Input(key, tick)
@@ -389,7 +410,7 @@ KeyUp:
         } else {
             shifted := false
         }
-        visualizer.Lifted(SubStr(modified_key, 1, 1))
+        visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
     }
     ; QPC()
     classifier.Input(key, tick_up)

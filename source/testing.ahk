@@ -244,6 +244,8 @@ Class TestingClass {
                     Continue
                 Case "*Interrupt*":
                     GoSub Interrupt
+                Case "~Shift":
+                    GoSub Shift
                 Case "~Enter":
                     GoSub Enter_key
                 Default:

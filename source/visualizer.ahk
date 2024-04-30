@@ -27,6 +27,8 @@ Class clsVisualizer {
     _last := 10
     _mode := 0  ; 0 - off, 1 - on, 2 - on with details
     _new_line := false
+    _shift_shown := false
+
     Init(mode := 1) {
         if (this._mode)
             return
@@ -53,7 +55,11 @@ Class clsVisualizer {
     IsOn() {
         return (this._mode > 0) ? 1 : 0
     }
-    Pressed(key) {
+    Pressed(key, with_shift) {
+        if (with_shift && !this._shift_shown) {
+            this.Pressed("+", false)
+            this._shift_shown := true
+        }
         if (this._new_line && this._next != 2) {
             this._next := 1
             this._new_line := false
@@ -67,7 +73,11 @@ Class clsVisualizer {
             this._next := 1
         this._UpdateUI()
     }
-    Lifted(key){
+    Lifted(key, with_shift){
+        if (with_shift && this._shift_shown) {
+            this.Lifted("+", false)
+            this._shift_shown := false
+        }
         slot := this._keys[key]
         this._ends[slot] := A_TickCount
         this._statuses[slot] := 144

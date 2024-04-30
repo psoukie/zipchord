@@ -139,6 +139,7 @@ Class clsIOrepresentation {
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
          , IS_NUMERAL := 1024
+    pre_shifted := false
     _sequence := []
     SEQUENCE_WINDOW := 6 ; sequence length to maintain
 
@@ -152,6 +153,9 @@ Class clsIOrepresentation {
         get {
             return this._expansion_in_last_get 
         }
+    }
+    PreShift() {
+        this.pre_shifted := !this.pre_shifted
     }
     Class clsChunk {
         __New() {
@@ -185,6 +189,10 @@ Class clsIOrepresentation {
         }
         if (!with_shift && InStr("0123456789", entry)) {
             chunk.attributes |= this.IS_NUMERAL
+        }
+        if (this.pre_shifted) {
+            chunk.attributes |= this.WAS_CAPITALIZED
+            this.pre_shifted := false
         }
         this._sequence.Push(chunk)
         if (adjustment) {
@@ -618,8 +626,7 @@ Class clsIOrepresentation {
         }
         if ( expanded := shorthands.LookUp(text) ) {
             hint_delay.Shorten()
-            if (       this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT)
-                    || this.TestChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
+            if (    this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT)
                     || ( ( settings.capitalization != CAP_OFF) && this._ShouldCapitalize(first_chunk_id) ) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
