@@ -82,7 +82,7 @@ Class TestingClass {
                 this.Write("Loading dictionaries...")
                 chords.Load(settings.chord_file)
                 shorthands.Load(settings.shorthand_file)
-                UpdateDictionaryUI()
+                main_UI.UpdateDictionaryUI()
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:

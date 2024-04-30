@@ -256,9 +256,9 @@ Class clsAddShortcut {
     }
     _BuildHelper(heading, ctrl, text, opt:="xs-20 y+30 h120 w360") {
         this.UI.Add("GroupBox", opt, heading)
-        Gui, Font, s10, Consolas
+        this.UI.Font("s10", "Consolas")
         this.UI.Add(this.controls[ctrl], "xp+20 yp+30 Section w200")
-        Gui, Font, s10, Segoe UI
+        this.UI.Font("s10", "Segoe UI")
         this.UI.Add(this.controls["save_" . ctrl], "x+20 yp w100")
         this.UI.Add("Text", "xs +Wrap w320", text)
     }
@@ -281,7 +281,7 @@ Class clsAddShortcut {
         obj_name := dictionary . "s"
         if (%obj_name%.Add(this.controls[dictionary].value, this.controls.text.value)) {
             this.Close()
-            UpdateDictionaryUI()
+            main_UI.UpdateDictionaryUI()
         }
     }
     _FocusControl(ctrl) {

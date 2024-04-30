@@ -97,11 +97,11 @@ class clsUI {
             GuiControl, Enable%state%, % this._handle
             this.state := state
         }
-        Disable() {
-            this.Enable(false)
+        Disable(normal := true) {
+            this.Enable(! normal)
         }
-        Show() {
-            GuiControl, Show, % this._handle
+        Show(normal := true) {
+            GuiControl, Show%normal%, % this._handle
         }
         Hide() {
             GuiControl, Hide, % this._handle
@@ -134,7 +134,7 @@ class clsUI {
         this._handle := window_handle
         clsUI._windows[window_handle] := this ; create an entry for this UI in the class to look it up when handling built-in, non-object AHK functions like CloseGui
         Gui, Margin, 15, 15
-        Gui, Font, s10, Segoe UI
+        this.Font() ; reset to default font settings
     }
     Show(options := "") {
         window_handle := this._handle
@@ -147,6 +147,39 @@ class clsUI {
     Hide() {
         window_handle := this._handle
         Gui, %window_handle%:Hide
+    }
+    Disable() {
+        window_handle := this._handle
+        Gui, %window_handle%:+Disabled
+    }
+    Enable() {
+        window_handle := this._handle
+        Gui, %window_handle%:-Disabled
+    }
+    ; switch to a tab in tabbed dialog or out of tab (if -1)
+    Tab(tab_number := -1) {
+        window_handle := this._handle
+        if (tab_number == -1) {
+            Gui, %window_handle%:Tab
+        } else {
+            Gui, %window_handle%:Tab, %tab_number%
+        }
+    }
+    Margin(x := 15, y := 15) {
+        window_handle := this._handle
+        Gui, %window_handle%:Margin, %x%, %y%
+    }
+    Font(options := "cDefault s10 w400 norm", family := "Segoe UI") {
+        window_handle := this._handle
+        Gui, %window_handle%:Font, %options%, %family%
+    }
+    Color(window := "Default", control := "Default") {
+        window_handle := this._handle
+        Gui, %window_handle%:Color, %window%, %control%
+    }
+    SetTransparency(transparent_color, transparency := "Off") {
+        window_handle := this._handle
+        WinSet, TransColor, %transparent_color% %transparency%, ahk_id %window_handle%
     }
     ; Called when user closes or escapes the window.
     ; Calls the on_close function, if defined, or hides the window.
@@ -287,8 +320,8 @@ Class clsStringFunctions {
         Gui, strFunc:Add, Text, Hwndtemp, %string%
         GuiControlGet, values, Pos, % temp
         Gui, strFunc:Destroy
+        ; GuiControlGet weirdly creates variable names based off the passed `values` variable:
         return valuesW
-        values := values ; to get rid of a compiler warning courtesy of weird return from GuiControlGet into differently named variables
     }
 }
 
@@ -362,6 +395,19 @@ UpdateVarFromConfig(ByRef var, key) {
 
 SaveVarToConfig(key, value) {
     ini.SaveProperty(value, key, A_AppData . "\ZipChord\config.ini")
+}
+
+ReplaceWithVariants(text, enclose_latin_letters:=false) {
+    new_str := text
+    new_str := StrReplace(new_str, "+", Chr(0x21E7))
+    new_str := StrReplace(new_str, " ", Chr(0x2423))
+    if (enclose_latin_letters) {
+        Loop, 26 {
+            new_str := StrReplace(new_str, Chr(96 + A_Index), Chr(0x1F12F + A_Index))
+        }
+        new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ") ; add spaces between characters
+    }
+    Return new_str
 }
 
 QPC() {
