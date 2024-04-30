@@ -97,11 +97,11 @@ class clsUI {
             GuiControl, Enable%state%, % this._handle
             this.state := state
         }
-        Disable() {
-            this.Enable(false)
+        Disable(normal := true) {
+            this.Enable(! normal)
         }
-        Show() {
-            GuiControl, Show, % this._handle
+        Show(normal := true) {
+            GuiControl, Show%normal%, % this._handle
         }
         Hide() {
             GuiControl, Hide, % this._handle
