@@ -234,6 +234,7 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
+        this.DebugSequence()
         this.RunModules()
     }
 
@@ -365,13 +366,33 @@ Class clsIOrepresentation {
             Sleep settings.output_delay
         }
     }
-    _DebugSequence() {
+    DebugSequence() {
         if (A_Args[2] != "test-vs") {
             return
         }
         OutputDebug, % "`n`nIO sequence:" 
-        For i, chunk in this._sequence
+        For i, chunk in this._sequence {
             OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
+        }
+    }
+    Backspace() {
+        this.DebugSequence()
+        if ( this.length < 2 || this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
+            classifier.Interrupt()
+            return
+        }
+        if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
+            chunk := this.GetChunk(this.length)
+            chunk.input := SubStr(chunk.input, 1, StrLen(chunk.input) - 1)    
+            chunk.output := SubStr(chunk.output, 1, StrLen(chunk.output) - 1)
+            if (StrLen(chunk.input) == 1) {
+                chunk.attributes &= ~this.IS_CHORD
+            }
+            this.DebugSequence()
+            return
+        }
+        this._sequence.RemoveAt(this.length)
+        this.DebugSequence()
     }
 
     ; Below are the functions that were first attempt at modules.

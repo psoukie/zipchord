@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -226,7 +226,7 @@ WireHotkeys(state) {
     global keys
     global special_key_map
     global app_shortcuts
-    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
     ParseKeys(keys.all, new_keys, bypassed_keys, special_key_map)
@@ -251,6 +251,7 @@ WireHotkeys(state) {
     Hotkey, % "~Space Up", KeyUp, %state%
     Hotkey, % "~+Space Up", KeyUp, %state%
     Hotkey, % "~Enter", Enter_key, %state%
+    Hotkey, % "~Backspace", Backspace_key, %state%
     Loop Parse, % interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
@@ -409,6 +410,27 @@ Enter_key:
         if (visualizer.IsOn())
             visualizer.NewLine()
     }
+Return
+
+Backspace_key:
+    Critical
+    key := "~Backspace"
+    tick := A_TickCount
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            key := test_key
+            tick := test_timestamp
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+        }
+    }
+    if (visualizer.IsOn()) {
+        visualizer.Pressed(Chr(0x232B), false)
+        visualizer.Lifted(Chr(0x232B), false)
+    }
+    io.Backspace()
+    Critical Off
 Return
 
 ;;  Adding shortcuts 
