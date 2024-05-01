@@ -10,15 +10,15 @@
 2375	~t Up
 2890	~Space
 2968	~Space Up
-4406	~Shift
+4406	*Shift*
 6640	~o
 6640	~u
 6656	~s
 6796	~o Up
 6812	~u Up
 6828	~s Up
-9109	~Shift
-9484	~Shift
+9109	*Shift*
+9484	*Shift*
 10828	~e
 10828	~b
 11015	~b Up
@@ -33,7 +33,7 @@
 15515	~m Up
 15953	~Space
 16046	~Space Up
-17375	~Shift
+17375	*Shift*
 17968	~f
 18078	~f Up
 18187	~r
