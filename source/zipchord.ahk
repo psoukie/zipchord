@@ -184,35 +184,6 @@ Class settingsClass {
 }
 global settings := New settingsClass
 
-; Processing input and output 
-chord_buffer := ""       ; stores the sequence of simultanously pressed keys
-chord_candidate := ""    ; chord candidate which qualifies for chord
-shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
-capitalize_shorthand := false  ; should the shorthand be capitalized
-global start := 0 ; tracks start time of two keys pressed at once
-
-; constants to track the difference between key presses and output (because of smart spaces and punctuation)
-global DIF_NONE := 0
-    , DIF_EXTRA_SPACE := 1
-    , DIF_REMOVED_SMART_SPACE := 2
-    , DIF_IGNORED_SPACE := 4
-    , difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
-    , final_difference := DIF_NONE
-; Constants for characteristics of last output
-global OUT_CHARACTER := 1     ; output is a character
-    , OUT_SPACE := 2         ; output was a space
-    , OUT_PUNCTUATION := 4   ; output was a punctuation
-    , OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
-    , OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
-    , OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
-    , OUT_SPACE_AFTER := 64  ; output is a punctuation that needs a space after it
-    , OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
-; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
-global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
-global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
-; also "new_output" local variable is used to track the current key / output
-
-
 ; UI string constants
 global UI_STR_PAUSE := "&Pause ZipChord"
     , UI_STR_RESUME := "&Resume ZipChord"
@@ -255,7 +226,7 @@ WireHotkeys(state) {
     global keys
     global special_key_map
     global app_shortcuts
-    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|BS|Tab" ; keys that interrupt the typing flow
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
     ParseKeys(keys.all, new_keys, bypassed_keys, special_key_map)
@@ -279,7 +250,10 @@ WireHotkeys(state) {
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
     Hotkey, % "~+Space Up", KeyUp, %state%
+    Hotkey, % "~Shift", Shift_key, %state%
+    Hotkey, % "~Shift Up", Shift_key, %state%
     Hotkey, % "~Enter", Enter_key, %state%
+    Hotkey, % "~Backspace", Backspace_key, %state%
     Loop Parse, % interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
@@ -326,15 +300,14 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 ;; Shortcuts Detection 
 ; ---------------------
 
-Shift::
+Shift_key:
     Critical
-    key := "~Shift"
+    if (A_PriorHotkey != "~Shift") {
+        return
+    }
+    key := "*Shift*"
     tick := A_TickCount
     if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING) {
-            key := test_key
-            tick := test_timestamp
-        }
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
         }
@@ -345,6 +318,10 @@ Shift::
     }
     io.PreShift()
     Critical Off
+Return
+
+Simulate_Shift:
+    io.PreShift()
 Return
 
 KeyDown:
@@ -420,8 +397,6 @@ Return
 
 Interrupt:
     classifier.Interrupt()
-    last_output := OUT_INTERRUPTED
-    fixed_output := last_output
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Interrupt*", true)
@@ -432,8 +407,6 @@ Return
 
 Enter_key:
     classifier.Interrupt("~Enter")
-    last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
-    fixed_output := last_output
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("~Enter", true)
@@ -442,6 +415,24 @@ Enter_key:
         if (visualizer.IsOn())
             visualizer.NewLine()
     }
+Return
+
+Backspace_key:
+    Critical
+    key := "~Backspace"
+    tick := A_TickCount
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
+    }
+    if (visualizer.IsOn()) {
+        visualizer.Pressed(Chr(0x232B), false)
+        visualizer.Lifted(Chr(0x232B), false)
+    }
+    io.Backspace()
+    Critical Off
 Return
 
 ;;  Adding shortcuts 

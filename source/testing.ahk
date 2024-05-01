@@ -245,10 +245,12 @@ Class TestingClass {
                     Continue
                 Case "*Interrupt*":
                     GoSub Interrupt
-                Case "~Shift":
-                    GoSub Shift
+                Case "*Shift*":
+                    GoSub Simulate_Shift
                 Case "~Enter":
                     GoSub Enter_key
+                Case "~Backspace":
+                    GoSub Backspace_key
                 Default:
                     if (SubStr(test_key, -2)==" Up")
                         GoSub KeyUp
@@ -569,7 +571,7 @@ Class TestingClass {
                     out .= "`n"
                 Case "Space", "{Space}":
                     out .= " "
-                Case "{Backspace}":
+                Case "{Backspace}", "Backspace":
                     out := SubStr(out, 1, StrLen(out)-1)
                 Case "*Hint*":
                     Continue
