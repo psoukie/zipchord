@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -183,35 +183,6 @@ Class settingsClass {
     }
 }
 global settings := New settingsClass
-
-; Processing input and output 
-chord_buffer := ""       ; stores the sequence of simultanously pressed keys
-chord_candidate := ""    ; chord candidate which qualifies for chord
-shorthand_buffer := ""   ; stores the sequence of uninterrupted typed keys
-capitalize_shorthand := false  ; should the shorthand be capitalized
-global start := 0 ; tracks start time of two keys pressed at once
-
-; constants to track the difference between key presses and output (because of smart spaces and punctuation)
-global DIF_NONE := 0
-    , DIF_EXTRA_SPACE := 1
-    , DIF_REMOVED_SMART_SPACE := 2
-    , DIF_IGNORED_SPACE := 4
-    , difference := DIF_NONE   ; tracks the difference between keys pressed and output (because of smart spaces and punctuation)
-    , final_difference := DIF_NONE
-; Constants for characteristics of last output
-global OUT_CHARACTER := 1     ; output is a character
-    , OUT_SPACE := 2         ; output was a space
-    , OUT_PUNCTUATION := 4   ; output was a punctuation
-    , OUT_AUTOMATIC := 8     ; output was automated (i.e. added by ZipChord, instead of manual entry). In combination with OUT_CHARACTER, this means a chord was output, in combination with OUT_SPACE, it means a smart space.
-    , OUT_CAPITALIZE := 16   ; output requires capitalization of what follows
-    , OUT_PREFIX := 32       ; output is a prefix (or opener punctuation) and doesn't need space in next chord (and can be followed by a chard in restricted mode)
-    , OUT_SPACE_AFTER := 64  ; output is a punctuation that needs a space after it
-    , OUT_INTERRUPTED := 128   ; output is unknown or it was interrupted by moving the cursor using cursor keys, mouse click etc.
-; Because some of the typing is dynamically changed after it occurs, we need to distinguish between the last keyboard output which is already finalized, and the last entry which can still be subject to modifications.
-global fixed_output := OUT_INTERRUPTED ; fixed output that preceded any typing currently being processed 
-global last_output := OUT_INTERRUPTED  ; last output in the current typing sequence that could be in flux. It is set to fixed_input when there's no such output.
-; also "new_output" local variable is used to track the current key / output
-
 
 ; UI string constants
 global UI_STR_PAUSE := "&Pause ZipChord"
@@ -420,8 +391,6 @@ Return
 
 Interrupt:
     classifier.Interrupt()
-    last_output := OUT_INTERRUPTED
-    fixed_output := last_output
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Interrupt*", true)
@@ -432,8 +401,6 @@ Return
 
 Enter_key:
     classifier.Interrupt("~Enter")
-    last_output := OUT_INTERRUPTED | OUT_CAPITALIZE | OUT_AUTOMATIC  ; the automatic flag is there to allow shorthands after Enter 
-    fixed_output := last_output
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("~Enter", true)
