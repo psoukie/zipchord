@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -422,12 +422,9 @@ Backspace_key:
     key := "~Backspace"
     tick := A_TickCount
     if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING) {
-            key := test_key
-            tick := test_timestamp
-        }
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
+            test.Log(key)
         }
     }
     if (visualizer.IsOn()) {

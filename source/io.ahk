@@ -367,16 +367,16 @@ Class clsIOrepresentation {
         }
     }
     Backspace() {
-        this.DebugSequence()
+        global classifier
         if ( this.length < 2 || this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
             classifier.Interrupt()
             return
         }
         if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
             chunk := this.GetChunk(this.length)
-            chunk.input := SubStr(chunk.input, 1, StrLen(chunk.input) - 1)    
+            chunk.input := "XX" ; so the chunk cannot be matched to any chord later
             chunk.output := SubStr(chunk.output, 1, StrLen(chunk.output) - 1)
-            if (StrLen(chunk.input) == 1) {
+            if (StrLen(chunk.output) == 1) {
                 chunk.attributes &= ~this.IS_CHORD
             }
             return

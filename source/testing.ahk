@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -248,6 +248,8 @@ Class TestingClass {
                     GoSub Simulate_Shift
                 Case "~Enter":
                     GoSub Enter_key
+                Case "~Backspace":
+                    GoSub Backspace_key
                 Default:
                     if (SubStr(test_key, -2)==" Up")
                         GoSub KeyUp
@@ -568,7 +570,7 @@ Class TestingClass {
                     out .= "`n"
                 Case "Space", "{Space}":
                     out .= " "
-                Case "{Backspace}":
+                Case "{Backspace}", "Backspace":
                     out := SubStr(out, 1, StrLen(out)-1)
                 Case "*Hint*":
                     Continue
