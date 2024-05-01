@@ -366,15 +366,6 @@ Class clsIOrepresentation {
             Sleep settings.output_delay
         }
     }
-    DebugSequence() {
-        if (A_Args[2] != "test-vs") {
-            return
-        }
-        OutputDebug, % "`n`nIO sequence:" 
-        For i, chunk in this._sequence {
-            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
-        }
-    }
     Backspace() {
         this.DebugSequence()
         if ( this.length < 2 || this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
@@ -388,11 +379,9 @@ Class clsIOrepresentation {
             if (StrLen(chunk.input) == 1) {
                 chunk.attributes &= ~this.IS_CHORD
             }
-            this.DebugSequence()
             return
         }
         this._sequence.RemoveAt(this.length)
-        this.DebugSequence()
     }
 
     ; Below are the functions that were first attempt at modules.
@@ -756,5 +745,15 @@ Class clsIOrepresentation {
         smart_space.attributes |= this.SMART_SPACE_AFTER
         this._sequence.Push(smart_space)
         OutputKeys("{Space}")
+    }
+
+    DebugSequence() {
+        if (A_Args[2] != "test-vs") {
+            return
+        }
+        OutputDebug, % "`n`nIO sequence:" 
+        For i, chunk in this._sequence {
+            OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
+        }
     }
 }
