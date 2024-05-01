@@ -47,6 +47,7 @@ OnExit("CloseApp")
 #Include version.ahk
 #Include shared.ahk
 #Include app_shortcuts.ahk
+#Include hints.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
 #Include io.ahk
