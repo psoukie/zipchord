@@ -389,7 +389,7 @@ class clsIniFile {
 
 UpdateVarFromConfig(ByRef var, key) {
     new_value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
-    if (new_value != "ERROR")
+    if (new_value != "ERROR" && new_value != "")
         var := new_value
 }
 
