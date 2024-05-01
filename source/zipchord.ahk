@@ -536,6 +536,7 @@ Class clsMainUI {
     ; Prepare UI
     Build() {
         global zc_version
+        global zc_year
         cts := this.controls
         UI := new clsUI("ZipChord")
         UI.on_close := ObjBindMethod(this, "_Close")
@@ -586,7 +587,7 @@ Class clsMainUI {
 
         UI.Tab(5)
         UI.Add("Text", "Y+20", "ZipChord")
-        UI.Add("Text", , "Copyright © 2021–2024 Pavel Soukenik")
+        UI.Add("Text", , "Copyright © 2021–" . zc_year . " Pavel Soukenik")
         UI.Add("Text", , "version " . zc_version)
         UI.Font("underline cBlue")
         UI.Add("Text", , "License information", Func("LinkToLicense"))
