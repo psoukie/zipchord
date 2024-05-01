@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -250,6 +250,8 @@ WireHotkeys(state) {
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
     Hotkey, % "~+Space Up", KeyUp, %state%
+    Hotkey, % "~Shift", Shift_key, %state%
+    Hotkey, % "~Shift Up", Shift_key, %state%
     Hotkey, % "~Enter", Enter_key, %state%
     Hotkey, % "~Backspace", Backspace_key, %state%
     Loop Parse, % interrupts , |
@@ -298,15 +300,14 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
 ;; Shortcuts Detection 
 ; ---------------------
 
-Shift::
+Shift_key:
     Critical
-    key := "~Shift"
+    if (A_PriorHotkey != "~Shift") {
+        return
+    }
+    key := "*Shift*"
     tick := A_TickCount
     if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING) {
-            key := test_key
-            tick := test_timestamp
-        }
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
         }
@@ -317,6 +318,10 @@ Shift::
     }
     io.PreShift()
     Critical Off
+Return
+
+Simulate_Shift:
+    io.PreShift()
 Return
 
 KeyDown:

@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 This file is part of ZipChord.
 
@@ -244,8 +244,8 @@ Class TestingClass {
                     Continue
                 Case "*Interrupt*":
                     GoSub Interrupt
-                Case "~Shift":
-                    GoSub Shift
+                Case "*Shift*":
+                    GoSub Simulate_Shift
                 Case "~Enter":
                     GoSub Enter_key
                 Default:
