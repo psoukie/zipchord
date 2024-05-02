@@ -1,4 +1,4 @@
-﻿; Hints preferences and object
+; Hints preferences and object
 global HINT_ON := 1
     , HINT_ALWAYS := 2
     , HINT_NORMAL := 4
@@ -8,10 +8,10 @@ global HINT_ON := 1
 global GOLDEN_RATIO := 1.618
 global DELAY_AT_START := 2000
 
-hint_delay := New HintTimingClass
+hint_delay := New clsHintTiming
 global hint_UI := new clsHintUI
 
-Class HintTimingClass {
+Class clsHintTiming {
     ; private variables
     _delay := DELAY_AT_START   ; this varies based on the hint frequency and hints shown
     _next_tick := A_TickCount  ; stores tick time when next hint is allowed
@@ -25,7 +25,7 @@ Class HintTimingClass {
     Extend() {
         if (settings.hints & HINT_ALWAYS)
             Return
-        this._delay := Round( this._delay * ( GOLDEN_RATIO**(OrdinalOfHintFrequency(-1) ) ) )
+        this._delay := Round( this._delay * ( GOLDEN_RATIO**(OrdinalOfHintFrequency() - 1) ) )
         this._next_tick := A_TickCount + this._delay
     }
     Shorten() {

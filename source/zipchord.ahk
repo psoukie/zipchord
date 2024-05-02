@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -856,10 +856,10 @@ FinishDebugging() {
     Run % "debug.txt"
 }
 
-OrdinalOfHintFrequency(offset := 0) {
+OrdinalOfHintFrequency() {
     frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
     frequency := Round(Log(frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
-    Return frequency + offset
+    Return frequency
 }
 
 LinkToLicense() {
