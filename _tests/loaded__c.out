@@ -29,10 +29,13 @@
 ~w
 {Backspace 2}
 ~Space
+{Backspace}
 ~c
+{Backspace}
+{Text}C
 ~j
 {Backspace 2}
-{Text}which
+{Text}Which
 {Space}
 ~+/
 {Backspace 2}
