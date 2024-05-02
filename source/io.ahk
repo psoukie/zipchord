@@ -388,27 +388,26 @@ Class clsIOrepresentation {
     ; When I recreate modules, it should be pure functions only.
 
     RunModules() {
-        if (! this.ChordModule() ) {
-            ; If no replacement, we separate any space or punctuation from the last chunk
-            this._FixLastChunk()
-            this.RemoveRawChord()
-        }
-        
-        last_chunk := this.GetChunk(this.length)
-        attribs := last_chunk.attributes
-        ; We check if the last character is a space or punctuation
-        if !( attribs & this.IS_MANUAL_SPACE || attribs & this.IS_PUNCTUATION ) {
+        if (this.ChordModule()) {
             return
         }
+        if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
+            if (this._RemoveRawChord()) {
+                return
+            }
+            this._FixLastChunk()
+        }
+        if (this.DeDoubleSpace()) {
+            return
+        }
+        if ! ( this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            return
+        }
+        this.DebugSequence()
         this.DoShorthandsAndHints()
-        dont_clear := false
-        if (attribs & this.IS_MANUAL_SPACE) {
-            dont_clear := this.DeDoubleSpace()
-        }
         this.AddSpaceAfterPunctuation()
-        if (! dont_clear) {
-            this.ClearSequence()
-        }
+        this.ClearSequence()
+        this.DebugSequence()
     }
 
     DoShorthandsAndHints() {
@@ -468,20 +467,19 @@ Class clsIOrepresentation {
     AddSpaceAfterPunctuation() {
         chunk := this.GetChunk(this.length)
         attribs := chunk.attributes
-        if ( settings.spacing & SPACE_PUNCTUATION && attribs & this.IS_PUNCTUATION
-                && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
-                || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
-            if ( this.TestChunkAttributes(this.length - 1, this.IS_INTERRUPT) ) {
-                return
-            }
+        if ( !(settings.spacing & SPACE_PUNCTUATION) || this.TestChunkAttributes(this.length - 1, this.IS_INTERRUPT) ) {
+            return
+        }
+        if (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
+                || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) ) {
             this._AddSmartSpace()
         }
     }
 
     ; Remove a double space if the user types a space after punctuation smart space
     DeDoubleSpace() {
-        last_chunk_attrib := this.GetChunk(this.length-1).attributes 
-        if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
+        if ( this.TestChunkAttributes(this.length - 1, this.SMART_SPACE_AFTER)
+                && this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE) ) {
             OutputKeys("{Backspace}")
             this._sequence.RemoveAt(this.length - 1)
             return true
@@ -579,9 +577,6 @@ Class clsIOrepresentation {
     }
 
     _FixLastChunk() {
-        if ( ! this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
-            return
-        }
         chunk := this.GetChunk(this.length)
         last_character := SubStr(chunk.output, StrLen(chunk.output), 1)
         if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
@@ -594,9 +589,8 @@ Class clsIOrepresentation {
         }
     }
 
-    
     ; Remove characters of non-existing chord if 'delete mistyped chords' option is enabled.
-    RemoveRawChord() {
+    _RemoveRawChord() {
         if !(settings.chording & CHORD_DELETE_UNRECOGNIZED) {
             return
         }
@@ -606,10 +600,10 @@ Class clsIOrepresentation {
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(this.length-1) ) {
             return
         }
-        if (        this.TestChunkAttributes(this.length, this.IS_CHORD)
-                && !this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
-            this.Replace("", this.length)
-        }
+        raw_output := this.GetChunk(this.length).output
+        OutputKeys("{Backspace " . StrLen(raw_output) . "}")
+        this._sequence.RemoveAt(this.length)
+        return true
     }
 
     TryImmediateShorthand() {
