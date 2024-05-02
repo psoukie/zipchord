@@ -1,4 +1,4 @@
-; Hints preferences and object
+﻿; Hints preferences and object
 global HINT_ON := 1
     , HINT_ALWAYS := 2
     , HINT_NORMAL := 4
@@ -237,7 +237,38 @@ Class clsGamification {
         for _, value in this._buffer {
             total += value
         }
-        percent := total / this._buffer.Length()
-        OutputDebug, % "`nEfficiency: " . percent
+        percent := 100 * total // this._buffer.Length()
+        this.ShowScore(percent) 
+    } 
+
+    ShowScore(percent) {
+        global hint_UI
+        PROGRESS_BAR_LENGTH := 30
+        FILLED_BLOCK := "█"
+        TOP_THIRD_BLOCK := "▓"
+        MID_THIRD_BLOCK := "▒"
+        EMPTY_BLOCK := "░"
+
+        scaling_ratio := 100 / PROGRESS_BAR_LENGTH
+        filled_blocks := percent // scaling_ratio
+        remainder := Mod(percent, scaling_ratio)
+        if (remainder) {
+            fraction := remainder / scaling_ratio
+            fraction_block := (fraction > .66) ? TOP_THIRD_BLOCK : MID_THIRD_BLOCK
+        } else {
+            fraction_block := EMPTY_BLOCK
+        }
+        empty_blocks := PROGRESS_BAR_LENGTH - filled_blocks - 1
+        progress_bar := this._RepeatCharacter(FILLED_BLOCK, filled_blocks) . fraction_block
+                . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks)
+        hint_UI.ShowOnOSD(progress_bar, percent . "%")
+    }
+
+    _RepeatCharacter(char :="", times := 1) {
+        result := ""
+        Loop, %times% {
+            result .= char
+        }
+        return result
     }
 }
