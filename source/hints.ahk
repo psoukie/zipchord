@@ -115,18 +115,17 @@ Class clsHintUI {
             hide_tooltip_fn := ObjBindMethod(this, "_HideTooltip")
             SetTimer, %hide_tooltip_fn%, -1800   ; hides the tooltip
         } else {
-            this.lines[1].value := line1
-            this.lines[2].value := ReplaceWithVariants(line2, true)
-            this.lines[3].value := ReplaceWithVariants(line3)
+            this.ShowOnOSD(line1, ReplaceWithVariants(line2, true), ReplaceWithVariants(line3))
         }
     }
 
+    ;@ahk-neko-ignore-fn 1 line; at 5/2/2024, 10:07:04 AM ; param is assigned but never used.
     ShowOnOSD(line1 := "", line2 := "", line3  := "") {
         this.fading := false
         this.transparency := 150
-        this.lines[1].value := line1
-        this.lines[2].value := line2
-        this.lines[3].value := line3
+        Loop, 3 {
+            this.lines[A_Index].value := line%A_Index%
+        }
         this.UI.Show("Hide NoActivate")
         coord := this._GetMonitorCenterForWindow()
         current_pos_x := coord.x ? coord.x + settings.hint_offset_x : this.pos_x
@@ -223,45 +222,64 @@ global score := new clsGamification
 
 Class clsGamification {
     _buffer := []
+    ENTRY_MANUAL       := 0
+    ENTRY_CHORD        := 1
+    ENTRY_SHORTHAND    := 2 
 
-    Record(used_shortcut := true) {
+    /** 
+    * Tracks the type of completed typing in the _buffer.
+    *
+    *   used_shortcut   one of ENTRY_  constants
+    */
+    Score(entry_type) {
+        count_chords := settings.mode & MODE_CHORDS_ENABLED 
+        count_shorthands := settings.mode & MODE_SHORTHANDS_ENABLED
+        if ( ! count_chords && ! count_shorthands ) {
+            return
+        }
         if (this._buffer.Length() > 100) {
             this._buffer.RemoveAt(1)
         }
-        this._buffer.Push(used_shortcut)
-        this.GetScore()
+        this._buffer.Push(entry_type)
+        total := this._buffer.Length()
+        if (entry_type != this.ENTRY_MANUAL && total > 6) {
+            scores := this.SumScores(count_chords, count_shorthands)
+            this.ShowEfficiency(scores.chords, scores.shorthands, total)
+        }
     }
 
-    GetScore() {
-        total := 0
+    SumScores(count_chords := true, count_shorthands := true) {
+        chord_count := 0
+        shorthand_count := 0
+
         for _, value in this._buffer {
-            total += value
+            if ( count_chords && value == this.ENTRY_CHORD ) {
+                chord_count++
+            }
+            if ( count_shorthands && value == this.ENTRY_SHORTHAND ) {
+                shorthand_count++
+            }
         }
-        percent := 100 * total // this._buffer.Length()
-        this.ShowScore(percent) 
+        return {chords: chord_count, shorthands: shorthand_count}
     } 
 
-    ShowScore(percent) {
+    ShowEfficiency(chords, shorthands, total) {
         global hint_UI
         PROGRESS_BAR_LENGTH := 30
-        FILLED_BLOCK := "█"
-        TOP_THIRD_BLOCK := "▓"
-        MID_THIRD_BLOCK := "▒"
+        CHORD_BLOCK := "█"
+        SHORTHAND_BLOCK := "▓"
         EMPTY_BLOCK := "░"
-
         scaling_ratio := 100 / PROGRESS_BAR_LENGTH
-        filled_blocks := percent // scaling_ratio
-        remainder := Mod(percent, scaling_ratio)
-        if (remainder) {
-            fraction := remainder / scaling_ratio
-            fraction_block := (fraction > .66) ? TOP_THIRD_BLOCK : MID_THIRD_BLOCK
-        } else {
-            fraction_block := EMPTY_BLOCK
-        }
-        empty_blocks := PROGRESS_BAR_LENGTH - filled_blocks - 1
-        progress_bar := this._RepeatCharacter(FILLED_BLOCK, filled_blocks) . fraction_block
-                . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks)
-        hint_UI.ShowOnOSD(progress_bar, percent . "%")
+
+        chord_percentage := 100 * chords // total
+        shorthand_percentage := 100 * shorthands // total
+        chord_blocks := chord_percentage // scaling_ratio
+        shorthand_blocks := shorthand_percentage // scaling_ratio
+        empty_blocks := PROGRESS_BAR_LENGTH - chord_blocks - shorthand_blocks
+        progress_bar := this._RepeatCharacter(CHORD_BLOCK, chord_blocks)
+                        . this._RepeatCharacter(SHORTHAND_BLOCK, shorthand_blocks)
+                        . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks)
+        hint_UI.ShowOnOSD(progress_bar, chord_percentage + shorthand_percentage . "%")
     }
 
     _RepeatCharacter(char :="", times := 1) {

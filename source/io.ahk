@@ -388,7 +388,7 @@ Class clsIOrepresentation {
 
     RunModules() {
         if (this.ChordModule()) {
-            score.Record(true)
+            score.Score(score.ENTRY_CHORD)
             return
         }
         if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
@@ -403,13 +403,12 @@ Class clsIOrepresentation {
         if ! ( this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
             return
         }
-        this.DoShorthandsAndHints()
-        this.AddSpaceAfterPunctuation()
-        if (this.TestChunkAttributes(this.length - 1, this.WAS_EXPANDED)) {
-            score.Record(true)
-        } else {
-            score.Record(false)
+        if (this.DoShorthandsAndHints()) {
+            score.Score(score.ENTRY_SHORTHAND)
+        } else if ! ( this.TestChunkAttributes(this.length - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            score.Score(score.ENTRY_MANUAL)
         }
+        this.AddSpaceAfterPunctuation()
         this.ClearSequence()
     }
 
@@ -422,10 +421,10 @@ Class clsIOrepresentation {
                 continue
             }
             if ( this.ShorthandModule(text, A_Index+1) ) {
-                break
+                return true
             }
             if ( this.HintModule(text, A_Index+1) ) {
-                break
+                return false
             }
         }
     }
@@ -618,7 +617,7 @@ Class clsIOrepresentation {
                 continue
             }
             if ( this.ShorthandModule(text, A_Index+1, 0) ) {
-                return
+                return true
             }
         }
     }
