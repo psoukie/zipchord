@@ -210,3 +210,26 @@ Class clsHintUI {
         return {x: pos_x, y: pos_y}
     }
 }
+
+global score := new clsGamification
+
+Class clsGamification {
+    _buffer := []
+
+    Record(used_shortcut := true) {
+        if (this._buffer.Length() > 100) {
+            this._buffer.RemoveAt(1)
+        }
+        this._buffer.Push(used_shortcut)
+        this.GetScore()
+    }
+
+    GetScore() {
+        total := 0
+        for _, value in this._buffer {
+            total += value
+        }
+        percent := total / this._buffer.Length()
+        OutputDebug, % "`nEfficiency: " . percent
+    }
+}

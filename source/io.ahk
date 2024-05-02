@@ -234,7 +234,6 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
-        this.DebugSequence()
         this.RunModules()
     }
 
@@ -389,6 +388,7 @@ Class clsIOrepresentation {
 
     RunModules() {
         if (this.ChordModule()) {
+            score.Record(true)
             return
         }
         if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
@@ -403,11 +403,14 @@ Class clsIOrepresentation {
         if ! ( this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
             return
         }
-        this.DebugSequence()
         this.DoShorthandsAndHints()
         this.AddSpaceAfterPunctuation()
+        if (this.TestChunkAttributes(this.length - 1, this.WAS_EXPANDED)) {
+            score.Record(true)
+        } else {
+            score.Record(false)
+        }
         this.ClearSequence()
-        this.DebugSequence()
     }
 
     DoShorthandsAndHints() {
