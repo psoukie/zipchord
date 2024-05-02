@@ -11,3 +11,4 @@ default__interrupts.out
 default__ss-punct.out
 default__pre-shift.out
 default__backspace.out
+default__affixed_shorthand.out

@@ -10,3 +10,4 @@ bare__test.out
 bare__interrupts.out
 bare__ss-punct.out
 bare__pre-shift.out
+bare__affixed_shorthand.out

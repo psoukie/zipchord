@@ -503,6 +503,9 @@ Class clsIOrepresentation {
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
+                if (this.TryImmediateShorthand(-1)) {
+                    return this._ProcessChord(this.length, expanded) 
+                }
                 return this._ProcessChord(A_Index, expanded)
             }
         }
@@ -569,7 +572,7 @@ Class clsIOrepresentation {
 
         ; ending smart space
         if (affixes & AFFIX_PREFIX) {
-            chunk.attributes |= this.IS_PREFIX
+            this.SetChunkAttributes(chunk_id + replace_offset, this.IS_PREFIX)
         } else {
             if (settings.spacing & SPACE_AFTER_CHORD) {
                 this._AddSmartSpace()
@@ -608,15 +611,15 @@ Class clsIOrepresentation {
         return true
     }
 
-    TryImmediateShorthand() {
+    TryImmediateShorthand(last_chunk_offset := 0) {
         loop_length := this.length - 1
         Loop %loop_length%
         {
-            text := this.GetOutput(A_Index+1, this.length)
+            text := this.GetOutput(A_Index+1, this.length + last_chunk_offset)
             if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
                 continue
             }
-            if ( this.ShorthandModule(text, A_Index+1, 0) ) {
+            if ( this.ShorthandModule(text, A_Index+1, last_chunk_offset) ) {
                 return true
             }
         }
@@ -627,7 +630,9 @@ Class clsIOrepresentation {
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
         }
-        if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {
+        attributes := this.GetChunk(first_chunk_id - 1).attributes
+        if ( attributes & this.IS_INTERRUPT
+                || (attributes & this.WAS_EXPANDED && !(attributes & this.IS_PREFIX)) ) {
             return
         }
         if ( expanded := shorthands.LookUp(text) ) {
@@ -648,7 +653,7 @@ Class clsIOrepresentation {
 
     HintModule(text, first_chunk_id) {
         global hint_delay
-        if (! (settings.hints & HINT_ON) || ! hint_delay.HasElapsed()) {
+        if ! (settings.hints & HINT_ON && hint_delay.HasElapsed()) {
             return
         }
         if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {
