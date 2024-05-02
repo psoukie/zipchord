@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -120,7 +120,7 @@ Class settingsClass {
     hint_offset_x := 0
     hint_offset_y := 0
     hint_size := 32
-    hint_color := "3BD511"
+    hint_color := "3BD5EE"
     capitalization := CAP_CHORDS
     spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
     chording := CHORD_RESTRICT ; Chord recognition options
