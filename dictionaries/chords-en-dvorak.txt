@@ -128,7 +128,7 @@ tha	thank
 
 Other
 -----
-im	I'm
+im	I’m
 eut	that
 eus	this
 eu-	these
@@ -173,6 +173,7 @@ sc	second
 eug	thing
  y	yes
 cn'	can’t
+dn'	don’t
 dt	different
 eou	though
 thu	through
