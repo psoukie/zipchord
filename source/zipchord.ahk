@@ -79,7 +79,6 @@ CloseApp() {
 special_key_map := {}
 
 global main_UI := new clsMainUI
-global hint_UI := new clsHintUI
 
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
@@ -647,13 +646,13 @@ Class clsMainUI {
         locale.Load(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
-                hint_UI.ShowHint("ZipChord Keyboard", "On", , false)
+                hint_UI.ShowOnOSD("ZipChord Keyboard", "On")
             }
             WireHotkeys("On")
         }
         else if (settings.mode & MODE_ZIPCHORD_ENABLED) {
             ; Here, ZipChord is not paused, but chording and shorthands are both disabled
-            hint_UI.ShowHint("ZipChord Keyboard", "Off", , false)
+            hint_UI.ShowOnOSD("ZipChord Keyboard", "Off")
         }
         if (A_Args[1] == "dev" && cts.debugging.value) {
             if (FileExist("debug.txt")) {
@@ -818,7 +817,7 @@ PauseApp(from_button := false) {
     main_UI.controls.btn_pause.value := mode ? UI_STR_PAUSE : UI_STR_RESUME
     state := mode ? "On" : "Off"
     if (from_button != true) {
-        hint_UI.ShowHint("ZipChord Keyboard", state, , false)
+        hint_UI.ShowOnOSD("ZipChord Keyboard", state)
     }
     WireHotkeys(state)
     UI_Tray_Update()
@@ -827,7 +826,7 @@ PauseApp(from_button := false) {
 
 QuitApp() {
     WireHotkeys("Off")
-    hint_UI.ShowHint("Closing ZipChord", state, , false)
+    hint_UI.ShowOnOSD("Closing ZipChord")
     Sleep 1100
     ExitApp
 }

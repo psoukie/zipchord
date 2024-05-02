@@ -1,4 +1,4 @@
-﻿; Hints preferences and object
+; Hints preferences and object
 global HINT_ON := 1
     , HINT_ALWAYS := 2
     , HINT_NORMAL := 4
@@ -7,6 +7,9 @@ global HINT_ON := 1
     , HINT_TOOLTIP := 32
 global GOLDEN_RATIO := 1.618
 global DELAY_AT_START := 2000
+
+hint_delay := New HintTimingClass
+global hint_UI := new clsHintUI
 
 Class HintTimingClass {
     ; private variables
@@ -38,7 +41,6 @@ Class HintTimingClass {
         this._next_tick := A_TickCount + this._delay
     }
 }
-hint_delay := New HintTimingClass
 
 ;; Shortcut Hint UI
 ; -------------------
@@ -95,7 +97,7 @@ Class clsHintUI {
         this.Build()
     }
 
-    ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
+    ShowHint(line1 := "", line2 := "", line3  := "") {
         global hint_delay
         if (A_Args[1] == "dev") {
             if (test.mode > TEST_STANDBY) {
@@ -106,27 +108,33 @@ Class clsHintUI {
             }
         }
         hint_delay.Extend()
-        if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
+        if (settings.hints & HINT_TOOLTIP) {
             this._GetCaret(x, y, , h)
             ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " "
                     , x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
             hide_tooltip_fn := ObjBindMethod(this, "_HideTooltip")
             SetTimer, %hide_tooltip_fn%, -1800   ; hides the tooltip
         } else {
-            this.fading := false
-            this.transparency := 150
             this.lines[1].value := line1
-            this.lines[2].value := ReplaceWithVariants(line2, follow_settings)
+            this.lines[2].value := ReplaceWithVariants(line2, true)
             this.lines[3].value := ReplaceWithVariants(line3)
-            this.UI.Show("Hide NoActivate")
-            coord := this._GetMonitorCenterForWindow()
-            current_pos_x := coord.x ? coord.x + settings.hint_offset_x : this.pos_x
-            current_pos_y := coord.y ? coord.y + settings.hint_offset_y : this.pos_y
-            this.UI.Show("NoActivate X" . current_pos_x . "Y" . current_pos_y)
-            this.UI.SetTransparency(this.transparent_color, this.transparency)
-            hide_osd_fn := this.hide_OSD_fn
-            SetTimer, %hide_osd_fn%, -1900
         }
+    }
+
+    ShowOnOSD(line1 := "", line2 := "", line3  := "") {
+        this.fading := false
+        this.transparency := 150
+        this.lines[1].value := line1
+        this.lines[2].value := line2
+        this.lines[3].value := line3
+        this.UI.Show("Hide NoActivate")
+        coord := this._GetMonitorCenterForWindow()
+        current_pos_x := coord.x ? coord.x + settings.hint_offset_x : this.pos_x
+        current_pos_y := coord.y ? coord.y + settings.hint_offset_y : this.pos_y
+        this.UI.Show("NoActivate X" . current_pos_x . "Y" . current_pos_y)
+        this.UI.SetTransparency(this.transparent_color, this.transparency)
+        hide_osd_fn := this.hide_OSD_fn
+        SetTimer, %hide_osd_fn%, -1900
     }
 
     _HideOSD() {
