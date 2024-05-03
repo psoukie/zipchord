@@ -154,12 +154,12 @@ Class clsDictionary {
 
 CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     global app_settings
-    
+
     if (! FileExist(dictionary_file) ) {
         ; On the first run only (if we cannot find the dictionary file), offer to download and store dictionaries under My Documents
         if (settings.preferences & PREF_FIRST_RUN) {
             settings.preferences &= ~PREF_FIRST_RUN
-            app_settings.Write()
+            app_settings.Save()
             dictionary_dir := A_MyDocuments . "\ZipChord"
             MsgBox, 4, % "ZipChord", % Format("Would you like to download starting dictionary files and save them in the '{}' folder?", dictionary_dir)
             IfMsgBox Yes
@@ -167,7 +167,7 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
                 FileCreateDir,  % dictionary_dir
                 settings.dictionary_dir := dictionary_dir
                 SetWorkingDir, % settings.dictionary_dir
-                app_settings.Write()
+                app_settings.Save()
                 UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/chords-en-qwerty.txt, % dictionary_dir . "\chords-en-starting.txt"
                 UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/shorthands-english.txt, % dictionary_dir . "\shorthands-en-starting.txt"
                 new_file := CheckDictionaryFileExists(dictionary_file, dictionary_type)

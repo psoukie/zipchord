@@ -1,10 +1,10 @@
-; Hints preferences and object
-global HINT_ON := 1
-    , HINT_ALWAYS := 2
-    , HINT_NORMAL := 4
-    , HINT_RELAXED := 8
-    , HINT_OSD := 16
-    , HINT_TOOLTIP := 32
+﻿; Hints preferences and object
+global HINT_ON      := 1
+    , HINT_ALWAYS   := 2
+    , HINT_NORMAL   := 4
+    , HINT_RELAXED  := 8
+    , HINT_OSD      := 16
+    , HINT_TOOLTIP  := 32
 global GOLDEN_RATIO := 1.618
 global DELAY_AT_START := 2000
 

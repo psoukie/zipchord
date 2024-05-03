@@ -134,7 +134,7 @@ Class clsSettings {
         }
         this.settings[setting_name] := value
     }
-    Read() {
+    Load() {
         For key, value in this.settings {
             value := GetVarFromConfig(key)
             if (value !="") {
@@ -143,7 +143,7 @@ Class clsSettings {
         }
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
-    Write() {
+    Save() {
         For key, value in this.settings
             SaveVarToConfig(key, value)
     }
@@ -171,11 +171,11 @@ Initialize() {
     ; save license file
     ini.SaveLicense()
     app_shortcuts.Init()
-    app_settings.Read()
+    app_settings.Load()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-    app_settings.Write()
+    app_settings.Save()
     main_UI.Build()
     locale.Init()
     locale.Load(settings.locale)
@@ -652,7 +652,7 @@ Class clsMainUI {
             Return false
         } else settings.hint_color := temp
         ; ...and save them to config.ini
-        app_settings.Write()
+        app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
         locale.Load(settings.locale)
@@ -905,10 +905,10 @@ Class clsClosingTip {
     }
     Btn_OK() {
         global app_settings
-        
+
         if (this.dont_show.value) {
             settings.preferences &= ~PREF_SHOW_CLOSING_TIP
-            app_settings.Write()
+            app_settings.Save()
             this.UI.Destroy()
             this.UI := {}
         } else {
