@@ -46,6 +46,7 @@ Class clsHintTiming {
 ; -------------------
 
 Class clsHintUI {
+    DEFAULT_TRANSPARENCY := 150
     UI := {}
     lines := []
     transparency := 0
@@ -122,7 +123,7 @@ Class clsHintUI {
     ;@ahk-neko-ignore-fn 1 line; at 5/2/2024, 10:07:04 AM ; param is assigned but never used.
     ShowOnOSD(line1 := "", line2 := "", line3  := "") {
         this.fading := false
-        this.transparency := 150
+        this.transparency := this.DEFAULT_TRANSPARENCY
         Loop, 3 {
             this.lines[A_Index].value := line%A_Index%
         }
@@ -224,7 +225,8 @@ Class clsGamification {
     _buffer := []
     ENTRY_MANUAL       := 0
     ENTRY_CHORD        := 1
-    ENTRY_SHORTHAND    := 2 
+    ENTRY_SHORTHAND    := 2
+    score_gap := 0
 
     /** 
     * Tracks the type of completed typing in the _buffer.
@@ -232,6 +234,7 @@ Class clsGamification {
     *   used_shortcut   one of ENTRY_  constants
     */
     Score(entry_type) {
+        this.score_gap++
         count_chords := settings.mode & MODE_CHORDS_ENABLED 
         count_shorthands := settings.mode & MODE_SHORTHANDS_ENABLED
         if ( ! count_chords && ! count_shorthands ) {
@@ -240,30 +243,52 @@ Class clsGamification {
         if (this._buffer.Length() > 100) {
             this._buffer.RemoveAt(1)
         }
-        this._buffer.Push(entry_type)
-        total := this._buffer.Length()
-        if (entry_type != this.ENTRY_MANUAL && total > 6) {
-            scores := this.SumScores(count_chords, count_shorthands)
-            this.ShowEfficiency(scores.chords, scores.shorthands, total)
-        }
+        entry := {type: entry_type, percentage: 0}
+        this._buffer.Push(entry)
+        this._ShowEfficiencyAsNeeded()
     }
 
-    SumScores(count_chords := true, count_shorthands := true) {
-        chord_count := 0
-        shorthand_count := 0
-
-        for _, value in this._buffer {
-            if ( count_chords && value == this.ENTRY_CHORD ) {
-                chord_count++
-            }
-            if ( count_shorthands && value == this.ENTRY_SHORTHAND ) {
-                shorthand_count++
+    _ShowEfficiencyAsNeeded() {
+        total := this._buffer.Length()
+        gap_frequency := 7 * (OrdinalOfHintFrequency() - 1)
+        if (entry_type == this.ENTRY_MANUAL || total < 5 || total < gap_frequency) {
+            return
+        }
+        scores := this._SumScores(count_chords, count_shorthands)
+        if ! (settings.hints & HINT_ALWAYS) {
+            chord_percentage := 100 * scores.chords // total
+            shorthand_percentage := 100 * scores.shorthands // total
+            current_percentage := chord_percentage + shorthand_percentage
+            this._buffer[this._buffer.Length()].percentage := current_percentage
+            if ( current_percentage > scores.maximum || this.score_gap > gap_frequency ) {
+                OutputDebug, % "`Max: " . scores.maximum
+                this.score_gap := 0
+                this.ShowEfficiency(chord_percentage, shorthand_percentage)
             }
         }
-        return {chords: chord_count, shorthands: shorthand_count}
-    } 
 
-    ShowEfficiency(chords, shorthands, total) {
+    }
+
+    _SumScores(count_chords := true, count_shorthands := true) {
+        chord_count := 0
+        shorthand_count := 0
+        max_percentage := 0
+
+        for _, value in this._buffer {
+            if ( count_chords && value.type == this.ENTRY_CHORD ) {
+                chord_count++
+            }
+            if ( count_shorthands && value.type == this.ENTRY_SHORTHAND ) {
+                shorthand_count++
+            }
+            if ( value.percentage > max_percentage) {
+                max_percentage := value.percentage
+            }
+        }
+        return {chords: chord_count, shorthands: shorthand_count, maximum: max_percentage}
+    }
+
+    ShowEfficiency(chord_percentage, shorthand_percentage) {
         global hint_UI
         PROGRESS_BAR_LENGTH := 30
         CHORD_BLOCK := "█"
@@ -271,8 +296,6 @@ Class clsGamification {
         EMPTY_BLOCK := "░"
         scaling_ratio := 100 / PROGRESS_BAR_LENGTH
 
-        chord_percentage := 100 * chords // total
-        shorthand_percentage := 100 * shorthands // total
         chord_blocks := chord_percentage // scaling_ratio
         shorthand_blocks := shorthand_percentage // scaling_ratio
         empty_blocks := PROGRESS_BAR_LENGTH - chord_blocks - shorthand_blocks
