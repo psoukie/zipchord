@@ -99,29 +99,30 @@ global settings := app_settings.settings
 global UI_STR_PAUSE := "&Pause ZipChord"
     , UI_STR_RESUME := "&Resume ZipChord"
 
-Initialize()
+Initialize(zc_version)
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
 ; Current application settings
 Class clsSettings {
-    settings := { mode:               MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
-                , preferences:        PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
-                , locale:             "English US"
-                , hints:              HINT_ON | HINT_NORMAL | HINT_OSD
-                , hint_offset_x:      0
-                , hint_offset_y:      0
-                , hint_size:          32
-                , hint_color:         "1CA6BF"
-                , capitalization:     CAP_CHORDS
-                , spacing:            SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
-                , chording:           CHORD_RESTRICT ; Chord recognition options
-                , chord_file:         "chords-en-starting.txt" ; file name for the chord dictionary
-                , shorthand_file:     "shorthands-en-starting.txt" ; file name for the shorthand dictionary
-                , dictionary_dir:     A_ScriptDir
-                , input_delay:        70
-                , output_delay:       0 }
+    settings := { version:          0 ; gets loaded and saved later
+                , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
+                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
+                , locale:           "English US"
+                , hints:            HINT_ON | HINT_NORMAL | HINT_OSD
+                , hint_offset_x:    0
+                , hint_offset_y:    0
+                , hint_size:        32
+                , hint_color:       "1CA6BF"
+                , capitalization:   CAP_CHORDS
+                , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
+                , chording:         CHORD_RESTRICT ; Chord recognition options
+                , chord_file:       "chords-en-starting.txt" ; file name for the chord dictionary
+                , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
+                , dictionary_dir:   A_ScriptDir
+                , input_delay:      70
+                , output_delay:     0 }
     Register(setting_name, value := 0) {
         if (this.settings.HasKey(setting_name)) {
             return false
@@ -146,14 +147,19 @@ Class clsSettings {
 ;; Initilization and Wiring
 ; ---------------------------
 
-Initialize() {
+Initialize(zc_version) {
     global app_settings
     global app_shortcuts
     global locale
     ; save license file
     ini.SaveLicense()
-    app_shortcuts.Init()
     app_settings.Load()
+    ; check whether we need to upgrade existing settings file:
+    if ( CompareSemanticVersions(zc_version, settings.version) ) {
+        UpdateSettings(settings.version)
+        settings.version := zc_version
+    }
+    app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
@@ -170,6 +176,13 @@ Initialize() {
     main_UI.UpdateDictionaryUI()
     main_UI.UI.Enable()
     WireHotkeys("On")
+}
+
+UpdateSettings(from_version) {
+    if (CompareSemanticVersions("2.3.0", from_version)) {
+        ; Update hint settings:
+        OutputDebug, % "`nNEED TO UPDATE hint settings"
+    }
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
