@@ -103,45 +103,54 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
 
 
 ; Other preferences constants
-global PREF_PREVIOUS_INSTALLATION := 1  ; this config value means that the app has been installed before
-    , PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
-    , PREF_FIRST_RUN := 4               ; this value means this is the first run of 2.1.0-beta.2 or higher)
+global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
+    , PREF_FIRST_RUN := 4               ; this value means this is the first run (there is no saved config)
 
 global MODE_CHORDS_ENABLED := 1
     , MODE_SHORTHANDS_ENABLED := 2
     , MODE_ZIPCHORD_ENABLED := 4
 
 ; Current application settings
-Class settingsClass {
-    mode := MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
-    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
-    locale := "English US"
-    hints := HINT_ON | HINT_NORMAL | HINT_OSD
-    hint_offset_x := 0
-    hint_offset_y := 0
-    hint_size := 32
-    hint_color := "3BD5EE"
-    capitalization := CAP_CHORDS
-    spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
-    chording := CHORD_RESTRICT ; Chord recognition options
-    chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
-    shorthand_file := "shorthands-en-starting.txt" ; file name for the shorthand dictionary
-    dictionary_dir := A_ScriptDir
-    input_delay := 70
-    output_delay := 0
+Class clsSettings {
+    settings := { mode:               MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
+                , preferences:        PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
+                , locale:             "English US"
+                , hints:              HINT_ON | HINT_NORMAL | HINT_OSD
+                , hint_offset_x:      0
+                , hint_offset_y:      0
+                , hint_size:          32
+                , hint_color:         "1CA6BF"
+                , capitalization:     CAP_CHORDS
+                , spacing:            SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
+                , chording:           CHORD_RESTRICT ; Chord recognition options
+                , chord_file:         "chords-en-starting.txt" ; file name for the chord dictionary
+                , shorthand_file:     "shorthands-en-starting.txt" ; file name for the shorthand dictionary
+                , dictionary_dir:     A_ScriptDir
+                , input_delay:        70
+                , output_delay:       0 }
+    Register(setting_name, value := 0) {
+        if (this.settings.HasKey(setting_name)) {
+            return false
+        }
+        this.settings[setting_name] := value
+    }
     Read() {
-        For key, value in this {
-            UpdateVarFromConfig(value, key)
-            this[key] := value
+        For key, value in this.settings {
+            value := GetVarFromConfig(key)
+            if (value !="") {
+                this.settings[key] := value
+            }
         }
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Write() {
-        For key, value in this
-            SaveVarToConfig(key, value)       
+        For key, value in this.settings
+            SaveVarToConfig(key, value)
     }
 }
-global settings := New settingsClass
+
+app_settings := New clsSettings()
+global settings := app_settings.settings
 
 ; UI string constants
 global UI_STR_PAUSE := "&Pause ZipChord"
@@ -156,16 +165,17 @@ Return   ; To prevent execution of any of the following code, except for the alw
 ; ---------------------------
 
 Initialize() {
+    global app_settings
     global app_shortcuts
     global locale
     ; save license file
     ini.SaveLicense()
     app_shortcuts.Init()
-    settings.Read()
+    app_settings.Read()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-    settings.Write()
+    app_settings.Write()
     main_UI.Build()
     locale.Init()
     locale.Load(settings.locale)
@@ -585,7 +595,7 @@ Class clsMainUI {
         }
         cts.capitalization.Choose(settings.capitalization)
         cts.btn_pause.value := (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        cts.hint_destination.Choose( Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16) ) ; recalculate to option's list position
+        cts.hint_destination.Choose( (settings.hints & (HINT_OSD | HINT_TOOLTIP)) // HINT_OSD) ; calculate the option's position; relies on HINT_TOOLTIP being << from HINT_OSD
         cts.hint_frequency.Choose( OrdinalOfHintFrequency() )
         cts.hint_offset_x.value := settings.hint_offset_x
         cts.hint_offset_y.value := settings.hint_offset_y
@@ -604,8 +614,10 @@ Class clsMainUI {
         return
     }
     _ApplySettings() {
+        global app_settings
         global hint_delay
         global locale
+
         cts := this.controls
         previous_mode := settings.mode 
         ; gather new settings from UI...
@@ -640,7 +652,7 @@ Class clsMainUI {
             Return false
         } else settings.hint_color := temp
         ; ...and save them to config.ini
-        settings.Write()
+        app_settings.Write()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
         locale.Load(settings.locale)
@@ -892,9 +904,11 @@ Class clsClosingTip {
         this.UI.Show("w470")
     }
     Btn_OK() {
+        global app_settings
+        
         if (this.dont_show.value) {
             settings.preferences &= ~PREF_SHOW_CLOSING_TIP
-            settings.Write()
+            app_settings.Write()
             this.UI.Destroy()
             this.UI := {}
         } else {

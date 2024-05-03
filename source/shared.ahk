@@ -348,7 +348,7 @@ class clsIniFile {
     ; LoadProperty returns "ERROR" if key not found
     LoadProperty(key, filename, section:="Default") {
         IniRead value, %filename%, %section%, %key%
-        Return value  
+        Return value
     }
     SaveProperties(object_to_save, ini_section, ini_filename := "") {
         if (!ini_filename) {
@@ -387,10 +387,12 @@ class clsIniFile {
     }
 }
 
-UpdateVarFromConfig(ByRef var, key) {
-    new_value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
-    if (new_value != "ERROR" && new_value != "")
-        var := new_value
+GetVarFromConfig(key) {
+    value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
+    if (value == "ERROR") {
+        return ""
+    }
+    return value
 }
 
 SaveVarToConfig(key, value) {
