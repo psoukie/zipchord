@@ -8,8 +8,8 @@ global HINT_ON      := 1
 global GOLDEN_RATIO := 1.618
 global DELAY_AT_START := 2000
 
-hint_delay := New clsHintTiming
-global hint_UI := new clsHintUI
+hint_delay := new clsHintTiming
+global hint_UI := new clsHintUI(app_settings)
 
 Class clsHintTiming {
     ; private variables
@@ -46,6 +46,11 @@ Class clsHintTiming {
 ; -------------------
 
 Class clsHintUI {
+    hint_settings := { hints:           HINT_ON | HINT_NORMAL | HINT_OSD
+                    , hint_offset_x:    0
+                    , hint_offset_y:    0
+                    , hint_size:        32
+                    , hint_color:       "1CA6BF" }
     DEFAULT_TRANSPARENCY := 150
     UI := {}
     lines := []
@@ -68,6 +73,12 @@ Class clsHintUI {
             new_color .= Format("{:02x}", component)
         }
         this._transparent_color := new_color
+    }
+
+    __New(app_settings) {
+        For key, value in this.hint_settings {
+            app_settings.Register(key, value)
+        }
     }
 
     Build() {

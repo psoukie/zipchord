@@ -44,6 +44,9 @@ SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
 
+app_settings := New clsSettings()
+global settings := app_settings.settings
+
 #Include version.ahk
 #Include shared.ahk
 #Include app_shortcuts.ahk
@@ -91,10 +94,6 @@ global MODE_CHORDS_ENABLED := 1
     , MODE_SHORTHANDS_ENABLED := 2
     , MODE_ZIPCHORD_ENABLED := 4
 
-
-app_settings := New clsSettings()
-global settings := app_settings.settings
-
 ; UI string constants
 global UI_STR_PAUSE := "&Pause ZipChord"
     , UI_STR_RESUME := "&Resume ZipChord"
@@ -110,11 +109,6 @@ Class clsSettings {
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
                 , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
                 , locale:           "English US"
-                , hints:            HINT_ON | HINT_NORMAL | HINT_OSD
-                , hint_offset_x:    0
-                , hint_offset_y:    0
-                , hint_size:        32
-                , hint_color:       "1CA6BF"
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
                 , chording:         CHORD_RESTRICT ; Chord recognition options
