@@ -57,26 +57,7 @@ if (A_Args[1] == "dev") {
     #Include *i testing.ahk
 }
 
-OutputKeys(output) {
-    if (A_Args[1] == "dev") {
-        test.Log(output)
-        if (test.mode == TEST_RUNNING)
-            return
-    }
-    SendInput % output
-}
-
-CloseApp() {
-    WireHotkeys("Off")
-    ExitApp
-}
-
-;; Classes and Variables
-; -----------------------
-
-
-; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-special_key_map := {}
+special_key_map := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 
 global main_UI := new clsMainUI
 
@@ -109,6 +90,19 @@ global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main di
 global MODE_CHORDS_ENABLED := 1
     , MODE_SHORTHANDS_ENABLED := 2
     , MODE_ZIPCHORD_ENABLED := 4
+
+
+app_settings := New clsSettings()
+global settings := app_settings.settings
+
+; UI string constants
+global UI_STR_PAUSE := "&Pause ZipChord"
+    , UI_STR_RESUME := "&Resume ZipChord"
+
+Initialize()
+Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
+
+; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
 ; Current application settings
 Class clsSettings {
@@ -148,18 +142,6 @@ Class clsSettings {
             SaveVarToConfig(key, value)
     }
 }
-
-app_settings := New clsSettings()
-global settings := app_settings.settings
-
-; UI string constants
-global UI_STR_PAUSE := "&Pause ZipChord"
-    , UI_STR_RESUME := "&Resume ZipChord"
-
-Initialize()
-Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
-
-; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
 ;; Initilization and Wiring
 ; ---------------------------
@@ -263,10 +245,21 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
     }
 }
 
+OutputKeys(output) {
+    if (A_Args[1] == "dev") {
+        test.Log(output)
+        if (test.mode == TEST_RUNNING)
+            return
+    }
+    SendInput % output
+}
 
-; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
+CloseApp() {
+    WireHotkeys("Off")
+    ExitApp
+}
 
-;; Shortcuts Detection 
+;; Shortcuts 
 ; ---------------------
 
 Shift_key:
