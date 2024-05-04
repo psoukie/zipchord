@@ -348,7 +348,7 @@ class clsIniFile {
     ; LoadProperty returns "ERROR" if key not found
     LoadProperty(key, filename, section:="Default") {
         IniRead value, %filename%, %section%, %key%
-        Return value  
+        Return value
     }
     SaveProperties(object_to_save, ini_section, ini_filename := "") {
         if (!ini_filename) {
@@ -387,10 +387,12 @@ class clsIniFile {
     }
 }
 
-UpdateVarFromConfig(ByRef var, key) {
-    new_value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
-    if (new_value != "ERROR" && new_value != "")
-        var := new_value
+GetVarFromConfig(key) {
+    value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
+    if (value == "ERROR") {
+        return ""
+    }
+    return value
 }
 
 SaveVarToConfig(key, value) {
@@ -408,6 +410,47 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
         new_str := RegExReplace(new_str, "(?<=.)(?=.)", " ") ; add spaces between characters
     }
     Return new_str
+}
+
+CompareSemanticVersions(v1, v2) {
+    v1 := Trim(v1)
+    v2 := Trim(v2)
+    if (v1 == v2) {
+        return false
+    }
+    ; Split the versions into main and pre-release parts
+    Pattern := "O)(\d+\.\d+\.\d+)(?:-([0-9A-Za-z.-]+))?"
+    RegExMatch(v1, Pattern, v1Parts)
+    RegExMatch(v2, Pattern, v2Parts)
+
+    ; Compare version numbers
+    v1Main := StrSplit(v1Parts[1], ".")
+    v2Main := StrSplit(v2Parts[1], ".")
+    for index, num1 in v1Main {
+        num2 := v2Main[index]
+        if (num1 == num2) {
+            continue
+        }
+        return (num1 > num2)
+    }
+    if (v1Parts[2] == "") {
+        return true  ; No pre-release is higher than any pre-release
+    }
+    if (v2Parts[2] == "") {
+        return false
+    }
+    ; Compare pre-release parts
+    pre1Parts := StrSplit(v1Parts[2], ".", " ")
+    pre2Parts := StrSplit(v2Parts[2], ".", " ")
+    maxLength := Max(pre1Parts.MaxIndex(), pre2Parts.MaxIndex())
+    Loop, %maxLength% {
+        part1 := pre1Parts[A_Index]
+        part2 := pre2Parts[A_Index]
+        if (part1 == part2) {
+            continue
+        }
+        return (part1 > part2)
+    }
 }
 
 QPC() {

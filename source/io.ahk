@@ -234,7 +234,6 @@ Class clsIOrepresentation {
                 chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
             }
         }
-        this.DebugSequence()
         this.RunModules()
     }
 
@@ -388,27 +387,28 @@ Class clsIOrepresentation {
     ; When I recreate modules, it should be pure functions only.
 
     RunModules() {
-        if (! this.ChordModule() ) {
-            ; If no replacement, we separate any space or punctuation from the last chunk
-            this._FixLastChunk()
-            this.RemoveRawChord()
-        }
-        
-        last_chunk := this.GetChunk(this.length)
-        attribs := last_chunk.attributes
-        ; We check if the last character is a space or punctuation
-        if !( attribs & this.IS_MANUAL_SPACE || attribs & this.IS_PUNCTUATION ) {
+        if (this.ChordModule()) {
             return
         }
-        this.DoShorthandsAndHints()
-        dont_clear := false
-        if (attribs & this.IS_MANUAL_SPACE) {
-            dont_clear := this.DeDoubleSpace()
+        if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
+            if (this._RemoveRawChord()) {
+                return
+            }
+            this._FixLastChunk()
+        }
+        if (this.DeDoubleSpace()) {
+            return
+        }
+        if ! ( this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            return
+        }
+        if (this.DoShorthandsAndHints()) {
+            score.Score(score.ENTRY_SHORTHAND)
+        } else if ! ( this.TestChunkAttributes(this.length - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            score.Score(score.ENTRY_MANUAL)
         }
         this.AddSpaceAfterPunctuation()
-        if (! dont_clear) {
-            this.ClearSequence()
-        }
+        this.ClearSequence()
     }
 
     DoShorthandsAndHints() {
@@ -420,10 +420,10 @@ Class clsIOrepresentation {
                 continue
             }
             if ( this.ShorthandModule(text, A_Index+1) ) {
-                break
+                return true
             }
             if ( this.HintModule(text, A_Index+1) ) {
-                break
+                return false
             }
         }
     }
@@ -468,20 +468,19 @@ Class clsIOrepresentation {
     AddSpaceAfterPunctuation() {
         chunk := this.GetChunk(this.length)
         attribs := chunk.attributes
-        if ( settings.spacing & SPACE_PUNCTUATION && attribs & this.IS_PUNCTUATION
-                && (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
-                || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) )) {
-            if ( this.TestChunkAttributes(this.length - 1, this.IS_INTERRUPT) ) {
-                return
-            }
+        if ( !(settings.spacing & SPACE_PUNCTUATION) || this.TestChunkAttributes(this.length - 1, this.IS_INTERRUPT) ) {
+            return
+        }
+        if (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
+                || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) ) {
             this._AddSmartSpace()
         }
     }
 
     ; Remove a double space if the user types a space after punctuation smart space
     DeDoubleSpace() {
-        last_chunk_attrib := this.GetChunk(this.length-1).attributes 
-        if (last_chunk_attrib & this.SMART_SPACE_AFTER) {
+        if ( this.TestChunkAttributes(this.length - 1, this.SMART_SPACE_AFTER)
+                && this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE) ) {
             OutputKeys("{Backspace}")
             this._sequence.RemoveAt(this.length - 1)
             return true
@@ -503,6 +502,9 @@ Class clsIOrepresentation {
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
+                if (this.TryImmediateShorthand(-1)) {
+                    return this._ProcessChord(this.length, expanded) 
+                }
                 return this._ProcessChord(A_Index, expanded)
             }
         }
@@ -569,19 +571,19 @@ Class clsIOrepresentation {
 
         ; ending smart space
         if (affixes & AFFIX_PREFIX) {
-            chunk.attributes |= this.IS_PREFIX
+            this.SetChunkAttributes(chunk_id + replace_offset, this.IS_PREFIX)
         } else {
             if (settings.spacing & SPACE_AFTER_CHORD) {
                 this._AddSmartSpace()
             }
         }
+        if (! affixes) {
+            score.Score(score.ENTRY_CHORD)
+        }
         return true
     }
 
     _FixLastChunk() {
-        if ( ! this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
-            return
-        }
         chunk := this.GetChunk(this.length)
         last_character := SubStr(chunk.output, StrLen(chunk.output), 1)
         if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
@@ -594,9 +596,8 @@ Class clsIOrepresentation {
         }
     }
 
-    
     ; Remove characters of non-existing chord if 'delete mistyped chords' option is enabled.
-    RemoveRawChord() {
+    _RemoveRawChord() {
         if !(settings.chording & CHORD_DELETE_UNRECOGNIZED) {
             return
         }
@@ -606,22 +607,22 @@ Class clsIOrepresentation {
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(this.length-1) ) {
             return
         }
-        if (        this.TestChunkAttributes(this.length, this.IS_CHORD)
-                && !this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
-            this.Replace("", this.length)
-        }
+        raw_output := this.GetChunk(this.length).output
+        OutputKeys("{Backspace " . StrLen(raw_output) . "}")
+        this._sequence.RemoveAt(this.length)
+        return true
     }
 
-    TryImmediateShorthand() {
+    TryImmediateShorthand(last_chunk_offset := 0) {
         loop_length := this.length - 1
         Loop %loop_length%
         {
-            text := this.GetOutput(A_Index+1, this.length)
+            text := this.GetOutput(A_Index+1, this.length + last_chunk_offset)
             if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
                 continue
             }
-            if ( this.ShorthandModule(text, A_Index+1, 0) ) {
-                return
+            if ( this.ShorthandModule(text, A_Index+1, last_chunk_offset) ) {
+                return true
             }
         }
     }
@@ -631,7 +632,9 @@ Class clsIOrepresentation {
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
         }
-        if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {
+        attributes := this.GetChunk(first_chunk_id - 1).attributes
+        if ( attributes & this.IS_INTERRUPT
+                || (attributes & this.WAS_EXPANDED && !(attributes & this.IS_PREFIX)) ) {
             return
         }
         if ( expanded := shorthands.LookUp(text) ) {
@@ -652,7 +655,7 @@ Class clsIOrepresentation {
 
     HintModule(text, first_chunk_id) {
         global hint_delay
-        if (! (settings.hints & HINT_ON) || ! hint_delay.HasElapsed()) {
+        if ( settings.hints & HINT_OFF || ! (hint_delay.HasElapsed()) ) {
             return
         }
         if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {

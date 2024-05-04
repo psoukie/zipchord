@@ -1,14 +1,19 @@
 ﻿; Hints preferences and object
-global HINT_ON := 1
-    , HINT_ALWAYS := 2
-    , HINT_NORMAL := 4
-    , HINT_RELAXED := 8
-    , HINT_OSD := 16
-    , HINT_TOOLTIP := 32
+global HINT_OFF     := 1
+    , HINT_RELAXED  := 2
+    , HINT_NORMAL   := 4
+    , HINT_ALWAYS   := 8
+    , HINT_OSD      := 16
+    , HINT_TOOLTIP  := 32
+    , HINT_SCORE    := 64
 global GOLDEN_RATIO := 1.618
 global DELAY_AT_START := 2000
 
-Class HintTimingClass {
+hint_delay := new clsHintTiming
+global hint_UI := new clsHintUI(app_settings)
+global score := new clsGamification
+
+Class clsHintTiming {
     ; private variables
     _delay := DELAY_AT_START   ; this varies based on the hint frequency and hints shown
     _next_tick := A_TickCount  ; stores tick time when next hint is allowed
@@ -20,16 +25,18 @@ Class HintTimingClass {
             return False
     }
     Extend() {
-        if (settings.hints & HINT_ALWAYS)
-            Return
-        this._delay := Round( this._delay * ( GOLDEN_RATIO**(OrdinalOfHintFrequency(-1) ) ) )
+        if (settings.hints & HINT_ALWAYS) {
+            return
+        }
+        exponent := settings.hints & HINT_NORMAL ? 1 : 2
+        this._delay := Round( this._delay * ( GOLDEN_RATIO ** exponent ) )
         this._next_tick := A_TickCount + this._delay
     }
     Shorten() {
         if (settings.hints & HINT_ALWAYS)
             Return
         if (settings.hints & HINT_NORMAL)
-            this.Reset()
+            this._next_tick := A_TickCount
         else
             this._delay := Round( this._delay / 3 )
     }
@@ -38,12 +45,17 @@ Class HintTimingClass {
         this._next_tick := A_TickCount + this._delay
     }
 }
-hint_delay := New HintTimingClass
 
 ;; Shortcut Hint UI
 ; -------------------
 
 Class clsHintUI {
+    hint_settings := { hints:           HINT_NORMAL | HINT_OSD | HINT_SCORE
+                    , hint_offset_x:    0
+                    , hint_offset_y:    0
+                    , hint_size:        32
+                    , hint_color:       "1CA6BF" }
+    DEFAULT_TRANSPARENCY := 150
     UI := {}
     lines := []
     transparency := 0
@@ -65,6 +77,12 @@ Class clsHintUI {
             new_color .= Format("{:02x}", component)
         }
         this._transparent_color := new_color
+    }
+
+    __New(app_settings) {
+        For key, value in this.hint_settings {
+            app_settings.Register(key, value)
+        }
     }
 
     Build() {
@@ -95,7 +113,7 @@ Class clsHintUI {
         this.Build()
     }
 
-    ShowHint(line1, line2:="", line3 :="", follow_settings := true) {
+    ShowHint(line1 := "", line2 := "", line3  := "") {
         global hint_delay
         if (A_Args[1] == "dev") {
             if (test.mode > TEST_STANDBY) {
@@ -106,27 +124,32 @@ Class clsHintUI {
             }
         }
         hint_delay.Extend()
-        if ( (settings.hints & HINT_TOOLTIP) && follow_settings) {
+        if (settings.hints & HINT_TOOLTIP) {
             this._GetCaret(x, y, , h)
             ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " "
                     , x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
             hide_tooltip_fn := ObjBindMethod(this, "_HideTooltip")
             SetTimer, %hide_tooltip_fn%, -1800   ; hides the tooltip
         } else {
-            this.fading := false
-            this.transparency := 150
-            this.lines[1].value := line1
-            this.lines[2].value := ReplaceWithVariants(line2, follow_settings)
-            this.lines[3].value := ReplaceWithVariants(line3)
-            this.UI.Show("Hide NoActivate")
-            coord := this._GetMonitorCenterForWindow()
-            current_pos_x := coord.x ? coord.x + settings.hint_offset_x : this.pos_x
-            current_pos_y := coord.y ? coord.y + settings.hint_offset_y : this.pos_y
-            this.UI.Show("NoActivate X" . current_pos_x . "Y" . current_pos_y)
-            this.UI.SetTransparency(this.transparent_color, this.transparency)
-            hide_osd_fn := this.hide_OSD_fn
-            SetTimer, %hide_osd_fn%, -1900
+            this.ShowOnOSD(line1, ReplaceWithVariants(line2, true), ReplaceWithVariants(line3))
         }
+    }
+
+    ;@ahk-neko-ignore-fn 1 line; at 5/2/2024, 10:07:04 AM ; param is assigned but never used.
+    ShowOnOSD(line1 := "", line2 := "", line3  := "") {
+        this.fading := false
+        this.transparency := this.DEFAULT_TRANSPARENCY
+        Loop, 3 {
+            this.lines[A_Index].value := line%A_Index%
+        }
+        this.UI.Show("Hide NoActivate")
+        coord := this._GetMonitorCenterForWindow()
+        current_pos_x := coord.x ? coord.x + settings.hint_offset_x : this.pos_x
+        current_pos_y := coord.y ? coord.y + settings.hint_offset_y : this.pos_y
+        this.UI.Show("NoActivate X" . current_pos_x . "Y" . current_pos_y)
+        this.UI.SetTransparency(this.transparent_color, this.transparency)
+        hide_osd_fn := this.hide_OSD_fn
+        SetTimer, %hide_osd_fn%, -1900
     }
 
     _HideOSD() {
@@ -208,5 +231,125 @@ Class clsHintUI {
             pos_y := 0
         }
         return {x: pos_x, y: pos_y}
+    }
+}
+
+Class clsGamification {
+    _buffer := []
+    ENTRY_MANUAL       := 0
+    ENTRY_CHORD        := 1
+    ENTRY_SHORTHAND    := 2
+    score_gap := 0
+
+    class Results {
+        chord := 0
+        shorthand := 0
+        maximum := 0
+
+        __New(_chord, _shorthand, _maximum) {
+            this.chord := _chord
+            this.shorthand := _shorthand
+            this.maximum := _maximum
+        }
+    }
+
+    /** 
+    * Tracks the type of completed typing in the _buffer.
+    *
+    *   used_shortcut   one of ENTRY_  constants
+    */
+    Score(entry_type) {
+        if (A_Args[1] == "dev") {
+            if (test.mode == TEST_RUNNING) {
+                return
+            }
+        }
+        if ( settings.hints & HINT_OFF || ! (settings.hints & HINT_SCORE) ) {
+            return
+        }
+        count_chords := settings.mode & MODE_CHORDS_ENABLED 
+        count_shorthands := settings.mode & MODE_SHORTHANDS_ENABLED
+
+        if ( ! count_chords && ! count_shorthands ) {
+            return
+        }
+
+        this.score_gap++
+        gap_frequency := 7 * (3 - OrdinalOfHintFrequency())
+        total := this._buffer.Length()
+
+        if (total >= 100) {
+            this._buffer.RemoveAt(1)
+        } else {
+            total++
+        }
+        ; save a basic entry; percentage is calculated and added later if it was a shortcut, otherwise, it's irrelevant
+        entry := {type: entry_type, percentage: 0}
+        this._buffer.Push(entry)
+
+        if (entry_type == this.ENTRY_MANUAL || total < 7 || total < gap_frequency) {
+            return false
+        }
+        results := this._GetScores(count_chords, count_shorthands)
+        this._buffer[total].percentage := results.chord + results.shorthand
+        is_maximum := results.chord + results.shorthand > results.maximum ? true : false 
+
+        if ( results && (settings.hints & HINT_ALWAYS || is_maximum || this.score_gap > gap_frequency) ) {
+            this.score_gap := 0
+            this.ShowEfficiency(results, is_maximum)
+        }
+    }
+
+    _GetScores(count_chords := true, count_shorthands := true) {
+        chord_count := 0
+        shorthand_count := 0
+        max_percentage := 0
+
+        for _, value in this._buffer {
+            if ( count_chords && value.type == this.ENTRY_CHORD ) {
+                chord_count++
+            }
+            if ( count_shorthands && value.type == this.ENTRY_SHORTHAND ) {
+                shorthand_count++
+            }
+            if ( value.percentage > max_percentage) {
+                max_percentage := value.percentage
+            }
+        }
+        total := this._buffer.Length()
+        chord_percentage := 100 * chord_count // total
+        shorthand_percentage := 100 * shorthand_count // total
+        results := New this.Results(chord_percentage, shorthand_percentage, max_percentage)
+        return results
+    }
+
+    ShowEfficiency(results, is_record := false) {
+        global hint_UI
+        PROGRESS_BAR_LENGTH := 30
+        CHORD_BLOCK := "█"
+        SHORTHAND_BLOCK := "▓"
+        EMPTY_BLOCK := "░"
+        scaling_ratio := 100 / PROGRESS_BAR_LENGTH
+
+        if (is_record) {
+            record_text := this._buffer.Length() > 99 ? "New recent best:" : "New best result:"
+        } else {
+            record_text := ""
+        }
+        chord_blocks := results.chord // scaling_ratio
+        shorthand_blocks := results.shorthand // scaling_ratio
+        empty_blocks := PROGRESS_BAR_LENGTH - chord_blocks - shorthand_blocks
+        progress_bar := this._RepeatCharacter(CHORD_BLOCK, chord_blocks)
+                        . this._RepeatCharacter(SHORTHAND_BLOCK, shorthand_blocks)
+                        . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks)
+        hint_UI.ShowOnOSD(record_text, progress_bar, results.chord + results.shorthand . "%")
+    }
+
+    _RepeatCharacter(char :="", times := 1) {
+        result := ""
+        Loop, %times% {
+            result .= char
+        }
+        return result
     }
 }

@@ -1,6 +1,6 @@
 bare__a.out
 bare__b.out
-bare__c.out
+default__mistyped.out
 bare__chording.out
 bare__d.out
 bare__first.out
@@ -10,3 +10,4 @@ bare__test.out
 bare__interrupts.out
 bare__ss-punct.out
 bare__pre-shift.out
+bare__affixed_shorthand.out

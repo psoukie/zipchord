@@ -44,43 +44,6 @@ SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
 
-#Include version.ahk
-#Include shared.ahk
-#Include app_shortcuts.ahk
-#Include hints.ahk
-#Include locale.ahk
-#Include dictionaries.ahk
-#Include io.ahk
-
-if (A_Args[1] == "dev") {
-    #Include *i visualizer.ahk
-    #Include *i testing.ahk
-}
-
-OutputKeys(output) {
-    if (A_Args[1] == "dev") {
-        test.Log(output)
-        if (test.mode == TEST_RUNNING)
-            return
-    }
-    SendInput % output
-}
-
-CloseApp() {
-    WireHotkeys("Off")
-    ExitApp
-}
-
-;; Classes and Variables
-; -----------------------
-
-
-; This is used in code dynamically to store complex keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-special_key_map := {}
-
-global main_UI := new clsMainUI
-global hint_UI := new clsHintUI
-
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
     , AFFIX_PREFIX := 1 ; expansion is a prefix
@@ -104,69 +67,98 @@ global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that 
 
 
 ; Other preferences constants
-global PREF_PREVIOUS_INSTALLATION := 1  ; this config value means that the app has been installed before
-    , PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
-    , PREF_FIRST_RUN := 4               ; this value means this is the first run of 2.1.0-beta.2 or higher)
+global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
+    , PREF_FIRST_RUN := 4               ; this value means this is the first run (there is no saved config)
 
 global MODE_CHORDS_ENABLED := 1
     , MODE_SHORTHANDS_ENABLED := 2
     , MODE_ZIPCHORD_ENABLED := 4
 
-; Current application settings
-Class settingsClass {
-    mode := MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
-    preferences := PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
-    locale := "English US"
-    hints := HINT_ON | HINT_NORMAL | HINT_OSD
-    hint_offset_x := 0
-    hint_offset_y := 0
-    hint_size := 32
-    hint_color := "3BD511"
-    capitalization := CAP_CHORDS
-    spacing := SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION  ; smart spacing options 
-    chording := CHORD_RESTRICT ; Chord recognition options
-    chord_file := "chords-en-starting.txt" ; file name for the chord dictionary
-    shorthand_file := "shorthands-en-starting.txt" ; file name for the shorthand dictionary
-    dictionary_dir := A_ScriptDir
-    input_delay := 70
-    output_delay := 0
-    Read() {
-        For key, value in this {
-            UpdateVarFromConfig(value, key)
-            this[key] := value
-        }
-        this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
-    }
-    Write() {
-        For key, value in this
-            SaveVarToConfig(key, value)       
-    }
-}
-global settings := New settingsClass
-
 ; UI string constants
 global UI_STR_PAUSE := "&Pause ZipChord"
     , UI_STR_RESUME := "&Resume ZipChord"
 
-Initialize()
+app_settings := New clsSettings()
+global settings := app_settings.settings
+
+#Include version.ahk
+#Include shared.ahk
+#Include app_shortcuts.ahk
+#Include hints.ahk
+#Include locale.ahk
+#Include dictionaries.ahk
+#Include io.ahk
+
+if (A_Args[1] == "dev") {
+    #Include *i visualizer.ahk
+    #Include *i testing.ahk
+}
+
+special_key_map := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+
+global main_UI := new clsMainUI
+
+
+Initialize(zc_version)
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
 
 ; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
 
+; Current application settings
+Class clsSettings {
+    settings := { version:          0 ; gets loaded and saved later
+                , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
+                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
+                , locale:           "English US"
+                , capitalization:   CAP_CHORDS
+                , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
+                , chording:         CHORD_RESTRICT ; Chord recognition options
+                , chord_file:       "chords-en-starting.txt" ; file name for the chord dictionary
+                , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
+                , dictionary_dir:   A_ScriptDir
+                , input_delay:      70
+                , output_delay:     0 }
+    Register(setting_name, value := 0) {
+        if (this.settings.HasKey(setting_name)) {
+            return false
+        }
+        this.settings[setting_name] := value
+    }
+    Load() {
+        For key, value in this.settings {
+            value := GetVarFromConfig(key)
+            if (value !="") {
+                this.settings[key] := value
+            }
+        }
+        this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
+    }
+    Save() {
+        For key, value in this.settings
+            SaveVarToConfig(key, value)
+    }
+}
+
 ;; Initilization and Wiring
 ; ---------------------------
 
-Initialize() {
+Initialize(zc_version) {
+    global app_settings
     global app_shortcuts
     global locale
     ; save license file
     ini.SaveLicense()
+    app_settings.Load()
+    ; check whether we need to upgrade existing settings file:
+    if ( ! (settings.preferences & PREF_FIRST_RUN) && CompareSemanticVersions(zc_version, settings.version) ) {
+        UpdateSettings(settings.version)
+    }
+    settings.version := zc_version
     app_shortcuts.Init()
-    settings.Read()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-    settings.Write()
+    app_settings.Save()
     main_UI.Build()
     locale.Init()
     locale.Load(settings.locale)
@@ -179,6 +171,28 @@ Initialize() {
     main_UI.UpdateDictionaryUI()
     main_UI.UI.Enable()
     WireHotkeys("On")
+}
+
+UpdateSettings(from_version) {
+    if (CompareSemanticVersions("2.3.0", from_version)) {
+        ; Update hints settings from HINT_ON 1, HINT_ALWAYS 2, _NORMAL 4, _RELAXED 8, _OSD 16, _TOOLTIP 32
+        ; to  HINT_OFF 1, _RELAXED 2, _NORMAL 4, _ALWAYS 8, _OSD 16, _TOOLTIP 32, _SCORE 64
+        if (settings.hints & 1) {
+            ; swap ALWAYS and RELAXED if one of them was selected:
+            if (settings.hints & 2 || settings.hints & 8) {
+                settings.hints := settings.hints ^ 10
+            }
+        } else {
+            settings.hints &= (HINT_OSD | HINT_TOOLTIP) ; if hints were off, we only preserve OSD/TOOLTIP
+        }
+        settings.hints ^=  1  ; XOR from HINT_ON to HINT_OFF
+        settings.hints |= HINT_SCORE
+        if (settings.hint_color == "3BD511") {
+            settings.hint_color := "1CA6BF"
+        }
+        MsgBox, , % "ZipChord", % "ZipChord can now show your typing efficiency.`n`n"
+                . "You can change the setting on the Hints tab."
+    }
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
@@ -204,7 +218,9 @@ WireHotkeys(state) {
     }
     if (unrecognized) {
         key_str := StrLen(unrecognized)>1 ? "keys" : "key"
-        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
+        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
+                . "ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change "
+                . "the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
     }
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
@@ -254,10 +270,21 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
     }
 }
 
+OutputKeys(output) {
+    if (A_Args[1] == "dev") {
+        test.Log(output)
+        if (test.mode == TEST_RUNNING)
+            return
+    }
+    SendInput % output
+}
 
-; Main code. This is where the magic happens. Tracking keys as they are pressed down and released:
+CloseApp() {
+    WireHotkeys("Off")
+    ExitApp
+}
 
-;; Shortcuts Detection 
+;; Shortcuts 
 ; ---------------------
 
 Shift_key:
@@ -451,13 +478,14 @@ Class clsMainUI {
                 , immediate_shorthands: { type: "Checkbox"
                                         , text: "E&xpand shorthands immediately"
                                         , setting: { parent: "chording", const: "CHORD_IMMEDIATE_SHORTHANDS"}}
-                , hints_show:           { type: "Checkbox"
-                                        , text: "&Show hints for shortcuts in dictionaries"
-                                        , setting: { parent: "hints", const: "HINT_ON"}}
+                , hint_frequency:       { type: "DropDownList"
+                                        , function: ObjBindMethod(this, "HintEnablement")
+                                        , text: "Never|Relaxed|Normal|Always"}
                 , hint_destination:     { type: "DropDownList"
                                         , text: "On-screen display|Tooltips"}
-                , hint_frequency:       { type: "DropDownList"
-                                        , text: "Always|Normal|Relaxed"}
+                , hint_score:           { type: "Checkbox"
+                                        , text: "Show typing &efficiency"
+                                        , setting: { parent: "hints", const: "HINT_SCORE"}}
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
                                         , text: "&Adjust >>"}
@@ -510,11 +538,11 @@ Class clsMainUI {
         UI.Add(cts.immediate_shorthands, "xp+20 yp+30 Section")
         
         UI.Tab(3)
-        UI.Add(cts.hints_show, "y+20 Section")
-        UI.Add("Text", , "Hint &location")
-        UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
-        UI.Add("Text", "xs", "Hints &frequency")
+        UI.Add("Text", "y+20 Section", "&Show hints")
         UI.Add(cts.hint_frequency, "AltSubmit xp+150 w140")
+        UI.Add("Text", "xs", "Hint &location")
+        UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
+        UI.Add(cts.hint_score, "xs")
         UI.Add(cts.btn_customize_hints, "xs w100")
         this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h200 Section", "Hint customization")
         this.labels[2] := UI.Add("Text", "xp+20 yp+30 Section", "Horizontal offset (px)")
@@ -586,13 +614,14 @@ Class clsMainUI {
         }
         cts.capitalization.Choose(settings.capitalization)
         cts.btn_pause.value := (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
-        cts.hint_destination.Choose( Round((settings.hints & (HINT_OSD | HINT_TOOLTIP)) / 16) ) ; recalculate to option's list position
-        cts.hint_frequency.Choose( OrdinalOfHintFrequency() )
+        cts.hint_frequency.Choose( OrdinalOfHintFrequency() + 1)
+        cts.hint_destination.Choose( (settings.hints & (HINT_OSD | HINT_TOOLTIP)) // HINT_OSD) ; calculate the option's position; relies on HINT_TOOLTIP being << from HINT_OSD
         cts.hint_offset_x.value := settings.hint_offset_x
         cts.hint_offset_y.value := settings.hint_offset_y
         cts.hint_size.value := settings.hint_size
         cts.hint_color.value := settings.hint_color
         this.ShowHintCustomization(false)
+        this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI(settings.locale)
         this.UI.Show()
@@ -605,8 +634,10 @@ Class clsMainUI {
         return
     }
     _ApplySettings() {
+        global app_settings
         global hint_delay
         global locale
+
         cts := this.controls
         previous_mode := settings.mode 
         ; gather new settings from UI...
@@ -625,8 +656,9 @@ Class clsMainUI {
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
                         + cts.chord_enabled.value * MODE_CHORDS_ENABLED
                         + cts.shorthand_enabled.value * MODE_SHORTHANDS_ENABLED
-        ; recalculate hint settings to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
-        settings.hints := cts.hints_show.value + 16 * cts.hint_destination.value + 2**cts.hint_frequency.value
+        ; recalculate hint settings based on frequency (HINT_OFF etc.) and OSD/Tooltip. ( ** is exponent function in AHK)
+        settings.hints := 2**(cts.hint_frequency.value - 1) + 16 * cts.hint_destination.value
+                            + cts.hint_score.value * HINT_SCORE
         if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
@@ -641,19 +673,19 @@ Class clsMainUI {
             Return false
         } else settings.hint_color := temp
         ; ...and save them to config.ini
-        settings.Write()
+        app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
         locale.Load(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
-                hint_UI.ShowHint("ZipChord Keyboard", "On", , false)
+                hint_UI.ShowOnOSD("ZipChord Keyboard", "On")
             }
             WireHotkeys("On")
         }
         else if (settings.mode & MODE_ZIPCHORD_ENABLED) {
             ; Here, ZipChord is not paused, but chording and shorthands are both disabled
-            hint_UI.ShowHint("ZipChord Keyboard", "Off", , false)
+            hint_UI.ShowOnOSD("ZipChord Keyboard", "Off")
         }
         if (A_Args[1] == "dev" && cts.debugging.value) {
             if (FileExist("debug.txt")) {
@@ -766,6 +798,17 @@ Class clsMainUI {
             this.labels[A_Index].Show(show_controls)
         }
     }
+    HintEnablement() {
+        cts := this.controls
+        enable := cts.hint_frequency.value == 1 ? 0 : 1
+        cts.hint_destination.Enable(enable)
+        cts.hint_score.Enable(enable)
+        cts.btn_customize_hints.Enable(enable)
+        cts.hint_offset_x.Enable(enable)
+        cts.hint_offset_y.Enable(enable)
+        cts.hint_size.Enable(enable)
+        cts.hint_color.Enable(enable)
+    }
 }
 
 ShowMainUI() {
@@ -818,7 +861,7 @@ PauseApp(from_button := false) {
     main_UI.controls.btn_pause.value := mode ? UI_STR_PAUSE : UI_STR_RESUME
     state := mode ? "On" : "Off"
     if (from_button != true) {
-        hint_UI.ShowHint("ZipChord Keyboard", state, , false)
+        hint_UI.ShowOnOSD("ZipChord Keyboard", state)
     }
     WireHotkeys(state)
     UI_Tray_Update()
@@ -827,7 +870,7 @@ PauseApp(from_button := false) {
 
 QuitApp() {
     WireHotkeys("Off")
-    hint_UI.ShowHint("Closing ZipChord", state, , false)
+    hint_UI.ShowOnOSD("Closing ZipChord")
     Sleep 1100
     ExitApp
 }
@@ -857,10 +900,10 @@ FinishDebugging() {
     Run % "debug.txt"
 }
 
-OrdinalOfHintFrequency(offset := 0) {
-    frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
-    frequency := Round(Log(frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
-    Return frequency + offset
+OrdinalOfHintFrequency() {
+    frequency := settings.hints & (HINT_OFF | HINT_RELAXED | HINT_NORMAL | HINT_ALWAYS)
+    frequency := Round(Log(frequency) / Log(2))  ; log base 2 returns e.g. 0 for 1, 1 for 2, 2 for 4 etc.
+    Return frequency
 }
 
 LinkToLicense() {
@@ -886,20 +929,32 @@ Class clsClosingTip {
     __New() {
         global app_shortcuts
         this.UI := new clsUI("ZipChord")
+        this.UI.on_close := ObjBindMethod(this, "_Close")
         this.UI.Margin(20, 20)
-        this.UI.Add("Text", "+Wrap w430", Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
+        this.UI.Add("Text", "+Wrap w430"
+            , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n`n"
+                    . "Press F1 in any ZipChord tab or window for help." 
+            , app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold ")
+            , app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
+        call := Func("OpenHelp").Bind("")
+        Hotkey, F1, % call, On
         this.UI.Show("w470")
     }
     Btn_OK() {
+        global app_settings
+
+        this._Close()
         if (this.dont_show.value) {
             settings.preferences &= ~PREF_SHOW_CLOSING_TIP
-            settings.Write()
+            app_settings.Save()
             this.UI.Destroy()
             this.UI := {}
-        } else {
-            this.UI.Hide()
         }
+    }
+    _Close() {
+        Hotkey, F1, Off
+        this.UI.Hide()
     }
 }
