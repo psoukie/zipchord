@@ -86,15 +86,14 @@ Class clsHintUI {
     }
 
     Build() {
-        hint_color := settings.hint_color
-        this.SetTransparentColor(hint_color)
+        this.SetTransparentColor(settings.hint_color)
         this.UI := new clsUI("", "+LastFound +AlwaysOnTop -Caption +ToolWindow") ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
         this.UI.Margin( Round(settings.hint_size/3), Round(settings.hint_size/3))
         this.UI.Color(this.transparent_color)
-        this.UI.Font("s" . settings.hint_size . " c" . hint_color, "Consolas")
+        this.UI.Font("s" . settings.hint_size . " c" . settings.hint_color, "Consolas")
         ; auto-size the window
         Loop 3 {
-            this.lines[A_Index] := this.UI.Add("Text", "Center", "WWWWWWWWWWWWWWWWWWWWW")
+            this.lines[A_Index] := this.UI.Add("Text", "Center", "WWWWWWWWWWWWWWWWWWWWWWWWWW")
         }
         this.UI.Show("NoActivate Center")
         this.UI.SetTransparency(this.transparent_color, 1)
@@ -136,9 +135,15 @@ Class clsHintUI {
     }
 
     ;@ahk-neko-ignore-fn 1 line; at 5/2/2024, 10:07:04 AM ; param is assigned but never used.
-    ShowOnOSD(line1 := "", line2 := "", line3  := "") {
+    ShowOnOSD(line1 := "", line2 := "", line3  := "", smaller_second := false) {
         this.fading := false
         this.transparency := this.DEFAULT_TRANSPARENCY
+        if (smaller_second) {
+            this.UI.Font("s" . settings.hint_size // 3 . " c" . settings.hint_color, "Consolas")
+        } else {
+            this.UI.Font("s" . settings.hint_size . " c" . settings.hint_color, "Consolas")
+        }
+        GuiControl, Font, % hint_UI.lines[2]._handle
         Loop, 3 {
             this.lines[A_Index].value := line%A_Index%
         }
@@ -325,9 +330,9 @@ Class clsGamification {
 
     ShowEfficiency(results, is_record := false) {
         global hint_UI
-        PROGRESS_BAR_LENGTH := 30
+        PROGRESS_BAR_LENGTH := 75
         CHORD_BLOCK := "█"
-        SHORTHAND_BLOCK := "▓"
+        SHORTHAND_BLOCK := "▒"
         EMPTY_BLOCK := "░"
         scaling_ratio := 100 / PROGRESS_BAR_LENGTH
 
@@ -339,10 +344,10 @@ Class clsGamification {
         chord_blocks := results.chord // scaling_ratio
         shorthand_blocks := results.shorthand // scaling_ratio
         empty_blocks := PROGRESS_BAR_LENGTH - chord_blocks - shorthand_blocks
-        progress_bar := this._RepeatCharacter(CHORD_BLOCK, chord_blocks)
+        progress_bar := "|" . this._RepeatCharacter(CHORD_BLOCK, chord_blocks)
                         . this._RepeatCharacter(SHORTHAND_BLOCK, shorthand_blocks)
-                        . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks)
-        hint_UI.ShowOnOSD(record_text, progress_bar, results.chord + results.shorthand . "%")
+                        . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks) . "|"
+        hint_UI.ShowOnOSD(record_text, progress_bar, results.chord + results.shorthand . "%", true)
     }
 
     _RepeatCharacter(char :="", times := 1) {
