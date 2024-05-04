@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -479,6 +479,7 @@ Class clsMainUI {
                                         , text: "E&xpand shorthands immediately"
                                         , setting: { parent: "chording", const: "CHORD_IMMEDIATE_SHORTHANDS"}}
                 , hint_frequency:       { type: "DropDownList"
+                                        , function: ObjBindMethod(this, "HintEnablement")
                                         , text: "Never|Relaxed|Normal|Always"}
                 , hint_destination:     { type: "DropDownList"
                                         , text: "On-screen display|Tooltips"}
@@ -620,6 +621,7 @@ Class clsMainUI {
         cts.hint_size.value := settings.hint_size
         cts.hint_color.value := settings.hint_color
         this.ShowHintCustomization(false)
+        this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI(settings.locale)
         this.UI.Show()
@@ -795,6 +797,17 @@ Class clsMainUI {
         Loop 5 {
             this.labels[A_Index].Show(show_controls)
         }
+    }
+    HintEnablement() {
+        cts := this.controls
+        enable := cts.hint_frequency.value == 1 ? 0 : 1
+        cts.hint_destination.Enable(enable)
+        cts.hint_score.Enable(enable)
+        cts.btn_customize_hints.Enable(enable)
+        cts.hint_offset_x.Enable(enable)
+        cts.hint_offset_y.Enable(enable)
+        cts.hint_size.Enable(enable)
+        cts.hint_color.Enable(enable)
     }
 }
 
