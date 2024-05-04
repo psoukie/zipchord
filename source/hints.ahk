@@ -1,4 +1,4 @@
-; Hints preferences and object
+﻿; Hints preferences and object
 global HINT_OFF     := 1
     , HINT_RELAXED  := 2
     , HINT_NORMAL   := 4
@@ -36,7 +36,7 @@ Class clsHintTiming {
         if (settings.hints & HINT_ALWAYS)
             Return
         if (settings.hints & HINT_NORMAL)
-            this.Reset()
+            this._next_tick := A_TickCount
         else
             this._delay := Round( this._delay / 3 )
     }
