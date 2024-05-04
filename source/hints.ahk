@@ -259,6 +259,11 @@ Class clsGamification {
     *   used_shortcut   one of ENTRY_  constants
     */
     Score(entry_type) {
+        if (A_Args[1] == "dev") {
+            if (test.mode == TEST_RUNNING) {
+                return
+            }
+        }
         if ( settings.hints & HINT_OFF || ! (settings.hints & HINT_SCORE) ) {
             return
         }
