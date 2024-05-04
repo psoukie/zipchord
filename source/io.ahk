@@ -388,7 +388,6 @@ Class clsIOrepresentation {
 
     RunModules() {
         if (this.ChordModule()) {
-            score.Score(score.ENTRY_CHORD)
             return
         }
         if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
@@ -577,6 +576,9 @@ Class clsIOrepresentation {
             if (settings.spacing & SPACE_AFTER_CHORD) {
                 this._AddSmartSpace()
             }
+        }
+        if (! affixes) {
+            score.Score(score.ENTRY_CHORD)
         }
         return true
     }
