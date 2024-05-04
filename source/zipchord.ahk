@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -44,26 +44,6 @@ SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
 
-app_settings := New clsSettings()
-global settings := app_settings.settings
-
-#Include version.ahk
-#Include shared.ahk
-#Include app_shortcuts.ahk
-#Include hints.ahk
-#Include locale.ahk
-#Include dictionaries.ahk
-#Include io.ahk
-
-if (A_Args[1] == "dev") {
-    #Include *i visualizer.ahk
-    #Include *i testing.ahk
-}
-
-special_key_map := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-
-global main_UI := new clsMainUI
-
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
     , AFFIX_PREFIX := 1 ; expansion is a prefix
@@ -97,6 +77,27 @@ global MODE_CHORDS_ENABLED := 1
 ; UI string constants
 global UI_STR_PAUSE := "&Pause ZipChord"
     , UI_STR_RESUME := "&Resume ZipChord"
+
+app_settings := New clsSettings()
+global settings := app_settings.settings
+
+#Include version.ahk
+#Include shared.ahk
+#Include app_shortcuts.ahk
+#Include hints.ahk
+#Include locale.ahk
+#Include dictionaries.ahk
+#Include io.ahk
+
+if (A_Args[1] == "dev") {
+    #Include *i visualizer.ahk
+    #Include *i testing.ahk
+}
+
+special_key_map := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+
+global main_UI := new clsMainUI
+
 
 Initialize(zc_version)
 Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
