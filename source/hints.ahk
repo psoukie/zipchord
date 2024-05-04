@@ -11,6 +11,7 @@ global DELAY_AT_START := 2000
 
 hint_delay := new clsHintTiming
 global hint_UI := new clsHintUI(app_settings)
+global score := new clsGamification
 
 Class clsHintTiming {
     ; private variables
@@ -233,14 +234,24 @@ Class clsHintUI {
     }
 }
 
-global score := new clsGamification
-
 Class clsGamification {
     _buffer := []
     ENTRY_MANUAL       := 0
     ENTRY_CHORD        := 1
     ENTRY_SHORTHAND    := 2
     score_gap := 0
+
+    class Results {
+        chord := 0
+        shorthand := 0
+        maximum := 0
+
+        __New(_chord, _shorthand, _maximum) {
+            this.chord := _chord
+            this.shorthand := _shorthand
+            this.maximum := _maximum
+        }
+    }
 
     /** 
     * Tracks the type of completed typing in the _buffer.
@@ -251,41 +262,40 @@ Class clsGamification {
         if ( settings.hints & HINT_OFF || ! (settings.hints & HINT_SCORE) ) {
             return
         }
-        this.score_gap++
         count_chords := settings.mode & MODE_CHORDS_ENABLED 
         count_shorthands := settings.mode & MODE_SHORTHANDS_ENABLED
+
         if ( ! count_chords && ! count_shorthands ) {
             return
         }
-        if (this._buffer.Length() > 100) {
+
+        this.score_gap++
+        gap_frequency := 7 * (3 - OrdinalOfHintFrequency())
+        total := this._buffer.Length()
+
+        if (total >= 100) {
             this._buffer.RemoveAt(1)
+        } else {
+            total++
         }
+        ; save a basic entry; percentage is calculated and added later if it was a shortcut, otherwise, it's irrelevant
         entry := {type: entry_type, percentage: 0}
         this._buffer.Push(entry)
-        this._ShowEfficiencyAsNeeded()
-    }
 
-    _ShowEfficiencyAsNeeded() {
-        total := this._buffer.Length()
-        gap_frequency := 7 * (3 - OrdinalOfHintFrequency())
-        if (entry_type == this.ENTRY_MANUAL || total < 5 || total < gap_frequency) {
-            return
+        if (entry_type == this.ENTRY_MANUAL || total < 7 || total < gap_frequency) {
+            return false
         }
-        scores := this._SumScores(count_chords, count_shorthands)
-        if ! (settings.hints & HINT_ALWAYS) {
-            chord_percentage := 100 * scores.chords // total
-            shorthand_percentage := 100 * scores.shorthands // total
-            current_percentage := chord_percentage + shorthand_percentage
-            this._buffer[this._buffer.Length()].percentage := current_percentage
-            if ( current_percentage > scores.maximum || this.score_gap > gap_frequency ) {
-                OutputDebug, % "`Max: " . scores.maximum
-                this.score_gap := 0
-                this.ShowEfficiency(chord_percentage, shorthand_percentage)
-            }
+        results := this._GetScores(count_chords, count_shorthands)
+        this._buffer[total].percentage := results.chord + results.shorthand
+        is_maximum := results.chord + results.shorthand > results.maximum ? true : false 
+
+        if ( results && (settings.hints & HINT_ALWAYS || is_maximum || this.score_gap > gap_frequency) ) {
+            this.score_gap := 0
+            this.ShowEfficiency(results, is_maximum)
         }
     }
 
-    _SumScores(count_chords := true, count_shorthands := true) {
+    _GetScores(count_chords := true, count_shorthands := true) {
         chord_count := 0
         shorthand_count := 0
         max_percentage := 0
@@ -301,10 +311,14 @@ Class clsGamification {
                 max_percentage := value.percentage
             }
         }
-        return {chords: chord_count, shorthands: shorthand_count, maximum: max_percentage}
+        total := this._buffer.Length()
+        chord_percentage := 100 * chord_count // total
+        shorthand_percentage := 100 * shorthand_count // total
+        results := New this.Results(chord_percentage, shorthand_percentage, max_percentage)
+        return results
     }
 
-    ShowEfficiency(chord_percentage, shorthand_percentage) {
+    ShowEfficiency(results, is_record := false) {
         global hint_UI
         PROGRESS_BAR_LENGTH := 30
         CHORD_BLOCK := "█"
@@ -312,13 +326,14 @@ Class clsGamification {
         EMPTY_BLOCK := "░"
         scaling_ratio := 100 / PROGRESS_BAR_LENGTH
 
-        chord_blocks := chord_percentage // scaling_ratio
-        shorthand_blocks := shorthand_percentage // scaling_ratio
+        record_text := is_record ? "New high score!" : ""
+        chord_blocks := results.chord // scaling_ratio
+        shorthand_blocks := results.shorthand // scaling_ratio
         empty_blocks := PROGRESS_BAR_LENGTH - chord_blocks - shorthand_blocks
         progress_bar := this._RepeatCharacter(CHORD_BLOCK, chord_blocks)
                         . this._RepeatCharacter(SHORTHAND_BLOCK, shorthand_blocks)
                         . this._RepeatCharacter(EMPTY_BLOCK, empty_blocks)
-        hint_UI.ShowOnOSD(progress_bar, chord_percentage + shorthand_percentage . "%")
+        hint_UI.ShowOnOSD(record_text, progress_bar, results.chord + results.shorthand . "%")
     }
 
     _RepeatCharacter(char :="", times := 1) {
