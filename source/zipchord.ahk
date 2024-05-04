@@ -460,13 +460,13 @@ Class clsMainUI {
                 , immediate_shorthands: { type: "Checkbox"
                                         , text: "E&xpand shorthands immediately"
                                         , setting: { parent: "chording", const: "CHORD_IMMEDIATE_SHORTHANDS"}}
-                , hints_show:           { type: "Checkbox"
-                                        , text: "&Show hints for shortcuts in dictionaries"
-                                        , setting: { parent: "hints", const: "HINT_ON"}}
+                , hint_frequency:       { type: "DropDownList"
+                                        , text: "Never|Relaxed|Normal|Always"}
                 , hint_destination:     { type: "DropDownList"
                                         , text: "On-screen display|Tooltips"}
-                , hint_frequency:       { type: "DropDownList"
-                                        , text: "Always|Normal|Relaxed"}
+                , hint_score:           { type: "Checkbox"
+                                        , text: "Show typing &efficiency"
+                                        , setting: { parent: "hints", const: "HINT_SCORE"}}
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
                                         , text: "&Adjust >>"}
@@ -519,11 +519,11 @@ Class clsMainUI {
         UI.Add(cts.immediate_shorthands, "xp+20 yp+30 Section")
         
         UI.Tab(3)
-        UI.Add(cts.hints_show, "y+20 Section")
-        UI.Add("Text", , "Hint &location")
-        UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
-        UI.Add("Text", "xs", "Hints &frequency")
+        UI.Add("Text", "y+20 Section", "&Show hints")
         UI.Add(cts.hint_frequency, "AltSubmit xp+150 w140")
+        UI.Add("Text", "xs", "Hint &location")
+        UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
+        UI.Add(cts.hint_score, "xs")
         UI.Add(cts.btn_customize_hints, "xs w100")
         this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h200 Section", "Hint customization")
         this.labels[2] := UI.Add("Text", "xp+20 yp+30 Section", "Horizontal offset (px)")
@@ -595,8 +595,8 @@ Class clsMainUI {
         }
         cts.capitalization.Choose(settings.capitalization)
         cts.btn_pause.value := (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
+        cts.hint_frequency.Choose( OrdinalOfHintFrequency() + 1)
         cts.hint_destination.Choose( (settings.hints & (HINT_OSD | HINT_TOOLTIP)) // HINT_OSD) ; calculate the option's position; relies on HINT_TOOLTIP being << from HINT_OSD
-        cts.hint_frequency.Choose( OrdinalOfHintFrequency() )
         cts.hint_offset_x.value := settings.hint_offset_x
         cts.hint_offset_y.value := settings.hint_offset_y
         cts.hint_size.value := settings.hint_size
@@ -636,8 +636,9 @@ Class clsMainUI {
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
                         + cts.chord_enabled.value * MODE_CHORDS_ENABLED
                         + cts.shorthand_enabled.value * MODE_SHORTHANDS_ENABLED
-        ; recalculate hint settings to HINT_ON, OSD/Tooltip, and frequency ( ** means ^ in AHK)
-        settings.hints := cts.hints_show.value + 16 * cts.hint_destination.value + 2**cts.hint_frequency.value
+        ; recalculate hint settings based on frequency (HINT_OFF etc.) and OSD/Tooltip. ( ** is exponent function in AHK)
+        settings.hints := 2**(cts.hint_frequency.value - 1) + 16 * cts.hint_destination.value
+                            + cts.hint_score.value * HINT_SCORE
         if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
@@ -869,8 +870,8 @@ FinishDebugging() {
 }
 
 OrdinalOfHintFrequency() {
-    frequency := settings.hints & (HINT_ALWAYS | HINT_NORMAL | HINT_RELAXED )
-    frequency := Round(Log(frequency) / Log(2))  ; i.e. log base 2 gives us the desired setting as 1, 2 or 3
+    frequency := settings.hints & (HINT_OFF | HINT_RELAXED | HINT_NORMAL | HINT_ALWAYS)
+    frequency := Round(Log(frequency) / Log(2))  ; log base 2 returns e.g. 0 for 1, 1 for 2, 2 for 4 etc.
     Return frequency
 }
 

@@ -1,10 +1,11 @@
 ﻿; Hints preferences and object
-global HINT_ON      := 1
-    , HINT_ALWAYS   := 2
+global HINT_OFF     := 1
+    , HINT_RELAXED  := 2
     , HINT_NORMAL   := 4
-    , HINT_RELAXED  := 8
+    , HINT_ALWAYS   := 8
     , HINT_OSD      := 16
     , HINT_TOOLTIP  := 32
+    , HINT_SCORE    := 64
 global GOLDEN_RATIO := 1.618
 global DELAY_AT_START := 2000
 
@@ -23,9 +24,11 @@ Class clsHintTiming {
             return False
     }
     Extend() {
-        if (settings.hints & HINT_ALWAYS)
-            Return
-        this._delay := Round( this._delay * ( GOLDEN_RATIO**(OrdinalOfHintFrequency() - 1) ) )
+        if (settings.hints & HINT_ALWAYS) {
+            return
+        }
+        exponent := settings.hints & HINT_NORMAL ? 1 : 2
+        this._delay := Round( this._delay * ( GOLDEN_RATIO ** exponent ) )
         this._next_tick := A_TickCount + this._delay
     }
     Shorten() {
@@ -46,7 +49,7 @@ Class clsHintTiming {
 ; -------------------
 
 Class clsHintUI {
-    hint_settings := { hints:           HINT_ON | HINT_NORMAL | HINT_OSD
+    hint_settings := { hints:           HINT_NORMAL | HINT_OSD | HINT_SCORE
                     , hint_offset_x:    0
                     , hint_offset_y:    0
                     , hint_size:        32
@@ -245,6 +248,9 @@ Class clsGamification {
     *   used_shortcut   one of ENTRY_  constants
     */
     Score(entry_type) {
+        if ( settings.hints & HINT_OFF || ! (settings.hints & HINT_SCORE) ) {
+            return
+        }
         this.score_gap++
         count_chords := settings.mode & MODE_CHORDS_ENABLED 
         count_shorthands := settings.mode & MODE_SHORTHANDS_ENABLED
@@ -261,7 +267,7 @@ Class clsGamification {
 
     _ShowEfficiencyAsNeeded() {
         total := this._buffer.Length()
-        gap_frequency := 7 * (OrdinalOfHintFrequency() - 1)
+        gap_frequency := 7 * (3 - OrdinalOfHintFrequency())
         if (entry_type == this.ENTRY_MANUAL || total < 5 || total < gap_frequency) {
             return
         }
@@ -277,7 +283,6 @@ Class clsGamification {
                 this.ShowEfficiency(chord_percentage, shorthand_percentage)
             }
         }
-
     }
 
     _SumScores(count_chords := true, count_shorthands := true) {

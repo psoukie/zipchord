@@ -653,7 +653,7 @@ Class clsIOrepresentation {
 
     HintModule(text, first_chunk_id) {
         global hint_delay
-        if ! (settings.hints & HINT_ON && hint_delay.HasElapsed()) {
+        if ( settings.hints & HINT_OFF || ! (hint_delay.HasElapsed()) ) {
             return
         }
         if ( this.TestChunkAttributes(first_chunk_id - 1, this.WAS_EXPANDED | this.IS_INTERRUPT) ) {
