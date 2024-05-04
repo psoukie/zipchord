@@ -2,7 +2,7 @@
 
 This file is part of ZipChord
 
-Copyright (c) 2023 Pavel Soukenik
+Copyright (c) 2023-2024 Pavel Soukenik
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the conditions set out
@@ -48,6 +48,7 @@ Class clsInstaller {
     UI := {}
 
     __New() {
+        this.ClosePreviousZipChord()
         if (A_Args[1] == "/elevate") {
             this._LoadOptions()
             if (A_IsAdmin)
@@ -56,6 +57,14 @@ Class clsInstaller {
         }
         else
             this.ShowUI()
+    }
+    ClosePreviousZipChord() {
+        ProcessName := "zipchord.exe"
+        Process, Exist, %ProcessName%
+        PID := ErrorLevel
+        if (PID) {
+            Process, Close, %PID%
+        }
     }
     ShowUI() {
         global zc_version
