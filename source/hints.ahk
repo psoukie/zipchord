@@ -1,4 +1,4 @@
-﻿; Hints preferences and object
+; Hints preferences and object
 global HINT_OFF     := 1
     , HINT_RELAXED  := 2
     , HINT_NORMAL   := 4
@@ -326,7 +326,11 @@ Class clsGamification {
         EMPTY_BLOCK := "░"
         scaling_ratio := 100 / PROGRESS_BAR_LENGTH
 
-        record_text := is_record ? "New high score!" : ""
+        if (is_record) {
+            record_text := this._buffer.Length() > 99 ? "New recent best:" : "New best result:"
+        } else {
+            record_text := ""
+        }
         chord_blocks := results.chord // scaling_ratio
         shorthand_blocks := results.shorthand // scaling_ratio
         empty_blocks := PROGRESS_BAR_LENGTH - chord_blocks - shorthand_blocks
