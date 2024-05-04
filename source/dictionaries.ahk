@@ -161,17 +161,21 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
             settings.preferences &= ~PREF_FIRST_RUN
             app_settings.Save()
             dictionary_dir := A_MyDocuments . "\ZipChord"
+            if (InStr(FileExist(dictionary_dir), "D")) {
+                _UpdateWorkingDir(dictionary_dir)
+                return CheckDictionaryFileExists(dictionary_file, dictionary_type)
+            }
             MsgBox, 4, % "ZipChord", % Format("Would you like to download starting dictionary files and save them in the '{}' folder?", dictionary_dir)
             IfMsgBox Yes
-                if ( ! InStr(FileExist(dictionary_dir), "D"))
-                FileCreateDir,  % dictionary_dir
-                settings.dictionary_dir := dictionary_dir
-                SetWorkingDir, % settings.dictionary_dir
-                app_settings.Save()
+            {
+                if ( ! InStr(FileExist(dictionary_dir), "D")) {
+                    FileCreateDir,  % dictionary_dir
+                }
+                _UpdateWorkingDir(dictionary_dir)
                 UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/chords-en-qwerty.txt, % dictionary_dir . "\chords-en-starting.txt"
                 UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/shorthands-english.txt, % dictionary_dir . "\shorthands-en-starting.txt"
-                new_file := CheckDictionaryFileExists(dictionary_file, dictionary_type)
-                return new_file
+                return CheckDictionaryFileExists(dictionary_file, dictionary_type)
+            }
         }
         errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
         ; If we don't have the dictionary, try opening the first file with a matching naming convention.
@@ -192,6 +196,13 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
         Return new_file
     }
     Return dictionary_file
+}
+
+_UpdateWorkingDir(new_dir) {
+    global app_settings
+    settings.dictionary_dir := new_dir
+    SetWorkingDir, % settings.dictionary_dir
+    app_settings.Save()
 }
 
 
