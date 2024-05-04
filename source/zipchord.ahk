@@ -916,25 +916,32 @@ Class clsClosingTip {
     __New() {
         global app_shortcuts
         this.UI := new clsUI("ZipChord")
+        this.UI.on_close := ObjBindMethod(this, "_Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
-            , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n"
+            , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n`n"
+                    . "Press F1 in any ZipChord tab or window for help." 
             , app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold ")
             , app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
+        call := Func("OpenHelp").Bind("")
+        Hotkey, F1, % call, On
         this.UI.Show("w470")
     }
     Btn_OK() {
         global app_settings
 
+        this._Close()
         if (this.dont_show.value) {
             settings.preferences &= ~PREF_SHOW_CLOSING_TIP
             app_settings.Save()
             this.UI.Destroy()
             this.UI := {}
-        } else {
-            this.UI.Hide()
         }
+    }
+    _Close() {
+        Hotkey, F1, Off
+        this.UI.Hide()
     }
 }
