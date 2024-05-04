@@ -174,8 +174,23 @@ Initialize(zc_version) {
 
 UpdateSettings(from_version) {
     if (CompareSemanticVersions("2.3.0", from_version)) {
-        ; Update hint settings:
-        OutputDebug, % "`nNEED TO UPDATE hint settings"
+        ; Update hints settings from HINT_ON 1, HINT_ALWAYS 2, _NORMAL 4, _RELAXED 8, _OSD 16, _TOOLTIP 32
+        ; to  HINT_OFF 1, _RELAXED 2, _NORMAL 4, _ALWAYS 8, _OSD 16, _TOOLTIP 32, _SCORE 64
+        if (settings.hints & 1) {
+            ; swap ALWAYS and RELAXED if one of them was selected:
+            if (settings.hints & 2 || settings.hints & 8) {
+                settings.hints := settings.hints ^ 10
+            }
+        } else {
+            settings.hints &= (HINT_OSD | HINT_TOOLTIP) ; if hints were off, we only preserve OSD/TOOLTIP
+        }
+        settings.hints ^=  1  ; XOR from HINT_ON to HINT_OFF
+        settings.hints |= HINT_SCORE
+        if (settings.hint_color == "3BD511") {
+            settings.hint_color := "1CA6BF"
+        }
+        MsgBox, , % "ZipChord", % "ZipChord can now show your typing efficiency.`n`n"
+                . "You can change the setting on the Hints tab."
     }
 }
 
@@ -202,7 +217,9 @@ WireHotkeys(state) {
     }
     if (unrecognized) {
         key_str := StrLen(unrecognized)>1 ? "keys" : "key"
-        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
+        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
+                . "ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change "
+                . "the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
     }
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
@@ -899,7 +916,10 @@ Class clsClosingTip {
         global app_shortcuts
         this.UI := new clsUI("ZipChord")
         this.UI.Margin(20, 20)
-        this.UI.Add("Text", "+Wrap w430", Format("Select a word and {} to define a shortcut for it or to see its existing shortcuts.`n`n{} to open the ZipChord menu again.`n", app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold "), app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
+        this.UI.Add("Text", "+Wrap w430"
+            , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n"
+            , app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold ")
+            , app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
         this.UI.Show("w470")
