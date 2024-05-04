@@ -48,7 +48,6 @@ Class clsInstaller {
     UI := {}
 
     __New() {
-        this.ClosePreviousZipChord()
         if (A_Args[1] == "/elevate") {
             this._LoadOptions()
             if (A_IsAdmin)
@@ -89,6 +88,7 @@ Class clsInstaller {
         this.UI := UI
     }
     _btnInstall() {
+        this.ClosePreviousZipChord()
         this._UpdateOptions()
         this._SaveOptions()
         this._SaveRegistryInfo()
