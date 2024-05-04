@@ -150,10 +150,10 @@ Initialize(zc_version) {
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:
-    if ( CompareSemanticVersions(zc_version, settings.version) ) {
+    if ( ! (settings.preferences & PREF_FIRST_RUN) && CompareSemanticVersions(zc_version, settings.version) ) {
         UpdateSettings(settings.version)
-        settings.version := zc_version
     }
+    settings.version := zc_version
     app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
