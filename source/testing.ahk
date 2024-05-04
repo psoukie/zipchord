@@ -720,9 +720,10 @@ list [<type>]
 
   <type>    When omitted, lists all the files in the testing folder.
             The <type> can be one of the following:
+               cases      test case files
+               configs    configuration files
                inputs     input files 
                outputs    output files (execept test cases)
-               cases      test case files 
                sets       test set files
 )")
             Case "monitor":

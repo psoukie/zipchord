@@ -156,6 +156,11 @@ Class clsIOrepresentation {
     }
     PreShift() {
         this.pre_shifted := !this.pre_shifted
+        ; and we cheat to allow shorthands:
+        if (this.TestChunkAttributes(this.length, this.IS_INTERRUPT)) {
+            this.ClearChunkAttributes(this.length, this.IS_INTERRUPT)
+            this.SetChunkAttributes(this.length, this.IS_MANUAL_SPACE)
+        }
     }
     Class clsChunk {
         __New() {
