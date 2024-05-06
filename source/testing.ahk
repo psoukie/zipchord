@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 This file is part of ZipChord.
 
@@ -69,6 +69,7 @@ Class TestingClass {
                 if (! this._CheckFilename(filename, "cfg"))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
+                settings.locale := "_from_config"
                 ini.SaveProperties(settings, "Application", filename)
                 ini.SaveProperties(keys, "Locale", filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
