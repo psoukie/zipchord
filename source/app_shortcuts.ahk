@@ -17,7 +17,7 @@ app_shortcuts := New clsAppShortcuts
 *      Init
 *      Show
 *      GetHotkeyText   Get human-readable keyboard shortcut for activating a given function.
-*      WireHotkeys(<"On"|"Off">)   Enable or disable the defined app hotkeys
+*      WireAppHotkeys(<"On"|"Off">)   Enable or disable the defined app hotkeys
 */
 Class clsAppShortcuts {
     MD_SHORT := 1
@@ -44,12 +44,12 @@ Class clsAppShortcuts {
 
     Init() {
         this._LoadSettings()
-        this.WireHotkeys("On")
+        this.WireAppHotkeys("On")
     }
     Show() {
         call := Func("OpenHelp").Bind("AppShortcuts")
         Hotkey, F1, % call, On
-        this.WireHotkeys("Off")  ; so the current hotkeys don't interfere with defining
+        this.WireAppHotkeys("Off")  ; so the current hotkeys don't interfere with defining
         UI := new clsUI("ZipChord Application Keyboard Shortcuts")
         UI.on_close := ObjBindMethod(this, "_CloseUI")
         UI.Add("Text", "x+20 y-35")
@@ -89,7 +89,7 @@ Class clsAppShortcuts {
                 return prefix . str.HotkeyToText(shortcut.HK)
             }
     }
-    WireHotkeys(status) {
+    WireAppHotkeys(status) {
         For i, shortcut in this.shortcuts
             if (shortcut.HK) {
                 call := ObjBindMethod(this, "_ProcessHotkey", i)
@@ -142,7 +142,7 @@ Class clsAppShortcuts {
         }
     }
     _CloseUI() {
-        this.WireHotkeys("On") ; restore either previous (or define new) hotkeys
+        this.WireAppHotkeys("On") ; restore either previous (or define new) hotkeys
         Hotkey, F1, Off
         this.UI.Destroy()
     }

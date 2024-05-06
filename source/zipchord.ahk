@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -251,7 +251,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    app_shortcuts.WireHotkeys("On")
+    app_shortcuts.WireAppHotkeys("On")
 }
 
 ; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
