@@ -256,6 +256,8 @@ GuiEscape(handle) {
 *    HotkeyToText     Returns a human-readable hotkey text.
 *    Ellipsisize      Returns a shortened string (if it exceeds the limit) with ellipsis added.
 *    TextInPixels     Returns the length of text in pixels.
+*    ToAscii          Converts key and modifiers to ASCII
+*    JoinArray        Returns a string with array joined by a separator (defaults to ` `)
 */
 Class clsStringFunctions {
     HotkeyToText(HK) {
@@ -289,7 +291,7 @@ Class clsStringFunctions {
         DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
         Return Chr(Ascii)
     }
-    /** Ellipsis
+    /** Ellipsisize
     *        text         String to shorten.
     *        limit        Limit in pixel length.
     *        to_end       [true|false] add ellipsis to the end (or start), default is false (left).
@@ -322,6 +324,16 @@ Class clsStringFunctions {
         Gui, strFunc:Destroy
         ; GuiControlGet weirdly creates variable names based off the passed `values` variable:
         return valuesW
+    }
+    JoinArray(array, separator := " ") {
+        result := ""
+        for index, element in array {
+            result .= element
+            if (index != array.Length()) {
+                result .= separator
+            }
+        }
+        return result
     }
 }
 
