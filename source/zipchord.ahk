@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -45,9 +45,11 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 
 #Include version.ahk
-; Handling messages from second instance in order to support command line manipulation of running script
+#Include shared.ahk
+
+; Handle messages from second instance in order to support command line manipulation of running script
+handler := new clsInstanceHandler
 WM_COPYDATA := 0x004A
-DetectAndProcessSecondInstance()
 OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 
 ; affixes constants
@@ -87,7 +89,6 @@ global UI_STR_PAUSE := "&Pause ZipChord"
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
-#Include shared.ahk
 #Include app_shortcuts.ahk
 #Include hints.ahk
 #Include locale.ahk
@@ -964,35 +965,61 @@ Class clsClosingTip {
     }
 }
 
-DetectAndProcessSecondInstance() {
-    global zc_app_name
-    DetectHiddenWindows, On
-    WinGet, instance_count, Count, %zc_app_name%
-    if (instance_count < 2) {
+Class clsInstanceHandler {
+    WM_COPYDATA := 0x004A
+    UNIQUE_STRING := "ZC ZipChord RUNNING"
+    detection_UI := {}
+    
+    __New() {
+        previousHwnd := this._DetectPreviousInstance() 
+        if (previousHwnd) {
+            message := str.JoinArray(A_Args, "`n") 
+            this._Send_WM_COPYDATA(message, previousHwnd)
+            ExitApp
+        }
+        this.detection_UI := new clsUI(this.UNIQUE_STRING, "-Caption +ToolWindow")
+        this.detection_UI.Show()
+        WinMinimize , % this.UNIQUE_STRING
+    }
+    _DetectPreviousInstance() {
+        DetectHiddenWindows, On
+        previousHwnd := WinExist(this.UNIQUE_STRING)
         DetectHiddenWindows, Off
-        return
+        return previousHwnd
     }
-    previousHwnd := WinExist(zc_app_name)
-    result := Send_WM_COPYDATA("Message", previousHwnd)
-    if (result = "FAIL" || result == 0) {
-        MsgBox, , % "ZipChord", % "Error: Could not send the command to ZipChord."
+    ; Reuses example code from AHK documentation
+    _Send_WM_COPYDATA(ByRef StringToSend, target_hwnd) {
+        VarSetCapacity(CopyDataStruct, 3*A_PtrSize, 0)
+        SizeInBytes := (StrLen(StringToSend) + 1) * (A_IsUnicode ? 2 : 1)
+        NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
+        NumPut(&StringToSend, CopyDataStruct, 2*A_PtrSize)
+        DllCall("GetWindowThreadProcessId", "ptr", target_hwnd, "uint*", pid)
+        SendMessage, this.WM_COPYDATA, 0, &CopyDataStruct,, ahk_pid %pid%
+        if (ErrorLevel == "FAIL" || ErrorLevel == 0) {
+            MsgBox, , % "ZipChord", % "Error: Could not send the command to ZipChord."
+        }
     }
-    ExitApp
 }
 
-; Reuses example code from AHK documentation
-Send_WM_COPYDATA(ByRef StringToSend, target_hwnd) {
-    global WM_COPYDATA
-    VarSetCapacity(CopyDataStruct, 3*A_PtrSize, 0)
-    SizeInBytes := (StrLen(StringToSend) + 1) * (A_IsUnicode ? 2 : 1)
-    NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
-    NumPut(&StringToSend, CopyDataStruct, 2*A_PtrSize)
-    SendMessage, WM_COPYDATA, 0, &CopyDataStruct,, ahk_id %target_hwnd%
-    return ErrorLevel
-}
 Receive_WM_COPYDATA(_, lParam) {
-    StringAddress := NumGet(lParam + 2*A_PtrSize) 
-    message := StrGet(StringAddress)
-    MsgBox, % "Responding instance version: " . settings.version . " with data: " . message
+    StringAddress := NumGet(lParam + 2*A_PtrSize)
+    option_string := StrGet(StringAddress)
+    call := Func("ProcessCommandLine").Bind(option_string)
+    SetTimer, %call%, -10
     return true
+}
+
+ProcessCommandLine(option_string) {
+    parsed := StrSplit(option_string, "`n")
+    ; if (! FileExist(filename)) {
+    ;     MsgBox, % "The specified settings file could not be found."
+    ;     return
+    ; }
+    ; filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
+    ; ini.LoadProperties(settings, "Application", filename)
+    ; ini.LoadProperties(keys, "Locale", filename)
+    ; this.Write(Format("Loaded configuration from '{}'.", filename))
+    ; chords.Load(settings.chord_file)
+    ; shorthands.Load(settings.shorthand_file)
+    ; main_UI.UpdateDictionaryUI()
 }
