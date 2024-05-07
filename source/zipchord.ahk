@@ -1015,13 +1015,9 @@ ProcessCommandLine(option_string) {
         main_UI.Show()
         return
     }
-    if (parsed.Length() == 2) {
-        raw_command :=  parsed[1]
-        StringLower, command, raw_command
-        filename := parsed[2]
-    } else {
-        command := "incorrect"
-    }
+    raw_command :=  parsed[1]
+    StringLower, command, raw_command
+    filename := parsed[2]
     switch (command) {
         case "load":
             if (! FileExist(filename)) {
@@ -1055,8 +1051,17 @@ ProcessCommandLine(option_string) {
             ini.SaveProperty("_from_config", "locale", "Application", filename)
             ini.SaveProperties(keys, "Locale", filename)
             hint_UI.ShowOnOSD("Saved current configuration to", filename)
+        case "pause":
+            if (settings.mode & MODE_ZIPCHORD_ENABLED) {
+                PauseApp()
+            }
+        case "resume":
+            if !(settings.mode & MODE_ZIPCHORD_ENABLED) {
+                PauseApp()
+            }
         Default:
             MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
-            . "zipchord {load|save} <config_file.ini>"
+            . "zipchord {load|save} <config_file.ini>`n"
+            . "zipchord {pause|resume}"
     }
 }
