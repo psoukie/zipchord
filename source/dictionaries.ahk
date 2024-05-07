@@ -51,13 +51,25 @@ Class clsDictionary {
     }
     Load(filename := "") {
         this._pause_loading := true
-        if (filename == "")
+        if (filename == "") {
             filename := this._file
-        if (filename != "") {
-            this._file := filename
-            this._LoadShortcuts()
-        } else {
+        }
+        if (filename == "") {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
+            return
+        }
+        this._file := this._GetFullDictionaryPath(filename)
+        this._LoadShortcuts()
+    }
+    _GetFullDictionaryPath(filename) {
+        if (InStr(filename, "\")) {
+            return filename
+        }
+        path := settings.dictionary_dir
+        if (SubStr(path, StrLen(path)) != "\") {
+            return path . "\"
+        } else {
+            return path
         }
     }
     Add(shortcut, text) {
