@@ -68,17 +68,18 @@ Class clsAppShortcuts {
         this.UI := UI
     }
     _SaveSettings() {
-        For _, shortcut in this.shortcuts
-            SaveVarToConfig("hk_" . shortcut.target, shortcut.HK . "|" shortcut.mode)
+        For _, shortcut in this.shortcuts {
+            combined_shortcut := shortcut.HK . "|" shortcut.mode
+            ini.SaveProperty(combined_shortcut, "hk_" . shortcut.target, CONFIG_SECTION, CONFIG_FILE)
+        }
     }
     _LoadSettings() {
-        For _, shortcut in this.shortcuts
-        {
-            setting := GetVarFromConfig("hk_" . shortcut.target)
-            if (setting) {
-                setting := StrSplit(setting, "|")
-                shortcut.HK := setting[1]
-                shortcut.mode := setting[2]
+        For _, shortcut in this.shortcuts {
+            combined_shortcut := ini.LoadProperty("hk_" . shortcut.target, CONFIG_SECTION, CONFIG_FILE)
+            if (combined_shortcut) {
+                shortcut_components := StrSplit(combined_shortcut, "|")
+                shortcut.HK := shortcut_components[1]
+                shortcut.mode := shortcut_components[2]
             }
         }
     }

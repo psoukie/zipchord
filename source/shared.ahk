@@ -8,8 +8,11 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 */
 
-;;  Shared Functions and Classes 
-; --------------------------------
+;;  Shared constants, functions and classes 
+; ------------------------------------------
+
+global CONFIG_FILE := A_AppData . "\ZipChord\config.ini"
+global CONFIG_SECTION := "Default"
 
 global ini := new clsIniFile
 global str := new clsStringFunctions
@@ -354,20 +357,21 @@ class clsIniFile {
         else
             Run https://raw.githubusercontent.com/psoukie/zipchord/main/LICENSE
     }
-    SaveProperty(value, key, filename, section:="Default") {
+    SaveProperty(value, key, section, filename) {
         IniWrite %value%, %filename%, %section%, %key%
     }
-    ; LoadProperty returns "ERROR" if key not found
-    LoadProperty(key, filename, section:="Default") {
+    LoadProperty(key, section, filename) {
+        ; IniRead returns "ERROR" if key not found
         IniRead value, %filename%, %section%, %key%
-        Return value
+        corrected_value := value == "ERROR" ? "" : value
+        return corrected_value
     }
     SaveProperties(object_to_save, ini_section := "Default", ini_filename := "") {
         if (!ini_filename) {
             ini_filename := this.default_ini
         }
         For key, value in object_to_save
-            this.SaveProperty(value, key, ini_filename, ini_section)
+            this.SaveProperty(value, key, ini_section, ini_filename)
     }
     ; return true if section not found
     LoadProperties(ByRef object_destination, ini_section := "Default", ini_filename := "") {
@@ -400,18 +404,6 @@ class clsIniFile {
             ini_filename := this.default_ini
         IniDelete, % ini_filename, % section
     }
-}
-
-GetVarFromConfig(key) {
-    value := ini.LoadProperty(key, A_AppData . "\ZipChord\config.ini")
-    if (value == "ERROR") {
-        return ""
-    }
-    return value
-}
-
-SaveVarToConfig(key, value) {
-    ini.SaveProperty(value, key, A_AppData . "\ZipChord\config.ini")
 }
 
 ReplaceWithVariants(text, enclose_latin_letters:=false) {
