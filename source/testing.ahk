@@ -107,7 +107,7 @@ Class TestingClass {
         }
         this.Write("Switching to interactive mode...`nPress Ctrl-X to resume in the console.")
         prompt_fn := ObjBindMethod(this, "_Prompt")
-        Hotkey, % "^x", % prompt_fn, % "On"
+        Hotkey, ^x, %prompt_fn%, On
         this._mode := TEST_INTERACTIVE
         Return true
     }
@@ -197,7 +197,7 @@ Class TestingClass {
         if (from_interactive) {
             main_UI._Close()
             if (this._mode == TEST_INTERACTIVE) {
-                Hotkey, % "^x", % "Off"
+                Hotkey, ^x, Off
             }
             WireHotkeys("Off")
             this.Write("Stopped interactive mode.")
