@@ -1057,6 +1057,6 @@ ProcessCommandLine(option_string) {
             hint_UI.ShowOnOSD("Saved current configuration to", filename)
         Default:
             MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
-            . "zipchord {load|save} <config_file.cfg>"
+            . "zipchord {load|save} <config_file.ini>"
     }
 }
