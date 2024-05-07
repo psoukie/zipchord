@@ -58,18 +58,18 @@ Class clsDictionary {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
             return
         }
-        this._file := this._GetFullDictionaryPath(filename)
+        this._file := this._GetFullFileName(filename)
         this._LoadShortcuts()
     }
-    _GetFullDictionaryPath(filename) {
+    _GetFullFileName(filename) {
         if (InStr(filename, "\")) {
             return filename
         }
         path := settings.dictionary_dir
         if (SubStr(path, StrLen(path)) != "\") {
-            return path . "\"
+            return path . "\" . filename
         } else {
-            return path
+            return path . filename
         }
     }
     Add(shortcut, text) {
