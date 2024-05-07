@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -48,7 +48,7 @@ OnExit("CloseApp")
 #Include shared.ahk
 
 ; Handle messages from second instance in order to support command line manipulation of running script
-handler := new clsInstanceHandler
+instance_handler := new clsInstanceHandler
 WM_COPYDATA := 0x004A
 OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 
@@ -167,6 +167,9 @@ Initialize(zc_version) {
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
+    if (A_Args[1] == "load" && A_Args[2]) {
+        ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
+    }
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     main_UI.UpdateDictionaryUI()
@@ -1006,15 +1009,47 @@ Receive_WM_COPYDATA(_, lParam) {
 
 ProcessCommandLine(option_string) {
     parsed := StrSplit(option_string, "`n")
-    ; if (! FileExist(filename)) {
-    ;     MsgBox, % "The specified settings file could not be found."
-    ;     return
-    ; }
-    ; filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-    ; ini.LoadProperties(settings, "Application", filename)
-    ; ini.LoadProperties(keys, "Locale", filename)
-    ; this.Write(Format("Loaded configuration from '{}'.", filename))
-    ; chords.Load(settings.chord_file)
-    ; shorthands.Load(settings.shorthand_file)
-    ; main_UI.UpdateDictionaryUI()
+    if (option_string == "") {
+        MsgBox, , % "ZipChord", % "A ZipChord instance is already running."
+        main_UI.Show()
+        return
+    }
+    if (parsed.Length() == 2) {
+        raw_command :=  parsed[1]
+        StringLower, command, raw_command
+        filename := parsed[2]
+    } else {
+        command := "incorrect"
+    }
+    switch (command) {
+        case "load":
+            if (! FileExist(filename)) {
+                MsgBox, , % "ZipChord", % "The specified settings file could not be found."
+                return false
+            }
+            main_UI._Close()
+            WireHotkeys("Off")
+            ini.LoadProperties(settings, "Application", filename)
+            ini.LoadProperties(keys, "Locale", filename)
+            chords.Load(settings.chord_file)
+            shorthands.Load(settings.shorthand_file)
+            WireHotkeys("On")
+            hint_UI.ShowOnOSD("Loaded configuration from", filename)
+            return true
+        case "save":
+            if (FileExist(filename)) {
+                MsgBox, 4, % "ZipChord", % "This will overwrite an existing configuration file. Do you want to continue?"
+                IfMsgBox No
+                    Return false
+            }
+            old_locale := settings.locale
+            settings.locale := "_from_config"
+            ini.SaveProperties(settings, "Application", filename)
+            settings.locale := old_locale
+            ini.SaveProperties(keys, "Locale", filename)
+            hint_UI.ShowOnOSD("Saved current configuration to", filename)
+        Default:
+            MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
+            . "zipchord {load|save} <config_file.cfg>"
+    }
 }
