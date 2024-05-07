@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -628,6 +628,7 @@ Class clsMainUI {
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI(settings.locale)
+        main_UI.UpdateDictionaryUI()
         this.UI.Show()
     }
 
