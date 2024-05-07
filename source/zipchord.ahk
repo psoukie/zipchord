@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -112,6 +112,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 ; Current application settings
 Class clsSettings {
+    settings_file := A_AppData . "\ZipChord\config.ini"
     settings := { version:          0 ; gets loaded and saved later
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
                 , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
@@ -131,17 +132,11 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
-        For key, value in this.settings {
-            value := GetVarFromConfig(key)
-            if (value !="") {
-                this.settings[key] := value
-            }
-        }
+        ini.LoadProperties(this.settings, "Default", this.settings_file)
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
-        For key, value in this.settings
-            SaveVarToConfig(key, value)
+        ini.SaveProperties(this.settings, "Default", this.settings_file)
     }
 }
 

@@ -362,7 +362,7 @@ class clsIniFile {
         IniRead value, %filename%, %section%, %key%
         Return value
     }
-    SaveProperties(object_to_save, ini_section, ini_filename := "") {
+    SaveProperties(object_to_save, ini_section := "Default", ini_filename := "") {
         if (!ini_filename) {
             ini_filename := this.default_ini
         }
@@ -370,9 +370,10 @@ class clsIniFile {
             this.SaveProperty(value, key, ini_filename, ini_section)
     }
     ; return true if section not found
-    LoadProperties(ByRef object_destination, ini_section, ini_filename := "") {
-        if (!ini_filename)
+    LoadProperties(ByRef object_destination, ini_section := "Default", ini_filename := "") {
+        if (!ini_filename) {
             ini_filename := this.default_ini
+        }
         IniRead, properties, %ini_filename%, %ini_section%
         if (! properties)
             return true
@@ -380,7 +381,9 @@ class clsIniFile {
         {
             key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
             value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
-            object_destination[key] := value
+            if (value != "") {
+                object_destination[key] := value
+            }
         }
     }
     ; return -1 if file not found
