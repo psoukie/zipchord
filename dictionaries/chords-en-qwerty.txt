@@ -48,7 +48,7 @@ Pronouns
 --------
  i	I
 me	me
-mt	my
+ m	my
 ou	you
 ur	your
 he	he
@@ -147,7 +147,7 @@ pl	people
  n	no
 dan	than
 oy	only
- m	most
+mst	most
 ay	any
 ma	many
 el	well
