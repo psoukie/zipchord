@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #NoEnv
-#SingleInstance Force
+#SingleInstance Off
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
 #KeyHistory 0
@@ -43,6 +43,14 @@ ListLines Off
 SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
+
+#Include version.ahk
+#Include shared.ahk
+
+; Handle messages from second instance in order to support command line manipulation of running script
+instance_handler := new clsInstanceHandler
+WM_COPYDATA := 0x004A
+OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 
 ; affixes constants
 global AFFIX_NONE := 0 ; no prefix or suffix
@@ -81,8 +89,6 @@ global UI_STR_PAUSE := "&Pause ZipChord"
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
-#Include version.ahk
-#Include shared.ahk
 #Include app_shortcuts.ahk
 #Include hints.ahk
 #Include locale.ahk
@@ -106,6 +112,7 @@ Return   ; To prevent execution of any of the following code, except for the alw
 
 ; Current application settings
 Class clsSettings {
+    settings_file := A_AppData . "\ZipChord\config.ini"
     settings := { version:          0 ; gets loaded and saved later
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
                 , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
@@ -125,17 +132,11 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
-        For key, value in this.settings {
-            value := GetVarFromConfig(key)
-            if (value !="") {
-                this.settings[key] := value
-            }
-        }
+        ini.LoadProperties(this.settings, "Default", this.settings_file)
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
-        For key, value in this.settings
-            SaveVarToConfig(key, value)
+        ini.SaveProperties(this.settings, "Default", this.settings_file)
     }
 }
 
@@ -166,6 +167,9 @@ Initialize(zc_version) {
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
+    if (A_Args[1] == "load" && A_Args[2]) {
+        ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
+    }
     chords.Load(settings.chord_file)
     shorthands.Load(settings.shorthand_file)
     main_UI.UpdateDictionaryUI()
@@ -246,7 +250,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    app_shortcuts.WireHotkeys("On")
+    app_shortcuts.WireAppHotkeys("On")
 }
 
 ; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
@@ -624,6 +628,7 @@ Class clsMainUI {
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI(settings.locale)
+        main_UI.UpdateDictionaryUI()
         this.UI.Show()
     }
 
@@ -956,5 +961,107 @@ Class clsClosingTip {
     _Close() {
         Hotkey, F1, Off
         this.UI.Hide()
+    }
+}
+
+Class clsInstanceHandler {
+    WM_COPYDATA := 0x004A
+    UNIQUE_STRING := "ZC ZipChord RUNNING"
+    detection_UI := {}
+    
+    __New() {
+        previousHwnd := this._DetectPreviousInstance() 
+        if (previousHwnd) {
+            message := str.JoinArray(A_Args, "`n") 
+            this._Send_WM_COPYDATA(message, previousHwnd)
+            ExitApp
+        }
+        this.detection_UI := new clsUI(this.UNIQUE_STRING, "-Caption +ToolWindow")
+        this.detection_UI.Show()
+        WinMinimize , % this.UNIQUE_STRING
+    }
+    _DetectPreviousInstance() {
+        DetectHiddenWindows, On
+        previousHwnd := WinExist(this.UNIQUE_STRING)
+        DetectHiddenWindows, Off
+        return previousHwnd
+    }
+    ; Reuses example code from AHK documentation
+    _Send_WM_COPYDATA(ByRef StringToSend, target_hwnd) {
+        VarSetCapacity(CopyDataStruct, 3*A_PtrSize, 0)
+        SizeInBytes := (StrLen(StringToSend) + 1) * (A_IsUnicode ? 2 : 1)
+        NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
+        NumPut(&StringToSend, CopyDataStruct, 2*A_PtrSize)
+        DllCall("GetWindowThreadProcessId", "ptr", target_hwnd, "uint*", pid)
+        SendMessage, this.WM_COPYDATA, 0, &CopyDataStruct,, ahk_pid %pid%
+        if (ErrorLevel == "FAIL" || ErrorLevel == 0) {
+            MsgBox, , % "ZipChord", % "Error: Could not send the command to ZipChord."
+        }
+    }
+}
+
+Receive_WM_COPYDATA(_, lParam) {
+    StringAddress := NumGet(lParam + 2*A_PtrSize)
+    option_string := StrGet(StringAddress)
+    call := Func("ProcessCommandLine").Bind(option_string)
+    SetTimer, %call%, -10
+    return true
+}
+
+ProcessCommandLine(option_string) {
+    parsed := StrSplit(option_string, "`n")
+    if (option_string == "") {
+        MsgBox, , % "ZipChord", % "A ZipChord instance is already running."
+        main_UI.Show()
+        return
+    }
+    raw_command :=  parsed[1]
+    StringLower, command, raw_command
+    filename := parsed[2]
+    switch (command) {
+        case "load":
+            if (! FileExist(filename)) {
+                MsgBox, , % "ZipChord", % "The specified settings file could not be found."
+                return false
+            }
+            main_UI._Close()
+            WireHotkeys("Off")
+            new_settings := {}
+            ini.LoadProperties(keys, "Locale", filename)
+            ini.LoadProperties(new_settings, "Application", filename)
+            if (new_settings.dictionary_dir != settings.dictionary_dir
+                    || new_settings.chord_file != settings.chord_file
+                    || new_settings.shorthand_file != settings.shorthand_file) {
+                ini.LoadProperties(settings, "Application", filename)
+                chords.Load(settings.chord_file)
+                shorthands.Load(settings.shorthand_file)
+            } else {
+                ini.LoadProperties(settings, "Application", filename)
+            }
+            WireHotkeys("On")
+            hint_UI.ShowOnOSD("Loaded configuration from", filename)
+            return true
+        case "save":
+            if (FileExist(filename)) {
+                MsgBox, 4, % "ZipChord", % "This will overwrite an existing configuration file. Do you want to continue?"
+                IfMsgBox No
+                    Return false
+            }
+            ini.SaveProperties(settings, "Application", filename)
+            ini.SaveProperty("_from_config", "locale", "Application", filename)
+            ini.SaveProperties(keys, "Locale", filename)
+            hint_UI.ShowOnOSD("Saved current configuration to", filename)
+        case "pause":
+            if (settings.mode & MODE_ZIPCHORD_ENABLED) {
+                PauseApp()
+            }
+        case "resume":
+            if !(settings.mode & MODE_ZIPCHORD_ENABLED) {
+                PauseApp()
+            }
+        Default:
+            MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
+            . "zipchord {load|save} <config_file.ini>`n"
+            . "zipchord {pause|resume}"
     }
 }

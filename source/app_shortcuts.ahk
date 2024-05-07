@@ -17,7 +17,7 @@ app_shortcuts := New clsAppShortcuts
 *      Init
 *      Show
 *      GetHotkeyText   Get human-readable keyboard shortcut for activating a given function.
-*      WireHotkeys(<"On"|"Off">)   Enable or disable the defined app hotkeys
+*      WireAppHotkeys(<"On"|"Off">)   Enable or disable the defined app hotkeys
 */
 Class clsAppShortcuts {
     MD_SHORT := 1
@@ -44,12 +44,12 @@ Class clsAppShortcuts {
 
     Init() {
         this._LoadSettings()
-        this.WireHotkeys("On")
+        this.WireAppHotkeys("On")
     }
     Show() {
         call := Func("OpenHelp").Bind("AppShortcuts")
         Hotkey, F1, % call, On
-        this.WireHotkeys("Off")  ; so the current hotkeys don't interfere with defining
+        this.WireAppHotkeys("Off")  ; so the current hotkeys don't interfere with defining
         UI := new clsUI("ZipChord Application Keyboard Shortcuts")
         UI.on_close := ObjBindMethod(this, "_CloseUI")
         UI.Add("Text", "x+20 y-35")
@@ -68,17 +68,18 @@ Class clsAppShortcuts {
         this.UI := UI
     }
     _SaveSettings() {
-        For _, shortcut in this.shortcuts
-            SaveVarToConfig("hk_" . shortcut.target, shortcut.HK . "|" shortcut.mode)
+        For _, shortcut in this.shortcuts {
+            combined_shortcut := shortcut.HK . "|" shortcut.mode
+            ini.SaveProperty(combined_shortcut, "hk_" . shortcut.target, CONFIG_SECTION, CONFIG_FILE)
+        }
     }
     _LoadSettings() {
-        For _, shortcut in this.shortcuts
-        {
-            setting := GetVarFromConfig("hk_" . shortcut.target)
-            if (setting) {
-                setting := StrSplit(setting, "|")
-                shortcut.HK := setting[1]
-                shortcut.mode := setting[2]
+        For _, shortcut in this.shortcuts {
+            combined_shortcut := ini.LoadProperty("hk_" . shortcut.target, CONFIG_SECTION, CONFIG_FILE)
+            if (combined_shortcut) {
+                shortcut_components := StrSplit(combined_shortcut, "|")
+                shortcut.HK := shortcut_components[1]
+                shortcut.mode := shortcut_components[2]
             }
         }
     }
@@ -89,7 +90,7 @@ Class clsAppShortcuts {
                 return prefix . str.HotkeyToText(shortcut.HK)
             }
     }
-    WireHotkeys(status) {
+    WireAppHotkeys(status) {
         For i, shortcut in this.shortcuts
             if (shortcut.HK) {
                 call := ObjBindMethod(this, "_ProcessHotkey", i)
@@ -142,7 +143,7 @@ Class clsAppShortcuts {
         }
     }
     _CloseUI() {
-        this.WireHotkeys("On") ; restore either previous (or define new) hotkeys
+        this.WireAppHotkeys("On") ; restore either previous (or define new) hotkeys
         Hotkey, F1, Off
         this.UI.Destroy()
     }

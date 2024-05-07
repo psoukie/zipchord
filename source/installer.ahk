@@ -147,8 +147,9 @@ Class clsInstaller {
     }
     _SaveRegistryInfo() {
         global zc_app_name
+
         ; This needs to happen before we elevate user rights to Admin
-        SaveVarToConfig("dictionary_dir", this.dictionary_dir_full)
+        ini.SaveProperty(this.dictionary_dir_full, "dictionary_dir", CONFIG_SECTION, CONFIG_FILE)
         ; create uninstallation registry entries
         reg_uninstall := "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZipChord"
         RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayName, %zc_app_name%

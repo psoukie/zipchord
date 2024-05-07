@@ -36,14 +36,13 @@ Class TestingClass {
     Init() {
         global zc_version
         global zc_year
-        this._mode := TEST_STANDBY
-        WireHotkeys("Off")
         if (A_Args[2] != "test-vs") {
             DllCall("AllocConsole")
             DllCall("SetConsoleTitle", Str, "ZipChord Test Console")
             this._stdin  := FileOpen("*", "r `n")
             this._stdout := FileOpen("*", "w `n")
         }
+        this.Stop(true)
         this.Write(Format("ZipChord Test Console [Version {}]", zc_version))
         this.Write("`nCopyright (c) 2023-" . zc_year . " Pavel Soukenik")
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
@@ -70,6 +69,7 @@ Class TestingClass {
                 if (! this._CheckFilename(filename, "cfg"))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
+                settings.locale := "_from_config"
                 ini.SaveProperties(settings, "Application", filename)
                 ini.SaveProperties(keys, "Locale", filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
@@ -83,7 +83,6 @@ Class TestingClass {
                 this.Write("Loading dictionaries...")
                 chords.Load(settings.chord_file)
                 shorthands.Load(settings.shorthand_file)
-                main_UI.UpdateDictionaryUI()
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
@@ -108,7 +107,7 @@ Class TestingClass {
         }
         this.Write("Switching to interactive mode...`nPress Ctrl-X to resume in the console.")
         prompt_fn := ObjBindMethod(this, "_Prompt")
-        Hotkey, % "^x", % prompt_fn, % "On"
+        Hotkey, ^x, %prompt_fn%, On
         this._mode := TEST_INTERACTIVE
         Return true
     }
@@ -194,9 +193,12 @@ Class TestingClass {
         this._starting_tick := 0
         GoSub Interrupt
     }
-    Stop() {
-        if (this.mode == TEST_INTERACTIVE) {
-            Hotkey, % "^x", % prompt_fn, % "Off"
+    Stop(from_interactive := false) {
+        if (from_interactive) {
+            main_UI._Close()
+            if (this._mode == TEST_INTERACTIVE) {
+                Hotkey, ^x, Off
+            }
             WireHotkeys("Off")
             this.Write("Stopped interactive mode.")
         }
@@ -424,7 +426,7 @@ Class TestingClass {
     _Prompt() {
         if (this._mode==TEST_INTERACTIVE) {
             WinActivate % "ZipChord Test Console"
-            this.Stop()
+            this.Stop(true)
         }
         this.Write("`n>", "")
         if (A_Args[2] == "test-vs") {
