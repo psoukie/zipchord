@@ -1,4 +1,4 @@
-﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the Dvorak layout.
+﻿This is a sample starting English-language dictionary for ZipChord. It contains the most frequent English words, and it's been designed to be used with the QWERTY layout.
 
 Keys that trigger the chord are separated from the expanded full words by Tab. You can change the chords for existing pairs and add your own.
 
@@ -23,7 +23,7 @@ or	or
 bu	but
 if	if
 so	so
-thn	then
+dn	then
 bc	because
 
 Prepositions
@@ -35,7 +35,7 @@ in	in
  w	with
 on	on
 at	at
-fr	from
+fm	from
 by	by
 ab	about
 up	up
@@ -48,7 +48,7 @@ Pronouns
 --------
  i	I
 me	me
-my	my
+mt	my
 ou	you
 ur	your
 he	he
@@ -61,19 +61,19 @@ ts	its
 we	we
 us	us
 our	our
-thy	they
-eur	their
-eum	them
+dy	they
+dr	their
+dm	them
 
 Interrogatives
 --------------
-jc	which
-jn	when
-jt	what
-jr	where
+wc	which
+wn	when
+wt	what
+wr	where
 ho	who
-jh	how
-jf	why
+hw	how
+wy	why
 
 Verbs
 -----
@@ -82,44 +82,44 @@ ar	are
 wa	was
 er	were
 be	be
-av	have
-av .n	having
-az	has
-ad	had
+hv	have
+hv ;g	having
+hz	has
+hd	had
 nt	not
-ca	can
+cn	can
 do	do
-wi	will
-cou	could
-wou	would
-sou	should
+wl	will
+cd	could
+wd	would
+sd	should
 li	like
-li .n	liking
+li ;g	liking
 bn	been
 ge	get
-ge .n	getting
-ay	may
-md	made
+ge ;g	getting
+may	may
+mad	made
 mk	make
-mk .n	making
+mk ;g	making
 ai	said
 wk	work
 uz	use
-uz .n	using
+uz ;g	using
 sy	say
  g	go
 kn	know
 tk	take
-tk .n	taking
+tk ;g	taking
 se	see
 lk	look
 cm	come
-cm .n	coming
+cm ;g	coming
 thk	think
-jnt	want
+wnt	want
 gi	give
-gi .n	giving
-cn	cannot
+gi ;g	giving
+ct	cannot
 de	does
 di	did
 sem	seem
@@ -129,73 +129,73 @@ tha	thank
 Other
 -----
 im	I’m
-eut	that
-eus	this
-eu-	these
+dt	that
+dis	this
+des	these
 al	all
  o	one
 mo	more
-hte	there
+the	there
 out	out
 ao	also
 tm	time
 sm	some
 js	just
 ne	new
-oth	other
+odr	other
 pl	people
  n	no
-eun	than
+dan	than
 oy	only
  m	most
-ny	any
+ay	any
 ma	many
 el	well
 fs	first
 vy	very
-nw	now
+now	now
 ev	even
 go	good
-wy	way
+way	way
  t	two
 yr	year
 bk	back
-dy	day
-1 dy	Monday
-2 dy	Tuesday
-3 dy	Wednesday
-4 dy	Thursday
-5 dy	Friday
-6 dy	Saturday
-7 dy	Sunday
+da	day
+1 da	Monday
+2 da	Tuesday
+3 da	Wednesday
+4 da	Thursday
+5 da	Friday
+6 da	Saturday
+7 da	Sunday
 qn	question
 sc	second
-eug	thing
+dg	thing
  y	yes
-cnt	can’t
-dnt	don’t
-dt	different
-eou	though
-thu	through
+cn'	can’t
+dn'	don’t
+dif	different
+dgh	though
+tru	through
 sr	sorry
 mv	move
 dir	direction
 nx	next
 sam	same
 tp	top
-mon	month
-1 mon	January
-2 mon	February
-3 mon	March
-4 mon	April
-5 mon	May
-6 mon	June
-7 mon	July
-8 mon	August
-9 mon	September
-1 0 mon	October
-1 1 mon	November
-1 2 mon	December
+mn	month
+1 mn	January
+2 mn	February
+3 mn	March
+4 mn	April
+5 mn	May
+6 mn	June
+7 mn	July
+8 mn	August
+9 mn	September
+1 0 mn	October
+1 1 mn	November
+1 2 mn	December
 
 Prefixes
 --------
@@ -210,12 +210,12 @@ p'	pre~
 
 Suffixes
 --------
-.n	~ing
-.d	~ed
-.s	~s
+;g	~ing
+;d	~ed
+;s	~s
 's	~’s
-.t	~tion
-.l	~ly
+;t	~tion
+;l	~ly
 
 Infixes
 -------
@@ -230,6 +230,6 @@ These exceptions are used to help with specific output when using smart spaces a
  ,	~,~	Space+. forces a full stop without a smart spaces
 e . g .	e.g.
 i . e . i.e.
-	
+
 Newly added
 -----------
