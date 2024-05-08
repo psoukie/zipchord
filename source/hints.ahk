@@ -1,4 +1,10 @@
-﻿; Hints preferences and object
+﻿/*
+This file is part of ZipChord.
+Copyright (c) 2021-2024 Pavel Soukenik
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+*/
+
+; Hints preferences and object
 global HINT_OFF     := 1
     , HINT_RELAXED  := 2
     , HINT_NORMAL   := 4

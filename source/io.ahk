@@ -1,13 +1,8 @@
 /*
-
 This file is part of ZipChord.
-
 Copyright (c) 2023-2024 Pavel Soukenik
-
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-
 */
-
 
 classifier := new clsClassifier
 io := new clsIOrepresentation
