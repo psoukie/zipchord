@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -1027,16 +1027,20 @@ ProcessCommandLine(option_string) {
             }
             main_UI._Close()
             Configuration.Save(filename)
-            hint_UI.ShowOnOSD("Loaded configuration from", filename)
+            SplitPath, filename, bare_filename
+            hint_UI.ShowOnOSD("Loaded configuration from", bare_filename)
             return true
         case "save":
             if (FileExist(filename)) {
                 MsgBox, 4, % "ZipChord", % "This will overwrite an existing configuration file. Do you want to continue?"
                 IfMsgBox No
+                {
                     Return false
+                }
             }
             Configuration.Save(filename)
-            hint_UI.ShowOnOSD("Saved current configuration to", filename)
+            SplitPath, filename, bare_filename
+            hint_UI.ShowOnOSD("Configuration saved to", bare_filename)
         case "pause":
             if (settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()
