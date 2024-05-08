@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -90,6 +90,7 @@ app_settings := New clsSettings()
 global settings := app_settings.settings
 
 #Include app_shortcuts.ahk
+#Include configurations.ahk
 #Include hints.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
