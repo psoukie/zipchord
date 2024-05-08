@@ -1025,20 +1025,7 @@ ProcessCommandLine(option_string) {
                 return false
             }
             main_UI._Close()
-            WireHotkeys("Off")
-            new_settings := {}
-            ini.LoadProperties(keys, "Locale", filename)
-            ini.LoadProperties(new_settings, "Application", filename)
-            if (new_settings.dictionary_dir != settings.dictionary_dir
-                    || new_settings.chord_file != settings.chord_file
-                    || new_settings.shorthand_file != settings.shorthand_file) {
-                ini.LoadProperties(settings, "Application", filename)
-                chords.Load(settings.chord_file)
-                shorthands.Load(settings.shorthand_file)
-            } else {
-                ini.LoadProperties(settings, "Application", filename)
-            }
-            WireHotkeys("On")
+            Configuration.Save(filename)
             hint_UI.ShowOnOSD("Loaded configuration from", filename)
             return true
         case "save":
@@ -1047,9 +1034,7 @@ ProcessCommandLine(option_string) {
                 IfMsgBox No
                     Return false
             }
-            ini.SaveProperties(settings, "Application", filename)
-            ini.SaveProperty("_from_config", "locale", "Application", filename)
-            ini.SaveProperties(keys, "Locale", filename)
+            Configuration.Save(filename)
             hint_UI.ShowOnOSD("Saved current configuration to", filename)
         case "pause":
             if (settings.mode & MODE_ZIPCHORD_ENABLED) {
