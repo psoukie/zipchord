@@ -65,20 +65,13 @@ Class TestingClass {
                 if (! this._CheckFilename(filename, "cfg"))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-                settings.locale := "_from_config"
-                ini.SaveProperties(settings, "Application", filename)
-                ini.SaveProperties(keys, "Locale", filename)
+                Configuration.Save()
                 this.Write(Format("Saved current configuration to '{}'.", filename))
             Case "load":
                 if (! this._CheckFilename(filename, "cfg", true))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-                ini.LoadProperties(settings, "Application", filename)
-                ini.LoadProperties(keys, "Locale", filename)
-                this.Write(Format("Loaded configuration from '{}'.", filename))
-                this.Write("Loading dictionaries...")
-                chords.Load(settings.chord_file)
-                shorthands.Load(settings.shorthand_file)
+                Configuration.Load()
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
