@@ -5,15 +5,21 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 Class Configuration {
-    Save() {
+    static Save() {
         ini.SaveProperties(settings, "Application", filename)
         ini.SaveProperty("_from_config", "locale", "Application", filename)
         ini.SaveProperties(keys, "Locale", filename)
         return true
     }
 
-    Load() {
-        WireHotkeys("Off")
+    static Load() {
+        global is_keyboard_wired
+        should_rewire := false
+
+        if (is_keyboard_wired) {
+            WireHotkeys("Off")
+            should_rewire := true
+        }
         new_settings := {}
         ini.LoadProperties(keys, "Locale", filename)
         ini.LoadProperties(new_settings, "Application", filename)
@@ -26,7 +32,9 @@ Class Configuration {
         } else {
             ini.LoadProperties(settings, "Application", filename)
         }
-        WireHotkeys("On")
+        if (should_rewire) {
+            WireHotkeys("On")
+        }
         return true
     }
 }

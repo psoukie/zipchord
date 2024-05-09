@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -90,17 +90,16 @@ if (A_Args[1] == "dev") {
     #Include *i testing.ahk
 }
 
-special_key_map := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+is_keyboard_wired := false
+special_key_map   := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 
 global main_UI := new clsMainUI
 
 
 Initialize(zc_version)
-Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
+Return   ; Prevent execution of any of the following code, except for the always-on keyboard shortcuts below.
 
-; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
-
-; Current application settings
+; Application settings
 Class clsSettings {
     settings_file := A_AppData . "\ZipChord\config.ini"
     settings := { version:          0 ; gets loaded and saved later
@@ -191,9 +190,9 @@ UpdateSettings(from_version) {
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
+    global is_keyboard_wired
     global keys
     global special_key_map
-    global app_shortcuts
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
@@ -240,7 +239,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    app_shortcuts.WireAppHotkeys("On")
+    is_keyboard_wired := state
 }
 
 ; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
