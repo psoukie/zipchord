@@ -139,6 +139,10 @@ class clsUI {
         window_handle := this._handle
         Gui, %window_handle%:Show, % options
     }
+    SetTitle(title) {
+        window_handle := this._handle
+        WinSetTitle, ahk_id %window_handle%,, %title%
+    }
     Destroy() {
         window_handle := this._handle
         Gui, %window_handle%:Destroy
