@@ -5,13 +5,13 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 Class Configuration {
-    static Save() {
+    Save(filename) {
         ini.SaveProperties(settings, "Application", filename)
         ini.SaveProperty("_from_config", "locale", "Application", filename)
         ini.SaveProperties(keys, "Locale", filename)
     }
 
-    static Load() {
+    Load(filename) {
         global is_keyboard_wired
         should_rewire := false
 
@@ -33,5 +33,12 @@ Class Configuration {
         if (should_rewire) {
             WireHotkeys("On")
         }
+        SplitPath, filename, bare_filename
+        main_UI.UI.Show()
+        main_UI.UI.SetTitle("ZipChord - " . bare_filename)
+        main_UI.controls.selected_locale.value := "|custom"
+        main_UI.controls.selected_locale.Choose("custom")
+        main_UI.controls.selected_locale.Disable()
+        main_UI.UI.Hide()
     }
 }
