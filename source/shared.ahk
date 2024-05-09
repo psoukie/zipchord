@@ -261,6 +261,7 @@ GuiEscape(handle) {
 *    TextInPixels     Returns the length of text in pixels.
 *    ToAscii          Converts key and modifiers to ASCII
 *    JoinArray        Returns a string with array joined by a separator (defaults to ` `)
+*    BareFilename     Returns filename without the full path
 */
 Class clsStringFunctions {
     HotkeyToText(HK) {
@@ -337,6 +338,10 @@ Class clsStringFunctions {
             }
         }
         return result
+    }
+    BareFilename(filename) {
+        SplitPath, filename, bare_filename
+        return bare_filename
     }
 }
 
