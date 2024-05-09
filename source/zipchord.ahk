@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 ZipChord
 
@@ -1025,7 +1025,7 @@ ProcessCommandLine(option_string) {
                 MsgBox, , % "ZipChord", % "The specified settings file could not be found."
                 return false
             }
-            main_UI._Close()
+            CloseAllWindows()
             Configuration.Load(filename)
             SplitPath, filename, bare_filename
             hint_UI.ShowOnOSD("Loaded configuration from", bare_filename)
@@ -1046,5 +1046,23 @@ ProcessCommandLine(option_string) {
             MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
             . "zipchord {load|save} <config_file.ini>`n"
             . "zipchord {pause|resume}"
+    }
+}
+
+CloseAllWindows() {
+    global locale
+    global app_shortcuts
+
+    if (WinExist("ahk_id " . locale.UI._handle)) {
+        locale._Close()
+    }
+    if (WinExist("ahk_id " . main_UI.UI._handle)) {
+        main_UI._Close()
+    }
+    if (WinExist("ahk_id " . add_shortcut._handle)) {
+        add_shortcut.Close()
+    }
+    if (WinExist("ahk_id " . app_shortcuts._handle)) {
+        app_shortcuts._CloseUI()
     }
 }

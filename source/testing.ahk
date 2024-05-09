@@ -184,7 +184,7 @@ Class TestingClass {
     }
     Stop(from_interactive := false) {
         if (from_interactive) {
-            main_UI._Close()
+            CloseAllWindows()
             if (this._mode == TEST_INTERACTIVE) {
                 Hotkey, ^x, Off
             }
