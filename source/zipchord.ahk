@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -51,11 +51,6 @@ OnExit("CloseApp")
 instance_handler := new clsInstanceHandler
 WM_COPYDATA := 0x004A
 OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
-
-; affixes constants
-global AFFIX_NONE := 0 ; no prefix or suffix
-    , AFFIX_PREFIX := 1 ; expansion is a prefix
-    , AFFIX_SUFFIX := 2 ; expansion is a suffix
 
 ; Settings constants and class
 
