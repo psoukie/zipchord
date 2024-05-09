@@ -105,20 +105,38 @@ Class clsLocaleInterface {
     Show(locale_name) {
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
-        loc_obj := new clsLocale
-        sections := ini.LoadSections()
-        if (locale_name) {
-            ini.LoadProperties(loc_obj, locale_name)
+
+        enable_controls := true
+        if (runtime_status.config_file) {
+            enable_controls := false
+            this.name.value := str.BareFilename(runtime_status.config_file) . "||"
+            loc_obj := keys
         } else {
-            locales := StrSplit(sections, "`n")
-            locale_name := locales[1]
+            sections := ini.LoadSections()
+            loc_obj := new clsLocale
+            if (locale_name) {
+                ini.LoadProperties(loc_obj, locale_name)
+            } else {
+                locales := StrSplit(sections, "`n")
+                locale_name := locales[1]
+            }
+            this.name.value := "|" StrReplace(sections, "`n", "|")
+            this.name.Choose(locale_name)
         }
-        this.name.value := "|" StrReplace(sections, "`n", "|")
-        this.name.Choose(locale_name)
-        For key, option in this.options {
-            option.value := loc_obj[key]
-        }
+        this._PopulateFieldsWith(loc_obj)
+        this._EnableControls(enable_controls)
         this.UI.Show()
+    }
+    _PopulateFieldsWith(loc_object) {
+        For key, option in this.options {
+            option.value := loc_object[key]
+        }
+    }
+    _EnableControls(mode := true) {
+        this.name.Enable(mode)
+        for _, control in this.controls {
+            control.Enable(mode)
+        }
     }
     _Change() {
         this.Show(this.name.value)
@@ -169,9 +187,11 @@ Class clsLocaleInterface {
     }
     _Save() {
         new_loc := new clsLocale
-        For key, option in this.options
+        For key, option in this.options {
             new_loc[key] := option.value
-        ini.SaveProperties(new_loc, this.name.value)
+        }
+        section := runtime_status.config_file ? runtime_status.config_file : this.name.value
+        ini.SaveProperties(new_loc, section, runtime_status.config_file)
     }
     _Close() {
         main_UI.UpdateLocaleInMainUI(this.name.value)
