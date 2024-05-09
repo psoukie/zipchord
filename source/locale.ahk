@@ -34,9 +34,18 @@ Class clsLocale {
 
 Class clsLocaleInterface {
     UI := {}
-    name := { type:     "DropDownList"
-            , function: ObjBindMethod(this, "_Change")}
-    options := {all:              { type: "Edit"}
+    name     := { type:     "DropDownList"
+                , function: ObjBindMethod(this, "_Change")}
+    controls := { rename:   { type: "Button"
+                            , text: "&Rename" 
+                            , function: ObjBindMethod(this, "_Rename")}
+                , delete:   { type: "Button"
+                            , text: "&Delete" 
+                            , function: ObjBindMethod(this, "_Delete")}
+                , new:      { type: "Button"
+                            , text: "&New" 
+                            , function: ObjBindMethod(this, "_New")}}
+    options := { all:             { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
@@ -45,6 +54,7 @@ Class clsLocaleInterface {
             , space_after_shift:  { type: "Edit"}
             , capitalizing_shift: { type: "Edit"}
             , other_shift:        { type: "Edit"}}
+    
     Init() {
         if ( ini.LoadSections() == -1 ) {  ; -1 means the locales.ini file does not exist
             default_locale := new clsLocale
@@ -62,9 +72,9 @@ Class clsLocaleInterface {
         UI.on_close := ObjBindMethod(this, "_Close")
         UI.Add("Text", "Section", "&Locale name")
         UI.Add(this.name, "w120")
-        UI.Add("Button", "y+30 w80", "&Rename", ObjBindMethod(this, "_Rename"))
-        UI.Add("Button", "w80", "&Delete", ObjBindMethod(this, "_Delete"))
-        UI.Add("Button", "w80", "&New", ObjBindMethod(this, "_New"))
+        UI.Add(this.controls.rename, "y+30 w80")
+        UI.Add(this.controls.delete, "w80")
+        UI.Add(this.controls.new, "w80")
         UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "_Close"))
         UI.Add("GroupBox", "ys h330 w460", "Locale settings")
         UI.Add("Text", "xp+20 yp+30 Section", "&All keys (except spacebar and dead keys)")
