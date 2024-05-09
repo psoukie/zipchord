@@ -1031,13 +1031,6 @@ ProcessCommandLine(option_string) {
             hint_UI.ShowOnOSD("Loaded configuration from", bare_filename)
             return true
         case "save":
-            if (FileExist(filename)) {
-                MsgBox, 4, % "ZipChord", % "This will overwrite an existing configuration file. Do you want to continue?"
-                IfMsgBox No
-                {
-                    Return false
-                }
-            }
             Configuration.Save(filename)
             SplitPath, filename, bare_filename
             hint_UI.ShowOnOSD("Configuration saved to", bare_filename)
