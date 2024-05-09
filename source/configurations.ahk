@@ -9,7 +9,6 @@ Class Configuration {
         ini.SaveProperties(settings, "Application", filename)
         ini.SaveProperty("_from_config", "locale", "Application", filename)
         ini.SaveProperties(keys, "Locale", filename)
-        return true
     }
 
     static Load() {
@@ -23,18 +22,16 @@ Class Configuration {
         new_settings := {}
         ini.LoadProperties(keys, "Locale", filename)
         ini.LoadProperties(new_settings, "Application", filename)
-        if (new_settings.dictionary_dir != settings.dictionary_dir
-                || new_settings.chord_file != settings.chord_file
-                || new_settings.shorthand_file != settings.shorthand_file) {
-            ini.LoadProperties(settings, "Application", filename)
-            chords.Load(settings.chord_file)
-            shorthands.Load(settings.shorthand_file)
-        } else {
-            ini.LoadProperties(settings, "Application", filename)
+        force_update := new_settings.dictionary_dir != settings.dictionary_dir
+        if (force_update || new_settings.chord_file != settings.chord_file) {
+            chords.Load(new_settings.chord_file)
         }
+        if (force_update || new_settings.shorthand_file != settings.shorthand_file) {
+            shorthands.Load(new_settings.shorthand_file)
+        }
+        ini.LoadProperties(settings, "Application", filename)
         if (should_rewire) {
             WireHotkeys("On")
         }
-        return true
     }
 }
