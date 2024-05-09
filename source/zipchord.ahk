@@ -54,32 +54,26 @@ OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 
 ; Settings constants and class
 
-; capitalization constants
-global CAP_OFF = 1 ; no auto-capitalization,
-    , CAP_CHORDS = 2 ; auto-capitalize chords only
-    , CAP_ALL = 3 ; auto-capitalize all typing
-; smart spacing constants
-global SPACE_BEFORE_CHORD := 1
-    , SPACE_AFTER_CHORD := 2
-    , SPACE_PUNCTUATION := 4
-; Chord recognition constants
-global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
-    , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
-    , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
-    , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
+global CAP_OFF      := 1 ; no auto-capitalization,
+     , CAP_CHORDS   := 2 ; auto-capitalize chords only
+     , CAP_ALL      := 3 ; auto-capitalize all typing
+     , SPACE_BEFORE_CHORD := 1
+     , SPACE_AFTER_CHORD  := 2
+     , SPACE_PUNCTUATION  := 4
+     , CHORD_DELETE_UNRECOGNIZED  := 1  ; Delete typing that triggers chords that are not in dictionary?
+     , CHORD_ALLOW_SHIFT          := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
+     , CHORD_RESTRICT             := 4  ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
+     , CHORD_IMMEDIATE_SHORTHANDS := 8  ; Shorthands fire without waiting for space or punctuation 
 
+global MODE_CHORDS_ENABLED     := 1
+     , MODE_SHORTHANDS_ENABLED := 2
+     , MODE_ZIPCHORD_ENABLED   := 4
 
-; Other preferences constants
 global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
-    , PREF_FIRST_RUN := 4               ; this value means this is the first run (there is no saved config)
+     , PREF_FIRST_RUN        := 4        ; this value means this is the first run (there is no saved config)
 
-global MODE_CHORDS_ENABLED := 1
-    , MODE_SHORTHANDS_ENABLED := 2
-    , MODE_ZIPCHORD_ENABLED := 4
-
-; UI string constants
-global UI_STR_PAUSE := "&Pause ZipChord"
-    , UI_STR_RESUME := "&Resume ZipChord"
+global UI_STR_PAUSE  := "&Pause ZipChord"
+     , UI_STR_RESUME := "&Resume ZipChord"
 
 app_settings := New clsSettings()
 global settings := app_settings.settings
