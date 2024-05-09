@@ -90,7 +90,10 @@ if (A_Args[1] == "dev") {
     #Include *i testing.ahk
 }
 
-is_keyboard_wired := false
+global runtime_status := { is_keyboard_wired: false
+                         , config_file      : ""    }
+global FROM_CONFIG := -1
+
 special_key_map   := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 
 global main_UI := new clsMainUI
@@ -190,7 +193,6 @@ UpdateSettings(from_version) {
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
-    global is_keyboard_wired
     global keys
     global special_key_map
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
@@ -239,7 +241,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    is_keyboard_wired := state
+    runtime_status.is_keyboard_wired := state
 }
 
 ; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process

@@ -7,15 +7,14 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 Class Configuration {
     Save(filename) {
         ini.SaveProperties(settings, "Application", filename)
-        ini.SaveProperty("_from_config", "locale", "Application", filename)
+        ini.SaveProperty(FROM_CONFIG, "locale", "Application", filename)
         ini.SaveProperties(keys, "Locale", filename)
     }
 
     Load(filename) {
-        global is_keyboard_wired
         should_rewire := false
 
-        if (is_keyboard_wired) {
+        if (runtime_status.is_keyboard_wired) {
             WireHotkeys("Off")
             should_rewire := true
         }
@@ -30,6 +29,7 @@ Class Configuration {
             shorthands.Load(new_settings.shorthand_file)
         }
         ini.LoadProperties(settings, "Application", filename)
+        runtime_status.config_file := filename
         if (should_rewire) {
             WireHotkeys("On")
         }
