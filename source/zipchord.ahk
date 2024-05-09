@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -619,6 +619,11 @@ Class clsMainUI {
         this.UpdateLocaleInMainUI(settings.locale)
         main_UI.UpdateDictionaryUI()
         this.UI.Show()
+        if (runtime_status.config_file) {
+            this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_status.config_file))
+        } else {
+            this.UI.SetTitle("ZipChord")
+        }
     }
 
     _btnOK() {
@@ -703,6 +708,11 @@ Class clsMainUI {
     }
 
     UpdateLocaleInMainUI(selected_loc) {
+        if (runtime_status.config_file) {
+            this.controls.selected_locale.value := str.BareFilename(runtime_status.config_file) . "||"
+            main_UI.controls.selected_locale.Disable()
+            return
+        }
         sections := ini.LoadSections()
         this.controls.selected_locale.value := "|" StrReplace(sections, "`n", "|")
         this.controls.selected_locale.Choose(selected_loc)
