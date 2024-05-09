@@ -1015,7 +1015,7 @@ ProcessCommandLine(option_string) {
                 return false
             }
             main_UI._Close()
-            Configuration.Save(filename)
+            Configuration.Load(filename)
             SplitPath, filename, bare_filename
             hint_UI.ShowOnOSD("Loaded configuration from", bare_filename)
             return true
