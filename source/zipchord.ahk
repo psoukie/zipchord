@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -128,7 +128,9 @@ Class clsSettings {
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
-        ini.SaveProperties(this.settings, "Default", this.settings_file)
+        filename := runtime_status.config_file ? runtime_status.config_file : this.settings_file
+        section := runtime_status.config_file ? "Application" : "Default"
+        ini.SaveProperties(this.settings, section, filename)
     }
 }
 
