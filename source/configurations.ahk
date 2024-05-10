@@ -38,4 +38,13 @@ Class Configuration {
             WireHotkeys("On")
         }
     }
+
+    DetectAppSwitch() {
+        this.app_id := WinExist("A")
+        OutputDebug, % "`nWindow: " . this.app_id
+        WinWaitNotActive, % "ahk_id " . this.app_id
+        func := ObjBindMethod(this, "DetectAppSwitch")
+        SetTimer, %func%, -10
+    }
 }
+
