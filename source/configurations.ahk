@@ -7,7 +7,18 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 global config := new Configuration
 
 Class Configuration {
+    mapping := []
     app_id := 0
+
+    Class MappingEntry {
+        window_mask := ""
+        config_file := ""
+
+        __New(window_mask, config_file) {
+            this.window_mask := window_mask
+            this.config_file := config_file
+        }
+    }
 
     Save(filename) {
         ini.SaveProperties(settings, "Application", filename)
@@ -50,12 +61,52 @@ Class Configuration {
         }
     }
 
+    LoadMappingFile() {
+        if ! (FileExist("mapping.txt")) {
+            return
+        }
+        Loop, Read, % "mapping.txt"
+        {
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 2)
+            if ! (columns[1] && columns[2]) {
+                continue
+            }
+            new_entry := new this.MappingEntry(columns[1], columns[2])
+            this.mapping.Push(new_entry) 
+        }
+        runtime_status.has_mapping := true
+    }
+
     DetectAppSwitch() {
         this.app_id := WinExist("A")
-        OutputDebug, % "`nWindow: " . this.app_id
         WinWaitNotActive, % "ahk_id " . this.app_id
+        config_file := this.FindMatchingConfig()
+        if (config_file) {
+            this.SwitchDuringRuntime(config_file)
+        }
         func := ObjBindMethod(this, "DetectAppSwitch")
         SetTimer, %func%, -10
     }
-}
 
+    FindMatchingConfig() {
+        WinGetActiveTitle, window_title
+        for _, entry in this.mapping {
+            regex_pattern := "^" . RegExReplace(entry.window_mask, "\*", ".*") . "$"
+            if RegExMatch(window_title, regex_pattern) {
+                return entry.config_file
+            }
+        }
+        return false
+    }
+
+    MatchWindowTitle(windowTitle, patternsArray) {
+        for index, pattern in patternsArray {
+            ; Convert wildcard-style pattern to regex
+            pattern := "^" . RegExReplace(pattern, "\*", ".*") . "$"
+            if RegExMatch(windowTitle, pattern) {
+                return index
+            }
+        }
+        return false
+    }
+}
