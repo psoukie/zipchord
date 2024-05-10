@@ -4,7 +4,11 @@ Copyright (c) 2024 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 */
 
+global config := new Configuration
+
 Class Configuration {
+    app_id := 0
+
     Save(filename) {
         ini.SaveProperties(settings, "Application", filename)
         ini.SaveProperty(FROM_CONFIG, "locale", "Application", filename)

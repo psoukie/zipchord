@@ -1028,12 +1028,12 @@ ProcessCommandLine(option_string) {
                 return false
             }
             CloseAllWindows()
-            Configuration.Load(filename)
+            config.Load(filename)
             SplitPath, filename, bare_filename
             hint_UI.ShowOnOSD("Loaded configuration from", bare_filename)
             return true
         case "save":
-            Configuration.Save(filename)
+            config.Save(filename)
             SplitPath, filename, bare_filename
             hint_UI.ShowOnOSD("Configuration saved to", bare_filename)
         case "pause":
