@@ -15,6 +15,17 @@ Class Configuration {
         ini.SaveProperties(keys, "Locale", filename)
     }
 
+    SwitchDuringRuntime(config_file) {
+        if (! FileExist(config_file)) {
+            MsgBox, , % "ZipChord", % "The specified settings file could not be found."
+            return false
+        }
+        CloseAllWindows()
+        this.Load(config_file)
+        hint_UI.ShowOnOSD("Loaded configuration from", str.BareFilename(config_file))
+        return true
+    }
+
     Load(filename) {
         should_rewire := false
 

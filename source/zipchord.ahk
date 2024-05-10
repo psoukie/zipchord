@@ -1023,15 +1023,7 @@ ProcessCommandLine(option_string) {
     filename := parsed[2]
     switch (command) {
         case "load":
-            if (! FileExist(filename)) {
-                MsgBox, , % "ZipChord", % "The specified settings file could not be found."
-                return false
-            }
-            CloseAllWindows()
-            config.Load(filename)
-            SplitPath, filename, bare_filename
-            hint_UI.ShowOnOSD("Loaded configuration from", bare_filename)
-            return true
+            return config.SwitchDuringRuntime(filename)
         case "save":
             config.Save(filename)
             SplitPath, filename, bare_filename
