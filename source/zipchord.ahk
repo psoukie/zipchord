@@ -980,17 +980,22 @@ Class clsInstanceHandler {
     __New() {
         previousHwnd := this._DetectPreviousInstance() 
         if (previousHwnd) {
-            message := str.JoinArray(A_Args, "`n") 
+            message := str.JoinArray(A_Args, "`n")
+            if ! (message) {
+                MsgBox, , % "ZipChord", % "A ZipChord instance is already running."
+                ExitApp
+            }
             this._Send_WM_COPYDATA(message, previousHwnd)
             ExitApp
         }
         this.detection_UI := new clsUI(this.UNIQUE_STRING, "-Caption +ToolWindow")
         this.detection_UI.Show()
-        WinMinimize , % this.UNIQUE_STRING
+        WinSet, Transparent, 0, % this.UNIQUE_STRING
+        ; WinMinimize , % this.UNIQUE_STRING
     }
     _DetectPreviousInstance() {
         DetectHiddenWindows, On
-        previousHwnd := WinExist(this.UNIQUE_STRING)
+        WinGet, previousHwnd, PID, % this.UNIQUE_STRING
         DetectHiddenWindows, Off
         return previousHwnd
     }
@@ -1000,8 +1005,7 @@ Class clsInstanceHandler {
         SizeInBytes := (StrLen(StringToSend) + 1) * (A_IsUnicode ? 2 : 1)
         NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
         NumPut(&StringToSend, CopyDataStruct, 2*A_PtrSize)
-        DllCall("GetWindowThreadProcessId", "ptr", target_hwnd, "uint*", pid)
-        SendMessage, this.WM_COPYDATA, 0, &CopyDataStruct,, ahk_pid %pid%
+        SendMessage, this.WM_COPYDATA, 0, &CopyDataStruct,, ahk_pid %target_hwnd%
         if (ErrorLevel == "FAIL" || ErrorLevel == 0) {
             MsgBox, , % "ZipChord", % "Error: Could not send the command to ZipChord."
         }
@@ -1018,11 +1022,6 @@ Receive_WM_COPYDATA(_, lParam) {
 
 ProcessCommandLine(option_string) {
     parsed := StrSplit(option_string, "`n")
-    if (option_string == "") {
-        MsgBox, , % "ZipChord", % "A ZipChord instance is already running."
-        main_UI.Show()
-        return
-    }
     raw_command :=  parsed[1]
     StringLower, command, raw_command
     filename := parsed[2]
