@@ -56,7 +56,7 @@ Class clsLocaleInterface {
             , other_shift:        { type: "Edit"}}
     
     Init() {
-        if ( ini.LoadSections() == -1 ) {  ; -1 means the locales.ini file does not exist
+        if ( ini.LoadSections() == -1 ) {  ; -1 means the locales.ini file does not exist; TK magic number
             default_locale := new clsLocale
             ini.SaveProperties(default_locale, "English US")
         }
@@ -194,7 +194,7 @@ Class clsLocaleInterface {
         For key, option in this.options {
             new_loc[key] := option.value
         }
-        section := runtime_status.config_file ? runtime_status.config_file : this.name.value
+        section := runtime_status.config_file ? "Locale" : this.name.value
         ini.SaveProperties(new_loc, section, runtime_status.config_file)
     }
     _Close() {
