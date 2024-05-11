@@ -92,7 +92,6 @@ if (A_Args[1] == "dev") {
 
 global runtime_status := { is_keyboard_wired: false
                          , config_file      : false}
-global FROM_CONFIG := -1
 
 special_key_map   := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 

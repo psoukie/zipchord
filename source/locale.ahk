@@ -35,10 +35,10 @@ Class clsLocale {
         ini.SaveProperties(this, section, runtime_status.config_file)
     }
     Load(locale_name) {
-        if (locale_name == FROM_CONFIG) {
-            ini.LoadProperties(this, "Locale", runtime_status.config_file)
-        } else {
+        if (locale_name) {
             ini.LoadProperties(this, locale_name)
+        } else {
+            ini.LoadProperties(this, "Locale", runtime_status.config_file)
         }
     }
 }
