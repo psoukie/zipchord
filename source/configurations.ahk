@@ -21,10 +21,11 @@ Class Configuration {
         }
     }
 
-    Save(filename) {
-        ini.SaveProperties(settings, "Application", filename)
-        ini.SaveProperty(FROM_CONFIG, "locale", "Application", filename)
-        ini.SaveProperties(keys, "Locale", filename)
+    Save(config_file) {
+        ; TK - not optimal because it does not call the owning objects
+        ini.SaveProperties(settings, "Application", config_file)
+        ini.SaveProperty(FROM_CONFIG, "locale", "Application", config_file)
+        ini.SaveProperties(keys, "Locale", config_file)
     }
 
     SwitchDuringRuntime(config_file := false) {
