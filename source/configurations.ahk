@@ -33,7 +33,7 @@ Class Configuration {
             return false
         }
         CloseAllWindows()
-        this.Load()
+        this.Load(config_file)
         if (config_file) {
             hint_UI.ShowOnOSD("Loaded configuration from", str.BareFilename(config_file))
         }
@@ -45,7 +45,7 @@ Class Configuration {
         should_rewire := false
 
         runtime_status.config_file := config_file
-        if (runtime_status.is_keyboard_wired) {
+        if (config_file) {
             WireHotkeys("Off")
             should_rewire := true
         }
@@ -65,11 +65,12 @@ Class Configuration {
         }
     }
 
-    LoadMappingFile() {
-        if ! (FileExist("mapping.txt")) {
-            return
+    LoadMappingFile(filename) {
+        if ! (FileExist(filename)) {
+            MsgBox, , % "ZipChord", % "The specified mapping file could not be found."
+            return false
         }
-        Loop, Read, % "mapping.txt"
+        Loop, Read, %filename%
         {
             columns := StrSplit(A_LoopReadLine, A_Tab, , 2)
             if ! (columns[1] && columns[2]) {
@@ -79,6 +80,7 @@ Class Configuration {
             this.mapping.Push(new_entry)
         }
         this.use_mapping := true
+        hint_UI.ShowOnOSD("Activated automatic", "configuration switching")
         this.DetectAppSwitchLoop()
     }
 

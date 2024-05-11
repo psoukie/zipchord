@@ -1043,6 +1043,7 @@ ProcessCommandLine(option_string) {
         case "restore":
             config.use_mapping := false
             config.SwitchDuringRuntime()
+            hint_UI.ShowOnOSD("Restored settings", "to normal")
         Default:
             MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
             . "zipchord {load|save} <config_file.ini>`n"
