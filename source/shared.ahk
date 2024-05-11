@@ -395,12 +395,11 @@ class clsIniFile {
             }
         }
     }
-    ; return -1 if file not found
     LoadSections(ini_filename := "") {
         if (!ini_filename)
             ini_filename := this.default_ini
         if (! FileExist(ini_filename))
-            return -1
+            return false
         IniRead, sections, %ini_filename%
         return sections
     }

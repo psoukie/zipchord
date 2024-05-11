@@ -30,6 +30,17 @@ Class clsLocale {
             return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
         }
     }
+    Save(locale_name) {
+        section := runtime_status.config_file ? "Locale" : locale_name
+        ini.SaveProperties(this, section, runtime_status.config_file)
+    }
+    Load(locale_name) {
+        if (locale_name == FROM_CONFIG) {
+            ini.LoadProperties(this, "Locale", runtime_status.config_file)
+        } else {
+            ini.LoadProperties(this, locale_name)
+        }
+    }
 }
 
 Class clsLocaleInterface {
@@ -56,18 +67,11 @@ Class clsLocaleInterface {
             , other_shift:        { type: "Edit"}}
     
     Init() {
-        if ( ini.LoadSections() == -1 ) {  ; -1 means the locales.ini file does not exist; TK magic number
+        if ( ! ini.LoadSections() ) {
             default_locale := new clsLocale
-            ini.SaveProperties(default_locale, "English US")
+            default_locale.Save("English US")
         }
         this._Build()
-    }
-    Load(setting) {
-        if (setting == FROM_CONFIG) {
-            ini.LoadProperties(keys, "Locale", runtime_status.config_file)
-        } else {
-            ini.LoadProperties(keys, setting)
-        }
     }
     _Build() {
         UI := new clsUI("Keyboard and language settings")
@@ -110,25 +114,22 @@ Class clsLocaleInterface {
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
 
-        enable_controls := true
-        if (runtime_status.config_file) {
-            enable_controls := false
-            this.name.value := str.BareFilename(runtime_status.config_file) . "||"
-            loc_obj := keys
-        } else {
-            sections := ini.LoadSections()
-            loc_obj := new clsLocale
-            if (locale_name) {
-                ini.LoadProperties(loc_obj, locale_name)
-            } else {
-                locales := StrSplit(sections, "`n")
-                locale_name := locales[1]
-            }
-            this.name.value := "|" StrReplace(sections, "`n", "|")
-            this.name.Choose(locale_name)
+        sections := ini.LoadSections()
+        if (! locale_name) {
+            locales := StrSplit(sections, "`n")
+            locale_name := locales[1]
         }
+        this.name.value := "|" StrReplace(sections, "`n", "|")
+        this.name.Choose(locale_name)
+        loc_obj := new clsLocale
+        loc_obj.Load(locale_name)
         this._PopulateFieldsWith(loc_obj)
-        this._EnableControls(enable_controls)
+        if (runtime_status.config_file) {
+            this._EnableControls(false)
+            this.name.value := str.BareFilename(runtime_status.config_file) . "||"
+        } else {
+            this._EnableControls(true)
+        }
         this.UI.Show()
     }
     _PopulateFieldsWith(loc_object) {
@@ -152,7 +153,7 @@ Class clsLocaleInterface {
         if (this._CheckIfExists(new_name))
             return
         new_loc := New clsLocale
-        ini.SaveProperties(new_loc, new_name)
+        new_loc.Save(new_name)
         this.Show(new_name)
     }
     _Delete() {
@@ -175,9 +176,9 @@ Class clsLocaleInterface {
         if (this._CheckIfExists(new_name))
             return
         temp_loc := new clsLocale
-        ini.LoadProperties(temp_loc, this.name.value)
+        temp_loc.Load(this.name.value)
         ini.DeleteSection(this.name.value)
-        ini.SaveProperties(temp_loc, new_name)
+        temp_loc.Save(new_name)
         this.Show(new_name)
     }
     _CheckIfExists(new_name) {
@@ -194,8 +195,7 @@ Class clsLocaleInterface {
         For key, option in this.options {
             new_loc[key] := option.value
         }
-        section := runtime_status.config_file ? "Locale" : this.name.value
-        ini.SaveProperties(new_loc, section, runtime_status.config_file)
+        new_loc.Save(this.name.value)
     }
     _Close() {
         main_UI.UpdateLocaleInMainUI(this.name.value)

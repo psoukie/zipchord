@@ -160,7 +160,7 @@ Initialize(zc_version) {
     app_settings.Save()
     main_UI.Build()
     locale.Init()
-    locale.Load(settings.locale)
+    keys.Load(settings.locale)
     main_UI.Show()
     UI_Tray_Build()
     locale.Build()
@@ -683,7 +683,7 @@ Class clsMainUI {
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
-        locale.Load(settings.locale)
+        keys.Load(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
                 hint_UI.ShowOnOSD("ZipChord Keyboard", "On")
@@ -1030,7 +1030,6 @@ ProcessCommandLine(option_string) {
             config.SwitchDuringRuntime(filename)
         case "save":
             config.Save(filename)
-            hint_UI.ShowOnOSD("Configuration saved to", str.BareFilename(filename))
         case "pause":
             if (settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()
