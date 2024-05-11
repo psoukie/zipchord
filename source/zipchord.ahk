@@ -1038,10 +1038,17 @@ ProcessCommandLine(option_string) {
             if !(settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()
             }
+        case "follow":
+            config.LoadMappingFile(filename)
+        case "restore":
+            config.use_mapping := false
+            config.SwitchDuringRuntime()
         Default:
             MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
             . "zipchord {load|save} <config_file.ini>`n"
-            . "zipchord {pause|resume}"
+            . "zipchord follow <mapping_file.txt>`n"
+            . "zipchord {pause|resume}`n"
+            . "zipchord restore"
     }
 }
 
