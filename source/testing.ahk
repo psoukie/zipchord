@@ -65,13 +65,13 @@ Class TestingClass {
                 if (! this._CheckFilename(filename, "cfg"))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-                config.Save()
+                config.Save(filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
             Case "load":
                 if (! this._CheckFilename(filename, "cfg", true))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-                config.Load()
+                config.Load(filename)
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
