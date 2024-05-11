@@ -29,10 +29,14 @@ Class Configuration {
             MsgBox, , % "ZipChord", % "You need to specify the setting file."
             return
         }
+        was_open := CloseAllWindows()
         runtime_status.config_file := config_file
         app_settings.Save()
         keys.Save(false)
         hint_UI.ShowOnOSD("Configuration saved to", str.BareFilename(config_file))
+        if (was_open) {
+            main_UI.Show()
+        }
     }
 
     SwitchDuringRuntime(config_file := false) {
@@ -40,10 +44,13 @@ Class Configuration {
             MsgBox, , % "ZipChord", % "The specified settings file could not be found."
             return false
         }
-        CloseAllWindows()
+        was_open := CloseAllWindows()
         this.Load(config_file)
         if (config_file) {
             hint_UI.ShowOnOSD("Loaded configuration from", str.BareFilename(config_file))
+        }
+        if (was_open) {
+            main_UI.Show()
         }
         return true
     }

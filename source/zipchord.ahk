@@ -1061,13 +1061,14 @@ CloseAllWindows() {
     if (WinExist("ahk_id " . locale.UI._handle)) {
         locale._Close()
     }
-    if (WinExist("ahk_id " . main_UI.UI._handle)) {
-        main_UI._Close()
-    }
     if (WinExist("ahk_id " . add_shortcut._handle)) {
         add_shortcut.Close()
     }
     if (WinExist("ahk_id " . app_shortcuts._handle)) {
         app_shortcuts._CloseUI()
+    }
+    if (WinExist("ahk_id " . main_UI.UI._handle)) {
+        main_UI._Close()
+        return true
     }
 }
