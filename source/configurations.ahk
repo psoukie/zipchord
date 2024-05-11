@@ -23,7 +23,6 @@ Class Configuration {
 
     Save(config_file) {
         global app_settings
-        global locale
 
         if !(config_file) {
             MsgBox, , % "ZipChord", % "You need to specify the setting file."
@@ -57,13 +56,9 @@ Class Configuration {
 
     Load(config_file) {
         global app_settings
-        should_rewire := false
 
         runtime_status.config_file := config_file
-        if (config_file) {
-            WireHotkeys("Off")
-            should_rewire := true
-        }
+        WireHotkeys("Off")
         new_settings := {}
         ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
         keys.Load(new_settings.locale)
@@ -75,9 +70,7 @@ Class Configuration {
             shorthands.Load(new_settings.shorthand_file)
         }
         app_settings.Load()
-        if (should_rewire) {
-            WireHotkeys("On")
-        }
+        WireHotkeys("On")
     }
 
     LoadMappingFile(filename) {
