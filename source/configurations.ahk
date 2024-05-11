@@ -22,10 +22,18 @@ Class Configuration {
     }
 
     Save(config_file) {
-        ; TK - not optimal because it does not call the owning objects
-        ini.SaveProperties(settings, "Application", config_file)
-        ini.SaveProperty(FROM_CONFIG, "locale", "Application", config_file)
-        ini.SaveProperties(keys, "Locale", config_file)
+        global app_settings
+        global locale
+
+        if !(config_file) {
+            MsgBox, , % "ZipChord", % "You need to specify the setting file."
+            return
+        }
+        runtime_status.config_file := config_file
+        settings.locale := FROM_CONFIG
+        app_settings.Save()
+        keys.Save()
+        hint_UI.ShowOnOSD("Configuration saved to", str.BareFilename(config_file))
     }
 
     SwitchDuringRuntime(config_file := false) {
@@ -52,7 +60,7 @@ Class Configuration {
         }
         new_settings := {}
         ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
-        locale.Load(new_settings.locale)
+        keys.Load(new_settings.locale)
         force_update := new_settings.dictionary_dir != settings.dictionary_dir
         if (force_update || new_settings.chord_file != settings.chord_file) {
             chords.Load(new_settings.chord_file)
