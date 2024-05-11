@@ -91,7 +91,7 @@ Class Configuration {
             return
         }
         config_file := this.FindMatchingConfig()
-        if (config_file) {
+        if (config_file && config_file != runtime_status.config_file) {
             this.SwitchDuringRuntime(config_file)
         }
         func := ObjBindMethod(this, "DetectAppSwitchLoop")
