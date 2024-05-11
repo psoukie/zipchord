@@ -133,6 +133,9 @@ Class clsSettings {
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
+        if (runtime_status.config_file) {
+            this.settings.locale := false
+        }
         ini.SaveProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
     }
 }
@@ -642,7 +645,6 @@ Class clsMainUI {
     _ApplySettings() {
         global app_settings
         global hint_delay
-        global locale
 
         cts := this.controls
         previous_mode := settings.mode 

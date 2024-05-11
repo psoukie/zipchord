@@ -30,7 +30,6 @@ Class Configuration {
             return
         }
         runtime_status.config_file := config_file
-        settings.locale := false
         app_settings.Save()
         keys.Save(false)
         hint_UI.ShowOnOSD("Configuration saved to", str.BareFilename(config_file))
