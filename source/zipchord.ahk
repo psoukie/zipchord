@@ -91,8 +91,7 @@ if (A_Args[1] == "dev") {
 }
 
 global runtime_status := { is_keyboard_wired: false
-                         , config_file      : ""
-                         , has_mapping      : false}
+                         , config_file      : false}
 global FROM_CONFIG := -1
 
 special_key_map   := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
@@ -152,7 +151,6 @@ Initialize(zc_version) {
     settings.version := zc_version
     app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
-    config.LoadMappingFile()
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     app_settings.Save()
@@ -171,9 +169,6 @@ Initialize(zc_version) {
     main_UI.UpdateDictionaryUI()
     main_UI.UI.Enable()
     WireHotkeys("On")
-    if (runtime_status.has_mapping) {
-        config.DetectAppSwitch()
-    }
 }
 
 UpdateSettings(from_version) {

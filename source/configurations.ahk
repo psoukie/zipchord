@@ -9,6 +9,7 @@ global config := new Configuration
 Class Configuration {
     mapping := []
     app_id := 0
+    use_mapping := false
 
     Class MappingEntry {
         window_mask := ""
@@ -72,19 +73,23 @@ Class Configuration {
                 continue
             }
             new_entry := new this.MappingEntry(columns[1], columns[2])
-            this.mapping.Push(new_entry) 
+            this.mapping.Push(new_entry)
         }
-        runtime_status.has_mapping := true
+        this.use_mapping := true
+        this.DetectAppSwitchLoop()
     }
 
-    DetectAppSwitch() {
+    DetectAppSwitchLoop() {
         this.app_id := WinExist("A")
         WinWaitNotActive, % "ahk_id " . this.app_id
+        if ! (this.use_mapping) {
+            return
+        }
         config_file := this.FindMatchingConfig()
         if (config_file) {
             this.SwitchDuringRuntime(config_file)
         }
-        func := ObjBindMethod(this, "DetectAppSwitch")
+        func := ObjBindMethod(this, "DetectAppSwitchLoop")
         SetTimer, %func%, -10
     }
 
