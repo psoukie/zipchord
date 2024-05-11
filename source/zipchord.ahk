@@ -117,6 +117,12 @@ Class clsSettings {
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
                 , output_delay:     0 }
+    GetSettingsFile() {
+        return runtime_status.config_file ? runtime_status.config_file : this.settings_file
+    }
+    GetSectionName() {
+        return runtime_status.config_file ? "Application" : "Default"
+    }
     Register(setting_name, value := 0) {
         if (this.settings.HasKey(setting_name)) {
             return false
@@ -124,13 +130,11 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
-        ini.LoadProperties(this.settings, "Default", this.settings_file)
+        ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
-        filename := runtime_status.config_file ? runtime_status.config_file : this.settings_file
-        section := runtime_status.config_file ? "Application" : "Default"
-        ini.SaveProperties(this.settings, section, filename)
+        ini.SaveProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
     }
 }
 
@@ -1022,11 +1026,10 @@ ProcessCommandLine(option_string) {
     filename := parsed[2]
     switch (command) {
         case "load":
-            return config.SwitchDuringRuntime(filename)
+            config.SwitchDuringRuntime(filename)
         case "save":
             config.Save(filename)
-            SplitPath, filename, bare_filename
-            hint_UI.ShowOnOSD("Configuration saved to", bare_filename)
+            hint_UI.ShowOnOSD("Configuration saved to", str.BareFilename(filename))
         case "pause":
             if (settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()

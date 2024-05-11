@@ -27,27 +27,31 @@ Class Configuration {
         ini.SaveProperties(keys, "Locale", filename)
     }
 
-    SwitchDuringRuntime(config_file) {
-        if (! FileExist(config_file)) {
+    SwitchDuringRuntime(config_file := false) {
+        if (config_file && ! FileExist(config_file)) {
             MsgBox, , % "ZipChord", % "The specified settings file could not be found."
             return false
         }
         CloseAllWindows()
-        this.Load(config_file)
-        hint_UI.ShowOnOSD("Loaded configuration from", str.BareFilename(config_file))
+        this.Load()
+        if (config_file) {
+            hint_UI.ShowOnOSD("Loaded configuration from", str.BareFilename(config_file))
+        }
         return true
     }
 
-    Load(filename) {
+    Load(config_file) {
+        global app_settings
         should_rewire := false
 
+        runtime_status.config_file := config_file
         if (runtime_status.is_keyboard_wired) {
             WireHotkeys("Off")
             should_rewire := true
         }
         new_settings := {}
-        ini.LoadProperties(keys, "Locale", filename)
-        ini.LoadProperties(new_settings, "Application", filename)
+        ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
+        locale.Load(new_settings.locale)
         force_update := new_settings.dictionary_dir != settings.dictionary_dir
         if (force_update || new_settings.chord_file != settings.chord_file) {
             chords.Load(new_settings.chord_file)
@@ -55,8 +59,7 @@ Class Configuration {
         if (force_update || new_settings.shorthand_file != settings.shorthand_file) {
             shorthands.Load(new_settings.shorthand_file)
         }
-        ini.LoadProperties(settings, "Application", filename)
-        runtime_status.config_file := filename
+        app_settings.Load()
         if (should_rewire) {
             WireHotkeys("On")
         }

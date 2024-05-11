@@ -63,7 +63,11 @@ Class clsLocaleInterface {
         this._Build()
     }
     Load(setting) {
-        ini.LoadProperties(keys, setting)
+        if (setting == FROM_CONFIG) {
+            ini.LoadProperties(keys, "Locale", runtime_status.config_file)
+        } else {
+            ini.LoadProperties(keys, setting)
+        }
     }
     _Build() {
         UI := new clsUI("Keyboard and language settings")
