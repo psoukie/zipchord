@@ -721,6 +721,7 @@ Class clsMainUI {
             main_UI.controls.selected_locale.Disable()
             return
         }
+        main_UI.controls.selected_locale.Enable()
         sections := ini.LoadSections()
         this.controls.selected_locale.value := "|" StrReplace(sections, "`n", "|")
         this.controls.selected_locale.Choose(selected_loc)
