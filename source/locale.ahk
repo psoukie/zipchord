@@ -35,10 +35,10 @@ Class clsLocale {
         ini.SaveProperties(this, section, runtime_status.config_file)
     }
     Load(locale_name) {
-        if (locale_name) {
-            ini.LoadProperties(this, locale_name)
-        } else {
+        if (runtime_status.config_file) {
             ini.LoadProperties(this, "Locale", runtime_status.config_file)
+        } else {
+            ini.LoadProperties(this, locale_name)
         }
     }
 }
@@ -114,22 +114,23 @@ Class clsLocaleInterface {
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
 
-        sections := ini.LoadSections()
-        if (! locale_name) {
-            locales := StrSplit(sections, "`n")
-            locale_name := locales[1]
-        }
-        this.name.value := "|" StrReplace(sections, "`n", "|")
-        this.name.Choose(locale_name)
-        loc_obj := new clsLocale
-        loc_obj.Load(locale_name)
-        this._PopulateFieldsWith(loc_obj)
         if (runtime_status.config_file) {
+            locale_name := false
             this._EnableControls(false)
             this.name.value := str.BareFilename(runtime_status.config_file) . "||"
         } else {
             this._EnableControls(true)
+            sections := ini.LoadSections()
+            if (! locale_name) {
+                locales := StrSplit(sections, "`n")
+                locale_name := locales[1]
+            }
+            this.name.value := "|" StrReplace(sections, "`n", "|")
+            this.name.Choose(locale_name)
         }
+        loc_obj := new clsLocale
+        loc_obj.Load(locale_name)
+        this._PopulateFieldsWith(loc_obj)
         this.UI.Show()
     }
     _PopulateFieldsWith(loc_object) {
@@ -196,6 +197,9 @@ Class clsLocaleInterface {
             new_loc[key] := option.value
         }
         new_loc.Save(this.name.value)
+        if (runtime_status.config_file) {
+            keys := new_loc
+        }
     }
     _Close() {
         main_UI.UpdateLocaleInMainUI(this.name.value)
