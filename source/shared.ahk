@@ -262,6 +262,7 @@ GuiEscape(handle) {
 *    ToAscii          Converts key and modifiers to ASCII
 *    JoinArray        Returns a string with array joined by a separator (defaults to ` `)
 *    BareFilename     Returns filename without the full path
+*    FilenameWithExtension
 */
 Class clsStringFunctions {
     HotkeyToText(HK) {
@@ -343,8 +344,15 @@ Class clsStringFunctions {
         SplitPath, filename, bare_filename
         return bare_filename
     }
+    FilenameWithExtension(filename, extension := ".ini") {
+        extension_length := StrLen(extension)
+        if (StrLen(filename) <= extension_length
+                || SubStr(filename, StrLen(filename) - extension_length + 1) != extension) {
+            return filename . extension
+        }
+        return filename
+    }
 }
-
 
 class clsIniFile {
     default_folder := A_AppData . "\ZipChord"

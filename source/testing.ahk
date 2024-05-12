@@ -472,8 +472,7 @@ Class TestingClass {
                 return false
         }
         extension := "." . extension
-        if (SubStr(filename, 1-StrLen(extension)) != extension)
-            filename .= extension
+        filename := str.FilenameWithExtension(filename)
         if (should_exist) {
             if (! FileExist(filename)) {
                 this.Write(Format("Error: The file '{}' does not exists.", filename))
