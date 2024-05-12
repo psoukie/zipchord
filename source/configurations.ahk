@@ -116,15 +116,4 @@ Class Configuration {
         }
         return false
     }
-
-    MatchWindowTitle(windowTitle, patternsArray) {
-        for index, pattern in patternsArray {
-            ; Convert wildcard-style pattern to regex
-            pattern := "^" . RegExReplace(pattern, "\*", ".*") . "$"
-            if RegExMatch(windowTitle, pattern) {
-                return index
-            }
-        }
-        return false
-    }
 }
