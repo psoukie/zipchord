@@ -107,7 +107,18 @@ Class Configuration {
     }
 
     FindMatchingConfig() {
+        window_names := ["locale", "add_shortcut", "app_shortcuts", "main_UI"]
         WinGetActiveTitle, window_title
+        if (window_title == "Task Switching") {
+            return false
+        }
+        For _, window in window_names {
+            ahk_id_string := "ahk_id " . %window%.UI._handle
+            WinGetTitle, zc_window_title, %ahk_id_string%
+            if (zc_window_title == window_title) {
+                return false
+            }
+        }
         for _, entry in this.mapping {
             ; Convert wildcard-style pattern to regex
             regex_pattern := "^" . RegExReplace(entry.window_mask, "\*", ".*") . "$"
