@@ -1,11 +1,7 @@
 ﻿/*
-
 This file is part of ZipChord.
-
 Copyright (c) 2023-2024 Pavel Soukenik
-
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-
 */
 
 global TEST_OFF := 0
@@ -69,20 +65,13 @@ Class TestingClass {
                 if (! this._CheckFilename(filename, "cfg"))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-                settings.locale := "_from_config"
-                ini.SaveProperties(settings, "Application", filename)
-                ini.SaveProperties(keys, "Locale", filename)
+                config.Save(filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
             Case "load":
                 if (! this._CheckFilename(filename, "cfg", true))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
-                ini.LoadProperties(settings, "Application", filename)
-                ini.LoadProperties(keys, "Locale", filename)
-                this.Write(Format("Loaded configuration from '{}'.", filename))
-                this.Write("Loading dictionaries...")
-                chords.Load(settings.chord_file)
-                shorthands.Load(settings.shorthand_file)
+                config.Load(filename)
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
@@ -195,7 +184,7 @@ Class TestingClass {
     }
     Stop(from_interactive := false) {
         if (from_interactive) {
-            main_UI._Close()
+            CloseAllWindows()
             if (this._mode == TEST_INTERACTIVE) {
                 Hotkey, ^x, Off
             }
@@ -483,8 +472,7 @@ Class TestingClass {
                 return false
         }
         extension := "." . extension
-        if (SubStr(filename, 1-StrLen(extension)) != extension)
-            filename .= extension
+        filename := str.FilenameWithExtension(filename)
         if (should_exist) {
             if (! FileExist(filename)) {
                 this.Write(Format("Error: The file '{}' does not exists.", filename))

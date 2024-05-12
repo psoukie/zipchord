@@ -1,4 +1,4 @@
-﻿/*
+/*
 
 ZipChord
 
@@ -52,44 +52,34 @@ instance_handler := new clsInstanceHandler
 WM_COPYDATA := 0x004A
 OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 
-; affixes constants
-global AFFIX_NONE := 0 ; no prefix or suffix
-    , AFFIX_PREFIX := 1 ; expansion is a prefix
-    , AFFIX_SUFFIX := 2 ; expansion is a suffix
-
 ; Settings constants and class
 
-; capitalization constants
-global CAP_OFF = 1 ; no auto-capitalization,
-    , CAP_CHORDS = 2 ; auto-capitalize chords only
-    , CAP_ALL = 3 ; auto-capitalize all typing
-; smart spacing constants
-global SPACE_BEFORE_CHORD := 1
-    , SPACE_AFTER_CHORD := 2
-    , SPACE_PUNCTUATION := 4
-; Chord recognition constants
-global CHORD_DELETE_UNRECOGNIZED := 1 ; Delete typing that triggers chords that are not in dictionary?
-    , CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
-    , CHORD_RESTRICT := 4      ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
-    , CHORD_IMMEDIATE_SHORTHANDS := 8   ; Shorthands fire without waiting for space or punctuation 
+global CAP_OFF      := 1 ; no auto-capitalization,
+     , CAP_CHORDS   := 2 ; auto-capitalize chords only
+     , CAP_ALL      := 3 ; auto-capitalize all typing
+     , SPACE_BEFORE_CHORD := 1
+     , SPACE_AFTER_CHORD  := 2
+     , SPACE_PUNCTUATION  := 4
+     , CHORD_DELETE_UNRECOGNIZED  := 1  ; Delete typing that triggers chords that are not in dictionary?
+     , CHORD_ALLOW_SHIFT          := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
+     , CHORD_RESTRICT             := 4  ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
+     , CHORD_IMMEDIATE_SHORTHANDS := 8  ; Shorthands fire without waiting for space or punctuation 
 
+global MODE_CHORDS_ENABLED     := 1
+     , MODE_SHORTHANDS_ENABLED := 2
+     , MODE_ZIPCHORD_ENABLED   := 4
 
-; Other preferences constants
 global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
-    , PREF_FIRST_RUN := 4               ; this value means this is the first run (there is no saved config)
+     , PREF_FIRST_RUN        := 4        ; this value means this is the first run (there is no saved config)
 
-global MODE_CHORDS_ENABLED := 1
-    , MODE_SHORTHANDS_ENABLED := 2
-    , MODE_ZIPCHORD_ENABLED := 4
-
-; UI string constants
-global UI_STR_PAUSE := "&Pause ZipChord"
-    , UI_STR_RESUME := "&Resume ZipChord"
+global UI_STR_PAUSE  := "&Pause ZipChord"
+     , UI_STR_RESUME := "&Resume ZipChord"
 
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
 #Include app_shortcuts.ahk
+#Include configurations.ahk
 #Include hints.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
@@ -100,17 +90,18 @@ if (A_Args[1] == "dev") {
     #Include *i testing.ahk
 }
 
-special_key_map := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+global runtime_status := { is_keyboard_wired: false
+                         , config_file      : false}
+
+special_key_map   := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
 
 global main_UI := new clsMainUI
 
 
 Initialize(zc_version)
-Return   ; To prevent execution of any of the following code, except for the always-on keyboard shortcuts below:
+Return   ; Prevent execution of any of the following code, except for the always-on keyboard shortcuts below.
 
-; The rest of the code from here on behaves like in normal programming languages: It is not executed unless called from somewhere else in the code, or triggered by dynamically defined hotkeys.
-
-; Current application settings
+; Application settings
 Class clsSettings {
     settings_file := A_AppData . "\ZipChord\config.ini"
     settings := { version:          0 ; gets loaded and saved later
@@ -125,6 +116,12 @@ Class clsSettings {
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
                 , output_delay:     0 }
+    GetSettingsFile() {
+        return runtime_status.config_file ? runtime_status.config_file : this.settings_file
+    }
+    GetSectionName() {
+        return runtime_status.config_file ? "Application" : "Default"
+    }
     Register(setting_name, value := 0) {
         if (this.settings.HasKey(setting_name)) {
             return false
@@ -132,11 +129,14 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
-        ini.LoadProperties(this.settings, "Default", this.settings_file)
+        ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
         this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
-        ini.SaveProperties(this.settings, "Default", this.settings_file)
+        if (runtime_status.config_file) {
+            this.settings.locale := false
+        }
+        ini.SaveProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
     }
 }
 
@@ -162,12 +162,12 @@ Initialize(zc_version) {
     app_settings.Save()
     main_UI.Build()
     locale.Init()
-    locale.Load(settings.locale)
+    keys.Load(settings.locale)
     main_UI.Show()
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
-    if (A_Args[1] == "load" && A_Args[2]) {
+    if (A_Args[2] && (A_Args[1] == "load" || A_Args[1] == "follow")) {
         ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
     }
     chords.Load(settings.chord_file)
@@ -203,7 +203,6 @@ UpdateSettings(from_version) {
 WireHotkeys(state) {
     global keys
     global special_key_map
-    global app_shortcuts
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
@@ -250,7 +249,7 @@ WireHotkeys(state) {
         Hotkey, % key " Up", KeyUp, %state%
         Hotkey, % "+" key " Up", KeyUp, %state%
     }
-    app_shortcuts.WireAppHotkeys("On")
+    runtime_status.is_keyboard_wired := state
 }
 
 ; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
@@ -522,7 +521,7 @@ Class clsMainUI {
         global zc_year
         cts := this.controls
         UI := new clsUI("ZipChord")
-        UI.on_close := ObjBindMethod(this, "_Close")
+        UI.on_close := ObjBindMethod(this, "Close")
 
         UI.Add(cts.tabs)
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
@@ -630,18 +629,22 @@ Class clsMainUI {
         this.UpdateLocaleInMainUI(settings.locale)
         main_UI.UpdateDictionaryUI()
         this.UI.Show()
+        if (runtime_status.config_file) {
+            this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_status.config_file))
+        } else {
+            this.UI.SetTitle("ZipChord")
+        }
     }
 
     _btnOK() {
         if (this._ApplySettings()) {
-            this._Close()    
+            this.Close()    
         }
         return
     }
     _ApplySettings() {
         global app_settings
         global hint_delay
-        global locale
 
         cts := this.controls
         previous_mode := settings.mode 
@@ -681,7 +684,7 @@ Class clsMainUI {
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
-        locale.Load(settings.locale)
+        keys.Load(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
                 hint_UI.ShowOnOSD("ZipChord Keyboard", "On")
@@ -714,6 +717,12 @@ Class clsMainUI {
     }
 
     UpdateLocaleInMainUI(selected_loc) {
+        if (runtime_status.config_file) {
+            this.controls.selected_locale.value := str.BareFilename(runtime_status.config_file) . "||"
+            main_UI.controls.selected_locale.Disable()
+            return
+        }
+        main_UI.controls.selected_locale.Enable()
         sections := ini.LoadSections()
         this.controls.selected_locale.value := "|" StrReplace(sections, "`n", "|")
         this.controls.selected_locale.Choose(selected_loc)
@@ -734,7 +743,7 @@ Class clsMainUI {
         cts[type . "_entries"].value := entriesstr 
     }
 
-    _Close() {
+    Close() {
         Hotkey, F1, Off
         this.UI.Hide()
         if (settings.preferences & PREF_SHOW_CLOSING_TIP) {
@@ -934,7 +943,7 @@ Class clsClosingTip {
     __New() {
         global app_shortcuts
         this.UI := new clsUI("ZipChord")
-        this.UI.on_close := ObjBindMethod(this, "_Close")
+        this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
             , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n`n"
@@ -950,7 +959,7 @@ Class clsClosingTip {
     Btn_OK() {
         global app_settings
 
-        this._Close()
+        this.Close()
         if (this.dont_show.value) {
             settings.preferences &= ~PREF_SHOW_CLOSING_TIP
             app_settings.Save()
@@ -958,7 +967,7 @@ Class clsClosingTip {
             this.UI := {}
         }
     }
-    _Close() {
+    Close() {
         Hotkey, F1, Off
         this.UI.Hide()
     }
@@ -972,17 +981,22 @@ Class clsInstanceHandler {
     __New() {
         previousHwnd := this._DetectPreviousInstance() 
         if (previousHwnd) {
-            message := str.JoinArray(A_Args, "`n") 
+            message := str.JoinArray(A_Args, "`n")
+            if ! (message) {
+                MsgBox, , % "ZipChord", % "A ZipChord instance is already running."
+                ExitApp
+            }
             this._Send_WM_COPYDATA(message, previousHwnd)
             ExitApp
         }
         this.detection_UI := new clsUI(this.UNIQUE_STRING, "-Caption +ToolWindow")
         this.detection_UI.Show()
-        WinMinimize , % this.UNIQUE_STRING
+        WinSet, Transparent, 0, % this.UNIQUE_STRING
+        ; WinMinimize , % this.UNIQUE_STRING
     }
     _DetectPreviousInstance() {
         DetectHiddenWindows, On
-        previousHwnd := WinExist(this.UNIQUE_STRING)
+        WinGet, previousHwnd, PID, % this.UNIQUE_STRING
         DetectHiddenWindows, Off
         return previousHwnd
     }
@@ -992,8 +1006,7 @@ Class clsInstanceHandler {
         SizeInBytes := (StrLen(StringToSend) + 1) * (A_IsUnicode ? 2 : 1)
         NumPut(SizeInBytes, CopyDataStruct, A_PtrSize)
         NumPut(&StringToSend, CopyDataStruct, 2*A_PtrSize)
-        DllCall("GetWindowThreadProcessId", "ptr", target_hwnd, "uint*", pid)
-        SendMessage, this.WM_COPYDATA, 0, &CopyDataStruct,, ahk_pid %pid%
+        SendMessage, this.WM_COPYDATA, 0, &CopyDataStruct,, ahk_pid %target_hwnd%
         if (ErrorLevel == "FAIL" || ErrorLevel == 0) {
             MsgBox, , % "ZipChord", % "Error: Could not send the command to ZipChord."
         }
@@ -1010,47 +1023,14 @@ Receive_WM_COPYDATA(_, lParam) {
 
 ProcessCommandLine(option_string) {
     parsed := StrSplit(option_string, "`n")
-    if (option_string == "") {
-        MsgBox, , % "ZipChord", % "A ZipChord instance is already running."
-        main_UI.Show()
-        return
-    }
     raw_command :=  parsed[1]
     StringLower, command, raw_command
     filename := parsed[2]
     switch (command) {
         case "load":
-            if (! FileExist(filename)) {
-                MsgBox, , % "ZipChord", % "The specified settings file could not be found."
-                return false
-            }
-            main_UI._Close()
-            WireHotkeys("Off")
-            new_settings := {}
-            ini.LoadProperties(keys, "Locale", filename)
-            ini.LoadProperties(new_settings, "Application", filename)
-            if (new_settings.dictionary_dir != settings.dictionary_dir
-                    || new_settings.chord_file != settings.chord_file
-                    || new_settings.shorthand_file != settings.shorthand_file) {
-                ini.LoadProperties(settings, "Application", filename)
-                chords.Load(settings.chord_file)
-                shorthands.Load(settings.shorthand_file)
-            } else {
-                ini.LoadProperties(settings, "Application", filename)
-            }
-            WireHotkeys("On")
-            hint_UI.ShowOnOSD("Loaded configuration from", filename)
-            return true
+            config.SwitchDuringRuntime(str.FilenameWithExtension(filename))
         case "save":
-            if (FileExist(filename)) {
-                MsgBox, 4, % "ZipChord", % "This will overwrite an existing configuration file. Do you want to continue?"
-                IfMsgBox No
-                    Return false
-            }
-            ini.SaveProperties(settings, "Application", filename)
-            ini.SaveProperty("_from_config", "locale", "Application", filename)
-            ini.SaveProperties(keys, "Locale", filename)
-            hint_UI.ShowOnOSD("Saved current configuration to", filename)
+            config.Save(str.FilenameWithExtension(filename))
         case "pause":
             if (settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()
@@ -1059,9 +1039,33 @@ ProcessCommandLine(option_string) {
             if !(settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()
             }
+        case "follow":
+            config.LoadMappingFile(str.FilenameWithExtension(filename, ".txt"))
+        case "restore":
+            config.use_mapping := false
+            config.SwitchDuringRuntime()
+            hint_UI.ShowOnOSD("Restored settings", "to normal")
         Default:
             MsgBox, , % "ZipChord", % "You can use command line options as follows:`n`n"
             . "zipchord {load|save} <config_file.ini>`n"
-            . "zipchord {pause|resume}"
+            . "zipchord follow <mapping_file.txt>`n"
+            . "zipchord {pause|resume}`n"
+            . "zipchord restore"
     }
+}
+
+CloseAllWindows() {
+    global locale
+    global app_shortcuts
+    window_names := ["locale", "add_shortcut", "app_shortcuts", "main_UI"]
+
+    For _, window in window_names {
+        if (WinExist("ahk_id " . %window%.UI._handle)) {
+            %window%.Close()
+            exists := true
+        } else {
+            exists := false
+        }
+    }
+    return exists
 }

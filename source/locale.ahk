@@ -1,11 +1,7 @@
 /*
-
 This file is part of ZipChord.
-
 Copyright (c) 2021-2024 Pavel Soukenik
-
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-
 */
 
 ; Locale settings (keyboard and language settings) with default values (US English)
@@ -34,13 +30,33 @@ Class clsLocale {
             return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
         }
     }
+    Save(locale_name) {
+        section := runtime_status.config_file ? "Locale" : locale_name
+        ini.SaveProperties(this, section, runtime_status.config_file)
+    }
+    Load(locale_name) {
+        if (runtime_status.config_file) {
+            ini.LoadProperties(this, "Locale", runtime_status.config_file)
+        } else {
+            ini.LoadProperties(this, locale_name)
+        }
+    }
 }
 
 Class clsLocaleInterface {
     UI := {}
-    name := { type:     "DropDownList"
-            , function: ObjBindMethod(this, "_Change")}
-    options := {all:              { type: "Edit"}
+    name     := { type:     "DropDownList"
+                , function: ObjBindMethod(this, "_Change")}
+    controls := { rename:   { type: "Button"
+                            , text: "&Rename" 
+                            , function: ObjBindMethod(this, "_Rename")}
+                , delete:   { type: "Button"
+                            , text: "&Delete" 
+                            , function: ObjBindMethod(this, "_Delete")}
+                , new:      { type: "Button"
+                            , text: "&New" 
+                            , function: ObjBindMethod(this, "_New")}}
+    options := { all:             { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
@@ -49,27 +65,25 @@ Class clsLocaleInterface {
             , space_after_shift:  { type: "Edit"}
             , capitalizing_shift: { type: "Edit"}
             , other_shift:        { type: "Edit"}}
+    
     Init() {
-        if ( ini.LoadSections() == -1 ) {  ; -1 means the locales.ini file does not exist
+        if ( ! ini.LoadSections() ) {
             default_locale := new clsLocale
-            ini.SaveProperties(default_locale, "English US")
+            default_locale.Save("English US")
         }
         this._Build()
-    }
-    Load(setting) {
-        ini.LoadProperties(keys, setting)
     }
     _Build() {
         UI := new clsUI("Keyboard and language settings")
         handle := main_UI.UI._handle
         Gui, +Owner%handle%
-        UI.on_close := ObjBindMethod(this, "_Close")
+        UI.on_close := ObjBindMethod(this, "Close")
         UI.Add("Text", "Section", "&Locale name")
         UI.Add(this.name, "w120")
-        UI.Add("Button", "y+30 w80", "&Rename", ObjBindMethod(this, "_Rename"))
-        UI.Add("Button", "w80", "&Delete", ObjBindMethod(this, "_Delete"))
-        UI.Add("Button", "w80", "&New", ObjBindMethod(this, "_New"))
-        UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "_Close"))
+        UI.Add(this.controls.rename, "y+30 w80")
+        UI.Add(this.controls.delete, "w80")
+        UI.Add(this.controls.new, "w80")
+        UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "Close"))
         UI.Add("GroupBox", "ys h330 w460", "Locale settings")
         UI.Add("Text", "xp+20 yp+30 Section", "&All keys (except spacebar and dead keys)")
         UI.Font("s10", "Consolas")
@@ -99,20 +113,36 @@ Class clsLocaleInterface {
     Show(locale_name) {
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
-        loc_obj := new clsLocale
-        sections := ini.LoadSections()
-        if (locale_name) {
-            ini.LoadProperties(loc_obj, locale_name)
+
+        if (runtime_status.config_file) {
+            locale_name := false
+            this._EnableControls(false)
+            this.name.value := str.BareFilename(runtime_status.config_file) . "||"
         } else {
-            locales := StrSplit(sections, "`n")
-            locale_name := locales[1]
+            this._EnableControls(true)
+            sections := ini.LoadSections()
+            if (! locale_name) {
+                locales := StrSplit(sections, "`n")
+                locale_name := locales[1]
+            }
+            this.name.value := "|" StrReplace(sections, "`n", "|")
+            this.name.Choose(locale_name)
         }
-        this.name.value := "|" StrReplace(sections, "`n", "|")
-        this.name.Choose(locale_name)
-        For key, option in this.options {
-            option.value := loc_obj[key]
-        }
+        loc_obj := new clsLocale
+        loc_obj.Load(locale_name)
+        this._PopulateFieldsWith(loc_obj)
         this.UI.Show()
+    }
+    _PopulateFieldsWith(loc_object) {
+        For key, option in this.options {
+            option.value := loc_object[key]
+        }
+    }
+    _EnableControls(mode := true) {
+        this.name.Enable(mode)
+        for _, control in this.controls {
+            control.Enable(mode)
+        }
     }
     _Change() {
         this.Show(this.name.value)
@@ -124,7 +154,7 @@ Class clsLocaleInterface {
         if (this._CheckIfExists(new_name))
             return
         new_loc := New clsLocale
-        ini.SaveProperties(new_loc, new_name)
+        new_loc.Save(new_name)
         this.Show(new_name)
     }
     _Delete() {
@@ -147,9 +177,9 @@ Class clsLocaleInterface {
         if (this._CheckIfExists(new_name))
             return
         temp_loc := new clsLocale
-        ini.LoadProperties(temp_loc, this.name.value)
+        temp_loc.Load(this.name.value)
         ini.DeleteSection(this.name.value)
-        ini.SaveProperties(temp_loc, new_name)
+        temp_loc.Save(new_name)
         this.Show(new_name)
     }
     _CheckIfExists(new_name) {
@@ -163,11 +193,15 @@ Class clsLocaleInterface {
     }
     _Save() {
         new_loc := new clsLocale
-        For key, option in this.options
+        For key, option in this.options {
             new_loc[key] := option.value
-        ini.SaveProperties(new_loc, this.name.value)
+        }
+        new_loc.Save(this.name.value)
+        if (runtime_status.config_file) {
+            keys := new_loc
+        }
     }
-    _Close() {
+    Close() {
         main_UI.UpdateLocaleInMainUI(this.name.value)
         main_UI.UI.Enable()
         this.UI.Hide()

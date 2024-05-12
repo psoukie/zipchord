@@ -1,11 +1,7 @@
 /*
-
 This file is part of ZipChord.
-
 Copyright (c) 2021-2024 Pavel Soukenik
-
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-
 */
 
 global chords := New clsDictionary(true)
@@ -200,7 +196,7 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
             errmsg .= Format("ZipChord found the dictionary '{}' and is going to open it.", new_file)
         }
         else {
-            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary under '{}'.", dictionary_type, A_WorkingDir)
+            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in '{}'.", dictionary_type, A_WorkingDir)
             new_file := dictionary_type "s.txt"
             FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
         }

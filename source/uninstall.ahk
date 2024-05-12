@@ -1,15 +1,10 @@
 ﻿/*
-
 This file is part of ZipChord
-
 Copyright (c) 2023 Pavel Soukenik
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the conditions set out
 in the BSD-3-Clause license are met.
-
 See the LICENSE file in the root folder for details.
-
 */
 
 full_command_line := DllCall("GetCommandLine", "str")

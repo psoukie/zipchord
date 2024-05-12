@@ -1,11 +1,7 @@
 ﻿/*
-
 This file is part of ZipChord.
-
 Copyright (c) 2021-2024 Pavel Soukenik
-
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-
 */
 
 ;;  Shared constants, functions and classes 
@@ -143,6 +139,10 @@ class clsUI {
         window_handle := this._handle
         Gui, %window_handle%:Show, % options
     }
+    SetTitle(title) {
+        window_handle := this._handle
+        WinSetTitle, ahk_id %window_handle%,, %title%
+    }
     Destroy() {
         window_handle := this._handle
         Gui, %window_handle%:Destroy
@@ -261,6 +261,8 @@ GuiEscape(handle) {
 *    TextInPixels     Returns the length of text in pixels.
 *    ToAscii          Converts key and modifiers to ASCII
 *    JoinArray        Returns a string with array joined by a separator (defaults to ` `)
+*    BareFilename     Returns filename without the full path
+*    FilenameWithExtension
 */
 Class clsStringFunctions {
     HotkeyToText(HK) {
@@ -338,8 +340,19 @@ Class clsStringFunctions {
         }
         return result
     }
+    BareFilename(filename) {
+        SplitPath, filename, bare_filename
+        return bare_filename
+    }
+    FilenameWithExtension(filename, extension := ".ini") {
+        extension_length := StrLen(extension)
+        if (StrLen(filename) <= extension_length
+                || SubStr(filename, StrLen(filename) - extension_length + 1) != extension) {
+            return filename . extension
+        }
+        return filename
+    }
 }
-
 
 class clsIniFile {
     default_folder := A_AppData . "\ZipChord"
@@ -390,12 +403,11 @@ class clsIniFile {
             }
         }
     }
-    ; return -1 if file not found
     LoadSections(ini_filename := "") {
         if (!ini_filename)
             ini_filename := this.default_ini
         if (! FileExist(ini_filename))
-            return -1
+            return false
         IniRead, sections, %ini_filename%
         return sections
     }

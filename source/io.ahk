@@ -1,13 +1,8 @@
 /*
-
 This file is part of ZipChord.
-
 Copyright (c) 2023-2024 Pavel Soukenik
-
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-
 */
-
 
 classifier := new clsClassifier
 io := new clsIOrepresentation
@@ -139,6 +134,11 @@ Class clsIOrepresentation {
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
          , IS_NUMERAL := 1024
+    ; affixes constants
+    static AFFIX_NONE := 0 ; no prefix or suffix
+        , AFFIX_PREFIX := 1 ; expansion is a prefix
+        , AFFIX_SUFFIX := 2 ; expansion is a suffix
+
     pre_shifted := false
     _sequence := []
     SEQUENCE_WINDOW := 6 ; sequence length to maintain
@@ -534,14 +534,16 @@ Class clsIOrepresentation {
         expanded := this._RemoveAffixSymbols(expanded, affixes)
         previous := this.GetChunk(chunk_id-1)
 
-        if ( (settings.chording & CHORD_RESTRICT) && this._IsRestricted(chunk_id-1) && !(affixes & AFFIX_SUFFIX) ) {
+        if ( (settings.chording & CHORD_RESTRICT)
+                && this._IsRestricted(chunk_id-1)
+                && !(affixes & this.AFFIX_SUFFIX) ) {
             return false
         }
         
         ; if there is a smart space, we have to delete it for suffixes
         if (previous.attributes & this.SMART_SPACE_AFTER) {
             add_leading_space := false
-            if (affixes & AFFIX_SUFFIX) {
+            if (affixes & this.AFFIX_SUFFIX) {
                 replace_offset := -1
             }
         }
@@ -562,7 +564,7 @@ Class clsIOrepresentation {
         
         ; and we don't add a space after interruption, Enter, a space, after a prefix, and for suffix
         if (previous.attributes & this.IS_INTERRUPT || previous.output == " " || previous.attributes & this.IS_ENTER 
-                || previous.attributes & this.IS_PREFIX || affixes & AFFIX_SUFFIX) {
+                || previous.attributes & this.IS_PREFIX || affixes & this.AFFIX_SUFFIX) {
             add_leading_space := false
         }
         if (add_leading_space) {
@@ -576,7 +578,7 @@ Class clsIOrepresentation {
         }
 
         ; ending smart space
-        if (affixes & AFFIX_PREFIX) {
+        if (affixes & this.AFFIX_PREFIX) {
             this.SetChunkAttributes(chunk_id + replace_offset, this.IS_PREFIX)
         } else {
             if (settings.spacing & SPACE_AFTER_CHORD) {
@@ -732,20 +734,20 @@ Class clsIOrepresentation {
 
     ; detect and adjust expansion for suffixes and prefixes
     _DetectAffixes(phrase) {
-        affixes := AFFIX_NONE
+        affixes := this.AFFIX_NONE
         if (SubStr(phrase, 1, 1) == "~") {
-            affixes |= AFFIX_SUFFIX
+            affixes |= this.AFFIX_SUFFIX
         }
         if (SubStr(phrase, StrLen(phrase), 1) == "~") {
-            affixes |= AFFIX_PREFIX
+            affixes |= this.AFFIX_PREFIX
         }
         Return affixes
     }
     _RemoveAffixSymbols(text, affixes) {
-        if (affixes & AFFIX_SUFFIX) {
+        if (affixes & this.AFFIX_SUFFIX) {
             text := SubStr(text, 2)
         }
-        if (affixes & AFFIX_PREFIX) {
+        if (affixes & this.AFFIX_PREFIX) {
             text := SubStr(text, 1, StrLen(text) - 1)
         }
         Return text
