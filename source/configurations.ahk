@@ -99,8 +99,8 @@ Class Configuration {
             return
         }
         config_file := this.FindMatchingConfig()
-        if (config_file && config_file != runtime_status.config_file) {
-            this.SwitchDuringRuntime(config_file)
+        if (config_file && str.FilenameWithExtension(config_file) != runtime_status.config_file) {
+            this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
         func := ObjBindMethod(this, "DetectAppSwitchLoop")
         SetTimer, %func%, -10
@@ -109,6 +109,7 @@ Class Configuration {
     FindMatchingConfig() {
         WinGetActiveTitle, window_title
         for _, entry in this.mapping {
+            ; Convert wildcard-style pattern to regex
             regex_pattern := "^" . RegExReplace(entry.window_mask, "\*", ".*") . "$"
             if RegExMatch(window_title, regex_pattern) {
                 return entry.config_file

@@ -1028,9 +1028,9 @@ ProcessCommandLine(option_string) {
     filename := parsed[2]
     switch (command) {
         case "load":
-            config.SwitchDuringRuntime(filename)
+            config.SwitchDuringRuntime(str.FilenameWithExtension(filename))
         case "save":
-            config.Save(filename)
+            config.Save(str.FilenameWithExtension(filename))
         case "pause":
             if (settings.mode & MODE_ZIPCHORD_ENABLED) {
                 PauseApp()
@@ -1040,7 +1040,7 @@ ProcessCommandLine(option_string) {
                 PauseApp()
             }
         case "follow":
-            config.LoadMappingFile(filename)
+            config.LoadMappingFile(str.FilenameWithExtension(filename, ".txt"))
         case "restore":
             config.use_mapping := false
             config.SwitchDuringRuntime()
