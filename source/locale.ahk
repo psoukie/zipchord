@@ -77,13 +77,13 @@ Class clsLocaleInterface {
         UI := new clsUI("Keyboard and language settings")
         handle := main_UI.UI._handle
         Gui, +Owner%handle%
-        UI.on_close := ObjBindMethod(this, "_Close")
+        UI.on_close := ObjBindMethod(this, "Close")
         UI.Add("Text", "Section", "&Locale name")
         UI.Add(this.name, "w120")
         UI.Add(this.controls.rename, "y+30 w80")
         UI.Add(this.controls.delete, "w80")
         UI.Add(this.controls.new, "w80")
-        UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "_Close"))
+        UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "Close"))
         UI.Add("GroupBox", "ys h330 w460", "Locale settings")
         UI.Add("Text", "xp+20 yp+30 Section", "&All keys (except spacebar and dead keys)")
         UI.Font("s10", "Consolas")
@@ -201,7 +201,7 @@ Class clsLocaleInterface {
             keys := new_loc
         }
     }
-    _Close() {
+    Close() {
         main_UI.UpdateLocaleInMainUI(this.name.value)
         main_UI.UI.Enable()
         this.UI.Hide()

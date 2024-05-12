@@ -521,7 +521,7 @@ Class clsMainUI {
         global zc_year
         cts := this.controls
         UI := new clsUI("ZipChord")
-        UI.on_close := ObjBindMethod(this, "_Close")
+        UI.on_close := ObjBindMethod(this, "Close")
 
         UI.Add(cts.tabs)
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
@@ -638,7 +638,7 @@ Class clsMainUI {
 
     _btnOK() {
         if (this._ApplySettings()) {
-            this._Close()    
+            this.Close()    
         }
         return
     }
@@ -743,7 +743,7 @@ Class clsMainUI {
         cts[type . "_entries"].value := entriesstr 
     }
 
-    _Close() {
+    Close() {
         Hotkey, F1, Off
         this.UI.Hide()
         if (settings.preferences & PREF_SHOW_CLOSING_TIP) {
@@ -943,7 +943,7 @@ Class clsClosingTip {
     __New() {
         global app_shortcuts
         this.UI := new clsUI("ZipChord")
-        this.UI.on_close := ObjBindMethod(this, "_Close")
+        this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
             , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n`n"
@@ -959,7 +959,7 @@ Class clsClosingTip {
     Btn_OK() {
         global app_settings
 
-        this._Close()
+        this.Close()
         if (this.dont_show.value) {
             settings.preferences &= ~PREF_SHOW_CLOSING_TIP
             app_settings.Save()
@@ -967,7 +967,7 @@ Class clsClosingTip {
             this.UI := {}
         }
     }
-    _Close() {
+    Close() {
         Hotkey, F1, Off
         this.UI.Hide()
     }

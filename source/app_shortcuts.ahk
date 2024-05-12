@@ -47,7 +47,7 @@ Class clsAppShortcuts {
         Hotkey, F1, % call, On
         this.WireAppHotkeys("Off")  ; so the current hotkeys don't interfere with defining
         UI := new clsUI("ZipChord Application Keyboard Shortcuts")
-        UI.on_close := ObjBindMethod(this, "_CloseUI")
+        UI.on_close := ObjBindMethod(this, "Close")
         UI.Add("Text", "x+20 y-35")
         For i, shortcut in this.shortcuts
         {
@@ -57,7 +57,7 @@ Class clsAppShortcuts {
             this.controls[i].long := UI.Add("Radio", "xs+180 ys-9", "Long press (non-exclusive)", , shortcut.mode==this.MD_LONG)
             this.controls[i].short := UI.Add("Radio", "y+10", "Short press (exclusive)", , shortcut.mode==this.MD_SHORT)
         }
-        UI.Add("Button", "w80 xm+220 yp+60", "Cancel", ObjBindMethod(this, "_CloseUI"))
+        UI.Add("Button", "w80 xm+220 yp+60", "Cancel", ObjBindMethod(this, "Close"))
         temp := UI.Add("Button", "w80 xm+320 yp Default", "OK", ObjBindMethod(this, "_btnOK"))
         temp.Focus()
         UI.Show("w440")
@@ -116,7 +116,7 @@ Class clsAppShortcuts {
             this._UpdateHotkeys()
             this._SaveSettings()
             UI_Tray_Update()
-            this._CloseUI()
+            this.Close()
         }
     }
     _CheckDuplicates() {
@@ -138,7 +138,7 @@ Class clsAppShortcuts {
             shortcut.mode := this.controls[i].long.value ? this.MD_LONG : this.MD_SHORT
         }
     }
-    _CloseUI() {
+    Close() {
         this.WireAppHotkeys("On") ; restore either previous (or define new) hotkeys
         Hotkey, F1, Off
         this.UI.Destroy()
