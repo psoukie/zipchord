@@ -167,7 +167,7 @@ Initialize(zc_version) {
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
-    if (A_Args[1] == "load" && A_Args[2]) {
+    if (A_Args[2] && (A_Args[1] == "load" || A_Args[1] == "follow")) {
         ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
     }
     chords.Load(settings.chord_file)
