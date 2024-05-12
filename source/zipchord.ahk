@@ -1057,18 +1057,15 @@ ProcessCommandLine(option_string) {
 CloseAllWindows() {
     global locale
     global app_shortcuts
+    window_names := ["locale", "add_shortcut", "app_shortcuts", "main_UI"]
 
-    if (WinExist("ahk_id " . locale.UI._handle)) {
-        locale._Close()
+    For _, window in window_names {
+        if (WinExist("ahk_id " . %window%.UI._handle)) {
+            %window%.Close()
+            exists := true
+        } else {
+            exists := false
+        }
     }
-    if (WinExist("ahk_id " . add_shortcut._handle)) {
-        add_shortcut.Close()
-    }
-    if (WinExist("ahk_id " . app_shortcuts._handle)) {
-        app_shortcuts._CloseUI()
-    }
-    if (WinExist("ahk_id " . main_UI.UI._handle)) {
-        main_UI._Close()
-        return true
-    }
+    return exists
 }
