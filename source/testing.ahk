@@ -62,13 +62,13 @@ Class TestingClass {
                 For key, value in keys
                     this.Write(key . ": " value)
             Case "save":
-                if (! this._CheckFilename(filename, "cfg"))
+                if (! this._CheckFilename(filename, "ini"))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
                 config.Save(filename)
                 this.Write(Format("Saved current configuration to '{}'.", filename))
             Case "load":
-                if (! this._CheckFilename(filename, "cfg", true))
+                if (! this._CheckFilename(filename, "ini", true))
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
                 config.Load(filename)
@@ -301,7 +301,7 @@ Class TestingClass {
         this.Compare(testcase, "temp.out")
     }
     _GetConfigAndInFilenames(testcase) {
-        config_file := SubStr(testcase, 1, InStr(testcase, "__") - 1) . ".cfg"
+        config_file := SubStr(testcase, 1, InStr(testcase, "__") - 1) . ".ini"
         in_file := SubStr(testcase, InStr(testcase, "__") + 2, StrLen(testcase) - InStr(testcase, "__") - 5) . ".in"
         return {config: config_file, in: in_file}
     }
@@ -358,7 +358,7 @@ Class TestingClass {
     List(mask:="*.*") {
         Switch mask {
             Case "configs":
-                opts := "dir /b *.cfg"
+                opts := "dir /b *.ini"
             Case "inputs":
                 opts := "dir /b *.in"
             Case "outputs":
