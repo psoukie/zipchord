@@ -2265,7 +2265,7 @@ ngtt	negotiate
 imprsn	impression
 wg	wage
 ffth	fifth
-FALSE	FALSE
+fls	false
 pnk	pink
 absnc	absence
 agrsv	aggressive
