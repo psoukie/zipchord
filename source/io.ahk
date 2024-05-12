@@ -507,6 +507,7 @@ Class clsIOrepresentation {
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
+                ; check whether chord is used to complete typing of a shorthand 
                 if (this.TryImmediateShorthand(-1)) {
                     return this._ProcessChord(this.length, expanded) 
                 }
@@ -712,6 +713,10 @@ Class clsIOrepresentation {
     }
 
     _DetectShiftWithin(start_chunk_id, end_chunk_id) {
+        if (start_chunk_id > end_chunk_id) {
+            ; edge case with a chord used in typing a short shorthand
+            return false
+        }
         chunk_id := start_chunk_id
         if (end_chunk_id > this.length) {
             MsgBox ,, % "ZipChord", % "Error: The function _DetectShiftWithin was called with incorrect end range."
@@ -721,7 +726,7 @@ Class clsIOrepresentation {
             if (this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)) {
                 return true
             }
-            if (chunk_id++ == end_chunk_id) {
+            if (chunk_id++ >= end_chunk_id) {
                 return false
             }
         }
