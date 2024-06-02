@@ -96,7 +96,7 @@ Class clsInstaller {
             if (this._CheckAdmin())
                 this._LocalOption()
             else {
-                this._CloseUI()
+                this._HideUI()
                 this._Install()
             }
         } else this._Install()
@@ -119,8 +119,12 @@ Class clsInstaller {
         this.controls.destination_Programs.value := False
         this.controls.destination_current.value := True
     }
-    _CloseUI() {
+    _HideUI() {
         Hotkey, F1, Off
+        this.UI.Hide()
+    }
+    _CloseUI() {
+        this._HideUI()
         ExitApp
     }
     _UpdateOptions() {
