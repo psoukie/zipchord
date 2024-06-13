@@ -659,7 +659,7 @@ Class clsIOrepresentation {
             }
             affixes := this._DetectAffixes(expanded)
             expanded := this._RemoveAffixSymbols(expanded, affixes)
-            first_chunk_offset := affixes & AFFIX_SUFFIX ? -1 : 0 
+            first_chunk_offset := affixes & this.AFFIX_SUFFIX ? -1 : 0 
             this.Replace(expanded, first_chunk_id + first_chunk_offset, this.length + offset)
             this.SetChunkAttributes(first_chunk_id + first_chunk_offset, this.WAS_EXPANDED)
             return true
