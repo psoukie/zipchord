@@ -1,0 +1,4 @@
+.vscode/launch.json
+source/result.txt
+*.exe
+*.zip

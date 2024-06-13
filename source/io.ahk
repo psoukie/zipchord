@@ -645,18 +645,23 @@ Class clsIOrepresentation {
                 || (attributes & this.WAS_EXPANDED && !(attributes & this.IS_PREFIX)) ) {
             return
         }
-        if ( expanded := shorthands.LookUp(text) ) {
+        expanded := shorthands.LookUp(text)
+        if (expanded) {
             hint_delay.Shorten()
             if (    this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT)
                     || ( ( settings.capitalization != CAP_OFF) && this._ShouldCapitalize(first_chunk_id) ) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
             }
+            ; Ignore strings such as USD, or aptX
             if ( this._DetectShiftWithin(first_chunk_id + 1, this.length + offset) ) {
                 return
             }
-            this.Replace(expanded, first_chunk_id, this.length + offset)
-            this.SetChunkAttributes(first_chunk_id, this.WAS_EXPANDED)
+            affixes := this._DetectAffixes(expanded)
+            expanded := this._RemoveAffixSymbols(expanded, affixes)
+            first_chunk_offset := affixes & AFFIX_SUFFIX ? -1 : 0 
+            this.Replace(expanded, first_chunk_id + first_chunk_offset, this.length + offset)
+            this.SetChunkAttributes(first_chunk_id + first_chunk_offset, this.WAS_EXPANDED)
             return true
         }
     }
