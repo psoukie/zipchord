@@ -1,4 +1,4 @@
-#include version.ahk
+﻿#include version.ahk
 
 ahk_exe := A_ProgramFiles . "\AutoHotkey\Compiler\Ahk2Exe.exe"
 
