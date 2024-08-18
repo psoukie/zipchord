@@ -139,6 +139,14 @@ class clsUI {
         window_handle := this._handle
         Gui, %window_handle%:Show, % options
     }
+    IsShown() {
+        window_handle := this._handle
+        if (WinExist("ahk_id " . window_handle)) {
+            return true
+        } else {
+            return false
+        }
+    }
     SetTitle(title) {
         window_handle := this._handle
         WinSetTitle, ahk_id %window_handle%,, %title%
