@@ -131,7 +131,7 @@ Class clsSettings {
     }
     Load() {
         ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
-        this.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
+        this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
     Save() {
         if (runtime_status.config_file) {
