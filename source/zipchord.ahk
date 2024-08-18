@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
 #KeyHistory 0
+#HotkeyInterval 0
 ListLines Off
 SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
