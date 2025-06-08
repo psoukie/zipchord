@@ -167,7 +167,9 @@ Initialize(zc_version) {
     main_UI.Build()
     locale.Init()
     keys.Load(settings.locale)
-    main_UI.Show()
+    if (! (settings.startup & STARTUP_HIDE_CONFIG)) {
+        main_UI.Show()
+    }
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
