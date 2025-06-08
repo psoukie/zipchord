@@ -73,6 +73,8 @@ global MODE_CHORDS_ENABLED     := 1
 global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
      , PREF_FIRST_RUN        := 4        ; this value means this is the first run (there is no saved config)
 
+global STARTUP_HIDE_CONFIG     := 1      ; whether configuration UI should be hidden on startup
+
 global UI_STR_PAUSE  := "&Pause ZipChord"
      , UI_STR_RESUME := "&Resume ZipChord"
 
@@ -108,6 +110,7 @@ Class clsSettings {
     settings := { version:          0 ; gets loaded and saved later
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
                 , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
+                , startup:          0
                 , locale:           "English US"
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
@@ -510,6 +513,9 @@ Class clsMainUI {
                 , space_punctuation:    { type: "Checkbox"
                                         , text: "After &punctuation"
                                         , setting: { parent: "spacing", const: "SPACE_PUNCTUATION"}}
+                , hide_on_startup:      { type: "Checkbox"
+                                        , text: "Hide configuration window on startup."
+                                        , setting: {parent: "startup", const: "STARTUP_HIDE_CONFIG"}}
                 , capitalization:       { type: "DropDownList"
                                         , text: "Off|For shortcuts|For all input"}
                 , debugging:            { type: "Checkbox"
@@ -571,6 +577,7 @@ Class clsMainUI {
         UI.Add(cts.capitalization, "AltSubmit xp+150 w130")
         UI.Add("Text", "xs y+m", "&Output delay (ms)")
         UI.Add(cts.output_delay, "Right xp+150 w40 Number")
+        UI.Add(cts.hide_on_startup, "xs")
 
         UI.Tab(5)
         UI.Add("Text", "Y+20", "ZipChord")
@@ -672,6 +679,7 @@ Class clsMainUI {
         ; recalculate hint settings based on frequency (HINT_OFF etc.) and OSD/Tooltip. ( ** is exponent function in AHK)
         settings.hints := 2**(cts.hint_frequency.value - 1) + 16 * cts.hint_destination.value
                             + cts.hint_score.value * HINT_SCORE
+        settings.startup := cts.hide_on_startup.value * STARTUP_HIDE_CONFIG
         if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
