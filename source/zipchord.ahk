@@ -167,12 +167,14 @@ Initialize(zc_version) {
     main_UI.Build()
     locale.Init()
     keys.Load(settings.locale)
-    if (! (settings.startup & STARTUP_HIDE_CONFIG)) {
-        main_UI.Show()
-    }
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
+    if (! (settings.startup & STARTUP_HIDE_CONFIG)) {
+        main_UI.Show()
+    } else {
+        hint_UI.ShowOnOSD("Starting ZipChord")
+    }
     if (A_Args[2] && (A_Args[1] == "load" || A_Args[1] == "follow")) {
         ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
     }
