@@ -117,12 +117,16 @@ Class clsDictionary {
                 chunks := StrSplit(replaced, "|")
                 For _, chunk in chunks {
                     newch .= "|" . str.Arrange(chunk)
-                    if (this._IsDuplicateChars(chunk, newword)) { Return false }
+                    if (this._IsDuplicateChars(chunk, newword)) {
+                        Return false
+                    }
                 }
                 newch := SubStr(newch, 2)
             } else {
                 newch := str.Arrange(newch_unsorted)
-                if (this._IsDuplicateChars(newch, newword)) { Return false }
+                if (this._IsDuplicateChars(newch, newword)) {
+                    Return false
+                }
             }
         } else {
             newch := newch_unsorted
