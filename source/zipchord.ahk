@@ -460,7 +460,7 @@ AddShortcut() {
 Class clsMainUI {
     UI := {}
     controls := { tabs:                 { type: "Tab3"
-                                        , text: " Dictionaries | Detection | Hints | Output | About "}
+                                        , text: " Dictionaries | Detection | Display | Output | About "}
                 , selected_locale:      { type: "DropDownList"
                                         , text: "&Keyboard and language"}
                 , chord_enabled:        { type: "Checkbox"
@@ -501,9 +501,12 @@ Class clsMainUI {
                 , hint_score:           { type: "Checkbox"
                                         , text: "Show typing &efficiency"
                                         , setting: { parent: "hints", const: "HINT_SCORE"}}
+                , hide_on_startup:      { type: "Checkbox"
+                                        , text: "Hide configuration window on startup."
+                                        , setting: {parent: "startup", const: "STARTUP_HIDE_CONFIG"}}
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
-                                        , text: "&Adjust >>"}
+                                        , text: "&Adjust OSD >>"}
                 , hint_offset_x:        { type: "Edit" }
                 , hint_offset_y:        { type: "Edit" }
                 , hint_size:            { type: "Edit" }
@@ -517,9 +520,6 @@ Class clsMainUI {
                 , space_punctuation:    { type: "Checkbox"
                                         , text: "After &punctuation"
                                         , setting: { parent: "spacing", const: "SPACE_PUNCTUATION"}}
-                , hide_on_startup:      { type: "Checkbox"
-                                        , text: "Hide configuration window on startup."
-                                        , setting: {parent: "startup", const: "STARTUP_HIDE_CONFIG"}}
                 , capitalization:       { type: "DropDownList"
                                         , text: "Off|For shortcuts|For all input"}
                 , debugging:            { type: "Checkbox"
@@ -561,16 +561,17 @@ Class clsMainUI {
         UI.Add("Text", "xs", "Hint &location")
         UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
         UI.Add(cts.hint_score, "xs")
-        UI.Add(cts.btn_customize_hints, "xs w100")
-        this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h200 Section", "Hint customization")
+        UI.Add(cts.hide_on_startup)
+        UI.Add(cts.btn_customize_hints, "w100")
+        this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h180 Section", "Hint customization")
         this.labels[2] := UI.Add("Text", "xp+20 yp+30 Section", "Horizontal offset (px)")
-        this.labels[3] := UI.Add("Text", , "Vertical offset (px)")
-        this.labels[4] := UI.Add("Text", , "OSD font size (pt)")
-        this.labels[5] := UI.Add("Text", , "OSD color (hex code)")
-        UI.Add(cts.hint_offset_x, "ys xp+200 w70 Right")
-        UI.Add(cts.hint_offset_y, "w70 Right")
-        UI.Add(cts.hint_size, "w70 Right Number")
-        UI.Add(cts.hint_color, "w70 Right")
+        this.labels[3] := UI.Add("Text", "yp+35", "Vertical offset (px)")
+        this.labels[4] := UI.Add("Text", "yp+35", "OSD font size (pt)")
+        this.labels[5] := UI.Add("Text", "yp+35", "OSD color (hex code)")
+        UI.Add(cts.hint_offset_x, "xp+200 ys w70 Right")
+        UI.Add(cts.hint_offset_y, "yp+35 w70 Right")
+        UI.Add(cts.hint_size, "yp+35 w70 Right Number")
+        UI.Add(cts.hint_color, "yp+35 w70 Right")
 
         UI.Tab(4)
         UI.Add("GroupBox", "y+20 w310 h120 Section", "Smart spaces")
@@ -581,7 +582,6 @@ Class clsMainUI {
         UI.Add(cts.capitalization, "AltSubmit xp+150 w130")
         UI.Add("Text", "xs y+m", "&Output delay (ms)")
         UI.Add(cts.output_delay, "Right xp+150 w40 Number")
-        UI.Add(cts.hide_on_startup, "xs")
 
         UI.Tab(5)
         UI.Add("Text", "Y+20", "ZipChord")
