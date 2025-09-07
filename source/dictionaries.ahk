@@ -166,8 +166,6 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     if (! FileExist(dictionary_file) ) {
         ; On the first run only (if we cannot find the dictionary file), offer to download and store dictionaries under My Documents
         if (settings.preferences & PREF_FIRST_RUN) {
-            settings.preferences &= ~PREF_FIRST_RUN
-            app_settings.Save()
             dictionary_dir := A_MyDocuments . "\ZipChord"
             if (InStr(FileExist(dictionary_dir), "D")) {
                 _UpdateWorkingDir(dictionary_dir)

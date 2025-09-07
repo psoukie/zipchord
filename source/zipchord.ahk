@@ -106,7 +106,7 @@ Return   ; Prevent execution of any of the following code, except for the always
 ; Application settings
 Class clsSettings {
     settings_file := A_AppData . "\ZipChord\config.ini"
-    settings := { version:          0 ; gets loaded and saved later
+    settings := { version:          zc_version
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
                 , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_CONFIG
                 , locale:           "English US"
@@ -153,14 +153,15 @@ Initialize(zc_version) {
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:
-    if ( ! (settings.preferences & PREF_FIRST_RUN) && CompareSemanticVersions(zc_version, settings.version) ) {
+    if ( CompareSemanticVersions(zc_version, settings.version) ) {
         UpdateSettings(settings.version)
     }
-    settings.version := zc_version
     app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    settings.version := zc_version
+    settings.preferences &= ~PREF_FIRST_RUN
     app_settings.Save()
     main_UI.Build()
     locale.Init()
