@@ -501,7 +501,7 @@ Class clsMainUI {
                                         , text: "Show typing &efficiency"
                                         , setting: { parent: "hints", const: "HINT_SCORE"}}
                 , show_on_startup:      { type: "Checkbox"
-                                        , text: "&Show settings when starting ZipChord."
+                                        , text: "&Open settings when starting ZipChord"
                                         , setting: {parent: "preferences", const: "PREF_SHOW_CONFIG"}}
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
