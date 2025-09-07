@@ -72,8 +72,7 @@ global MODE_CHORDS_ENABLED     := 1
 
 global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
      , PREF_FIRST_RUN        := 4        ; this value means this is the first run (there is no saved config)
-
-global STARTUP_HIDE_CONFIG     := 1      ; whether configuration UI should be hidden on startup
+     , PREF_SHOW_CONFIG      := 8        ; whether ZipChord configuration UI should be shown on startup
 
 global UI_STR_PAUSE  := "&Pause ZipChord"
      , UI_STR_RESUME := "&Resume ZipChord"
@@ -107,10 +106,9 @@ Return   ; Prevent execution of any of the following code, except for the always
 ; Application settings
 Class clsSettings {
     settings_file := A_AppData . "\ZipChord\config.ini"
-    settings := { version:          0 ; gets loaded and saved later
+    settings := { version:          zc_version
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
-                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
-                , startup:          0
+                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_CONFIG
                 , locale:           "English US"
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
@@ -155,24 +153,27 @@ Initialize(zc_version) {
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:
-    if ( ! (settings.preferences & PREF_FIRST_RUN) && CompareSemanticVersions(zc_version, settings.version) ) {
+    if ( CompareSemanticVersions(zc_version, settings.version) ) {
         UpdateSettings(settings.version)
     }
-    settings.version := zc_version
     app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    settings.version := zc_version
+    settings.preferences &= ~PREF_FIRST_RUN
     app_settings.Save()
     main_UI.Build()
     locale.Init()
     keys.Load(settings.locale)
-    if (! (settings.startup & STARTUP_HIDE_CONFIG)) {
-        main_UI.Show()
-    }
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
+    if (settings.preferences & PREF_SHOW_CONFIG) {
+        main_UI.Show()
+    } else {
+        hint_UI.ShowOnOSD("Starting ZipChord")
+    }
     if (A_Args[2] && (A_Args[1] == "load" || A_Args[1] == "follow")) {
         ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
     }
@@ -458,7 +459,7 @@ AddShortcut() {
 Class clsMainUI {
     UI := {}
     controls := { tabs:                 { type: "Tab3"
-                                        , text: " Dictionaries | Detection | Hints | Output | About "}
+                                        , text: " Dictionaries | Detection | Display | Output | About "}
                 , selected_locale:      { type: "DropDownList"
                                         , text: "&Keyboard and language"}
                 , chord_enabled:        { type: "Checkbox"
@@ -499,9 +500,12 @@ Class clsMainUI {
                 , hint_score:           { type: "Checkbox"
                                         , text: "Show typing &efficiency"
                                         , setting: { parent: "hints", const: "HINT_SCORE"}}
+                , show_on_startup:      { type: "Checkbox"
+                                        , text: "&Open settings when starting ZipChord"
+                                        , setting: {parent: "preferences", const: "PREF_SHOW_CONFIG"}}
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
-                                        , text: "&Adjust >>"}
+                                        , text: "&Adjust OSD >>"}
                 , hint_offset_x:        { type: "Edit" }
                 , hint_offset_y:        { type: "Edit" }
                 , hint_size:            { type: "Edit" }
@@ -515,9 +519,6 @@ Class clsMainUI {
                 , space_punctuation:    { type: "Checkbox"
                                         , text: "After &punctuation"
                                         , setting: { parent: "spacing", const: "SPACE_PUNCTUATION"}}
-                , hide_on_startup:      { type: "Checkbox"
-                                        , text: "Hide configuration window on startup."
-                                        , setting: {parent: "startup", const: "STARTUP_HIDE_CONFIG"}}
                 , capitalization:       { type: "DropDownList"
                                         , text: "Off|For shortcuts|For all input"}
                 , debugging:            { type: "Checkbox"
@@ -559,16 +560,17 @@ Class clsMainUI {
         UI.Add("Text", "xs", "Hint &location")
         UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
         UI.Add(cts.hint_score, "xs")
-        UI.Add(cts.btn_customize_hints, "xs w100")
-        this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h200 Section", "Hint customization")
+        UI.Add(cts.show_on_startup)
+        UI.Add(cts.btn_customize_hints, "w100")
+        this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h180 Section", "Hint customization")
         this.labels[2] := UI.Add("Text", "xp+20 yp+30 Section", "Horizontal offset (px)")
-        this.labels[3] := UI.Add("Text", , "Vertical offset (px)")
-        this.labels[4] := UI.Add("Text", , "OSD font size (pt)")
-        this.labels[5] := UI.Add("Text", , "OSD color (hex code)")
-        UI.Add(cts.hint_offset_x, "ys xp+200 w70 Right")
-        UI.Add(cts.hint_offset_y, "w70 Right")
-        UI.Add(cts.hint_size, "w70 Right Number")
-        UI.Add(cts.hint_color, "w70 Right")
+        this.labels[3] := UI.Add("Text", "yp+35", "Vertical offset (px)")
+        this.labels[4] := UI.Add("Text", "yp+35", "OSD font size (pt)")
+        this.labels[5] := UI.Add("Text", "yp+35", "OSD color (hex code)")
+        UI.Add(cts.hint_offset_x, "xp+200 ys w70 Right")
+        UI.Add(cts.hint_offset_y, "yp+35 w70 Right")
+        UI.Add(cts.hint_size, "yp+35 w70 Right Number")
+        UI.Add(cts.hint_color, "yp+35 w70 Right")
 
         UI.Tab(4)
         UI.Add("GroupBox", "y+20 w310 h120 Section", "Smart spaces")
@@ -579,7 +581,6 @@ Class clsMainUI {
         UI.Add(cts.capitalization, "AltSubmit xp+150 w130")
         UI.Add("Text", "xs y+m", "&Output delay (ms)")
         UI.Add(cts.output_delay, "Right xp+150 w40 Number")
-        UI.Add(cts.hide_on_startup, "xs")
 
         UI.Tab(5)
         UI.Add("Text", "Y+20", "ZipChord")
@@ -681,7 +682,9 @@ Class clsMainUI {
         ; recalculate hint settings based on frequency (HINT_OFF etc.) and OSD/Tooltip. ( ** is exponent function in AHK)
         settings.hints := 2**(cts.hint_frequency.value - 1) + 16 * cts.hint_destination.value
                             + cts.hint_score.value * HINT_SCORE
-        settings.startup := cts.hide_on_startup.value * STARTUP_HIDE_CONFIG
+        ; update preferences based on show on startup selection
+        settings.preferences := cts.show_on_startup.value ? (settings.preferences | PREF_SHOW_CONFIG) : (settings.preferences & ~PREF_SHOW_CONFIG)
+
         if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
