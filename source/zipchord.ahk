@@ -5,7 +5,7 @@ ZipChord
 A customizable hybrid keyboard input method that augments regular typing with
 chords and shorthands.
 
-Copyright (c) 2021-2024 Pavel Soukenik
+Copyright (c) 2021-2025 Pavel Soukenik
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -56,6 +56,7 @@ OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 ; Settings constants and class
 
 global CAP_OFF      := 1 ; no auto-capitalization,
+;@ahk-neko-ignore-fn 1 line; at 9/7/2025, 11:11:56 AM ; global-var is assigned but never used
      , CAP_CHORDS   := 2 ; auto-capitalize chords only
      , CAP_ALL      := 3 ; auto-capitalize all typing
      , SPACE_BEFORE_CHORD := 1
@@ -149,11 +150,12 @@ Initialize(zc_version) {
     global app_settings
     global app_shortcuts
     global locale
-    ; save license file
+    global updater
+
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:
-    if ( CompareSemanticVersions(zc_version, settings.version) ) {
+    if (updater.SemVerCompare(zc_version, settings.version) == 1) {
         UpdateSettings(settings.version)
     }
     app_shortcuts.Init()
@@ -185,7 +187,8 @@ Initialize(zc_version) {
 }
 
 UpdateSettings(from_version) {
-    if (CompareSemanticVersions("2.3.0", from_version)) {
+    global updater
+    if (updater.SemVerCompare("2.3.0", from_version) == 1) {
         ; Update hints settings from HINT_ON 1, HINT_ALWAYS 2, _NORMAL 4, _RELAXED 8, _OSD 16, _TOOLTIP 32
         ; to  HINT_OFF 1, _RELAXED 2, _NORMAL 4, _ALWAYS 8, _OSD 16, _TOOLTIP 32, _SCORE 64
         if (settings.hints & 1) {
