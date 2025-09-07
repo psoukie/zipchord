@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "request": "launch",
+    "configurations": [
+    {
+        "name": "AutoHotkey v2",
+        "type": "autohotkey",
+        "request": "launch",
+        "program": "${file}",
+        "runtime": "C:\\Program Files\\AutoHotkey\\v2\\AutoHotkey.exe",
+        "args": []
+    },
+    {
+        "name": "AutoHotkey v1 Generic",
+        "type": "autohotkey",
+        "request": "launch",
+        "program": "${file}",
+        "runtime": "C:\\Program Files\\AutoHotkey\\AutoHotkey.exe",
+        "args": []
+    },
+    {
+        "name": "AutoHotkey Debug (Advanced Configuration)",
+        "type": "autohotkey",
+        "request": "launch",
+        "program": "${workspaceFolder}\\source\\zipchord.ahk",
+        "runtime": "C:\\Program Files\\AutoHotkey\\AutoHotkey.exe",
+        "args": ["load", "test.ini"],
+        "port": "9002-9010",
+        "variableCategories": "recommend",
+        "useDebugDirective": true,
+        "useAutoJumpToError": true,
+    },
+    {
+        "name": "AutoHotkey Debug (Test Console)",
+        "type": "autohotkey",
+        "request": "launch",
+        "program": "${workspaceFolder}\\source\\zipchord.ahk",
+        "runtime": "C:\\Program Files\\AutoHotkey\\AutoHotkey.exe",
+        "args": ["dev", "test-vs"],
+        "port": "9002-9010",
+        "variableCategories": "recommend",
+        "useDebugDirective": true,
+        "useAutoJumpToError": true,
+    },
+    {
+        "name": "AutoHotkey Run Build",
+        "type": "autohotkey",
+        "request": "launch",
+        "program": "${workspaceFolder}\\source\\build.ahk",
+        "runtime": "C:\\Program Files\\AutoHotkey\\AutoHotkey.exe",
+    }
+    ]
+}
