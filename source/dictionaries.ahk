@@ -92,6 +92,16 @@ Class clsDictionary {
             }
         }
     }
+    ; Private helper: check for duplicate letters in a shortcut and show warning if found
+    _IsDuplicateChars(shortcut, word) {
+        ; Detect duplicate characters: if length changes after removing duplicates, there are repeats
+        if (StrLen(RegExReplace(shortcut,"(.)(?=.*\1)")) != StrLen(shortcut)) {
+            MsgBox ,, % "ZipChord", % Format("In entry for '{}', each key can be entered only once in the same chord.", word)
+            Return true
+        }
+        Return false
+    }
+
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
         if (this._chorded) {
@@ -107,30 +117,24 @@ Class clsDictionary {
                 chunks := StrSplit(replaced, "|")
                 For _, chunk in chunks {
                     newch .= "|" . str.Arrange(chunk)
-                    if (StrLen(RegExReplace(chunk,"(.)(?=.*\1)")) != StrLen(chunk)) {  ; the RegEx removes duplicate letters to check for repetition of characters
-                        MsgBox ,, % "ZipChord", % Format("In entry for '{}', each key can be entered only once in the same chord.", newword)
-                        Return false
-                    }
+                    if (this._IsDuplicateChars(chunk, newword)) { Return false }
                 }
                 newch := SubStr(newch, 2)
             } else {
                 newch := str.Arrange(newch_unsorted)
-                if (StrLen(RegExReplace(newch,"(.)(?=.*\1)")) != StrLen(newch)) {  ; the RegEx removes duplicate letters to check for repetition of characters
-                    MsgBox ,, % "ZipChord", % Format("In entry for '{}', each key can be entered only once in the same chord.", newword)
-                    Return false
-                }
+                if (this._IsDuplicateChars(newch, newword)) { Return false }
             }
-        }
-        else
+        } else {
             newch := newch_unsorted
+        }
         if (! this._IsShortcutOK(newch, newword))
-            return false
+            Return false
         ObjRawSet(this._entries, newch, newword)
         if ( ! InStr(newword, " ") )
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
         if (write_to_file)
             FileAppend % "`r`n" newch_unsorted "`t" newword, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
-        return true
+        Return true
     }
     _IsShortcutOK(shortcut, word) {
         dest := this._chorded ? "chord" : "shorthand"
