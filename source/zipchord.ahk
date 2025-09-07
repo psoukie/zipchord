@@ -72,8 +72,7 @@ global MODE_CHORDS_ENABLED     := 1
 
 global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
      , PREF_FIRST_RUN        := 4        ; this value means this is the first run (there is no saved config)
-
-global STARTUP_HIDE_CONFIG     := 1      ; whether configuration UI should be hidden on startup
+     , PREF_SHOW_CONFIG      := 8        ; whether ZipChord configuration UI should be shown on startup
 
 global UI_STR_PAUSE  := "&Pause ZipChord"
      , UI_STR_RESUME := "&Resume ZipChord"
@@ -109,8 +108,7 @@ Class clsSettings {
     settings_file := A_AppData . "\ZipChord\config.ini"
     settings := { version:          0 ; gets loaded and saved later
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
-                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP
-                , startup:          0
+                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_CONFIG
                 , locale:           "English US"
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
@@ -170,7 +168,7 @@ Initialize(zc_version) {
     UI_Tray_Build()
     locale.Build()
     hint_UI.Build()
-    if (! (settings.startup & STARTUP_HIDE_CONFIG)) {
+    if (settings.preferences & PREF_SHOW_CONFIG) {
         main_UI.Show()
     } else {
         hint_UI.ShowOnOSD("Starting ZipChord")
@@ -501,9 +499,9 @@ Class clsMainUI {
                 , hint_score:           { type: "Checkbox"
                                         , text: "Show typing &efficiency"
                                         , setting: { parent: "hints", const: "HINT_SCORE"}}
-                , hide_on_startup:      { type: "Checkbox"
-                                        , text: "Hide configuration window on startup."
-                                        , setting: {parent: "startup", const: "STARTUP_HIDE_CONFIG"}}
+                , show_on_startup:      { type: "Checkbox"
+                                        , text: "&Show settings when starting ZipChord."
+                                        , setting: {parent: "preferences", const: "PREF_SHOW_CONFIG"}}
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
                                         , text: "&Adjust OSD >>"}
@@ -561,7 +559,7 @@ Class clsMainUI {
         UI.Add("Text", "xs", "Hint &location")
         UI.Add(cts.hint_destination, "AltSubmit xp+150 w140")
         UI.Add(cts.hint_score, "xs")
-        UI.Add(cts.hide_on_startup)
+        UI.Add(cts.show_on_startup)
         UI.Add(cts.btn_customize_hints, "w100")
         this.labels[1] := UI.Add("GroupBox", "xs y+20 w310 h180 Section", "Hint customization")
         this.labels[2] := UI.Add("Text", "xp+20 yp+30 Section", "Horizontal offset (px)")
@@ -683,7 +681,9 @@ Class clsMainUI {
         ; recalculate hint settings based on frequency (HINT_OFF etc.) and OSD/Tooltip. ( ** is exponent function in AHK)
         settings.hints := 2**(cts.hint_frequency.value - 1) + 16 * cts.hint_destination.value
                             + cts.hint_score.value * HINT_SCORE
-        settings.startup := cts.hide_on_startup.value * STARTUP_HIDE_CONFIG
+        ; update preferences based on show on startup selection
+        settings.preferences := cts.show_on_startup.value ? (settings.preferences | PREF_SHOW_CONFIG) : (settings.preferences & ~PREF_SHOW_CONFIG)
+
         if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
