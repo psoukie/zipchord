@@ -356,6 +356,7 @@ Class clsIOrepresentation {
         if ( new_output . backup_content == "") {
             return
         }
+        this._DelayOutput()
         ; we send any expanded text that includes { as straight directives:
         if (! InStr(new_output, "{")) {
             OutputKeys("{Text}" . new_output . backup_content)

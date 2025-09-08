@@ -119,7 +119,7 @@ Class clsSettings {
                 , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
-                , output_delay:     0 }
+                , output_delay:     25 }
     GetSettingsFile() {
         return runtime_status.config_file ? runtime_status.config_file : this.settings_file
     }
