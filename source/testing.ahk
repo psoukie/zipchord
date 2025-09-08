@@ -72,6 +72,7 @@ Class TestingClass {
                     return -1
                 filename := RegExReplace(A_WorkingDir, "\\$") . "\" . filename
                 config.Load(filename)
+                WireHotkeys("Off")
             Case "help":
                 this.Help(ObjFnName(A_ThisFunc))
             Default:
