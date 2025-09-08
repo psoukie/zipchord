@@ -222,8 +222,9 @@ Class TestingClass {
         } else {
             in_file := cfg
         }
-        if (! this._CheckFilename(in_file, "in", true))
-            return -1
+        if (! this._CheckFilename(in_file, "in", true)) {
+            return
+        }
         this._Ready()
         this.Write(Format("Sending the test '{}' to ZipChord...", in_file))
         this._mode := TEST_RUNNING
@@ -264,8 +265,7 @@ Class TestingClass {
         this.Monitor("input", "null")
         if (this.Monitor("output", out_file, overwrite) == -1)
             return
-        if (this.Play(in_file) == -1)
-            return
+        this.Play(in_file)
     }
 
     ; Rerun and re-save all test case files
@@ -384,9 +384,16 @@ Class TestingClass {
             Return
         }
         file := opt
-        ext := SubStr(file, -2)
+        lastDot := InStr(file, ".", false, 0)
+        if (!lastDot || lastDot = StrLen(file)) {
+            this.Write("You must specify the filename with an extension for this command.")
+            return
+        }
+        ext := SubStr(file, lastDot+1)
+        if (! this._CheckFilename(file, ext, true))
+            Return
         Switch ext {
-            Case ".in":
+            Case "in":
                 this.Write(this._FormatInput(file))
             Case "out":
                 this.Write(this._FormatOutput(file))
@@ -515,7 +522,9 @@ Class TestingClass {
                 shifted := True
                 key := SubStr(key, 2)
             } else shifted := False
+            StringCaseSense, On
             key := StrReplace(key, "Space", " ")
+            StringCaseSense, Off
             if (SubStr(key, -2)==" Up") {
                 key := SubStr(key, 1, StrLen(key)-3)
                 p_buffer := buffer
@@ -541,6 +550,8 @@ Class TestingClass {
                     this.Write("`n Interrupt", "")
                 Case "Enter":
                     this.Write("`n Enter", "")
+                Case "Backspace":
+                    this.Write("`n Backspace", "")
                 Default:
                     if (ch_time==-1)
                         ch_time := 0
