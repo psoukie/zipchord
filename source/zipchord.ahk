@@ -5,7 +5,7 @@ ZipChord
 A customizable hybrid keyboard input method that augments regular typing with
 chords and shorthands.
 
-Copyright (c) 2021-2024 Pavel Soukenik
+Copyright (c) 2021-2025 Pavel Soukenik
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -56,6 +56,7 @@ OnMessage(WM_COPYDATA, "Receive_WM_COPYDATA")
 ; Settings constants and class
 
 global CAP_OFF      := 1 ; no auto-capitalization,
+;@ahk-neko-ignore-fn 1 line; at 9/7/2025, 11:11:56 AM ; global-var is assigned but never used
      , CAP_CHORDS   := 2 ; auto-capitalize chords only
      , CAP_ALL      := 3 ; auto-capitalize all typing
      , SPACE_BEFORE_CHORD := 1
@@ -73,6 +74,7 @@ global MODE_CHORDS_ENABLED     := 1
 global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main dialog and adding chords
      , PREF_FIRST_RUN        := 4        ; this value means this is the first run (there is no saved config)
      , PREF_SHOW_CONFIG      := 8        ; whether ZipChord configuration UI should be shown on startup
+     , PREF_CHECK_UPDATES   := 16       ; whether ZipChord should check for updates on startup
 
 global UI_STR_PAUSE  := "&Pause ZipChord"
      , UI_STR_RESUME := "&Resume ZipChord"
@@ -108,10 +110,10 @@ Class clsSettings {
     settings_file := A_AppData . "\ZipChord\config.ini"
     settings := { version:          zc_version
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
-                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_CONFIG
+                , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_CONFIG | PREF_CHECK_UPDATES
                 , locale:           "English US"
                 , capitalization:   CAP_CHORDS
-                , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION 
+                , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION
                 , chording:         CHORD_RESTRICT ; Chord recognition options
                 , chord_file:       "chords-en-starting.txt" ; file name for the chord dictionary
                 , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
@@ -149,13 +151,15 @@ Initialize(zc_version) {
     global app_settings
     global app_shortcuts
     global locale
-    ; save license file
+    global updater
+
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:
-    if ( CompareSemanticVersions(zc_version, settings.version) ) {
+    if (updater.SemVerCompare(zc_version, settings.version) == 1) {
         UpdateSettings(settings.version)
     }
+    updater.CheckForUpdates(zc_version)
     app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
@@ -185,7 +189,8 @@ Initialize(zc_version) {
 }
 
 UpdateSettings(from_version) {
-    if (CompareSemanticVersions("2.3.0", from_version)) {
+    global updater
+    if (updater.SemVerCompare("2.3.0", from_version) == 1) {
         ; Update hints settings from HINT_ON 1, HINT_ALWAYS 2, _NORMAL 4, _RELAXED 8, _OSD 16, _TOOLTIP 32
         ; to  HINT_OFF 1, _RELAXED 2, _NORMAL 4, _ALWAYS 8, _OSD 16, _TOOLTIP 32, _SCORE 64
         if (settings.hints & 1) {
@@ -203,6 +208,9 @@ UpdateSettings(from_version) {
         }
         MsgBox, , % "ZipChord", % "ZipChord can now show your typing efficiency.`n`n"
                 . "You can change the setting on the Hints tab."
+    }
+    if (updater.SemVerCompare("2.5.0", from_version) == 1) {
+        settings.preferences |= PREF_CHECK_UPDATES
     }
 }
 
@@ -506,10 +514,6 @@ Class clsMainUI {
                 , btn_customize_hints:  { type: "Button"
                                         , function: ObjBindMethod(this, "ShowHintCustomization")
                                         , text: "&Adjust OSD >>"}
-                , hint_offset_x:        { type: "Edit" }
-                , hint_offset_y:        { type: "Edit" }
-                , hint_size:            { type: "Edit" }
-                , hint_color:           { type: "Edit" }
                 , space_before:         { type: "Checkbox"
                                         , text: "In &front of chords"
                                         , setting: { parent: "spacing", const: "SPACE_BEFORE_CHORD"}}
@@ -521,11 +525,20 @@ Class clsMainUI {
                                         , setting: { parent: "spacing", const: "SPACE_PUNCTUATION"}}
                 , capitalization:       { type: "DropDownList"
                                         , text: "Off|For shortcuts|For all input"}
+                , update_check:         { type: "Checkbox"
+                                        , text: "Automatically check for &updates"
+                                        , setting: {parent: "preferences", const: "PREF_CHECK_UPDATES"}} 
                 , debugging:            { type: "Checkbox"
                                         , text: "&Log this session (debugging)"} 
                 , btn_pause:            { type: "Button"
                                         , function: Func("PauseApp").Bind(true)
                                         , text: UI_STR_PAUSE} }
+    ; Broken off separately from above due to AHK expression length limits
+    controls.hint_offset_x := { type: "Edit" }
+    controls.hint_offset_y := { type: "Edit" }
+    controls.hint_size := { type: "Edit" }
+    controls.hint_color := { type: "Edit" }
+
     labels := []
     closing_tip := 0
 
@@ -584,13 +597,14 @@ Class clsMainUI {
 
         UI.Tab(5)
         UI.Add("Text", "Y+20", "ZipChord")
-        UI.Add("Text", , "Copyright © 2021–" . zc_year . " Pavel Soukenik")
-        UI.Add("Text", , "version " . zc_version)
+        UI.Add("Text", "Y+20", "Copyright © 2021–" . zc_year . " Pavel Soukenik")
+        UI.Add("Text", "Y+20", "version " . zc_version)
         UI.Font("underline cBlue")
         UI.Add("Text", , "License information", Func("LinkToLicense"))
         UI.Add("Text", , "Help and documentation", Func("LinkToDocumentation"))
-        UI.Add("Text", , "Latest releases (check for updates)", Func("LinkToReleases"))
+        UI.Add("Text", , "Latest releases", Func("LinkToReleases"))
         UI.Font("norm cDefault")
+        UI.Add(cts.update_check, "y+30")
         if (A_Args[1] == "dev") {
             UI.Add(cts.debugging, "y+30")
         }
@@ -682,8 +696,9 @@ Class clsMainUI {
         ; recalculate hint settings based on frequency (HINT_OFF etc.) and OSD/Tooltip. ( ** is exponent function in AHK)
         settings.hints := 2**(cts.hint_frequency.value - 1) + 16 * cts.hint_destination.value
                             + cts.hint_score.value * HINT_SCORE
-        ; update preferences based on show on startup selection
+        ; update preferences based on selections
         settings.preferences := cts.show_on_startup.value ? (settings.preferences | PREF_SHOW_CONFIG) : (settings.preferences & ~PREF_SHOW_CONFIG)
+        settings.preferences := cts.update_check.value ? (settings.preferences | PREF_CHECK_UPDATES) : (settings.preferences & ~PREF_CHECK_UPDATES)
 
         if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."

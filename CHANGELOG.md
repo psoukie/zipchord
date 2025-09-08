@@ -4,6 +4,7 @@
 
 **New Features**
 
+- Added an automated update check. (This check can be turned off on the About tab).
 - Added an option to hide the ZipChord window when the app starts (#237). Thanks to @ollyisonit for the idea and initial code!
 - Renamed the Hints tab to Display to better match its options.
 

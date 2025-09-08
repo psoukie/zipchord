@@ -1,6 +1,6 @@
 ﻿/*
 This file is part of ZipChord.
-Copyright (c) 2021-2024 Pavel Soukenik
+Copyright (c) 2021-2025 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 */
 
@@ -12,6 +12,8 @@ global CONFIG_SECTION := "Default"
 
 global ini := new clsIniFile
 global str := new clsStringFunctions
+
+updater := new clsUpdater
 
 OpenHelp(topic) {
     Switch topic {
@@ -439,46 +441,168 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
     Return new_str
 }
 
-CompareSemanticVersions(v1, v2) {
-    v1 := Trim(v1)
-    v2 := Trim(v2)
-    if (v1 == v2) {
-        return false
-    }
-    ; Split the versions into main and pre-release parts
-    Pattern := "O)(\d+\.\d+\.\d+)(?:-([0-9A-Za-z.-]+))?"
-    RegExMatch(v1, Pattern, v1Parts)
-    RegExMatch(v2, Pattern, v2Parts)
 
-    ; Compare version numbers
-    v1Main := StrSplit(v1Parts[1], ".")
-    v2Main := StrSplit(v2Parts[1], ".")
-    for index, num1 in v1Main {
-        num2 := v2Main[index]
-        if (num1 == num2) {
-            continue
+/**
+* Updater class
+* Methods:
+*    CheckGitHubUpdate
+*    SemVerCompare(v1, v2) -> 1 if v1>v2, 0 if equal, -1 if v1<v2
+*/
+class clsUpdater {
+
+    CheckForUpdates(currentVersion) {
+        if (! (settings.preferences & PREF_CHECK_UPDATES)) {
+            Return
         }
-        return (num1 > num2)
-    }
-    if (v1Parts[2] == "") {
-        return true  ; No pre-release is higher than any pre-release
-    }
-    if (v2Parts[2] == "") {
-        return false
-    }
-    ; Compare pre-release parts
-    pre1Parts := StrSplit(v1Parts[2], ".", " ")
-    pre2Parts := StrSplit(v2Parts[2], ".", " ")
-    maxLength := Max(pre1Parts.MaxIndex(), pre2Parts.MaxIndex())
-    Loop, %maxLength% {
-        part1 := pre1Parts[A_Index]
-        part2 := pre2Parts[A_Index]
-        if (part1 == part2) {
-            continue
+        check_result := this._CheckGitHubUpdate(currentVersion)
+        if (check_result.hasUpdate != 1) {
+            Return
         }
-        return (part1 > part2)
+        MsgBox, 4, % "ZipChord", % "A new version of ZipChord is available!`nWould you like to visit the GitHub releases page to download it?`n`n(You can disable automated update checks on the About page.)"
+        IfMsgBox Yes
+            Run % check_result.url
+    }
+
+    /**
+    * _CheckGitHubUpdate
+    *       Checks GitHub for the latest release and compares it to currentVersion.
+    *      Returns an object with:
+    *        ok              1 if successful, 0 if error
+    *     hasUpdate      1 if an update is available, 0 if up-to-date
+    *   latestVersion  the latest version string (tag)
+    *       url             URL to the releases page
+    *      reason          empty if ok=1, otherwise error reason
+    */ 
+    _CheckGitHubUpdate(currentVersion) {
+        latest := this._GetLatestRelease()
+        if !latest.ok
+            return { ok:0, hasUpdate:0, latestVersion:"", url:"", reason:latest.reason }
+
+        has_update := this.SemVerCompare(latest.tag, currentVersion)
+        return { ok:1
+               , hasUpdate: has_update
+               , latestVersion: latest.tag
+               , url: latest.url
+               , reason: (cmp < 0 ? "" : "up-to-date") }
+    }
+
+    _GetLatestRelease(owner := "psoukie", repo := "zipchord") {
+        base := "https://api.github.com/repos/" owner "/" repo "/releases"
+
+        ; latest stable only (non-draft, non-prerelease by GitHub contract)
+        json := this._HttpGet(base "/latest")
+        if (json = "")
+            return { ok:0, reason:"HTTP error or empty response" }
+
+        if (! RegExMatch(json, "O)""tag_name""\s*:\s*""([^""]+)""", mTag) ) {
+            return { ok:0, reason:"tag_name not found" }
+        }
+        tag := mTag[1]   ; first capture group
+
+        url := "https://github.com/" owner "/" repo "/releases"
+        if ( RegExMatch(json, "O)""html_url""\s*:\s*""([^""]+)""", mURL) ) {
+            url := mURL[1]   ; first capture group
+        }
+        return { ok:1, tag:tag, url:url } ; using auto-named capture groups
+    }
+
+    _HttpGet(url) {
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        try {
+            whr.Open("GET", url, false)
+            whr.SetRequestHeader("User-Agent", "ZipChord-Updater-AHK/1.1")
+            whr.SetRequestHeader("Accept", "application/vnd.github+json")
+            whr.SetRequestHeader("X-GitHub-Api-Version", "2022-11-28")
+            whr.Send()
+            return (whr.Status=200 ? whr.ResponseText : "")
+        } catch {
+            return ""
+        }
+    }
+
+    /** SemVer 2.0.0 comparison
+    * SemVerCompare(v1, v2) -> 1 if v1>v2, 0 if equal, -1 if v1<v2
+    */
+    SemVerCompare(v1, v2) {
+        v1 := this._sv_norm(v1)
+        v2 := this._sv_norm(v2)
+
+        RegExMatch(v1, "O)^\s*([0-9]+(?:\.[0-9]+){0,})?(?:-([0-9A-Za-z\.-]+))?", m1)
+        RegExMatch(v2, "O)^\s*([0-9]+(?:\.[0-9]+){0,})?(?:-([0-9A-Za-z\.-]+))?", m2)
+
+        main1 := (m1[1] = "") ? "0" : m1[1]
+        main2 := (m2[1] = "") ? "0" : m2[1]
+
+        a1 := StrSplit(main1, ".")
+        a2 := StrSplit(main2, ".")
+        max := (a1.MaxIndex() > a2.MaxIndex()) ? a1.MaxIndex() : a2.MaxIndex()
+        if (max < 3)
+            max := 3
+
+        loop % max {
+            n1 := (A_Index <= a1.MaxIndex()) ? a1[A_Index]+0 : 0
+            n2 := (A_Index <= a2.MaxIndex()) ? a2[A_Index]+0 : 0
+            if (n1 > n2)
+                return 1
+            if (n1 < n2)
+                return -1
+        }
+
+        pre1 := m1[2], pre2 := m2[2]
+        if (pre1 = "" && pre2 = "")
+            return 0
+        if (pre1 = "" && pre2 != "")
+            return 1
+        if (pre1 != "" && pre2 = "")
+            return -1
+
+        s1 := StrSplit(pre1, ".")
+        s2 := StrSplit(pre2, ".")
+        maxp := (s1.MaxIndex() > s2.MaxIndex()) ? s1.MaxIndex() : s2.MaxIndex()
+
+        loop % maxp {
+            id1 := s1[A_Index], id2 := s2[A_Index]
+            if (id1 = "" && id2 = "")
+                continue
+            if (id1 = "")
+                return -1
+            if (id2 = "")
+                return 1
+
+            isNum1 := RegExMatch(id1, "^\d+$")
+            isNum2 := RegExMatch(id2, "^\d+$")
+
+            if (isNum1 && isNum2) {
+                n1 := id1 + 0, n2 := id2 + 0
+                if (n1 > n2)
+                    return 1
+                if (n1 < n2)
+                    return -1
+            } else if (isNum1 && !isNum2) {
+                return -1  ; numeric < non-numeric
+            } else if (!isNum1 && isNum2) {
+                return 1   ; non-numeric > numeric
+            } else {
+                cmp := DllCall("lstrcmp", "str", id1, "str", id2, "int")
+                if (cmp > 0)
+                    return 1
+                if (cmp < 0)
+                    return -1
+            }
+        }
+        return 0
+    }
+
+    _sv_norm(v) {
+        v := Trim(v)
+        v := RegExReplace(v, "i)^[vV]\s*", "")   ; drop leading v
+        v := RegExReplace(v, "\+.*$", "")        ; drop build metadata
+        return v
     }
 }
+
+; Simple performance measuring using QueryPerformanceCounter
+; Call once to start measuring, call again to output elapsed time in ms to debug console
 
 QPC() {
 	static frequency
