@@ -503,10 +503,8 @@ Class clsIOrepresentation {
                 return false
             }
             candidate := StrReplace(candidate, "||", "|")
-            OutputDebug, % candidate . "`n"
             expanded := chords.LookUp(candidate)
             if (expanded) {
-                OutputDebug, % expanded . "`n"
                 ; check whether chord is used to complete typing of a shorthand 
                 if (this.TryImmediateShorthand(-1)) {
                     return this._ProcessChord(this.length, expanded) 
@@ -774,8 +772,10 @@ Class clsIOrepresentation {
         }
         if (A_Args[1] == "dev") {
             test.Log(this.output_buffer)
-            if (test.mode == TEST_RUNNING)
+            if (test.mode == TEST_RUNNING) {
+                this.output_buffer := ""
                 return
+            }
         }
         this._DelayOutput()
         SendInput % this.output_buffer
