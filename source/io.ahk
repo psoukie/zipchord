@@ -304,7 +304,7 @@ Class clsIOrepresentation {
         this.SetChunkAttributes(chunk_id, bitmask, false)
     }
     TestChunkAttributes(chunk_id, bitmask) {
-        ; purposefully return true if one of the bitmask conditions are true (therefore, not comparing to bitmask)
+        ; purposefully returns true if one of the bitmask conditions are true (therefore, not comparing to bitmask)
         if (chunk_id > this.length || chunk_id < 1) {
             return false
         }
@@ -462,6 +462,7 @@ Class clsIOrepresentation {
 
     _RemoveSmartSpace() {
         this.Replace("", this.length - 1, this.length - 1)
+        this.OutputKeys()
         this._sequence.RemoveAt(this.length - 1)
         return true
     }
@@ -505,7 +506,7 @@ Class clsIOrepresentation {
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
             if (expanded) {
-                ; check whether chord is used to complete typing of a shorthand 
+                ; check whether chord is used to complete typing of a shorthand
                 if (this.TryImmediateShorthand(-1)) {
                     return this._ProcessChord(this.length, expanded) 
                 }
@@ -660,6 +661,7 @@ Class clsIOrepresentation {
             expanded := this._RemoveAffixSymbols(expanded, affixes)
             first_chunk_offset := affixes & this.AFFIX_SUFFIX ? -1 : 0 
             this.Replace(expanded, first_chunk_id + first_chunk_offset, this.length + offset)
+            this.OutputKeys()
             this.SetChunkAttributes(first_chunk_id + first_chunk_offset, this.WAS_EXPANDED)
             return true
         }
