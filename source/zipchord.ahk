@@ -289,15 +289,6 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
     }
 }
 
-OutputKeys(output) {
-    if (A_Args[1] == "dev") {
-        test.Log(output)
-        if (test.mode == TEST_RUNNING)
-            return
-    }
-    SendInput % output
-}
-
 CloseApp() {
     WireHotkeys("Off")
     ExitApp

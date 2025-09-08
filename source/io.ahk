@@ -141,6 +141,7 @@ Class clsIOrepresentation {
 
     pre_shifted := false
     _sequence := []
+    output_buffer := ""  ; stores what will be sent as simulated keystrokes
     SEQUENCE_WINDOW := 6 ; sequence length to maintain
 
     length [] {
@@ -347,22 +348,15 @@ Class clsIOrepresentation {
             backup_content := this.GetOutput(start+1)
         }
         adj := StrLen(old_output . backup_content)
-        this._DelayOutput()
         if (adj != 1) {  ; this test is for compatibility with ZipChord 2.1 sending often just "{Backspace}" - TK: simplify later
-            OutputKeys("{Backspace " . adj . "}")
+            this.output_buffer .= "{Backspace " . adj . "}"
         } else {
-            OutputKeys("{Backspace}")
+            this.output_buffer .= "{Backspace}"
         }
         if ( new_output . backup_content == "") {
             return
         }
-        this._DelayOutput()
-        ; we send any expanded text that includes { as straight directives:
-        if (! InStr(new_output, "{")) {
-            OutputKeys("{Text}" . new_output . backup_content)
-        } else {
-            OutputKeys(new_output)
-        }
+        this.output_buffer .= new_output . backup_content
     }
 
     ; Delay output by defined delay
@@ -398,6 +392,7 @@ Class clsIOrepresentation {
         }
         if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
             if (this._RemoveRawChord()) {
+                this.OutputKeys()
                 return
             }
             this._FixLastChunk()
@@ -480,6 +475,7 @@ Class clsIOrepresentation {
         if (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, chunk.input) )
                 || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, chunk.input) ) {
             this._AddSmartSpace()
+            this.OutputKeys()
         }
     }
 
@@ -487,8 +483,9 @@ Class clsIOrepresentation {
     DeDoubleSpace() {
         if ( this.TestChunkAttributes(this.length - 1, this.SMART_SPACE_AFTER)
                 && this.TestChunkAttributes(this.length, this.IS_MANUAL_SPACE) ) {
-            OutputKeys("{Backspace}")
             this._sequence.RemoveAt(this.length - 1)
+            this.output_buffer .= "{Backspace}"
+            this.OutputKeys()
             return true
         }
         return false
@@ -588,6 +585,7 @@ Class clsIOrepresentation {
                 this._AddSmartSpace()
             }
         }
+        this.OutputKeys()
         if (! affixes) {
             score.Score(score.ENTRY_CHORD)
         }
@@ -616,12 +614,12 @@ Class clsIOrepresentation {
         ; registered while typing a word, this input is left alone because it is safe to assume it was intended as normal
         ; typing.
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(this.length-1) ) {
-            return
+            Return False
         }
         raw_output := this.GetChunk(this.length).output
-        OutputKeys("{Backspace " . StrLen(raw_output) . "}")
+        this.output_buffer .= "{Backspace " . StrLen(raw_output) . "}"
         this._sequence.RemoveAt(this.length)
-        return true
+        Return true
     }
 
     TryImmediateShorthand(last_chunk_offset := 0) {
@@ -767,7 +765,21 @@ Class clsIOrepresentation {
         smart_space.output := " "
         smart_space.attributes |= this.SMART_SPACE_AFTER
         this._sequence.Push(smart_space)
-        OutputKeys("{Space}")
+        this.output_buffer .= "{Space}"
+    }
+
+    OutputKeys() {
+        if (this.output_buffer == "") {
+            return
+        }
+        if (A_Args[1] == "dev") {
+            test.Log(this.output_buffer)
+            if (test.mode == TEST_RUNNING)
+                return
+        }
+        this._DelayOutput()
+        SendInput % this.output_buffer
+        this.output_buffer := ""
     }
 
     DebugSequence() {
