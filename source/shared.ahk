@@ -441,7 +441,85 @@ ReplaceWithVariants(text, enclose_latin_letters:=false) {
     Return new_str
 }
 
+
+/**
+* Updater class
+* Methods:
+*    CheckGitHubUpdate
+*    SemVerCompare(v1, v2) -> 1 if v1>v2, 0 if equal, -1 if v1<v2
+*/
 class clsUpdater {
+
+    CheckForUpdates(currentVersion) {
+        if (! (settings.preferences & PREF_CHECK_UPDATES)) {
+            Return
+        }
+        check_result := this._CheckGitHubUpdate(currentVersion)
+        if (check_result.hasUpdate != 1) {
+            Return
+        }
+        MsgBox, 4, % "ZipChord", % "A new version of ZipChord is available!`nWould you like to visit the GitHub releases page to download it?`n`n(You can disable automated update checks on the About page.)"
+        IfMsgBox Yes
+            Run % check_result.url
+    }
+
+    /**
+    * _CheckGitHubUpdate
+    *       Checks GitHub for the latest release and compares it to currentVersion.
+    *      Returns an object with:
+    *        ok              1 if successful, 0 if error
+    *     hasUpdate      1 if an update is available, 0 if up-to-date
+    *   latestVersion  the latest version string (tag)
+    *       url             URL to the releases page
+    *      reason          empty if ok=1, otherwise error reason
+    */ 
+    _CheckGitHubUpdate(currentVersion) {
+        latest := this._GetLatestRelease()
+        if !latest.ok
+            return { ok:0, hasUpdate:0, latestVersion:"", url:"", reason:latest.reason }
+
+        has_update := this.SemVerCompare(latest.tag, currentVersion)
+        return { ok:1
+               , hasUpdate: has_update
+               , latestVersion: latest.tag
+               , url: latest.url
+               , reason: (cmp < 0 ? "" : "up-to-date") }
+    }
+
+    _GetLatestRelease(owner := "psoukie", repo := "zipchord") {
+        base := "https://api.github.com/repos/" owner "/" repo "/releases"
+
+        ; latest stable only (non-draft, non-prerelease by GitHub contract)
+        json := this._HttpGet(base "/latest")
+        if (json = "")
+            return { ok:0, reason:"HTTP error or empty response" }
+
+        if (! RegExMatch(json, "O)""tag_name""\s*:\s*""([^""]+)""", mTag) ) {
+            return { ok:0, reason:"tag_name not found" }
+        }
+        tag := mTag[1]   ; first capture group
+
+        url := "https://github.com/" owner "/" repo "/releases"
+        if ( RegExMatch(json, "O)""html_url""\s*:\s*""([^""]+)""", mURL) ) {
+            url := mURL[1]   ; first capture group
+        }
+        return { ok:1, tag:tag, url:url } ; using auto-named capture groups
+    }
+
+    _HttpGet(url) {
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        try {
+            whr.Open("GET", url, false)
+            whr.SetRequestHeader("User-Agent", "ZipChord-Updater-AHK/1.1")
+            whr.SetRequestHeader("Accept", "application/vnd.github+json")
+            whr.SetRequestHeader("X-GitHub-Api-Version", "2022-11-28")
+            whr.Send()
+            return (whr.Status=200 ? whr.ResponseText : "")
+        } catch {
+            return ""
+        }
+    }
+
     /** SemVer 2.0.0 comparison
     * SemVerCompare(v1, v2) -> 1 if v1>v2, 0 if equal, -1 if v1<v2
     */

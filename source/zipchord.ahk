@@ -158,6 +158,7 @@ Initialize(zc_version) {
     if (updater.SemVerCompare(zc_version, settings.version) == 1) {
         UpdateSettings(settings.version)
     }
+    updater.CheckForUpdates(zc_version)
     app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
@@ -206,6 +207,9 @@ UpdateSettings(from_version) {
         }
         MsgBox, , % "ZipChord", % "ZipChord can now show your typing efficiency.`n`n"
                 . "You can change the setting on the Hints tab."
+    }
+    if (updater.SemVerCompare("2.5.0", from_version) == 1) {
+        settings.preferences |= PREF_CHECK_UPDATES
     }
 }
 
