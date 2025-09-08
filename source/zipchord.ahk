@@ -119,7 +119,7 @@ Class clsSettings {
                 , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
-                , output_delay:     25 }
+                , output_delay:     25 }    
     GetSettingsFile() {
         return runtime_status.config_file ? runtime_status.config_file : this.settings_file
     }
@@ -248,6 +248,7 @@ WireHotkeys(state) {
     Hotkey, % "~Shift Up", Shift_key, %state%
     Hotkey, % "~Enter", Enter_key, %state%
     Hotkey, % "~Backspace", Backspace_key, %state%
+    Hotkey, % "~^Backspace", Ctrl_Backspace_key, %state%
     Loop Parse, % interrupts , |
     {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
@@ -423,22 +424,34 @@ Enter_key:
 Return
 
 Backspace_key:
+    HandleBackspace()
+Return
+
+Ctrl_Backspace_key:
+    HandleBackspace(true)
+Return
+
+HandleBackspace(with_ctrl := false) {
+    global io
     Critical
-    key := "~Backspace"
-    tick := A_TickCount
-    if (A_Args[1] == "dev") {
+    key  := with_ctrl ? "~^Backspace" : "~Backspace"
+
+    if (A_Args[1] = "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
             test.Log(key)
         }
     }
+
     if (visualizer.IsOn()) {
-        visualizer.Pressed(Chr(0x232B), false)
-        visualizer.Lifted(Chr(0x232B), false)
+        sym := Chr(0x232B)
+        visualizer.Pressed(sym, false)
+        visualizer.Lifted(sym, false)
     }
-    io.Backspace()
+
+    io.Backspace(with_ctrl)
     Critical Off
-Return
+}
 
 ;;  Adding shortcuts 
 ; -------------------

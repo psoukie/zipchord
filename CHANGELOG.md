@@ -8,6 +8,10 @@
 - Added an option to hide the ZipChord window when the app starts (#237). Thanks to @ollyisonit for the idea and initial code!
 - Renamed the Hints tab to Display to better match its options.
 
+**Fixes**
+
+- ZipChord now handles Ctrl+Backspace gracefully. (Fixes [#235](https://github.com/psoukie/zipchord/issues/235))
+
 
 ## ZipChord 2.4.1
 
