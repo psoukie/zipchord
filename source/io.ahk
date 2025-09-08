@@ -371,9 +371,9 @@ Class clsIOrepresentation {
             Sleep settings.output_delay
         }
     }
-    Backspace() {
+    Backspace(with_ctrl := false) {
         global classifier
-        if ( this.length < 2 || this.TestChunkAttributes(this.length, this.WAS_EXPANDED) ) {
+        if ( this.length < 2 || this.TestChunkAttributes(this.length, this.WAS_EXPANDED) || with_ctrl ) {
             classifier.Interrupt()
             return
         }
@@ -506,8 +506,10 @@ Class clsIOrepresentation {
                 return false
             }
             candidate := StrReplace(candidate, "||", "|")
+            OutputDebug, % candidate . "`n"
             expanded := chords.LookUp(candidate)
             if (expanded) {
+                OutputDebug, % expanded . "`n"
                 ; check whether chord is used to complete typing of a shorthand 
                 if (this.TryImmediateShorthand(-1)) {
                     return this._ProcessChord(this.length, expanded) 
