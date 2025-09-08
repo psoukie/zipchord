@@ -552,40 +552,101 @@ Class TestingClass {
         }
     }
     _FormatOutput(file) {
+        out := ""
         Loop, Read, % file
         {
-            key := A_LoopReadLine
-            if (SubStr(key, 1, 1) == "~")
-                key := SubStr(key, 2)
-            Switch key {
-                Case "Enter":
-                    out .= "`n"
-                Case "Space", "{Space}":
-                    out .= " "
-                Case "{Backspace}", "Backspace":
-                    out := SubStr(out, 1, StrLen(out)-1)
-                Case "*Hint*":
-                    Continue
-                Case "*Interrupt*":
-                    out .= "`n*interrupted*`n"
-                Default:
-                    if (SubStr(key, 1, 11)=="{Backspace ") {
-                        count := SubStr(key, 12, StrLen(key)-12)
-                        out := SubStr(out, 1, StrLen(out)-count)
-                        Continue
+            line := A_LoopReadLine
+            i := 1, len := StrLen(line)
+            while (i <= len) {
+                ch := SubStr(line,i,1)
+
+                ; --- tilde-prefixed keys (~...) ---
+                if (ch = "~") {
+                    i++
+                    if (SubStr(line,i,1) = "+") {                   ; ~+x
+                        out .= str.ToAscii(SubStr(line,i+1,1), ["Shift"])
+                        i += 2
+                    } else {                                        ; ~Name or ~x
+                        j := i
+                        while (j <= len && RegExMatch(SubStr(line,j,1), "i)[A-Za-z]"))
+                            j++
+                        token := SubStr(line,i,j-i)
+                        if (token = "") {                           ; single char
+                            out .= SubStr(line,i,1), i++
+                        } else {                                    ; named key
+                            if (token = "Enter")
+                                out .= "`n"
+                            else if (token = "Space")
+                                out .= " "
+                            else if (token = "Backspace")
+                                out := SubStr(out, 1, Max(0, StrLen(out)-1))
+                            else
+                                out .= token
+                            i := j
+                        }
                     }
-                    if (SubStr(key, 1, 17)=="{Backspace}{Text}") {
-                        out := SubStr(out, 1, StrLen(out)-1) . SubStr(key, 18)
-                        Continue
+                    continue
+                }
+
+                ; --- brace tokens {...} ---
+                if (ch = "{") {
+                    close := InStr(line, "}", false, i+1)
+                    if (!close) {
+                        out .= SubStr(line,i), i := len+1
+                        break
                     }
-                    if (SubStr(key, 1, 6)=="{Text}") {
-                        out .= SubStr(key, 7)
-                        Continue
+                    name := SubStr(line, i+1, close-i-1)
+
+                    if (name = "Space") {
+                        out .= " "
+                        i := close+1
+                        continue
                     }
-                    if (SubStr(key, 1, 1) == "+")
-                        out .= str.ToAscii(SubStr(key, 2, 1), ["Shift"])
-                    else
-                        out .= key
+                    if (name = "Backspace") {
+                        out := SubStr(out, 1, Max(0, StrLen(out)-1))
+                        i := close+1
+                        continue
+                    }
+                    if (SubStr(name,1,9) = "Backspace") {          ; Backspace N
+                        count := RegExReplace(name, "i)^Backspace\D*(\d+).*", "$1")
+                        if (count = "")
+                            count := 1
+                        out := SubStr(out, 1, Max(0, StrLen(out)-count))
+                        i := close+1
+                        continue
+                    }
+                    if (name = "Text") {                           ; {Text}<run-until-next-special>
+                        next := RegExMatch(line, "O)[~{*]", m, close+1) ? m.Pos(0) : (len+1)
+                        out .= SubStr(line, close+1, next-(close+1))
+                        i := next
+                        continue
+                    }
+
+                    ; unknown token -> keep literally
+                    out .= "{" . name . "}"
+                    i := close+1
+                    continue
+                }
+
+                ; --- star tokens *Hint* / *Interrupt* ---
+                if (ch = "*") {
+                    close := InStr(line, "*", false, i+1)
+                    token := close ? SubStr(line, i, close-i+1) : SubStr(line, i)
+                    if (token = "*Hint*") {
+                        ; skip
+                    } else if (token = "*Interrupt*") {
+                        out .= "`n*interrupted*`n"
+                    } else {
+                        out .= token
+                    }
+                    i := close ? close+1 : len+1
+                    continue
+                }
+
+                ; --- plain text run until next special (~ { or *) ---
+                next := RegExMatch(line, "O)[~{*]", m2, i) ? m2.Pos(0) : (len+1)
+                out .= SubStr(line, i, next-i)
+                i := next
             }
         }
         return out
