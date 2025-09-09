@@ -210,7 +210,7 @@ UpdateSettings(from_version) {
                 . "You can change the setting on the Hints tab."
     }
     if (updater.SemVerCompare("2.5.0", from_version) == 1) {
-        settings.preferences |= PREF_CHECK_UPDATES
+        settings.preferences |= PREF_CHECK_UPDATES | PREF_SHOW_CONFIG
     }
 }
 
