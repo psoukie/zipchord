@@ -979,14 +979,15 @@ Class clsClosingTip {
 
     __New() {
         global app_shortcuts
-        this.UI := new clsUI("ZipChord")
+        this.UI := new clsUI("ZipChord Tips")
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
-            , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n`n"
-                    . "Press F1 in any ZipChord tab or window for help." 
+            , Format("- To reopen ZipChord window, click on its system tray icon or {}.`n`n"
+                    . "- To define a new shortcut, select a word and {}.`n`n"
+                    . "- Press F1 in any ZipChord tab or window for help." 
             , app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold ")
-            , app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
+            , app_shortcuts.GetHotkeyText("ShowMainUI", "press ", "press and hold ")))
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
         call := Func("OpenHelp").Bind("")
