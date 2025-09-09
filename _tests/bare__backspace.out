@@ -2,7 +2,7 @@
 ~e
 ~u
 ~s
-{Backspace 3}This{Space}
+{Backspace 3}this
 ~Backspace
 ~Backspace
 ~Backspace
@@ -23,4 +23,3 @@
 ~Space
 {Backspace 4}from 
 ~.
-{Space}

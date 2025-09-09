@@ -1,14 +1,10 @@
 ~i
 ~s
-{Backspace 2}
-{Text}is
-{Space}
+{Backspace 2}is{Space}
 ~s
 ~e
 ~u
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~e
 ~v
 ~e
@@ -20,37 +16,26 @@
 ~b
 ~l
 ~+/
-{Backspace 5}
-{Text}possible?
+{Backspace 5}possible?
 {Space}
 ~j
 ~w
 ~Space
 ~c
 ~j
-{Backspace 2}
-{Text}which
-{Space}
+{Backspace 2}which{Space}
 ~+/
-{Backspace 2}
-{Text}?
+{Backspace 2}?
 {Space}
 ~r
 ~j
-{Backspace 2}
-{Text}Where
-{Space}
+{Backspace 2}Where{Space}
 ~j
 ~c
-{Backspace 2}
-{Text}which
-{Space}
+{Backspace 2}which{Space}
 ~o
 ~n
-{Backspace 2}
-{Text}on
-{Space}
+{Backspace 2}on{Space}
 ~+/
-{Backspace 2}
-{Text}?
+{Backspace 2}?
 {Space}

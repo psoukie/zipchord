@@ -1,8 +1,7 @@
 *Interrupt*
 ~Enter
 ~t
-{Backspace}
-{Text}T
+{Backspace}T
 ~e
 ~s
 ~t
@@ -11,31 +10,23 @@
 ~o
 ~u
 ~s
-{Backspace 3}
-{Text}Should
-{Space}
+{Backspace 3}Should{Space}
 ~e
 ~b
-{Backspace 2}
-{Text}be
-{Space}
+{Backspace 2}be{Space}
 ~.
-{Backspace 2}
-{Text}.
+{Backspace 2}.
 {Space}
 ~f
-{Backspace}
-{Text}F
+{Backspace}F
 ~r
 ~m
 ~Space
-{Backspace 4}
-{Text}From 
+{Backspace 4}From 
 ~f
 ~r
 ~m
 ~Space
-{Backspace 4}
-{Text}from 
+{Backspace 4}from 
 ~.
 {Space}

@@ -5,8 +5,7 @@
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
+{Backspace 3}this
 ~Space
 ~i
 ~s
@@ -39,5 +38,4 @@
 ~Space
 ~h
 ~t
-{Backspace 2}
-{Text}the
+{Backspace 2}the

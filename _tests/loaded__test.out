@@ -16,21 +16,14 @@
 ~Space
 ~a
 ~n
-{Backspace 2}
-{Text}and
-{Space}
+{Backspace 2}and{Space}
 ~o
 ~d
-{Backspace 2}
-{Text}do
-{Space}
+{Backspace 2}do{Space}
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~.
-{Backspace 2}
-{Text}.
+{Backspace 2}.
 {Space}

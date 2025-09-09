@@ -1,40 +1,30 @@
 ~h
 ~t
-{Backspace 2}
-{Text}the
-{Space}
+{Backspace 2}the{Space}
 ~Space
 {Backspace}
 ~t
 ~h
 ~e
-{Backspace 3}
-{Text}there
-{Space}
+{Backspace 3}there{Space}
 ~Space
 {Backspace}
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~Space
 {Backspace}
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~Space
 {Backspace}
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~Space
 {Backspace}
 ~e
@@ -52,17 +42,13 @@
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~Space
 {Backspace}
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~Space
 {Backspace}
 ~e
@@ -76,6 +62,4 @@
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}

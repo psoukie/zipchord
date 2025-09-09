@@ -1,12 +1,10 @@
 ~i
 ~s
-{Backspace 2}
-{Text}is
+{Backspace 2}is
 ~s
 ~e
 ~u
-{Backspace 3}
-{Text}this
+{Backspace 3}this
 ~e
 ~v
 ~e
@@ -17,26 +15,21 @@
 ~b
 ~l
 ~+/
-{Backspace 5}
-{Text}possible?
+{Backspace 5}possible?
 ~j
 ~w
 ~Space
 ~c
 ~j
-{Backspace 2}
-{Text}which
+{Backspace 2}which
 ~+/
 ~r
 ~j
-{Backspace 2}
-{Text}where
+{Backspace 2}where
 ~j
 ~c
-{Backspace 2}
-{Text}which
+{Backspace 2}which
 ~o
 ~n
-{Backspace 2}
-{Text}on
+{Backspace 2}on
 ~+/

@@ -1,13 +1,9 @@
 ~n
 ~o
-{Backspace 2}
-{Text}on
-{Space}
+{Backspace 2}on{Space}
 ~t
 ~h
-{Backspace 2}
-{Text}the
-{Space}
+{Backspace 2}the{Space}
 ~n
 ~e
 ~w
@@ -16,15 +12,11 @@
 {Space}
 ~i
 ~s
-{Backspace 2}
-{Text}Is
-{Space}
+{Backspace 2}Is{Space}
 ~u
 ~e
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~b
 ~e
 ~t
