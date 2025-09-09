@@ -437,6 +437,7 @@ Class clsIOrepresentation {
         if ( this._ShouldCapitalize() ) {
             upper_cased := RegExReplace(character, "(^.)", "$U1")
             this.Replace(upper_cased, this.length)
+            this.OutputKeys()
             this.SetChunkAttributes(this.length, this.WAS_CAPITALIZED)
         }
     }
