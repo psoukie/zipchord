@@ -348,15 +348,14 @@ Class clsIOrepresentation {
             backup_content := this.GetOutput(start+1)
         }
         adj := StrLen(old_output . backup_content)
-        if (adj != 1) {  ; this test is for compatibility with ZipChord 2.1 sending often just "{Backspace}" - TK: simplify later
-            this.output_buffer .= "{Backspace " . adj . "}"
-        } else {
+        if (adj == 1) { 
             this.output_buffer .= "{Backspace}"
+        } else {
+            this.output_buffer .= "{Backspace " . adj . "}"
         }
-        if ( new_output . backup_content == "") {
-            return
+        if ( new_output . backup_content != "") {
+            this.output_buffer .= new_output . backup_content
         }
-        this.output_buffer .= new_output . backup_content
     }
 
     ; Delay output by defined delay
