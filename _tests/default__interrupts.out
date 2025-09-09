@@ -2,9 +2,7 @@
 ~e
 ~s
 ~u
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 *Interrupt*
 ~f
 ~r
@@ -22,14 +20,10 @@
 *Interrupt*
 ~.
 ~n
-{Backspace 2}
-{Text}ing
-{Space}
+{Backspace 2}ing{Space}
 ~r
 ~o
-{Backspace 2}
-{Text}or
-{Space}
+{Backspace 2}or{Space}
 ~t
 ~e
 ~s
@@ -38,10 +32,7 @@
 *Interrupt*
 ~.
 ~n
-{Backspace 2}
-{Text}ing
-{Space}
+{Backspace 2}ing{Space}
 ~.
-{Backspace 2}
-{Text}.
+{Backspace 2}.
 {Space}

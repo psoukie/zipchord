@@ -3,8 +3,7 @@
 ~+d
 ~x
 ~Space
-{Backspace 4}
-Dear X,{Enter}
+{Backspace 4}Dear X,{Enter} 
 ~Enter
 ~+h
 ~e
@@ -15,6 +14,5 @@ Dear X,{Enter}
 ~d
 ~x
 ~,
-{Backspace 4}
-Dear X,{Enter}
+{Backspace 4}Dear X,{Enter},
 {Space}

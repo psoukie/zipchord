@@ -7,8 +7,7 @@
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
+{Backspace 3}this
 ~f
 ~r
 ~m
@@ -17,11 +16,9 @@
 ~r
 ~m
 ~Space
-{Backspace 4}
-{Text}from 
+{Backspace 4}from 
 ~f
 ~r
 ~m
 ~.
-{Backspace 4}
-{Text}from.
+{Backspace 4}from.

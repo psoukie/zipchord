@@ -3,8 +3,7 @@
 *Interrupt*
 ~Enter
 ~x
-{Backspace}
-{Text}X
+{Backspace}X
 ~.
 {Space}
 ~+9
@@ -13,25 +12,20 @@
 ~.
 {Space}
 ~+0
-{Backspace 2}
-{Text})
+{Backspace 2})
 ~Space
 ~x
 ~.
 {Space}
 ~+2
-{Backspace 2}
-{Text}@
+{Backspace 2}@
 ~Space
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~+2
-{Backspace 2}
-{Text}@
+{Backspace 2}@
 ~Space
 ~t
 ~h
@@ -52,17 +46,12 @@
 ~s
 ~u
 ~e
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~+9
 ~Space
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~+0
-{Backspace 2}
-{Text})
+{Backspace 2})

@@ -5,9 +5,7 @@
 ~s
 ~e
 ~u
-{Backspace 3}
-{Text}this
-{Space}
+{Backspace 3}this{Space}
 ~s
 ~e
 ~u

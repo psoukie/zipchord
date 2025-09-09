@@ -66,8 +66,7 @@
 *Hint*
 {Space}
 ~a
-{Backspace}
-{Text}A
+{Backspace}A
 ~n
 ~d
 ~Space
@@ -79,8 +78,7 @@
 *Hint*
 {Space}
 ~+'
-{Backspace 2}
-{Text}"
+{Backspace 2}"
 ~+f
 ~o
 ~r
@@ -122,8 +120,7 @@
 *Hint*
 {Space}
 ~+'
-{Backspace 2}
-{Text}"
+{Backspace 2}"
 ~.
 {Space}
 ~Space
@@ -147,8 +144,7 @@
 *Hint*
 {Space}
 ~a
-{Backspace}
-{Text}A
+{Backspace}A
 ~n
 ~d
 ~Space
@@ -160,8 +156,7 @@
 *Hint*
 {Space}
 ~n
-{Backspace}
-{Text}N
+{Backspace}N
 ~o
 ~w
 ~Space

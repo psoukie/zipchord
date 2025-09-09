@@ -10,6 +10,7 @@
 
 **Fixes**
 
+- The way text replacement is implemented has been reworked to improve the reliability of typing chords and shorthands.
 - ZipChord now handles Ctrl+Backspace gracefully. (Fixes [#235](https://github.com/psoukie/zipchord/issues/235))
 
 
