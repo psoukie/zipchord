@@ -779,10 +779,41 @@ Class clsIOrepresentation {
                 return
             }
         }
-        this._DelayOutput()
-        SendInput % this.output_buffer
+        this.SendIndividualKeys(this.output_buffer)
         this.output_buffer := ""
     }
+
+    SendIndividualKeys(str) {
+        ; expand repeats like {Backspace 2}
+        while RegExMatch(str, "\{([A-Za-z]+)\s+(\d+)\}", m) {
+            rep := ""
+            Loop % m2
+                rep .= "{" m1 "}"
+            str := StrReplace(str, m, rep)
+        }
+
+        pos := 1
+        while (pos <= StrLen(str)) {
+            this._DelayOutput()
+            ch := SubStr(str, pos, 1)
+            if (ch = "{") {
+                end := InStr(str, "}", false, pos)
+                if (!end)  { ; malformed, send rest as text
+                    token := SubStr(str, pos)
+                    pos := StrLen(str)+1
+                }
+                else {
+                    token := SubStr(str, pos, end-pos+1)
+                    pos := end+1
+                }
+                SendInput % token            ; send special key token
+            } else {
+                token := SubStr(str, pos, 1), pos++
+                SendInput % "{Text}" token   ; send literal character safely
+            }
+        }
+    }
+
 
     DebugSequence() {
         if (A_Args[2] != "test-vs") {
