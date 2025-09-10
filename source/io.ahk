@@ -522,7 +522,12 @@ Class clsIOrepresentation {
         replace_offset := 0
 
         hint_delay.Shorten()
-        if (       this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)
+
+        ; capitalize the whole word on Caps Lock or the first character as needed
+        if (GetKeyState("CapsLock", "T")) {
+            expanded := Format("{:U}", expanded)
+            mark_as_capitalized := true
+        } else if ( this.TestChunkAttributes(chunk_id, this.WITH_SHIFT)
                 || this.TestChunkAttributes(chunk_id, this.WAS_CAPITALIZED)
                 || ( ( settings.capitalization != CAP_OFF) && this._ShouldCapitalize(chunk_id) ) ) {
             expanded := RegExReplace(expanded, "(^.)", "$U1")
@@ -648,7 +653,11 @@ Class clsIOrepresentation {
         expanded := shorthands.LookUp(text)
         if (expanded) {
             hint_delay.Shorten()
-            if (    this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT)
+            ; capitalize the whole word on Caps Lock or the first character as needed
+            if (GetKeyState("CapsLock", "T")) {
+                expanded := Format("{:U}", expanded)
+                this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)
+            } else if ( this.TestChunkAttributes(first_chunk_id, this.WITH_SHIFT)
                     || ( ( settings.capitalization != CAP_OFF) && this._ShouldCapitalize(first_chunk_id) ) ) {
                 expanded := RegExReplace(expanded, "(^.)", "$U1")
                 this.SetChunkAttributes(first_chunk_id, this.WAS_CAPITALIZED)

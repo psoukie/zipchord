@@ -1,5 +1,12 @@
 # ZipChord Changelog
 
+## ZipChord 2.6.0
+
+**New Features**
+
+- Expansion of shortcuts (chords and shorthands) now capitalizes the expanded text when Caps Lock is on.
+
+
 ## ZipChord 2.5.0
 
 **New Features**
@@ -10,9 +17,12 @@
 
 **Improvements and Fixes**
 
-- Improved how chords and shorthands are expanded into full text. Note that the Output Delay setting (which is useful for apps or editors where replacements did not work well) is now applied after every simulated keystroke. This change makes replacements even more reliable, but you may need to adjust the delay in the Outputs setting.
+- Improved how chords and shorthands are expanded into full text.
 - ZipChord now handles Ctrl+Backspace gracefully. (Fixes [#235](https://github.com/psoukie/zipchord/issues/235))
 
+**Note**
+
+Note that the Output Delay setting (which is useful for apps or editors where replacements did not work well) is now applied after every simulated keystroke. This change makes replacements even more reliable, but you may need to adjust the delay in the Output setting.
 
 ## ZipChord 2.4.1
 
