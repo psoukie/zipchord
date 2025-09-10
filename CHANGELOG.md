@@ -8,9 +8,9 @@
 - Added an option to hide the ZipChord window when the app starts (#237). Thanks to @ollyisonit for the idea and initial code!
 - Renamed the Hints tab to Display to better match its options.
 
-**Fixes**
+**Improvements and Fixes**
 
-- The way text replacement is implemented has been reworked to improve the reliability of typing chords and shorthands.
+- Improved how chords and shorthands are expanded into full text. Note that the Output Delay setting (which is useful for apps or editors where replacements did not work well) is now applied after every simulated keystroke. This change makes replacements even more reliable, but you may need to adjust the delay in the Outputs setting.
 - ZipChord now handles Ctrl+Backspace gracefully. (Fixes [#235](https://github.com/psoukie/zipchord/issues/235))
 
 
