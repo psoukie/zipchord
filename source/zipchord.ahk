@@ -211,6 +211,11 @@ UpdateSettings(from_version) {
     }
     if (updater.SemVerCompare("2.5.0", from_version) == 1) {
         settings.preferences |= PREF_CHECK_UPDATES | PREF_SHOW_CONFIG
+        if (settings.output_delay > 0) {
+            settings.output_delay := Round(settings.output_delay / 3)
+            MsgBox, , % "ZipChord Upgrade Note", % "The Output Delay is now applied after every simulated keystroke. "
+                . "This makes replacements more reliable, but you may need to adjust your Output settings."
+        }
     }
 }
 
