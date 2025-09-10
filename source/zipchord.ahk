@@ -226,6 +226,7 @@ WireHotkeys(state) {
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
     new_keys := {}
     bypassed_keys := {}
+    special_key_map := {}
     ParseKeys(keys.all, new_keys, bypassed_keys, special_key_map)
     For _, key in new_keys
     {
@@ -283,13 +284,17 @@ ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
             if (InStr(key_definition, ":")) {
                 divider := ":"
                 target := new
+                prefix_in := "~"
+                prefix_out := "~"
             } else {
                 divider := "="
                 target := bypassed
+                prefix_in := ""
+                prefix_out := "|"
             }
             def_components := StrSplit(key_definition, divider)
             target.push(def_components[1])
-            ObjRawSet(map, def_components[1], def_components[2])
+            ObjRawSet(map, prefix_in . def_components[1], prefix_out . def_components[2])
         }
     }
 }
@@ -341,7 +346,7 @@ KeyDown:
         }
     }
     if ( special_key_map.HasKey(key) ) {
-        key := "|" . special_key_map[key]
+        key := special_key_map[key]
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
@@ -377,7 +382,7 @@ KeyUp:
     }
     stripped := SubStr(key, 1, StrLen(key) - 3)
     if ( special_key_map.HasKey(stripped) ) {
-        key := "|" . special_key_map[stripped] . " Up"
+        key := special_key_map[stripped] . " Up"
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")

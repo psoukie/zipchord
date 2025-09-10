@@ -54,7 +54,7 @@ Class clsClassifier {
         global io
         is_special_key := false
         
-        if ( SubStr(key, 1, 1) == "|" ) {
+        if ( SubStr(key, 1, 1) == "|" ) { 
             is_special_key := true
         }
         key := SubStr(key, 2)
@@ -175,6 +175,7 @@ Class clsIOrepresentation {
     }
 
     Add(entry, with_shift, adjustment := false, is_special_key := false) {
+        entry := "" . entry
         chunk := new this.clsChunk
         chunk.input := entry
         if (with_shift) {
@@ -185,20 +186,21 @@ Class clsIOrepresentation {
         }
         if (is_special_key) {
             chunk.output := ""
-        }
-        if ( !with_shift && InStr(keys.punctuation_plain, entry) )
-                || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
-            chunk.attributes |= this.IS_PUNCTUATION
-        }
-        if (entry == " ") {
-            chunk.attributes |= this.IS_MANUAL_SPACE
-        }
-        if (!with_shift && InStr("0123456789", entry)) {
-            chunk.attributes |= this.IS_NUMERAL
-        }
-        if (this.pre_shifted) {
-            chunk.attributes |= this.WAS_CAPITALIZED
-            this.pre_shifted := false
+        } else {
+            if ( !with_shift && InStr(keys.punctuation_plain, entry) )
+                    || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
+                chunk.attributes |= this.IS_PUNCTUATION
+            }
+            if (entry == " ") {
+                chunk.attributes |= this.IS_MANUAL_SPACE
+            }
+            if (!with_shift && InStr("0123456789", entry)) {
+                chunk.attributes |= this.IS_NUMERAL
+            }
+            if (this.pre_shifted) {
+                chunk.attributes |= this.WAS_CAPITALIZED
+                this.pre_shifted := false
+            }
         }
         this._sequence.Push(chunk)
         if (adjustment) {
