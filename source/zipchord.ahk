@@ -206,11 +206,16 @@ UpdateSettings(from_version) {
         if (settings.hint_color == "3BD511") {
             settings.hint_color := "1CA6BF"
         }
-        MsgBox, , % "ZipChord", % "ZipChord can now show your typing efficiency.`n`n"
+        MsgBox, , % "ZipChord Upgrade Note", % "ZipChord can now show your typing efficiency.`n`n"
                 . "You can change the setting on the Hints tab."
     }
     if (updater.SemVerCompare("2.5.0", from_version) == 1) {
-        settings.preferences |= PREF_CHECK_UPDATES
+        settings.preferences |= PREF_CHECK_UPDATES | PREF_SHOW_CONFIG
+        if (settings.output_delay > 0) {
+            settings.output_delay := Round(settings.output_delay / 3)
+            MsgBox, , % "ZipChord Upgrade Note", % "The Output Delay is now applied after every simulated keystroke. "
+                . "This makes replacements more reliable, but you may need to adjust your Output settings."
+        }
     }
 }
 
@@ -738,7 +743,7 @@ Class clsMainUI {
                 IfMsgBox No
                     Return false
             } else {
-                MsgBox, , % "ZipChord", % "You can type in a text editor to create a log of input and output.`n`nSimply reopen the ZipChord dialog when done to stop the logging process and save the debug file."
+                MsgBox, , % "ZipChord", % "You can type in a text editor to create a log of input and output.`n`nSimply reopen the ZipChord window when done to stop the logging process and save the debug file."
             }
             FileDelete, % A_Temp . "\debug.cfg"
             FileDelete, % A_Temp . "\debug.in"
@@ -979,14 +984,15 @@ Class clsClosingTip {
 
     __New() {
         global app_shortcuts
-        this.UI := new clsUI("ZipChord")
+        this.UI := new clsUI("ZipChord Tips")
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
-            , Format("Select a word and {} to define a shortcut for it.`n`n{} to open the ZipChord menu again.`n`n"
-                    . "Press F1 in any ZipChord tab or window for help." 
+            , Format("- To reopen the settings window, click on ZipChord's system tray icon or {}.`n`n"
+                    . "- To define a new shortcut, select a word and {}.`n`n"
+                    . "- Press F1 in any ZipChord tab or window for help." 
             , app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold ")
-            , app_shortcuts.GetHotkeyText("ShowMainUI", "Press ", "Press and hold ")))
+            , app_shortcuts.GetHotkeyText("ShowMainUI", "press ", "press and hold ")))
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
         call := Func("OpenHelp").Bind("")
