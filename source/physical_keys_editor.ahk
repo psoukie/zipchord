@@ -1,21 +1,11 @@
 ﻿/*
 Physical Keys Editor for ZipChord
-Created to provide a UI for mapping physical keyboard keys to user-defined characters
-so those characters can be used in custom dictionaries as representations of the physical keys.
-
-This file follows the same UI helper approach as `app_shortcuts.ahk`.
+Provides a UI for mapping physical keyboard keys (from `keys.key_list`) to characters used in dictionaries.
 */
 
 physical_keys_editor := new clsPhysicalKeyMapper
 
 Class clsPhysicalKeyMapper {
-    ; list of keys laid out in physical order (number row, Q-row, A-row, Z-row, bottom row)
-    keys := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
-                , "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
-                , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
-                , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"
-                , "Space"]
-
     controls := {}
     mappings := {}
 
@@ -23,44 +13,40 @@ Class clsPhysicalKeyMapper {
         this._LoadSettings()
         UI := new clsUI("ZipChord — Physical Keys Editor")
         UI.on_close := ObjBindMethod(this, "Close")
-        UI.Margin(15, 15) ; ensure a normal left margin and vertical margin
+        UI.Margin(15, 15)
         UI.Add("Text", "x+0 y+6", "Click a key below to set the character that represents that physical key in custom dictionaries.")
-        UI.Add("Text", "x+0 y+6", "") ; add some whitespace below the label
+        UI.Add("Text", "x+0 y+6", "") ; whitespace below the label
 
-        ; define per-row column counts matching a standard physical layout
-        counts := [13, 14, 11, 10, 5] ; number row, Q-row (with Tab and backslash), A-row, Z-row, bottom row
+        ; per-row column counts (matches keys.key_list ordering in clsLocale)
+        counts := [13, 13, 11, 10]
 
         ; layout parameters
         btn_w := 70
         btn_h := 30
         gap_x := 8
         gap_y := 10
-        space_w := btn_w * 5 + gap_x * 4 ; wide spacebar width
 
-        ; slice the flat keys array into rows according to counts
+        ; slice keys.key_list into rows
         rows := []
         idx := 1
         for _, c in counts {
             row := []
             loop % c {
-                if (idx > this.keys.Length())
+                if (idx > keys.key_list.Length())
                     break
-                row.Push(this.keys[idx])
+                row.Push(keys.key_list[idx])
                 idx++
             }
             rows.Push(row)
         }
 
-        ; compute per-row total widths and the maximum width to center rows and set window width
+        ; compute row widths to center rows
         rowWidths := []
         maxRowWidth := 0
         for _, row in rows {
             totalW := 0
-            for _, key in row {
-                w := (key == "Space") ? space_w : btn_w
-                totalW += w
-            }
-            ; add gaps between keys
+            for _, name in row
+                totalW += btn_w
             if (row.Length() > 1)
                 totalW += (row.Length()-1) * gap_x
             rowWidths.Push(totalW)
@@ -68,49 +54,61 @@ Class clsPhysicalKeyMapper {
                 maxRowWidth := totalW
         }
 
-        ; render rows using accumulated x offsets to account for variable widths per key
+        ; render rows (centered)
         for rIndex, row in rows {
             totalW := rowWidths[rIndex]
             rowOffset := (maxRowWidth - totalW) / 2
             acc := 0
-            for _, key in row {
-                w := (key == "Space") ? space_w : btn_w
+            for _, name in row {
                 xoff := rowOffset + acc
-                yoff := (rIndex-1) * (btn_h + gap_y) + 40 ; move rows down a bit to account for extra label spacing
-                options := Format("x{} y{} w{} h{}", xoff, yoff, w, btn_h)
-                this.controls[key] := UI.Add("Button", options, this._ButtonLabel(key), ObjBindMethod(this, "_OnKeyClick", key))
-                acc += w + gap_x
+                yoff := (rIndex-1) * (btn_h + gap_y) + 40
+                options := Format("x{} y{} w{} h{}", xoff, yoff, btn_w, btn_h)
+                this.controls[name] := UI.Add("Button", options, this._ButtonLabel(name), ObjBindMethod(this, "_OnKeyClick", name))
+                acc += btn_w + gap_x
             }
         }
 
         UI.Add("Button", "w80 xs y+12", "Close", ObjBindMethod(this, "Close"))
-        ; set window width based on maxRowWidth with a small padding
-        UI.Show()
+        ; set window width based on widest row + padding
+        window_w := Ceil(maxRowWidth) + 40
+        UI.Show("w" . window_w)
         this.UI := UI
     }
 
-    _ButtonLabel(key) {
-        val := this.mappings.HasKey(key) ? this.mappings[key] : ""
+    _ButtonLabel(name) {
+        val := this.mappings.HasKey(name) ? this.mappings[name] : ""
         if (val == "")
-            return key . ": [ ]"
+            return name . ": [ ]"
         else
-            return key . ": " . val
+            return name . ": " . val
     }
 
-    _OnKeyClick(key) {
-        ; Prompt the user for a character/string to represent that key.
-        Prompt := "Type the character(s) to represent " . key . ":"
-        InputBox, mapped, % "Set mapping for " key, %Prompt%, , 300, 120
+    _OnKeyClick(name) {
+        Prompt := "Type the character(s) to represent " . name . ":"
+        InputBox, mapped, % "Set mapping for " name, %Prompt%, , 300, 120
         if (ErrorLevel)
             return
         mapped := Trim(mapped)
-        this.mappings[key] := mapped
 
-        ; update the button label for that key
-        if (IsObject(this.controls[key])) {
-            this.controls[key].value := this._ButtonLabel(key)
+        ; determine scan code for this physical key (runtime lookup)
+        sc := GetKeySC(name)
+
+        ; remove any other character currently mapped to this scan code (prevent duplicates)
+        for k, v in keys.key_map {
+            if (v = sc && k != mapped)
+                keys.key_map.Delete(k)
         }
-        this._SaveSettings()
+        ; set new mapping in keys.key_map
+        keys.key_map[mapped] := sc
+
+        ; persist per-key choice so UI remembers it independently (older config)
+        config_filename := runtime_status.config_file ? runtime_status.config_file : ""
+        ini.SaveProperty(mapped, "pk_" . name, "Physical Key Mapping", config_filename)
+
+        ; update button label
+        if (IsObject(this.controls[name])) {
+            this.controls[name].value := this._ButtonLabel(name)
+        }
     }
 
     _SaveSettings() {
@@ -122,11 +120,44 @@ Class clsPhysicalKeyMapper {
 
     _LoadSettings() {
         config_filename := runtime_status.config_file ? runtime_status.config_file : ""
-        For _, key in this.keys {
-            value := ini.LoadProperty("pk_" . key, "Physical Key Mapping", config_filename)
-            if (value != "")
-                this.mappings[key] := value
+        for _, name in keys.key_list {
+            ; 1) if user selected explicit pk_ override, use it
+            value := ini.LoadProperty("pk_" . name, "Physical Key Mapping", config_filename)
+            if (value != "") {
+                mapped := value
+            } else {
+                ; 2) try to find existing char in keys.key_map that maps to this key's SC
+                sc := GetKeySC(name)
+                mapped := ""
+                for k, v in keys.key_map {
+                    if (v = sc) {
+                        mapped := k
+                        break
+                    }
+                }
+                ; 3) fallback to default QWERTY character
+                if (mapped = "") {
+                    if RegExMatch(name, "^[A-Z]$")
+                        mapped := StrLower(name)
+                    else
+                        mapped := name
+                }
+            }
+            ; update display value; do not store separately here — keys.key_map is the source of truth
+            this.controls[name] := this.controls[name] ? this.controls[name] : ""
+            ; if control exists, update its value, otherwise store into mappings for label creation later
+            if (IsObject(this.controls[name]))
+                this.controls[name].value := this._ButtonLabelFromMapped(name, mapped)
+            else
+                this.mappings[name] := mapped
         }
+    }
+
+    _ButtonLabelFromMapped(name, mapped) {
+        if (mapped = "")
+            return name . ": [ ]"
+        else
+            return name . ": " . mapped
     }
 
     Close() {
