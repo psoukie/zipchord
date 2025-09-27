@@ -56,7 +56,10 @@ Class clsLocaleInterface {
                             , function: ObjBindMethod(this, "_Delete")}
                 , new:      { type: "Button"
                             , text: "&New" 
-                            , function: ObjBindMethod(this, "_New")}}
+                            , function: ObjBindMethod(this, "_New")}
+                , remap:    { type: "Button"
+                            , text: "Re&map keys" 
+                            , function: ObjBindMethod(this, "_RemapKeys")}}
     options := { all:             { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
@@ -87,9 +90,10 @@ Class clsLocaleInterface {
         UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "Close"))
         UI.Add("GroupBox", "ys h330 w460", "Locale settings")
         UI.Add("Text", "xp+20 yp+30 Section", "&All keys (except spacebar and dead keys)")
+        UI.Add(this.controls.remap, "w120")
         UI.Font("s10", "Consolas")
         UI.Add(this.options.all, "y+10 w420 r1")
-        UI.Font("s10 w700", "Segoe UI")
+        UI.Font("s10 w600", "Segoe UI")
         UI.Add("Text", "yp+40", "Punctuation")
         UI.Add("Text", "xs+160 yp", "Unmodified keys")
         UI.Add("Text", "xs+300 yp", "If Shift was pressed")
@@ -138,6 +142,15 @@ Class clsLocaleInterface {
         For key, option in this.options {
             option.value := loc_object[key]
         }
+    }
+    _RemapKeys() {
+        ; remap keys in the main UI according to the current locale
+        global physical_keys_editor
+        physical_keys_editor.Show()
+        ; keys := new clsLocale
+        ; For key, option in this.options {
+        ;     keys[key] := option.value
+        ; }
     }
     _EnableControls(mode := true) {
         this.name.Enable(mode)

@@ -417,6 +417,9 @@ class clsIniFile {
             Run https://raw.githubusercontent.com/psoukie/zipchord/main/LICENSE
     }
     SaveProperty(value, key, section, filename) {
+        if (!filename) {
+            filename := this.default_ini
+        }
         IniWrite %value%, %filename%, %section%, %key%
     }
     LoadProperty(key, section, filename) {
