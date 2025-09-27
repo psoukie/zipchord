@@ -97,8 +97,6 @@ if (A_Args[1] == "dev") {
 global runtime_status := { is_keyboard_wired: false
                          , config_file      : false}
 
-special_key_map   := {} ; TK: Move to locale. Stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-
 global main_UI := new clsMainUI
 
 
@@ -222,17 +220,16 @@ UpdateSettings(from_version) {
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
-    global special_key_map
+    unrecognized := ""
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
-    new_keys := {}
-    bypassed_keys := {}
-    ParseKeys(keys.all, new_keys, bypassed_keys, special_key_map)
-    For _, key in new_keys
+    parsed_keys := ParseKeys(keys.all)
+    keys.special_map := parsed_keys.special_map
+    For _, key in parsed_keys.standard
     {
         Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
-            if (state=="On")     
-                unrecognized .= key 
+            if (state=="On")
+                unrecognized .= key
             Continue
         }
         Hotkey, % "~+" key, KeyDown, %state%
@@ -259,7 +256,7 @@ WireHotkeys(state) {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
-    For _, key in bypassed_keys
+    For _, key in parsed_keys.remapped
     {
         Hotkey, % key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
@@ -274,24 +271,42 @@ WireHotkeys(state) {
 }
 
 ; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
-ParseKeys(old, ByRef new, ByRef bypassed, ByRef map) {
-    new := StrSplit( RegExReplace(old, "\{(.*?)\}", "") )   ; array with all text in between curly braces removed
-    segments := StrSplit(old, "{")
-    For i, segment in segments {
-        if (i > 1) {
-            key_definition := StrSplit(segment, "}", , 2)[1] ; the text which was in curly braces
-            if (InStr(key_definition, ":")) {
-                divider := ":"
-                target := new
-            } else {
-                divider := "="
-                target := bypassed
-            }
-            def_components := StrSplit(key_definition, divider)
-            target.push(def_components[1])
-            ObjRawSet(map, def_components[1], def_components[2])
+ParseKeys(key_string) {
+    standard_keys := []
+    remapped_keys := []
+    special_map := {}
+    tokens := str.Tokenize(key_string)
+    For _, token in tokens {
+        divider := ""
+        if (StrLen(token) > 1 && InStr(token, ":")) {
+            divider := ":"
+            target := standard_keys
+            prefix_in := "~"
+            prefix_out := "~"
         }
+        if (StrLen(token) > 1 && InStr(token, "=")) {
+            divider := "="
+            target := remapped_keys
+            prefix_in := ""
+            prefix_out := "|"
+        }
+        if (divider == "") {
+            if (StrLen(token) > 1) {
+                key_definition := SubStr(token, 2, StrLen(token)-2)
+                standard_keys.Push(key_definition)
+            } else {
+                standard_keys.Push(token)
+            }
+            continue
+        }
+        key_definition := SubStr(token, 2, StrLen(token)-2)
+        def_components := StrSplit(key_definition, divider)
+        target.push(def_components[1])
+        ObjRawSet(special_map, prefix_in . def_components[1], prefix_out . def_components[2])
     }
+    return { standard: standard_keys
+            , remapped: remapped_keys
+            , special_map: special_map }
 }
 
 CloseApp() {
@@ -340,8 +355,8 @@ KeyDown:
             test.Log(key)
         }
     }
-    if ( special_key_map.HasKey(key) ) {
-        key := "|" . special_key_map[key]
+    if ( keys.special_map.HasKey(key) ) {
+        key := keys.special_map[key]
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
@@ -376,8 +391,8 @@ KeyUp:
         }
     }
     stripped := SubStr(key, 1, StrLen(key) - 3)
-    if ( special_key_map.HasKey(stripped) ) {
-        key := "|" . special_key_map[stripped] . " Up"
+    if ( keys.special_map.HasKey(stripped) ) {
+        key := keys.special_map[stripped] . " Up"
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
