@@ -209,7 +209,6 @@ Class clsIOrepresentation {
         if (adjustment) {
             return
         }
-        this.DebugSequence()
         this.CapitalizeTypingAsNeeded(entry, chunk.attributes)
         this.RemoveSmartSpaceAsNeeded(chunk.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
