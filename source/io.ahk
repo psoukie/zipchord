@@ -84,6 +84,9 @@ Class clsClassifier {
         }
         ; Process a key down:
         event := new this.clsKeyEvent
+        if (StrLen(key)>1) {
+            key := "{" . key . "}"
+        }
         event.key := key
         event.start := timestamp
         event.with_shift := with_shift
@@ -206,6 +209,7 @@ Class clsIOrepresentation {
         if (adjustment) {
             return
         }
+        this.DebugSequence()
         this.CapitalizeTypingAsNeeded(entry, chunk.attributes)
         this.RemoveSmartSpaceAsNeeded(chunk.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:

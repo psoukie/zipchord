@@ -285,12 +285,48 @@ Class clsStringFunctions {
         text := StrReplace(text, "!", "Alt+")
         return text
     }
+
     ; Sort the string alphabetically
     Arrange(raw) {
-        raw := RegExReplace(raw, "(.)", "$1`n")
-        Sort raw
-        Return StrReplace(raw, "`n")
+        if (InStr(raw, "{")) {
+            tokens := this.Tokenize(raw)
+            return this.SortTokensToString(tokens)
+        }
+        split_chars := RegExReplace(raw, "(.)", "$1`n")
+        Sort split_chars
+        Return StrReplace(split_chars, "`n")
     }
+
+    ; Tokenize string into array, treating {...} as one token
+    Tokenize(str) {
+        tokens := []
+        pos := 1, len := StrLen(str)
+        while (pos <= len) {
+            if (SubStr(str, pos, 1) = "{") {
+                close := InStr(str, "}", false, pos)
+                if (close) {
+                    tokens.Push(SubStr(str, pos, close - pos + 1))
+                    pos := close + 1
+                } else {
+                    tokens.Push("{"), pos++
+                }
+            } else {
+                tokens.Push(SubStr(str, pos, 1))
+                pos++
+            }
+        }
+        return tokens
+    }
+    ; Sort tokens and return recomposed string
+    SortTokensToString(tokens) {
+        joined := ""
+        for _, t in tokens {
+            joined .= t "`n"
+        }
+        Sort joined
+        return StrReplace(joined, "`n")
+    }
+
     ; Convert to ASCII
     ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
     ToAscii(Key, Modifiers := "") {
