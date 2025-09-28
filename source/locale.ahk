@@ -12,10 +12,10 @@ locale := new clsLocaleInterface
 Class clsLocale {
     ; list of physical keys in layout order
     key_list := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
-          , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\"
+          , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
           , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
           , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
-    key_map := {} ; maps user-defined characters (used in dictionaries to define shortcuts) to scan codes
+    key_map := {} ; maps human-readable keys from key_list to their scan codes and user-defined symbols for representation in dictionaries
     all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
     remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
     remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
@@ -45,15 +45,15 @@ Class clsLocale {
           , "1E", "1F", "20", "21", "22", "23", "24", "25", "26", "27", "28"
           , "2C", "2D", "2E", "2F", "30", "31", "32", "33", "34", "35"]
 
-        maps := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
-          , "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\\"
+        symbols := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
+          , "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\"
           , "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"
           , "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"]
 
         len := this.key_list.Length()
         loop % len {
             i := A_Index
-            this.key_map[maps[i]] := scs[i]
+            this.key_map[this.key_list[i]] :=  { SC: scs[i], symbol: symbols[i] }  
         }
     }
 
