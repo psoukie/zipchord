@@ -262,6 +262,9 @@ Class clsAddShortcut {
         }
         this.UI.Show()
     }
+    Reshow() {
+        this.UI.Show()
+    }
     _ShowHelper(ctrl) {
         obj_name := ctrl . "s"
         if (chord := %obj_name%.ReverseLookUp(this.controls.text.value)) {

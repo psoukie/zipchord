@@ -470,7 +470,7 @@ HandleBackspace(with_ctrl := false) {
 ; Define a new shortcut for the selected text (or check what it is for existing)
 AddShortcut() {
     if (add_shortcut.UI.IsShown()) {
-        add_shortcut.UI.Show()
+        add_shortcut.UI.Reshow()
         Return
     }
     ; we try to copy any currently selected text into the Windows clipboard (while backing up and restoring its content)
