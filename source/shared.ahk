@@ -432,10 +432,23 @@ class clsIniFile {
         if (!ini_filename) {
             ini_filename := this.default_ini
         }
-        For key, value in object_to_save
+        For key, value in object_to_save {
+            ; try to have objects save themselves and write a placeholder so LoadProperties can detect them
+            if (IsObject(value)) {
+                ; Attempt to call Save on the object if available. Try both (section, filename) and no-arg signatures.
+                try {
+                    value.Save(ini_section, ini_filename)
+                } catch {
+                    ; ignore missing Save method
+                }
+                ; write a placeholder so LoadProperties can detect and call object's Load later
+                this.SaveProperty("__OBJECT__", key, ini_section, ini_filename)
+                continue
+            }
             this.SaveProperty(value, key, ini_section, ini_filename)
-    }
-    ; return true if section not found
+        }
+    }    ; return true if section not found
+
     LoadProperties(ByRef object_destination, ini_section := "Default", ini_filename := "") {
         if (!ini_filename) {
             ini_filename := this.default_ini
@@ -446,9 +459,24 @@ class clsIniFile {
         Loop, Parse, properties, `n
         {
             key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
+            ; skip key mapping
+            if (SubStr(key, 1, 4) == "_km_") {
+                continue
+            }
             value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
             if (value != "") {
-                object_destination[key] := value
+                if (value == "__OBJECT__") {
+                    ; If destination already has an object for this key, delegate loading to it (if it implements Load)
+                    if (IsObject(object_destination[key])) {
+                        try {
+                            object_destination[key].Load(ini_section, ini_filename)
+                        } catch {
+                            ; no Load method - ignore
+                        }
+                    }
+                } else {
+                    object_destination[key] := value
+                }
             }
         }
     }
