@@ -6,40 +6,29 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 ; Locale settings (keyboard and language settings) with default values (US English)
 
-global keys := new clsLocale
-locale := new clsLocaleInterface
+; Key map container class: acts like an associative object but also provides methods.
+Class clsKeyMap {
+    ; inner per-key class
+    Class clsKeyMapping {
+        label := ""
+        SC := 0
+        symbol := ""
 
-Class clsLocale {
-    ; list of physical keys in layout order
-    key_list := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
-          , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
-          , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
-          , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
-    key_map := {} ; maps human-readable keys from key_list to their scan codes and user-defined symbols for representation in dictionaries
-    all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
-    remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
-    remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
-    space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
-    space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
-    capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
-    capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-    other_plain := "[" ; unmodified keys for other punctuation
-    other_shift := "9,["  ; other punctuation keys when modified by Shift
-    special_map := {} ; stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
-
-    punctuation_plain [] {
-        get {
-            return (this.remove_space_plain . this.space_after_plain . this.capitalizing_plain . this.other_plain)
+        __New(label := "", SC := "", symbol := "") {
+            this.label := label
+            this.SC := SC
+            this.symbol := symbol
         }
     }
-    punctuation_shift [] {
-        get {
-            return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
-        }
-    }
+
+    ; Ordered list of physical keys
+    KEY_LIST := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
+        , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
+        , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
+        , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
 
     __New() {
-        ; Build key_mapping array
+        ; Build default scs and symbols internally
         scs := ["29", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D"
           , "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "2B"
           , "1E", "1F", "20", "21", "22", "23", "24", "25", "26", "27", "28"
@@ -50,10 +39,69 @@ Class clsLocale {
           , "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"
           , "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"]
 
-        len := this.key_list.Length()
-        loop % len {
+        ; populate entries keyed by name (this["Q"] := km)
+        loop % this.KEY_LIST.Length() {
             i := A_Index
-            this.key_map[this.key_list[i]] :=  { SC: scs[i], symbol: symbols[i] }  
+            name := this.KEY_LIST[i]
+            km := new this.clsKeyMapping(name, scs[i], symbols[i])
+            this[name] := km
+        }
+    }
+
+    Keys() {
+       return this.KEY_LIST
+    }
+
+    ; Save only symbols to INI (km_<name>)
+    Save(section, ini_filename) {
+        loop % this.KEY_LIST.Length() {
+            i := A_Index
+            name := this.KEY_LIST[i]
+            save_as := (name == "=") ? "eq" : name
+            ini.SaveProperty(this[name].symbol, "_km_" . save_as, section, ini_filename)
+        }
+    }
+
+    ; Load symbols from INI and override defaults
+    Load(section, ini_filename) {
+        loop % this.KEY_LIST.Length() {
+            i := A_Index
+            name := this.KEY_LIST[i]
+            load_as := (name == "=") ? "eq" : name
+            sym := ini.LoadProperty("_km_" . load_as, section, ini_filename)
+            if (IsObject(this[name]))
+                this[name].symbol := sym
+        }
+    }
+}
+
+; list of physical keys in layout order is now available as key_map.KEY_LIST
+
+; forward-declare locale objects; instantiate after clsLocale is defined below
+global keys := ""
+global locale := ""
+
+Class clsLocale {
+    all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
+    remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
+    remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
+    space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
+    space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
+    capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
+    capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
+    other_plain := "[" ; unmodified keys for other punctuation
+    other_shift := "9,["  ; other punctuation keys when modified by Shift
+    special_map := {} ; stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
+    key_map := new clsKeyMap() ; instantiate key_map object (see above)
+
+    punctuation_plain [] {
+        get {
+            return (this.remove_space_plain . this.space_after_plain . this.capitalizing_plain . this.other_plain)
+        }
+    }
+    punctuation_shift [] {
+        get {
+            return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
         }
     }
 
@@ -71,6 +119,7 @@ Class clsLocale {
 }
 
 Class clsLocaleInterface {
+    current_key_map := new clsKeyMap
     UI := {}
     name     := { type:     "DropDownList"
                 , function: ObjBindMethod(this, "_Change")}
@@ -82,10 +131,7 @@ Class clsLocaleInterface {
                             , function: ObjBindMethod(this, "_Delete")}
                 , new:      { type: "Button"
                             , text: "&New" 
-                            , function: ObjBindMethod(this, "_New")}
-                , remap:    { type: "Button"
-                            , text: "Re&map keys" 
-                            , function: ObjBindMethod(this, "_RemapKeys")}}
+                            , function: ObjBindMethod(this, "_New")}}
     options := { all:             { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
@@ -113,10 +159,23 @@ Class clsLocaleInterface {
         UI.Add(this.controls.rename, "y+30 w80")
         UI.Add(this.controls.delete, "w80")
         UI.Add(this.controls.new, "w80")
-        UI.Add("Button", "y+90 w80 Default", "&Close", ObjBindMethod(this, "Close"))
-        UI.Add("GroupBox", "ys h330 w460", "Locale settings")
-        UI.Add("Text", "xp+20 yp+30 Section", "&All keys (except spacebar and dead keys)")
-        UI.Add(this.controls.remap, "w120")
+        UI.Add("Button", "y+250 w80 Default", "&Close", ObjBindMethod(this, "Close"))
+        UI.Add("GroupBox", "ys h490 w490", "Locale settings")
+        UI.Add("Text", "xp+20 yp+30 Section", "Key mapping for dictionaries (click to edit)")
+        
+        for i, key_name in this.current_key_map.Keys() {
+            Switch i {
+                Case 1, 14:
+                    format := "y+5 xs w30 Section"
+                Case 27, 38:
+                    format := "y+5 xs+15 w30 Section"
+                Default:
+                    format := "x+5 w30"
+            }
+            this.controls[key_name] := UI.Add("Button", format, "", ObjBindMethod(this, "_OnKeyClick", key_name))
+        }
+
+        UI.Add("Text", "xs-30 yp+40 Section", "S&pecial keys")
         UI.Font("s10", "Consolas")
         UI.Add(this.options.all, "y+10 w420 r1")
         UI.Font("s10 w600", "Segoe UI")
@@ -168,15 +227,11 @@ Class clsLocaleInterface {
         For key, option in this.options {
             option.value := loc_object[key]
         }
-    }
-    _RemapKeys() {
-        ; remap keys in the main UI according to the current locale
-        global physical_keys_editor
-        physical_keys_editor.Show()
-        ; keys := new clsLocale
-        ; For key, option in this.options {
-        ;     keys[key] := option.value
-        ; }
+        this.current_key_map := loc_object.key_map
+        key_map := this.current_key_map
+        For _, key_name in key_map.Keys() {
+            this.controls[key_name].value := key_map[key_name].symbol
+        }
     }
     _EnableControls(mode := true) {
         this.name.Enable(mode)
@@ -231,11 +286,36 @@ Class clsLocaleInterface {
                 Return False
         }
     }
+    _OnKeyClick(name) {
+        key_map := this.current_key_map
+        Prompt := "Type the character(s) to represent " . name . ":"
+        InputBox, mapped, % "Set mapping for " name, %Prompt%, , 300, 120
+        if (ErrorLevel)
+            return
+        mapped := Trim(mapped)
+
+        ; Update key_map and remove duplicates
+        if (IsObject(key_map)) {
+            ; remove any other key that already uses this symbol
+            for _, k in key_map.Keys() {
+                if (k != name && IsObject(key_map[k]) && key_map[k].symbol == mapped) {
+                    key_map[k].symbol := ""
+                    this.controls[k].value := ""  ; update UI button label too
+                }
+            }
+            if (IsObject(key_map[name]))
+                key_map[name].symbol := mapped
+        }
+        ; Update UI button label
+        this.controls[name].value := mapped
+    }
+
     _Save() {
         new_loc := new clsLocale
         For key, option in this.options {
             new_loc[key] := option.value
         }
+        new_loc.key_map := this.current_key_map
         new_loc.Save(this.name.value)
         if (runtime_status.config_file) {
             keys := new_loc
@@ -247,3 +327,7 @@ Class clsLocaleInterface {
         this.UI.Hide()
     }
 }
+
+; Instantiate locale objects after the clsLocale class is defined
+global keys := new clsLocale
+locale := new clsLocaleInterface

@@ -86,7 +86,6 @@ global settings := app_settings.settings
 #Include configurations.ahk
 #Include hints.ahk
 #Include locale.ahk
-#Include physical_keys_editor.ahk
 #Include dictionaries.ahk
 #Include io.ahk
 
