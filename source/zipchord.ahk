@@ -82,6 +82,8 @@ global UI_STR_PAUSE  := "&Pause ZipChord"
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
+SC_mapping := {} ; dynamically created scan code to key name mapping
+
 #Include app_shortcuts.ahk
 #Include configurations.ahk
 #Include hints.ahk
@@ -218,30 +220,49 @@ UpdateSettings(from_version) {
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
-WireHotkeys(state) {
+WireHotkeys(state, SC_mode := true) {
     global keys
+    global SC_mapping
     unrecognized := ""
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
     parsed_keys := ParseKeys(keys.all)
     keys.special_map := parsed_keys.special_map
-    For _, key in parsed_keys.standard
-    {
-        Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
-        If ErrorLevel {
-            if (state=="On")
-                unrecognized .= key
-            Continue
+    SC_mapping := {}
+
+    if(SC_mode) {
+        For _, key_name in keys.key_map.Keys() {
+            if (keys.key_map[key_name].symbol == "") {
+                continue
+            }
+            SC := "SC0" . keys.key_map[key_name].SC
+            SC_mapping[SC] := keys.key_map[key_name].symbol
+
+            Hotkey, % "~" . SC, KeyDown, %state%
+            Hotkey, % "~+" . SC, KeyDown, %state%
+            Hotkey, % "~" . SC . " Up", KeyUp, %state%
+            Hotkey, % "~+" . SC . " Up", KeyUp, %state%
         }
-        Hotkey, % "~+" key, KeyDown, %state%
-        Hotkey, % "~" key " Up", KeyUp, %state%
-        Hotkey, % "~+" key " Up", KeyUp, %state%
+    } else {
+        For _, key in parsed_keys.standard
+        {
+            Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
+            If ErrorLevel {
+                if (state=="On")
+                    unrecognized .= key
+                Continue
+            }
+            Hotkey, % "~+" key, KeyDown, %state%
+            Hotkey, % "~" key " Up", KeyUp, %state%
+            Hotkey, % "~+" key " Up", KeyUp, %state%
+        }
+        if (unrecognized) {
+            key_str := StrLen(unrecognized)>1 ? "keys" : "key"
+            MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
+                    . "ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change "
+                    . "the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
+        }
     }
-    if (unrecognized) {
-        key_str := StrLen(unrecognized)>1 ? "keys" : "key"
-        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
-                . "ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change "
-                . "the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
-    }
+    
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
@@ -341,10 +362,29 @@ Simulate_Shift:
     io.PreShift()
 Return
 
+; Replace mapped scan codes inside a hotkey string
+ReplaceScanCode(key) {
+    global SC_mapping
+    pos := 1
+    if (pos := InStr(key, "SC", true)) {
+        ; candidate = "SC" + 3 chars
+        candidate := SubStr(key, pos, 5)
+        if (SC_mapping.HasKey(candidate)) {
+            repl := SC_mapping[candidate]
+            return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
+        }
+    }
+    return key
+}
+
 KeyDown:
     Critical
-    key := A_ThisHotkey
     tick := A_TickCount
+    key := ReplaceScanCode(A_ThisHotkey)
+    if (key == "") {
+        Critical Off
+        Return
+    } 
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := test_key
@@ -380,7 +420,11 @@ Return
 KeyUp:
     Critical
     tick_up := A_TickCount
-    key := A_ThisHotkey
+    key := ReplaceScanCode(A_ThisHotkey)
+    if (key == "") {
+        Critical Off
+        Return
+    }
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             tick_up := test_timestamp
