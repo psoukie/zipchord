@@ -622,7 +622,7 @@ Class clsMainUI {
 
         UI.Add(cts.tabs)
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
-        UI.Add(cts.selected_locale, "y+10 w150")
+        UI.Add(cts.selected_locale, "y+10 w170")
         UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
         this._BuilderHelper(UI, "chord", "&Open", "&Edit", "&Reload", "xs y+20")
         this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "Reloa&d", "xs-20 y+30")

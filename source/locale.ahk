@@ -177,7 +177,7 @@ Class clsLocaleInterface {
                             , text: "&Delete" 
                             , function: ObjBindMethod(this, "_Delete")}
                 , new:      { type: "Button"
-                            , text: "&New (auto-detect)" 
+                            , text: "&New (detect)" 
                             , function: ObjBindMethod(this, "_New")}}
     options := { special:         { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
@@ -203,10 +203,10 @@ Class clsLocaleInterface {
         Gui, +Owner%handle%
         UI.on_close := ObjBindMethod(this, "Close")
         UI.Add("Text", "Section", "&Locale name")
-        UI.Add(this.name, "w120")
-        UI.Add(this.controls.rename, "y+30 w80")
-        UI.Add(this.controls.delete, "w80")
-        UI.Add(this.controls.new, "w80")
+        UI.Add(this.name, "w140")
+        UI.Add(this.controls.rename, "y+30 w120")
+        UI.Add(this.controls.delete, "w120")
+        UI.Add(this.controls.new, "w120")
         UI.Add("Button", "y+250 w80 Default", "&Close", ObjBindMethod(this, "Close"))
         UI.Add("GroupBox", "ys h490 w490", "Locale settings")
         UI.Add("Text", "xp+20 yp+30 Section", "Key mapping for dictionaries (click to edit)")
