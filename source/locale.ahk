@@ -145,7 +145,8 @@ Class clsLocaleInterface {
     Init() {
         if ( ! ini.LoadSections() ) {
             default_locale := new clsLocale
-            default_locale.Save("English US")
+            layout_name := this.GetActiveLayoutName()
+            default_locale.Save(layout_name)
         }
         this._Build()
     }
@@ -243,7 +244,8 @@ Class clsLocaleInterface {
         this.Show(this.name.value)
     }
     _New() {
-        InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting."
+        default_name := locale.GetActiveLayoutName()
+        InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting.", , , , , , , , % default_name
         if ErrorLevel
             Return
         if (this._CheckIfExists(new_name))
@@ -325,6 +327,18 @@ Class clsLocaleInterface {
         main_UI.UpdateLocaleInMainUI(this.name.value)
         main_UI.UI.Enable()
         this.UI.Hide()
+    }
+
+    GetActiveLayoutName() {
+        VarSetCapacity(buf, 9*2, 0)  ; WCHAR[9] — layout name string like "00000409"
+        if (! DllCall("user32.dll\GetKeyboardLayoutName", "Str", buf)) {
+            return "Default"
+        }
+        RegRead, layoutName
+            , % "HKLM"
+            , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . buf
+            , % "Layout Text"
+        return layoutName
     }
 }
 

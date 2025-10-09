@@ -111,7 +111,7 @@ Class clsSettings {
     settings := { version:          zc_version
                 , mode:             MODE_ZIPCHORD_ENABLED | MODE_CHORDS_ENABLED | MODE_SHORTHANDS_ENABLED
                 , preferences:      PREF_FIRST_RUN | PREF_SHOW_CLOSING_TIP | PREF_SHOW_CONFIG | PREF_CHECK_UPDATES
-                , locale:           "English US"
+                , locale:           ""
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION
                 , chording:         CHORD_RESTRICT ; Chord recognition options
@@ -133,6 +133,8 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
+        global locale
+        this.settings.locale := locale.GetActiveLayoutName()
         ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
         this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
     }
