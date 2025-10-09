@@ -227,7 +227,7 @@ WireHotkeys(state, SC_mode := true) {
     global SC_mapping
     unrecognized := ""
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
-    parsed_keys := ParseKeys(keys.all)
+    parsed_keys := ParseKeys(keys.special)
     keys.special_map := parsed_keys.special_map
     SC_mapping := {}
 

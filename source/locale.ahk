@@ -129,7 +129,6 @@ global keys := ""
 global locale := ""
 
 Class clsLocale {
-    all := "``1234567890-=qwertyuiop[]\asdfghjkl;'zxcvbnm,./" ; ; keys tracked by ZipChord for typing and chords; should be all keys that produce a character when pressed
     remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
     remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
     space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
@@ -138,6 +137,7 @@ Class clsLocale {
     capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
     other_plain := "[" ; unmodified keys for other punctuation
     other_shift := "9,["  ; other punctuation keys when modified by Shift
+    special := "" ; raw list of special keys (see below)
     special_map := {} ; stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
     key_map := new clsKeyMap() ; instantiate key_map object (see above)
 
@@ -179,7 +179,7 @@ Class clsLocaleInterface {
                 , new:      { type: "Button"
                             , text: "&New (auto-detect)" 
                             , function: ObjBindMethod(this, "_New")}}
-    options := { all:             { type: "Edit"}
+    options := { special:         { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
@@ -225,7 +225,7 @@ Class clsLocaleInterface {
 
         UI.Add("Text", "xs-30 yp+40 Section", "S&pecial keys")
         UI.Font("s10", "Consolas")
-        UI.Add(this.options.all, "y+10 w420 r1")
+        UI.Add(this.options.special, "y+10 w420 r1")
         UI.Font("s10 w600", "Segoe UI")
         UI.Add("Text", "yp+40", "Punctuation")
         UI.Add("Text", "xs+160 yp", "Unmodified keys")
