@@ -1,11 +1,20 @@
 # ZipChord Changelog
 
-## ZipChord 2.6.0
+## ZipChord 2.6.0-beta
 
 **New Features**
 
+Version 2.6 introduces a significant change which allows correct handling of international and alternative keyboard layouts.
+
+- The "Keyboard and language settings" window now has explicit mapping of the layout of physical keys to characters used in shortcut dictionaries.
+- The "Keyboard and language settings" window now auto-detects the name and layout of the keyboard when you press the New button.
 - Expansion of shortcuts (chords and shorthands) now capitalizes the expanded text when Caps Lock is on.
 
+Note that this Beta version is missing a few features:
+
+- A graceful upgrade from the current keyboard and language handling. (It's best to create a new keyboard setting manually for now.)
+- Application keyboard shortcuts (stopping / resuming ZipChord, openening the settings, and adding shortcuts) do not work unless they are assigned to combination with function keys or selected from a menu.
+- NumPad keys are not included by default yet. (Although they can be added as special characters.)
 
 ## ZipChord 2.5.0
 
