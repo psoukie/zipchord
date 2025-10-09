@@ -27,23 +27,20 @@ Class clsKeyMap {
         , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
         , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
 
-    __New() {
-        ; Build default scs and symbols internally
-        scs := ["29", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D"
+    SCAN_CODES := ["29", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D"
           , "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "2B"
           , "1E", "1F", "20", "21", "22", "23", "24", "25", "26", "27", "28"
           , "2C", "2D", "2E", "2F", "30", "31", "32", "33", "34", "35"]
 
-        symbols := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
-          , "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "[", "]", "\"
-          , "a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "'"
-          , "z", "x", "c", "v", "b", "n", "m", ",", ".", "/"]
+    __New() {
+        ; Build default scan-code to symbols mapping
+        symbols := this._SuggestSymbolsFromActiveLayout()
 
         ; populate entries keyed by name (this["Q"] := km)
         loop % this.KEY_LIST.Length() {
             i := A_Index
             name := this.KEY_LIST[i]
-            km := new this.clsKeyMapping(name, scs[i], symbols[i])
+            km := new this.clsKeyMapping(name, this.SCAN_CODES[i], symbols[i])
             this[name] := km
         }
     }
@@ -73,9 +70,59 @@ Class clsKeyMap {
                 this[name].symbol := sym
         }
     }
-}
 
-; list of physical keys in layout order is now available as key_map.KEY_LIST
+    ; Suggest symbols based on the currently active Windows keyboard layout.
+    _SuggestSymbolsFromActiveLayout() {
+        static MAPVK_VSC_TO_VK_EX := 3
+
+        symbols_out := []
+        hkl := DllCall("GetKeyboardLayout", "UInt", 0, "Ptr") ; cache per run
+
+        ; Reusable buffers
+        VarSetCapacity(keyState, 256, 0)      ; BYTE[256]
+        VarSetCapacity(outBuf,   32*2,  0)    ; WCHAR[32] (64 bytes on Unicode)
+
+        for i, name in this.KEY_LIST
+        {
+            sc := "0x" . this.SCAN_CODES[i]
+            sc := sc + 0
+            if (!sc)
+                sc := GetKeySC(name)
+            if (!sc) {
+                symbols_out.Push("")
+                continue
+            }
+
+            ; Map SC->VK once
+            vk := DllCall("user32\MapVirtualKeyEx", "UInt", sc, "UInt", MAPVK_VSC_TO_VK_EX, "Ptr", hkl, "UInt")
+
+            ; Reset keyboard state (no modifiers) for this key
+            ; (Reuse the same var; zero it instead of re-allocating.)
+            DllCall("RtlZeroMemory", "Ptr", &keyState, "Ptr", 256)
+
+            ; First translation
+            ret := DllCall("user32\ToUnicodeEx"
+                , "UInt", vk, "UInt", sc, "Ptr", &keyState
+                , "Str", outBuf, "Int", 32  ; cch (WCHAR)
+                , "UInt", 0, "Ptr", hkl, "Int")
+
+            if (ret == -1) {
+                ; Dead key: clear dead state and treat as no character
+                DllCall("user32\ToUnicodeEx"
+                    , "UInt", vk, "UInt", sc, "Ptr", &keyState
+                    , "Str", "", "Int", 0, "UInt", 0, "Ptr", hkl)
+                suggested := ""
+            } else if (ret > 0) {
+                suggested := SubStr(outBuf, 1, ret)
+            } else {
+                suggested := ""
+            }
+
+            symbols_out.Push(suggested)
+        }
+        return symbols_out
+    }
+}
 
 ; forward-declare locale objects; instantiate after clsLocale is defined below
 global keys := ""
@@ -130,7 +177,7 @@ Class clsLocaleInterface {
                             , text: "&Delete" 
                             , function: ObjBindMethod(this, "_Delete")}
                 , new:      { type: "Button"
-                            , text: "&New" 
+                            , text: "&New (auto-detect)" 
                             , function: ObjBindMethod(this, "_New")}}
     options := { all:             { type: "Edit"}
             , remove_space_plain: { type: "Edit"}
