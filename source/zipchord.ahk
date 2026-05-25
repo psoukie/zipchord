@@ -241,7 +241,7 @@ WireHotkeys(state) {
     }
     if (unrecognized) {
         key_str := StrLen(unrecognized)>1 ? "keys" : "key"
-        MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
+        MsgBox, , % zc_app_name, % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
                 . "ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change "
                 . "the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
     }
@@ -263,7 +263,7 @@ WireHotkeys(state) {
     {
         Hotkey, % key, KeyDown, %state% UseErrorLevel
         If ErrorLevel {
-            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
+            MsgBox, , % zc_app_name, % Format("The current keyboard layout does not include the unmodified key {}. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.", key)
             Continue
         }
         Hotkey, % "+" key, KeyDown, %state%
