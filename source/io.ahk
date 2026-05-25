@@ -716,7 +716,7 @@ Class clsIOrepresentation {
     _ShouldCapitalize(start := 0) {
         if (start == 0) {
             start := this.length
-        } 
+        }
         ; first character after Enter
         if (start == 2 && (this._sequence[start - 1].attributes & this.IS_ENTER) ) {
             return true
@@ -724,6 +724,15 @@ Class clsIOrepresentation {
         if (start > 2 && this.GetOutput(start - 1, start - 1) == " ") {
             preceding := this.GetChunk(start - 2).input
             with_shift := this.TestChunkAttributes(start - 2, this.WITH_SHIFT)
+            if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
+                || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
+                return true
+            }
+        }
+        ; Capitalize chords after sentence-ending punctuation should even a preceding space.
+        if ( start > 1 && this.TestChunkAttributes(start, this.IS_CHORD) ) {
+            preceding := this.GetChunk(start - 1).input
+            with_shift := this.TestChunkAttributes(start - 1, this.WITH_SHIFT)
             if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
                 || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
                 return true
