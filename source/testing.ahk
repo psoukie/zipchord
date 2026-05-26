@@ -322,10 +322,22 @@ Class TestingClass {
         if (! this._CheckFilename(testcase, "testcase", true) ) {
             return
         }
-        if (! this._CheckFilename(testset, "set", true)) {
+        testset_exists := this._CheckFilename(testset, "set", true, true)
+        if (!testset_exists) {
             this.Write(Format("Creating new test set '{}' and adding '{}'.", testset, testcase))
         }
-        FileAppend % testcase . "`n", % testset
+        prefix := ""
+        if (testset_exists) {
+            FileRead existing, % testset
+            if (existing != "") {
+                last_char := SubStr(existing, 0)
+                if (last_char == "`r")
+                    prefix := "`n"
+                else if (last_char != "`n")
+                    prefix := "`r`n"
+            }
+        }
+        FileAppend % prefix . testcase . "`r`n", % testset
     }
     Delete(file:="") {
         if (this._IsBasicHelp(file, A_ThisFunc))
@@ -465,7 +477,7 @@ Class TestingClass {
         }
         this.Help(ObjFnName(A_ThisFunc))
     }
-    _CheckFilename(ByRef filename, extension, should_exist := false) {
+    _CheckFilename(ByRef filename, extension, should_exist := false, quiet := false) {
         if (extension=="testcase") {
             if (! InStr(filename, "__")) {
                 this.Write("Error: You need to provide a test case to use this command. Try TEST HELP.")
@@ -483,7 +495,8 @@ Class TestingClass {
         filename := str.FilenameWithExtension(filename, extension)
         if (should_exist) {
             if (! FileExist(filename)) {
-                this.Write(Format("Error: The file '{}' does not exists.", filename))
+                if (!quiet)
+                    this.Write(Format("Error: The file '{}' does not exist.", filename))
                 return false
             }
         } else {
