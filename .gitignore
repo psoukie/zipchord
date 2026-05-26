@@ -1,3 +1,4 @@
 source/result.txt
+_tests/temp.out
 *.exe
 *.zip
