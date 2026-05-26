@@ -44,9 +44,9 @@ Class TestingClass {
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
         this.Write("This is free software, and you are welcome to redistribute it")
         this.Write("under certain conditions. Type 'license' for details.")
-        if InStr(FileExist("..\tests\"), "D") {
+        if InStr(FileExist(A_ScriptDir . "\..\_tests\"), "D") {
             this.Write("`nDetected the default testing folder.")
-            this.Path("set", "..\tests\")
+            this.Path("set", A_ScriptDir . "\..\_tests\")
         }
         this.Write("`nType 'help' for a list of available commands.")
         this._Prompt()
