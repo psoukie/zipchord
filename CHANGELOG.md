@@ -4,17 +4,20 @@
 
 **New Features**
 
-Version 2.6 introduces a significant change which allows correct handling of international and alternative keyboard layouts.
 
-- The "Keyboard and language settings" window now has explicit mapping of the layout of physical keys to characters used in shortcut dictionaries.
-- The "Keyboard and language settings" window now auto-detects the name and layout of the keyboard when you press the New button.
+Version 2.6 introduces a significant change which allows correct handling of international and alternative keyboard layouts. The "Keyboard and language settings" window was reworked to:
+- Function as mapping between the physical position of keys on the keyboard to user-defined characters used in shortcut dictionaries to represent those physical keys.
+- Provide auto-detect functionality based on currently selected keyboard layout to detect the layout name and pre-populate a suitable mapping of characters.
+
+Additional new features:
+- A new command menu that opens by pressing both Shift keys simultaneously that replaces the application keyboard shortcuts. (You can select the commands with a keyboard shortcut, arrow keys, or with a mouse).
 - Expansion of shortcuts (chords and shorthands) now capitalizes the expanded text when Caps Lock is on.
 
-Note that this Beta version is missing a few features:
+- Removed the configuration options that allowed capturing and overriding of special keys with non-printed characters such as F1 or Print Screen in order to focus ZipChord development on core functionality of hybrid chorded text input.
 
+Missing:
+- Support for numeric pad keys
 - A graceful upgrade from the current keyboard and language handling. (It's best to create a new keyboard setting manually for now.)
-- Application keyboard shortcuts (stopping / resuming ZipChord, openening the settings, and adding shortcuts) do not work unless they are assigned to combination with function keys or selected from a menu.
-- NumPad keys are not included by default yet. (Although they can be added as special characters.)
 
 
 ## ZipChord 2.5.1

@@ -64,8 +64,8 @@ global CAP_OFF      := 1 ; no auto-capitalization,
      , SPACE_PUNCTUATION  := 4
      , CHORD_DELETE_UNRECOGNIZED  := 1  ; Delete typing that triggers chords that are not in dictionary?
      , CHORD_ALLOW_SHIFT          := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
-     , CHORD_RESTRICT             := 4  ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener" 
-     , CHORD_IMMEDIATE_SHORTHANDS := 8  ; Shorthands fire without waiting for space or punctuation 
+     , CHORD_RESTRICT             := 4  ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener"
+     , CHORD_IMMEDIATE_SHORTHANDS := 8  ; Shorthands fire without waiting for space or punctuation
 
 global MODE_CHORDS_ENABLED     := 1
      , MODE_SHORTHANDS_ENABLED := 2
@@ -84,7 +84,6 @@ global settings := app_settings.settings
 
 SC_mapping := {} ; dynamically created scan code to key name mapping
 
-#Include app_shortcuts.ahk
 #Include configurations.ahk
 #Include hints.ahk
 #Include locale.ahk
@@ -119,7 +118,7 @@ Class clsSettings {
                 , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
-                , output_delay:     3 }    
+                , output_delay:     3 }
     GetSettingsFile() {
         return runtime_status.config_file ? runtime_status.config_file : this.settings_file
     }
@@ -136,7 +135,7 @@ Class clsSettings {
         global locale
         this.settings.locale := locale.GetActiveLayoutName()
         ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
-        this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed 
+        this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed
     }
     Save() {
         if (runtime_status.config_file) {
@@ -151,7 +150,6 @@ Class clsSettings {
 
 Initialize(zc_version) {
     global app_settings
-    global app_shortcuts
     global locale
     global updater
 
@@ -162,7 +160,6 @@ Initialize(zc_version) {
         UpdateSettings(settings.version)
     }
     updater.CheckForUpdates(zc_version)
-    app_shortcuts.Init()
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
@@ -172,7 +169,7 @@ Initialize(zc_version) {
     main_UI.Build()
     locale.Init()
     keys.Load(settings.locale)
-    UI_Tray_Build()
+    UI_Menu_Build()
     locale.Build()
     hint_UI.Build()
     if (settings.preferences & PREF_SHOW_CONFIG) {
@@ -187,6 +184,7 @@ Initialize(zc_version) {
     shorthands.Load(settings.shorthand_file)
     main_UI.UpdateDictionaryUI()
     main_UI.UI.Enable()
+    WireCommandHotkeys("On")
     WireHotkeys("On")
 }
 
@@ -263,7 +261,7 @@ CloseApp() {
     ExitApp
 }
 
-;; Shortcuts 
+;; Shortcuts
 ; ---------------------
 
 Shift_key:
@@ -312,7 +310,7 @@ KeyDown:
     if (key == "") {
         Critical Off
         Return
-    } 
+    }
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := test_key
@@ -429,7 +427,7 @@ HandleBackspace(with_ctrl := false) {
     Critical Off
 }
 
-;;  Adding shortcuts 
+;;  Adding shortcuts
 ; -------------------
 
 ; Define a new shortcut for the selected text (or check what it is for existing)
@@ -516,9 +514,9 @@ Class clsMainUI {
                                         , text: "Off|For shortcuts|For all input"}
                 , update_check:         { type: "Checkbox"
                                         , text: "Automatically check for &updates"
-                                        , setting: {parent: "preferences", const: "PREF_CHECK_UPDATES"}} 
+                                        , setting: {parent: "preferences", const: "PREF_CHECK_UPDATES"}}
                 , debugging:            { type: "Checkbox"
-                                        , text: "&Log this session (debugging)"} 
+                                        , text: "&Log this session (debugging)"}
                 , btn_pause:            { type: "Button"
                                         , function: Func("PauseApp").Bind(true)
                                         , text: UI_STR_PAUSE} }
@@ -555,7 +553,7 @@ Class clsMainUI {
         UI.Add(cts.delete_unrecognized)
         UI.Add("GroupBox", "xs-20 y+40 w310 h70", "Shorthands")
         UI.Add(cts.immediate_shorthands, "xp+20 yp+30 Section")
-        
+
         UI.Tab(3)
         UI.Add("Text", "y+20 Section", "&Show hints")
         UI.Add(cts.hint_frequency, "AltSubmit xp+150 w140")
@@ -626,7 +624,7 @@ Class clsMainUI {
         Hotkey, F1, % call, On
         cts.input_delay.value := settings.input_delay
         cts.output_delay.value := settings.output_delay
-        ; Loop through each control and apply settings from its defined corresponding setting 
+        ; Loop through each control and apply settings from its defined corresponding setting
         for _, control in this.controls {
             if (control.HasKey("setting")) {
                 const_name := control.setting.const
@@ -634,7 +632,6 @@ Class clsMainUI {
             }
         }
         cts.capitalization.Choose(settings.capitalization)
-        cts.btn_pause.value := (settings.mode & MODE_ZIPCHORD_ENABLED) ? UI_STR_PAUSE : UI_STR_RESUME
         cts.hint_frequency.Choose( OrdinalOfHintFrequency() + 1)
         cts.hint_destination.Choose( (settings.hints & (HINT_OSD | HINT_TOOLTIP)) // HINT_OSD) ; calculate the option's position; relies on HINT_TOOLTIP being << from HINT_OSD
         cts.hint_offset_x.value := settings.hint_offset_x
@@ -647,6 +644,7 @@ Class clsMainUI {
         this.UpdateLocaleInMainUI(settings.locale)
         main_UI.UpdateDictionaryUI()
         this.UI.Show()
+        UI_SyncModeState()
         if (runtime_status.config_file) {
             this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_status.config_file))
         } else {
@@ -656,7 +654,7 @@ Class clsMainUI {
 
     _btnOK() {
         if (this._ApplySettings()) {
-            this.Close()    
+            this.Close()
         }
         return
     }
@@ -665,7 +663,7 @@ Class clsMainUI {
         global hint_delay
 
         cts := this.controls
-        previous_mode := settings.mode 
+        previous_mode := settings.mode
         ; gather new settings from UI...
         settings.input_delay := cts.input_delay.value + 0
         settings.output_delay := cts.output_delay.value + 0
@@ -732,6 +730,7 @@ Class clsMainUI {
             test.Config("save", "debug")
             test.Record("both", "debug")
         }
+        UI_SyncModeState()
         ; reflect any changes to OSD UI
         reset_hint_fn := ObjBindMethod(hint_UI, "Reset")
         SetTimer, %reset_hint_fn%, -2000
@@ -759,10 +758,10 @@ Class clsMainUI {
         cts := this.controls
         pluralized := type . "s"
         StringUpper, uppercased, type, T
-        cts[type . "_file"].value := str.Ellipsisize(settings[type . "_file"], 270) 
+        cts[type . "_file"].value := str.Ellipsisize(settings[type . "_file"], 270)
         entriesstr := uppercased . " dictionary (" %pluralized%.entries
         entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
-        cts[type . "_entries"].value := entriesstr 
+        cts[type . "_entries"].value := entriesstr
     }
 
     Close() {
@@ -783,7 +782,7 @@ Class clsMainUI {
         this.UI.Disable()
         locale.Show(this.controls.selected_locale.value)
     }
- 
+
     _btnSelectDictionary(type_string) {
         type := type_string == "chord" ? "chord" : "shorthand"
         StringUpper, uppercased, type, T
@@ -806,7 +805,7 @@ Class clsMainUI {
         %pluralized%.Load()
         main_UI.UpdateDictionaryUI()
     }
-    ; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR" 
+    ; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR"
     _SanitizeNumber(orig, hex_color := false) {
         sanitized := Trim(orig)
         format := "integer"
@@ -851,39 +850,108 @@ ShowMainUI() {
     main_UI.Show()
 }
 
-    ; Create taskbar tray menu:
-UI_Tray_Build() {
-    global app_shortcuts
-    Menu, Tray, NoStandard
-    Menu, Tray, Add, % "Open ZipChord", ShowMainUI
-    Menu, Tray, Add, % "Add Shortcut", AddShortcut
-    Menu, Tray, Add, % "Pause ZipChord", PauseApp
-    Menu, Tray, Add  ;  adds a horizontal line
-    fn := ObjBindMethod(app_shortcuts, "Show")
-    Menu, Tray, Add, % "Customize app shortcuts", % fn
-    Menu, Tray, Add  ;  adds a horizontal line
-    if (A_Args[1] == "dev") {
-        Menu, Tray, Add, % "Open Key Visualizer", OpenKeyVisualizer
-        Menu, Tray, Add, % "Open Test Console", OpenTestConsole
-        Menu, Tray, Add
+; App shortcut and double-Shift 'command menu'
+
+ShowKeyboardCommandMenu() {
+    UI_SyncModeState()
+    Menu, ZipChordCommand, Show
+}
+
+WireCommandHotkeys(status) {
+    call := Func("ShowKeyboardCommandMenu")
+    Hotkey, % "~LShift & ~RShift", % call, %status%
+    Hotkey, % "~RShift & ~LShift", % call, %status%
+}
+
+UI_SyncModeState() {
+    mode := settings.mode & MODE_ZIPCHORD_ENABLED
+    if (main_UI.UI.IsShown()) {
+        main_UI.controls.btn_pause.value := mode ? UI_STR_PAUSE : UI_STR_RESUME
+        main_UI.controls.tabs.Enable(mode)
     }
-    Menu, Tray, Add, % "Quit", QuitApp
+    Update_Menus()
+}
+
+ToggleFeature(mode_flag, control_name) {
+    global app_settings
+    disabling := settings.mode & mode_flag
+    if (disabling) {
+        settings.mode := settings.mode & ~mode_flag
+    } else {
+        settings.mode := settings.mode | mode_flag
+    }
+    if (main_UI.UI.IsShown()) {
+        main_UI.controls[control_name].value := disabling ? 0 : 1
+    }
+    app_settings.Save()
+
+    control_UI_text := (control_name == "chord_enabled") ? "Chords" : "Shorthands"
+    hint_UI.ShowOnOSD(control_UI_text, disabling ? "Off" : "On")
+    UI_SyncModeState()
+}
+
+ToggleChords() {
+    ToggleFeature(MODE_CHORDS_ENABLED, "chord_enabled")
+}
+
+ToggleShorthands() {
+    ToggleFeature(MODE_SHORTHANDS_ENABLED, "shorthand_enabled")
+}
+
+; Create taskbar tray menu and command menu:
+UI_Menu_Build() {
+    Menu, Tray, NoStandard
+    Add_Menu_Item("Open settings`t(O)", "ShowMainUI")
+    Add_Menu_Item("&Add or edit shortcut`t(A)", "AddShortcut")
+    Add_Menu_Item("&Pause ZipChord`t(P)", "PauseApp")
+    Add_Menu_Item("Disable &chords`t(C)", "ToggleChords", true)
+    Add_Menu_Item("Disable &shorthands`t(S)", "ToggleShorthands", true)
+    Add_Menu_Item("", "")
+    if (A_Args[1] == "dev") {
+        Add_Menu_Item("Open key &visualizer`t(V)", "OpenKeyVisualizer")
+        Add_Menu_Item("Open &test console`t(T)", "OpenTestConsole")
+        Add_Menu_Item("", "")
+    }
+    Add_Menu_Item("Quit ZipChord`t(Q)", "QuitApp")
+
     Menu, Tray, Default, 1&
     Menu, Tray, Tip, % "ZipChord"
     Menu, Tray, Click, 1
-    UI_Tray_Update()
+
+    Update_Menus()
 }
 
-UI_Tray_Update() {
-    global app_shortcuts
-    Menu, Tray, Rename, 1&, % "Open ZipChord`t" . app_shortcuts.GetHotkeyText("ShowMainUI")
-    Menu, Tray, Rename, 2&, % "Add Shortcut`t" . app_shortcuts.GetHotkeyText("AddShortcut")
-    string :=  (settings.mode & MODE_ZIPCHORD_ENABLED) ? "Pause" : "Resume"
-    Menu, Tray, Rename, 3&, % string . " ZipChord`t" . app_shortcuts.GetHotkeyText("PauseApp")
-    i := 7
-    if (A_Args[1] == "dev")
-        i += 3
-    Menu, Tray, Rename, %i%&, % "Quit`t" . app_shortcuts.GetHotkeyText("QuitApp")
+Add_Menu_Item(label, function, command_only := false) {
+    Menu, ZipChordCommand, Add, % label, % function
+    if (command_only) {
+        Return
+    }
+    short_label := SubStr(label, 1, StrLen(label)-4)
+    Menu, Tray, Add, % short_label, % function
+}
+
+Update_Menus() {
+    is_running := settings.mode & MODE_ZIPCHORD_ENABLED
+    pause_label := is_running ? "&Pause ZipChord`t(P)" : "&Resume ZipChord`t(R)"
+    short_pause_label := SubStr(pause_label, 1, StrLen(pause_label)-4)
+    Menu, Tray, Rename, 3&, % short_pause_label
+    Menu, ZipChordCommand, Rename, 3&, % pause_label
+    chord_label := (settings.mode & MODE_CHORDS_ENABLED) ? "Disable &chords`t(C)" : "Enable &chords`t(C)"
+    shorthand_label := (settings.mode & MODE_SHORTHANDS_ENABLED) ? "Disable &shorthands`t(S)" : "Enable &shorthands`t(S)"
+    Menu, ZipChordCommand, Rename, 4&, % chord_label
+    Menu, ZipChordCommand, Rename, 5&, % shorthand_label
+    if (is_running) {
+        Menu, ZipChordCommand, Enable, 4&
+        Menu, ZipChordCommand, Enable, 5&
+    } else {
+        Menu, ZipChordCommand, Disable, 4&
+        Menu, ZipChordCommand, Disable, 5&
+    }
+}
+
+UI_CommandMenu_Update() {
+
+
 }
 
 PauseApp(from_button := false) {
@@ -894,14 +962,12 @@ PauseApp(from_button := false) {
         settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
         mode := true
     }
-    main_UI.controls.btn_pause.value := mode ? UI_STR_PAUSE : UI_STR_RESUME
     state := mode ? "On" : "Off"
     if (from_button != true) {
         hint_UI.ShowOnOSD("ZipChord Keyboard", state)
     }
     WireHotkeys(state)
-    UI_Tray_Update()
-    main_UI.controls.tabs.Enable(mode)
+    UI_SyncModeState()
 }
 
 QuitApp() {
@@ -959,20 +1025,17 @@ LinkToReleases() {
 
 Class clsClosingTip {
     UI := {}
-    dont_show :=    { type: "Checkbox" 
+    dont_show :=    { type: "Checkbox"
                     , text: "Do &not show this tip again."}
 
     __New() {
-        global app_shortcuts
         this.UI := new clsUI("ZipChord Tips")
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
-            , Format("- To reopen the settings window, click on ZipChord's system tray icon or {}.`n`n"
-                    . "- To define a new shortcut, select a word and {}.`n`n"
-                    . "- Press F1 in any ZipChord tab or window for help." 
-            , app_shortcuts.GetHotkeyText("AddShortcut", "press ", "press and hold ")
-            , app_shortcuts.GetHotkeyText("ShowMainUI", "press ", "press and hold ")))
+            , "- To reopen the settings window, click on ZipChord's system tray icon or press both Shift keys.`n`n"
+            . "- To define a new shortcut, select a word and choose 'Add or edit shortcut'.`n`n"
+            . "- Press F1 in any ZipChord tab or window for help.")
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
         call := Func("OpenHelp").Bind("")
@@ -1000,9 +1063,9 @@ Class clsInstanceHandler {
     WM_COPYDATA := 0x004A
     UNIQUE_STRING := "ZC ZipChord RUNNING"
     detection_UI := {}
-    
+
     __New() {
-        previousHwnd := this._DetectPreviousInstance() 
+        previousHwnd := this._DetectPreviousInstance()
         if (previousHwnd) {
             message := str.JoinArray(A_Args, "`n")
             if ! (message) {
@@ -1079,8 +1142,7 @@ ProcessCommandLine(option_string) {
 
 CloseAllWindows() {
     global locale
-    global app_shortcuts
-    window_names := ["locale", "add_shortcut", "app_shortcuts", "main_UI"]
+    window_names := ["locale", "add_shortcut", "main_UI"]
 
     For _, window in window_names {
         if (WinExist("ahk_id " . %window%.UI._handle)) {

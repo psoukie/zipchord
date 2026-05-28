@@ -275,7 +275,7 @@ Class clsAddShortcut {
             this.controls[ctrl].Focus()
     }
     _Build() {
-        this.UI := new clsUI("Add Shortcut")
+        this.UI := new clsUI("Add or Edit Shortcut")
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Add("Text", "Section", "&Expanded text")
         this.UI.Add(this.controls.text, "y+10 w220")

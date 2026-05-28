@@ -105,9 +105,9 @@ Class Configuration {
         func := ObjBindMethod(this, "DetectAppSwitchLoop")
         SetTimer, %func%, -10
     }
-
+ 
     FindMatchingConfig() {
-        window_names := ["locale", "add_shortcut", "app_shortcuts", "main_UI"]
+        window_names := ["locale", "add_shortcut", "main_UI"]
         WinGetActiveTitle, window_title
         if (window_title == "Task Switching") {
             return false
