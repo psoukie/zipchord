@@ -1,7 +1,7 @@
 ﻿/*
 This file is part of ZipChord.
 Copyright (c) 2021-2024 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 ; Locale settings (keyboard and language settings) with default values (US English)
@@ -73,9 +73,11 @@ Class clsKeyMap {
 
     ; Suggest symbols based on the currently active Windows keyboard layout.
     _SuggestSymbolsFromActiveLayout() {
+        ;@ahk-neko-ignore-fn 1 line;
         static MAPVK_VSC_TO_VK_EX := 3
 
         symbols_out := []
+        ;@ahk-neko-ignore-fn 1 line;
         hkl := DllCall("GetKeyboardLayout", "UInt", 0, "Ptr") ; cache per run
 
         ; Reusable buffers
@@ -94,10 +96,10 @@ Class clsKeyMap {
             }
 
             ; Map SC->VK once
+            ;@ahk-neko-ignore-fn 1 line;
             vk := DllCall("user32\MapVirtualKeyEx", "UInt", sc, "UInt", MAPVK_VSC_TO_VK_EX, "Ptr", hkl, "UInt")
 
             ; Reset keyboard state (no modifiers) for this key
-            ; (Reuse the same var; zero it instead of re-allocating.)
             DllCall("RtlZeroMemory", "Ptr", &keyState, "Ptr", 256)
 
             ; First translation
@@ -171,16 +173,24 @@ Class clsLocaleInterface {
     name     := { type:     "DropDownList"
                 , function: ObjBindMethod(this, "_Change")}
     controls := { rename:   { type: "Button"
-                            , text: "&Rename" 
+                            , text: "&Rename"
                             , function: ObjBindMethod(this, "_Rename")}
                 , delete:   { type: "Button"
-                            , text: "&Delete" 
+                            , text: "&Delete"
                             , function: ObjBindMethod(this, "_Delete")}
                 , new:      { type: "Button"
-                            , text: "&New (detect)" 
-                            , function: ObjBindMethod(this, "_New")}}
-    options := { special:         { type: "Edit"}
-            , remove_space_plain: { type: "Edit"}
+                            , text: "&New"
+                            , function: ObjBindMethod(this, "_New")}
+                , btn_save: { type: "Button"
+                            , text: "&Save changes"
+                            , function: ObjBindMethod(this, "_Save")}
+                , btn_close: { type: "Button"
+                            , text: "&Close"
+                            , function: ObjBindMethod(this, "Close")}
+                , btn_detect:   { type: "Button"
+                            , text: "&Auto-detect"
+                            , function: ObjBindMethod(this, "_Detect")}}
+    options := { remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
             , other_plain:        { type: "Edit"}
@@ -188,7 +198,7 @@ Class clsLocaleInterface {
             , space_after_shift:  { type: "Edit"}
             , capitalizing_shift: { type: "Edit"}
             , other_shift:        { type: "Edit"}}
-    
+
     Init() {
         if ( ! ini.LoadSections() ) {
             default_locale := new clsLocale
@@ -203,17 +213,20 @@ Class clsLocaleInterface {
         Gui, +Owner%handle%
         UI.on_close := ObjBindMethod(this, "Close")
         UI.Add("Text", "Section", "&Locale name")
-        UI.Add(this.name, "w140")
+        UI.Add(this.name, "y+10 w140")
         UI.Add(this.controls.rename, "y+30 w120")
         UI.Add(this.controls.delete, "w120")
         UI.Add(this.controls.new, "w120")
-        UI.Add("Button", "y+250 w80 Default", "&Close", ObjBindMethod(this, "Close"))
-        UI.Add("GroupBox", "ys h490 w490", "Locale settings")
-        UI.Add("Text", "xp+20 yp+30 Section", "Key mapping for dictionaries (click to edit)")
-        
+        UI.Add(this.controls.btn_save, "y+30 w120")
+        UI.Add(this.controls.btn_close, "w80 Default")
+        UI.Add("GroupBox", "ys h200 w490 Section", "Locale keyboard mapping")
+        UI.Font("s10", "Consolas")
+
         for i, key_name in this.current_key_map.Keys() {
             Switch i {
-                Case 1, 14:
+                Case 1:
+                    format := "xp+20 yp+30 w30 Section"
+                Case 14:
                     format := "y+5 xs w30 Section"
                 Case 27, 38:
                     format := "y+5 xs+15 w30 Section"
@@ -223,31 +236,30 @@ Class clsLocaleInterface {
             this.controls[key_name] := UI.Add("Button", format, "", ObjBindMethod(this, "_OnKeyClick", key_name))
         }
 
-        UI.Add("Text", "xs-30 yp+40 Section", "S&pecial keys")
-        UI.Font("s10", "Consolas")
-        UI.Add(this.options.special, "y+10 w420 r1")
+        UI.Font("s10", "Segoe UI")
+        UI.Add(this.controls.btn_detect, "xs-30 yp+40 w120 Section")
+        UI.Add("GroupBox", "xs-20 yp+60 h220 w490 Section", "Locale punctuation settings")
         UI.Font("s10 w600", "Segoe UI")
-        UI.Add("Text", "yp+40", "Punctuation")
-        UI.Add("Text", "xs+160 yp", "Unmodified keys")
-        UI.Add("Text", "xs+300 yp", "If Shift was pressed")
+        UI.Add("Text", "xs+160 yp+30", "Unmodified keys")
+        UI.Add("Text", "xs+330 yp", "If Shift was pressed")
         UI.Font("w400")
-        UI.Add("Text", "xs Section", "Remove space before")
+        UI.Add("Text", "xs+15 yp+30 Section", "Remove space before")
         UI.Add("Text", "y+20", "Follow by a space")
         UI.Add("Text", "y+20", "Capitalize after")
         UI.Add("Text", "y+20", "Other")
-        UI.Add("Button", "xs+240 yp+40 w100", "&Save Changes", ObjBindMethod(this, "_Save"))
         UI.Font("s10", "Consolas")
-        UI.Add(this.options.remove_space_plain, "xs+160 ys Section w120 r1")
-        UI.Add(this.options.space_after_plain, "xs w120 r1")
-        UI.Add(this.options.capitalizing_plain, "xs w120 r1")
-        UI.Add(this.options.other_plain, "xs w120 r1")
-        UI.Add(this.options.remove_space_shift, "xs+140 ys Section w120 r1")
-        UI.Add(this.options.space_after_shift, "xs w120 r1")
-        UI.Add(this.options.capitalizing_shift, "xs w120 r1")
-        UI.Add(this.options.other_shift, "xs w120 r1")
+        UI.Add(this.options.remove_space_plain, "xs+140 ys Section w145 r1")
+        UI.Add(this.options.space_after_plain, "xs w145 r1")
+        UI.Add(this.options.capitalizing_plain, "xs w145 r1")
+        UI.Add(this.options.other_plain, "xs w145 r1")
+        UI.Add(this.options.remove_space_shift, "xs+170 ys Section w145 r1")
+        UI.Add(this.options.space_after_shift, "xs w145 r1")
+        UI.Add(this.options.capitalizing_shift, "xs w145 r1")
+        UI.Add(this.options.other_shift, "xs w145 r1")
         this.UI := UI
     }
-    ; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.  
+    
+    ; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.
     Show(locale_name) {
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
@@ -276,6 +288,9 @@ Class clsLocaleInterface {
             option.value := loc_object[key]
         }
         this.current_key_map := loc_object.key_map
+        this._RenderKeyboard()
+    }
+    _RenderKeyboard() {
         key_map := this.current_key_map
         For _, key_name in key_map.Keys() {
             this.controls[key_name].value := key_map[key_name].symbol
@@ -386,6 +401,11 @@ Class clsLocaleInterface {
             , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . buf
             , % "Layout Text"
         return layoutName
+    }
+
+    _Detect() {
+        this.current_key_map := new clsKeyMap
+        this._RenderKeyboard()
     }
 }
 
