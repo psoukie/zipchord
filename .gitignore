@@ -1,4 +1,4 @@
-source/result.txt
 _tests/temp.out
+build/
 *.exe
 *.zip
