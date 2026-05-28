@@ -16,6 +16,15 @@ Note that this Beta version is missing a few features:
 - Application keyboard shortcuts (stopping / resuming ZipChord, openening the settings, and adding shortcuts) do not work unless they are assigned to combination with function keys or selected from a menu.
 - NumPad keys are not included by default yet. (Although they can be added as special characters.)
 
+
+## ZipChord 2.5.1
+
+**Fixes**
+
+- Fixes a bug where chords with punctuation characters were not capitalized correctly in some situations (#233)
+- Restores documented functionality of special-key mappings (special keys assigned using the `:` are understood by ZipChord again)
+
+
 ## ZipChord 2.5.0
 
 **New Features**
