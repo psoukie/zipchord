@@ -1,5 +1,13 @@
 # ZipChord Changelog
 
+## ZipChord 2.5.1
+
+**Fixes**
+
+- Fixes a bug where chords with punctuation characters were not capitalized correctly in some situations (#233)
+- Restores documented functionality of special-key mappings (special keys assigned using the `:` are understood by ZipChord again)
+
+
 ## ZipChord 2.5.0
 
 **New Features**
