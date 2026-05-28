@@ -222,49 +222,25 @@ UpdateSettings(from_version) {
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
-WireHotkeys(state, SC_mode := true) {
+WireHotkeys(state) {
     global keys
     global SC_mapping
-    unrecognized := ""
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
-    parsed_keys := ParseKeys(keys.special)
-    keys.special_map := parsed_keys.special_map
     SC_mapping := {}
 
-    if(SC_mode) {
-        For _, key_name in keys.key_map.Keys() {
-            if (keys.key_map[key_name].symbol == "") {
-                continue
-            }
-            SC := "SC0" . keys.key_map[key_name].SC
-            SC_mapping[SC] := keys.key_map[key_name].symbol
+    For _, key_name in keys.key_map.Keys() {
+        if (keys.key_map[key_name].symbol == "") {
+            continue
+        }
+        SC := "SC0" . keys.key_map[key_name].SC
+        SC_mapping[SC] := keys.key_map[key_name].symbol
 
-            Hotkey, % "~" . SC, KeyDown, %state%
-            Hotkey, % "~+" . SC, KeyDown, %state%
-            Hotkey, % "~" . SC . " Up", KeyUp, %state%
-            Hotkey, % "~+" . SC . " Up", KeyUp, %state%
-        }
-    } else {
-        For _, key in parsed_keys.standard
-        {
-            Hotkey, % "~" key, KeyDown, %state% UseErrorLevel
-            If ErrorLevel {
-                if (state=="On")
-                    unrecognized .= key
-                Continue
-            }
-            Hotkey, % "~+" key, KeyDown, %state%
-            Hotkey, % "~" key " Up", KeyUp, %state%
-            Hotkey, % "~+" key " Up", KeyUp, %state%
-        }
-        if (unrecognized) {
-            key_str := StrLen(unrecognized)>1 ? "keys" : "key"
-            MsgBox, , % "ZipChord", % Format("The current keyboard layout does not match ZipChord's Keyboard and Language settings. "
-                    . "ZipChord will not detect the following {}: {}`n`nEither change your keyboard layout, or change "
-                    . "the custom keyboard layout for your current ZipChord dictionary.", key_str, unrecognized)
-        }
+        Hotkey, % "~" . SC, KeyDown, %state%
+        Hotkey, % "~+" . SC, KeyDown, %state%
+        Hotkey, % "~" . SC . " Up", KeyUp, %state%
+        Hotkey, % "~+" . SC . " Up", KeyUp, %state%
     }
-    
+
     Hotkey, % "~Space", KeyDown, %state%
     Hotkey, % "~+Space", KeyDown, %state%
     Hotkey, % "~Space Up", KeyUp, %state%
@@ -279,57 +255,7 @@ WireHotkeys(state, SC_mode := true) {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
-    For _, key in parsed_keys.remapped
-    {
-        Hotkey, % key, KeyDown, %state% UseErrorLevel
-        If ErrorLevel {
-            MsgBox, , ZipChord, The current keyboard layout does not include the unmodified key '%key%'. ZipChord will not be able to recognize this key.`n`nEither change your keyboard layout, or change the custom keyboard layout for your current ZipChord dictionary.
-            Continue
-        }
-        Hotkey, % "+" key, KeyDown, %state%
-        Hotkey, % key " Up", KeyUp, %state%
-        Hotkey, % "+" key " Up", KeyUp, %state%
-    }
     runtime_status.is_keyboard_wired := state
-}
-
-; Translates the raw "old" list of keys into two new lists usable for setting hotkeys ("new" and "bypassed"), returning the special key mapping in the process
-ParseKeys(key_string) {
-    standard_keys := []
-    remapped_keys := []
-    special_map := {}
-    tokens := str.Tokenize(key_string)
-    For _, token in tokens {
-        divider := ""
-        if (StrLen(token) > 1 && InStr(token, ":")) {
-            divider := ":"
-            target := standard_keys
-            prefix_in := "~"
-            prefix_out := "~"
-        }
-        if (StrLen(token) > 1 && InStr(token, "=")) {
-            divider := "="
-            target := remapped_keys
-            prefix_in := ""
-            prefix_out := "|"
-        }
-        if (divider == "") {
-            if (StrLen(token) > 1) {
-                key_definition := SubStr(token, 2, StrLen(token)-2)
-                standard_keys.Push(key_definition)
-            } else {
-                standard_keys.Push(token)
-            }
-            continue
-        }
-        key_definition := SubStr(token, 2, StrLen(token)-2)
-        def_components := StrSplit(key_definition, divider)
-        target.push(def_components[1])
-        ObjRawSet(special_map, prefix_in . def_components[1], prefix_out . def_components[2])
-    }
-    return { standard: standard_keys
-            , remapped: remapped_keys
-            , special_map: special_map }
 }
 
 CloseApp() {
@@ -397,9 +323,6 @@ KeyDown:
             test.Log(key)
         }
     }
-    if ( keys.special_map.HasKey(key) ) {
-        key := keys.special_map[key]
-    }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
         if (SubStr(modified_key, 1, 1) == "~")
@@ -435,10 +358,6 @@ KeyUp:
         if (test.mode > TEST_STANDBY) {
             test.Log(A_ThisHotkey, true)
         }
-    }
-    stripped := SubStr(key, 1, StrLen(key) - 3)
-    if ( keys.special_map.HasKey(stripped) ) {
-        key := keys.special_map[stripped] . " Up"
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")

@@ -106,7 +106,7 @@ Class clsDictionary {
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
         if (this._chorded) {
             if ( InStr(newch_unsorted, "|") ) {
-                MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes a '|'. Please use other Shift-accessed characters, such as '*' or '&', for special keys instead.", newword)
+                MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes a '|'. Please use ordinary printable characters in chords instead.", newword)
                 Return false
             }
             ; deal with combined chords (those that have a space _after_ the first character)

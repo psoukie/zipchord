@@ -139,8 +139,6 @@ Class clsLocale {
     capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
     other_plain := "[" ; unmodified keys for other punctuation
     other_shift := "9,["  ; other punctuation keys when modified by Shift
-    special := "" ; raw list of special keys (see below)
-    special_map := {} ; stores special keys that are defined as "{special_key:*}" or "{special_key=*}" (which can be used in the definition of all keys in the UI). The special_key can be something like "PrintScreen" and the asterisk is the character of how it's interpreted (such as "|").
     key_map := new clsKeyMap() ; instantiate key_map object (see above)
 
     punctuation_plain [] {

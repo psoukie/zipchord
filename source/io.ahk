@@ -52,11 +52,6 @@ Class clsClassifier {
     }
     Input(key, timestamp) {
         global io
-        is_special_key := false
-        
-        if ( SubStr(key, 1, 1) == "|" ) { 
-            is_special_key := true
-        }
         key := SubStr(key, 2)
         if (SubStr(key, 1, 1) == "+") {
             with_shift := True
@@ -93,7 +88,7 @@ Class clsClassifier {
         this._buffer.Push(event)
         this._index[key] := this._buffer.Length()
 
-        io.Add(key, with_shift, false, is_special_key)
+        io.Add(key, with_shift)
     }
     Interrupt(type := "*Interrupt*") {
         global io
@@ -177,7 +172,7 @@ Class clsIOrepresentation {
         this.ClearSequence("*Interrupt*")
     }
 
-    Add(entry, with_shift, adjustment := false, is_special_key := false) {
+    Add(entry, with_shift, adjustment := false) {
         entry := "" . entry
         chunk := new this.clsChunk
         chunk.input := entry
@@ -187,23 +182,19 @@ Class clsIOrepresentation {
         } else {
             chunk.output := entry
         }
-        if (is_special_key) {
-            chunk.output := ""
-        } else {
-            if ( !with_shift && InStr(keys.punctuation_plain, entry) )
-                    || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
-                chunk.attributes |= this.IS_PUNCTUATION
-            }
-            if (entry == " ") {
-                chunk.attributes |= this.IS_MANUAL_SPACE
-            }
-            if (!with_shift && InStr("0123456789", entry)) {
-                chunk.attributes |= this.IS_NUMERAL
-            }
-            if (this.pre_shifted) {
-                chunk.attributes |= this.WAS_CAPITALIZED
-                this.pre_shifted := false
-            }
+        if ( !with_shift && InStr(keys.punctuation_plain, entry) )
+                || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
+            chunk.attributes |= this.IS_PUNCTUATION
+        }
+        if (entry == " ") {
+            chunk.attributes |= this.IS_MANUAL_SPACE
+        }
+        if (!with_shift && InStr("0123456789", entry)) {
+            chunk.attributes |= this.IS_NUMERAL
+        }
+        if (this.pre_shifted) {
+            chunk.attributes |= this.WAS_CAPITALIZED
+            this.pre_shifted := false
         }
         this._sequence.Push(chunk)
         if (adjustment) {
