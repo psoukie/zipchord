@@ -340,8 +340,17 @@ KeyDown:
             test.Log(key)
         }
     }
-    if ( special_key_map.HasKey(key) ) {
-        key := "|" . special_key_map[key]
+    lookup_key := key
+    if (SubStr(lookup_key, 1, 1) == "~")
+        lookup_key := SubStr(lookup_key, 2)
+    if ( StrLen(lookup_key)>1 && SubStr(lookup_key, 1, 1) == "+" ) {
+        shifted := true
+        lookup_key := SubStr(lookup_key, 2)
+    } else {
+        shifted := false
+    }
+    if ( special_key_map.HasKey(lookup_key) ) {
+        key := "|" . (shifted ? "+" : "") . special_key_map[lookup_key]
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
@@ -375,9 +384,17 @@ KeyUp:
             test.Log(A_ThisHotkey, true)
         }
     }
-    stripped := SubStr(key, 1, StrLen(key) - 3)
-    if ( special_key_map.HasKey(stripped) ) {
-        key := "|" . special_key_map[stripped] . " Up"
+    lookup_key := SubStr(key, 1, StrLen(key) - 3)
+    if (SubStr(lookup_key, 1, 1) == "~")
+        lookup_key := SubStr(lookup_key, 2)
+    if ( StrLen(lookup_key)>1 && SubStr(lookup_key, 1, 1) == "+" ) {
+        shifted := true
+        lookup_key := SubStr(lookup_key, 2)
+    } else {
+        shifted := false
+    }
+    if ( special_key_map.HasKey(lookup_key) ) {
+        key := "|" . (shifted ? "+" : "") . special_key_map[lookup_key] . " Up"
     }
     if (visualizer.IsOn()) {
         modified_key := StrReplace(key, "Space", " ")
