@@ -41,6 +41,7 @@ Class clsAppShortcuts {
     Init() {
         this._LoadSettings()
         this.WireAppHotkeys("On")
+        this.WireCommandHotkey("On")
     }
     Show() {
         call := Func("OpenHelp").Bind("AppShortcuts")
@@ -95,6 +96,14 @@ Class clsAppShortcuts {
                 else
                     Hotkey, % "~" . shortcut.HK, % call, %status%
             }
+    }
+    WireCommandHotkey(status) {
+        fn := ObjBindMethod(this, "ShowCommandMenu")
+        Hotkey, % "~LShift & ~RShift", % fn, %status%
+        Hotkey, % "~RShift & ~LShift", % fn, %status%
+    }
+    ShowCommandMenu() {
+        Menu, Tray, Show
     }
     _ProcessHotkey(shortcut_ID) {
         shortcut := this.shortcuts[shortcut_ID]
