@@ -893,7 +893,15 @@ ShowMainUI() {
 
 ShowKeyboardCommandMenu() {
     UI_SyncModeState()
-    Menu, ZipChordCommand, Show
+    hint_UI._GetCaret(caret_x, caret_y, caret_w, caret_h)
+    if (caret_x != "" && caret_y != "") {
+        CoordMode, Menu, Screen
+        x := caret_x + Max(1.5 * caret_w, 20)
+        y := caret_y + Max(1.5 * caret_h, 28)
+        Menu, ZipChordCommand, Show, % x, % y
+    } else {
+        Menu, ZipChordCommand, Show
+    }
 }
 
 WireCommandHotkeys(status) {
