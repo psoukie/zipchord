@@ -134,7 +134,7 @@ Class TestingClass {
                             }
                         }
                         this[target_var] := destination
-                        this[target_var . "_obj"] := FileOpen(destination, "w", "UTF-8")
+                        this[target_var . "_obj"] := FileOpen(destination, "w", "UTF-8-RAW")
                 }
                 this.Write(Format("Connected ZipChord {} to {}.", what, destination))
             Case "help":
@@ -528,9 +528,9 @@ Class TestingClass {
         modifier := ""
         this.Write(" Key(s)")
         this.Write(" ------", "")
-        Loop, Read, % file
-        {
-            columns := StrSplit(A_LoopReadLine, A_Tab)
+        input_file := FileOpen(file, "r", "UTF-8")
+        while (!input_file.AtEOF) {
+            columns := StrSplit(RTrim(input_file.ReadLine(), "`r`n"), A_Tab)
             time := columns[1]
             key := SubStr(columns[2], 2)
             if (SubStr(key, 1, 1) == "+") {
@@ -576,12 +576,13 @@ Class TestingClass {
                     buffer .= key
             }
         }
+        input_file.Close()
     }
     _FormatOutput(file) {
         out := ""
-        Loop, Read, % file
-        {
-            line := A_LoopReadLine
+        output_file := FileOpen(file, "r", "UTF-8")
+        while (!output_file.AtEOF) {
+            line := RTrim(output_file.ReadLine(), "`r`n")
             i := 1, len := StrLen(line)
             while (i <= len) {
                 ch := SubStr(line,i,1)
@@ -675,6 +676,7 @@ Class TestingClass {
                 i := next
             }
         }
+        output_file.Close()
         return out
     }
     _IsBasicHelp(param, fn) {
