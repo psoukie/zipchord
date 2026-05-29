@@ -82,7 +82,23 @@ global UI_STR_PAUSE  := "&Pause ZipChord"
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
-SC_mapping := {} ; dynamically created scan code to key name mapping
+SC_mapping := {} ; dynamically created scan code (or numpad hotkey) to key symbol mapping
+
+NUMPAD_PRINTABLE_MAPPING := { Numpad0: "⓪"
+    , Numpad1: "①"
+    , Numpad2: "②"
+    , Numpad3: "③"
+    , Numpad4: "④"
+    , Numpad5: "⑤"
+    , Numpad6: "⑥"
+    , Numpad7: "⑦"
+    , Numpad8: "⑧"
+    , Numpad9: "⑨"
+    , NumpadAdd: "⊕"
+    , NumpadSub: "⊖"
+    , NumpadMult: "⊗"
+    , NumpadDiv: "⊘"
+    , NumpadDot: "⊙" }
 
 #Include configurations.ahk
 #Include hints.ahk
@@ -223,7 +239,8 @@ UpdateSettings(from_version) {
 WireHotkeys(state) {
     global keys
     global SC_mapping
-    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab" ; keys that interrupt the typing flow
+    global NUMPAD_PRINTABLE_MAPPING
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
     SC_mapping := {}
 
     For _, key_name in keys.key_map.Keys() {
@@ -237,6 +254,15 @@ WireHotkeys(state) {
         Hotkey, % "~+" . SC, KeyDown, %state%
         Hotkey, % "~" . SC . " Up", KeyUp, %state%
         Hotkey, % "~+" . SC . " Up", KeyUp, %state%
+    }
+
+    For key_name, symbol in NUMPAD_PRINTABLE_MAPPING {
+        SC_mapping[key_name] := symbol
+
+        Hotkey, % "~" . key_name, KeyDown, %state%
+        Hotkey, % "~+" . key_name, KeyDown, %state%
+        Hotkey, % "~" . key_name . " Up", KeyUp, %state%
+        Hotkey, % "~+" . key_name . " Up", KeyUp, %state%
     }
 
     Hotkey, % "~Space", KeyDown, %state%
@@ -288,7 +314,7 @@ Simulate_Shift:
     io.PreShift()
 Return
 
-; Replace mapped scan codes inside a hotkey string
+; Replace mapped scan code and named-key tokens inside a hotkey string
 ReplaceScanCode(key) {
     global SC_mapping
     pos := 1
@@ -300,6 +326,19 @@ ReplaceScanCode(key) {
             return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
         }
     }
+    if (pos := InStr(key, "Numpad", true)) {
+        if (up_pos := InStr(key, " ", true, pos)) {
+            candidate := SubStr(key, pos, up_pos - pos)
+            suffix := SubStr(key, up_pos)
+        } else {
+            candidate := SubStr(key, pos)
+            suffix := ""
+        }
+        if (SC_mapping.HasKey(candidate)) {
+            repl := SC_mapping[candidate]
+            return SubStr(key, 1, pos-1) . repl . suffix
+        }
+    } 
     return key
 }
 
@@ -313,7 +352,7 @@ KeyDown:
     }
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
-            key := test_key
+            key := ReplaceScanCode(test_key)
             tick := test_timestamp
         }
         if (test.mode > TEST_STANDBY) {
@@ -351,7 +390,7 @@ KeyUp:
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             tick_up := test_timestamp
-            key := test_key
+            key := ReplaceScanCode(test_key)
         }
         if (test.mode > TEST_STANDBY) {
             test.Log(A_ThisHotkey, true)

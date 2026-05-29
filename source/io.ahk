@@ -189,7 +189,7 @@ Class clsIOrepresentation {
         if (entry == " ") {
             chunk.attributes |= this.IS_MANUAL_SPACE
         }
-        if (!with_shift && InStr("0123456789", entry)) {
+        if (!with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
             chunk.attributes |= this.IS_NUMERAL
         }
         if (this.pre_shifted) {
