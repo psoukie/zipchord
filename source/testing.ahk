@@ -34,9 +34,11 @@ Class TestingClass {
         global zc_year
         if (A_Args[2] != "test-vs") {
             DllCall("AllocConsole")
+            DllCall("SetConsoleCP", "UInt", 65001)
+            DllCall("SetConsoleOutputCP", "UInt", 65001)
             DllCall("SetConsoleTitle", Str, "ZipChord Test Console")
-            this._stdin  := FileOpen("*", "r `n")
-            this._stdout := FileOpen("*", "w `n")
+            this._stdin  := FileOpen("*", "r `n", "UTF-8")
+            this._stdout := FileOpen("*", "w `n", "UTF-8")
         }
         this.Stop(true)
         this.Write(Format("ZipChord Test Console [Version {}]", zc_version))
@@ -132,7 +134,7 @@ Class TestingClass {
                             }
                         }
                         this[target_var] := destination
-                        this[target_var . "_obj"] := FileOpen(destination, "w")
+                        this[target_var . "_obj"] := FileOpen(destination, "w", "UTF-8")
                 }
                 this.Write(Format("Connected ZipChord {} to {}.", what, destination))
             Case "help":
