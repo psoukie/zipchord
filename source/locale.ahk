@@ -205,6 +205,17 @@ Class clsLocaleInterface {
         }
         this._Build()
     }
+    EnsureSelectedLocaleExists() {
+        sections := ini.LoadSections()
+        if (! sections)
+            return
+        temp := {}
+        ; LoadProperties() returns true when the section does not exist.
+        if (ini.LoadProperties(temp, settings.locale)) {
+            locales := StrSplit(sections, "`n")
+            settings.locale := locales[1]
+        }
+    }
     _Build() {
         UI := new clsUI("Keyboard and language settings")
         handle := main_UI.UI._handle

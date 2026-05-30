@@ -1,26 +1,25 @@
 # ZipChord Changelog
 
-## ZipChord 2.6.0-beta
+## ZipChord 2.6.0
 
 **New Features**
 
-Version 2.6 brings full support for international and alternative keyboard layouts, introduces a command menu, and brings a built-in support for numeric keypad.
+Version 2.6 adds support for international and alternative keyboard layouts, a new command menu, and support for the numeric keypad.
 
-- The "Keyboard and language settings" window now maps physical key positions to characters which are used in definitions in shortcut dictionaries.
-- Keyboard and language settings includes an auto-detect button which pre-populates the character mapping based on the currently selected keyboard layout in Windows and detects the keyboard layout name.
-- A command menu was added that opens by pressing both Shift keys simultaneously. This command menu replaces the application keyboard shortcuts and allows also toggling chords and shortcuts independently.
-- Built-in support for numeric keypad keys. (See TK for details.)
-- Shortcuts (both chords and shorthands) now capitalize the expanded text when Caps Lock is on.
+- The Keyboard and language settings window now maps physical key positions to the characters used in shortcut definitions. (See [Keyboard and language settings](https://github.com/psoukie/zipchord/wiki/Keyboard-and-language-settings).)
+- Keyboard layouts can be auto-detected from the currently active Windows layout.
+- Pressing both Shift keys opens a command menu for common actions, including toggling chords and shorthands independently. (See [Command menu](https://github.com/psoukie/zipchord/wiki/Command-Menu).)
+- ZipChord now supports numeric keypad keys. (See [Numeric keypad keys](https://github.com/psoukie/zipchord/wiki/Keyboard-and-language-settings#numeric-keypad-keys).)
+- Shortcuts (both chords and shorthands) now capitalize expanded text when Caps Lock is on. (Thanks to @scottjbrown923.)
 
-Missing:
-- A graceful upgrade from the current keyboard and language handling. (It's best to create a new keyboard setting manually for now.)
+When upgrading, ZipChord backs up the configuration files and creates a new physical-key mapping from the active Windows layout.
 
-Breaking Changes:
+**Breaking Changes**
 
-- If you switch between keyboard layouts in Windows, add and detect additional layouts under "Keyboard and language" settings in ZipChord. The selected keyboard layout in ZipChord is tied to the physical keys. When changing keyboard layouts in Windows, either switch to the corresponding keyboard language in ZipChord or continue using the same physical key combinations to trigger your defined shortcuts.  
-- If your existing settings and dictionaries use shortcuts for numeric pad numbers and symbols, update the shortcut definitions in your dictionary to the predefined symbols `⓪`, `①`, `⊕`, `⊖` etc. (See the documentation.).
-- Custom special key definitions that were designed to allow capturing and overriding keys with non-printing characters such as `F1` or `Print Screen` are no longer supported. This was done to focus development on core functionality of hybrid text input with chords and shortcuts. If your dictionary has shortcuts that used special keys, remap them to other key combinations.
-- On the first run, ZipChord will auto-detect your Windows keyboard layout. If shortcuts are not working, check the "Keyboard and language setting" to make sure the selected layout matches your current keyboard language in Windows.
+- Application keyboard shortcuts for opening the ZipChord window, adding shortcuts, and similar actions have been replaced by the command menu that opens by pressing both Shift keys. These actions are still available also from the system tray menu.
+- If you switch keyboard layouts in Windows, add the corresponding layouts in ZipChord and switch the keyboard setting to match.
+- Custom special-key definitions for non-printing keys such as `F1` or `Print Screen` are no longer supported. If your dictionaries use them, remap those shortcuts to other key combinations.
+- If you used special keys to map numeric keypad, update your shortcuts to use the predefined keypad symbols such as `⓪`, `①`, `⊕`, and `⊖`.
 
 ## ZipChord 2.5.1
 

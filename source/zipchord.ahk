@@ -181,6 +181,7 @@ Initialize(zc_version) {
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
+    locale.EnsureSelectedLocaleExists()
     app_settings.Save()
     main_UI.Build()
     locale.Init()
@@ -202,6 +203,38 @@ Initialize(zc_version) {
     main_UI.UI.Enable()
     WireCommandHotkeys("On")
     WireHotkeys("On")
+}
+
+UpgradeTo26() {
+    global app_settings
+    result := false
+    config_file := app_settings.settings_file
+    locale_file := ini.default_ini
+    legacy_config_keys := ["hk_ShowMainUI", "hk_AddShortcut", "hk_PauseApp", "hk_QuitApp"]
+
+    if (FileExist(config_file)) {
+        FileCopy, % config_file, % config_file . ".bak", 1
+        For _, key in legacy_config_keys {
+            IniDelete, % config_file, % CONFIG_SECTION, % key
+            settings.Delete(key)
+        }
+        settings.locale := locale.GetActiveLayoutName()
+    }
+    if (! FileExist(locale_file)) {
+        return result
+    }
+
+    sections := ini.LoadSections(locale_file)
+    Loop, Parse, sections, `n
+    {
+        old_all := ini.LoadProperty("all", A_LoopField, locale_file)
+        if (RegExMatch(old_all, "\{[^}]+[:=][^}]+\}")) {
+            result := true
+            break
+        }
+    }
+    FileMove, % locale_file, % locale_file . ".bak", 1
+    return result
 }
 
 UpdateSettings(from_version) {
@@ -232,6 +265,16 @@ UpdateSettings(from_version) {
             MsgBox, , % "ZipChord Upgrade Note", % "The Output Delay is now applied after every simulated keystroke. "
                 . "This makes replacements more reliable, but you may need to adjust your Output settings."
         }
+    }
+    if (updater.SemVerCompare("2.6.0", from_version) == 1) {
+        has_special_keys := UpgradeTo26()
+        upgrade_note := "ZipChord 2.6 uses a new keyboard detection based on positions of physical keys. Your keyboard settings were backed up, and ZipChord will create a new keyboard mapping based on your current Windows keyboard layout."
+            . "`n`n"
+            . "Application shortcuts have been replaced by a command menu. Press both Shift keys together to open it."
+        if (has_special_keys ) {
+            upgrade_note .= "`n`nYour keyboard settings included custom special keys that are no longer supported. Remap shortcuts in your dictionaries that used them to regular keys."
+        }
+        MsgBox, , % "ZipChord Upgrade Note", % upgrade_note
     }
 }
 
@@ -1080,8 +1123,8 @@ Class clsClosingTip {
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
-            , "- To reopen the settings window, click on ZipChord's system tray icon or press both Shift keys.`n`n"
-            . "- To define a new shortcut, select a word and choose 'Add or edit shortcut'.`n`n"
+            , "- To reopen the settings window, click on the ZipChord icon in the system tray.`n`n"
+            . "- To open a command menu, press both Shift keys together.`n`n"
             . "- Press F1 in any ZipChord tab or window for help.")
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))

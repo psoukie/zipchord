@@ -22,7 +22,7 @@ OpenHelp(topic) {
         Case "AppShortcuts":
             Run https://github.com/psoukie/zipchord/wiki/Application-Keyboard-Shortcuts-window
         Case "AddShortcut":
-            Run https://github.com/psoukie/zipchord/wiki/Add-Shortcut-window
+            Run https://github.com/psoukie/zipchord/wiki/Add-or-Edit-Shortcut-window
         Case "Main-Dictionaries":
             Run https://github.com/psoukie/zipchord/wiki/Main-Window#dictionaries
         Case "Main-Detection":
