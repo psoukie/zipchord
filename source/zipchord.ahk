@@ -205,6 +205,7 @@ Initialize(zc_version) {
 }
 
 UpgradeTo26() {
+    global app_settings
     result := false
     config_file := app_settings.settings_file
     locale_file := ini.default_ini
@@ -216,7 +217,7 @@ UpgradeTo26() {
             IniDelete, % config_file, % CONFIG_SECTION, % key
             settings.Delete(key)
         }
-        settings.locale := ""
+        settings.locale := locale.GetActiveLayoutName()
     }
     if (! FileExist(locale_file)) {
         return result
@@ -266,11 +267,11 @@ UpdateSettings(from_version) {
     }
     if (updater.SemVerCompare("2.6.0-beta", from_version) == 1) {
         has_special_keys := UpgradeTo26()
-        upgrade_note := "ZipChord 2.6 uses a new keyboard detection based on positions of physical keys. Your previous keyboard settings were backed up and ZipChord will create a new keyboard mapping based on your current Windows keyboard layout."
+        upgrade_note := "ZipChord 2.6 uses a new keyboard detection based on positions of physical keys. Your keyboard settings were backed up, and ZipChord will create a new keyboard mapping based on your current Windows keyboard layout."
             . "`n`n"
             . "Application shortcuts have been replaced by a command menu. Press both Shift keys together to open it."
         if (has_special_keys ) {
-            upgrade_note .= "`n`nYour old keyboard settings include custom special-key definitions that are no longer supported. Remap those shortcuts in your dictionaries to regular keys."
+            upgrade_note .= "`n`nYour keyboard settings included custom special keys that are no longer supported. Remap shortcuts in your dictionaries that used them to regular keys."
         }
         MsgBox, , % "ZipChord Upgrade Note", % upgrade_note
     }
