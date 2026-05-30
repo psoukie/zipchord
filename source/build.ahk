@@ -7,18 +7,19 @@ uninstall_exe := "..\build\uninstall.exe"
 installer_exe := "..\build\zipchord-install.exe"
 result_file := "..\build\result.txt"
 
-FileDelete, build_dir . "\zipchord.exe"
-FileDelete, build_dir . "\uninstall.exe"
-FileDelete, build_dir . "\zipchord-install.exe"
+if ( ! InStr(FileExist(build_dir), "D"))
+    FileCreateDir, % build_dir
 
-FileDelete, build_dir . "\result.txt"
+build_artifacts := ["zipchord.exe", "uninstall.exe", "zipchord-install.exe", "result.txt"
+                  , "zipchord-exe-*.zip", "zipchord-install-*.zip"]
+For _, artifact in build_artifacts {
+    FileDelete, % build_dir . "\\" . artifact
+}
 
 RunWait %ComSpec% /c ""%ahk_exe%" /in zipchord.ahk /out %zipchord_exe% /icon zipchord.ico > %result_file%"
 RunWait %ComSpec% /c ""%ahk_exe%" /in uninstall.ahk /out %uninstall_exe% /icon shell32_271.ico >> %result_file%"
 RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out %installer_exe% /icon zipchord.ico >> %result_file%"
 
-FileDelete, build_dir . "\zipchord-exe-" . zc_version . ".zip"
-FileDelete, build_dir . "\zipchord-install-" . zc_version . ".zip"
 Zip(zipchord_exe, "..\build\zipchord-exe-" . zc_version . ".zip")
 Zip(installer_exe, "..\build\zipchord-install-" . zc_version . ".zip")
 
