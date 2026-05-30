@@ -266,7 +266,7 @@ UpdateSettings(from_version) {
                 . "This makes replacements more reliable, but you may need to adjust your Output settings."
         }
     }
-    if (updater.SemVerCompare("2.6.0-beta", from_version) == 1) {
+    if (updater.SemVerCompare("2.6.0", from_version) == 1) {
         has_special_keys := UpgradeTo26()
         upgrade_note := "ZipChord 2.6 uses a new keyboard detection based on positions of physical keys. Your keyboard settings were backed up, and ZipChord will create a new keyboard mapping based on your current Windows keyboard layout."
             . "`n`n"
