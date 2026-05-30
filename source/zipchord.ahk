@@ -1122,8 +1122,8 @@ Class clsClosingTip {
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Margin(20, 20)
         this.UI.Add("Text", "+Wrap w430"
-            , "- To reopen the settings window, click on ZipChord's system tray icon or press both Shift keys.`n`n"
-            . "- To define a new shortcut, select a word and choose 'Add or edit shortcut'.`n`n"
+            , "- To reopen the settings window, click on the ZipChord icon in the system tray.`n`n"
+            . "- To open a command menu, press both Shift keys together.`n`n"
             . "- Press F1 in any ZipChord tab or window for help.")
         this.UI.Add(this.dont_show)
         this.UI.Add("Button", "x370 w80 Default", "OK", ObjBindMethod(this, "Btn_OK"))
