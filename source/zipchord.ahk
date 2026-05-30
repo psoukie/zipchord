@@ -181,6 +181,7 @@ Initialize(zc_version) {
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
+    locale.EnsureSelectedLocaleExists()
     app_settings.Save()
     main_UI.Build()
     locale.Init()
