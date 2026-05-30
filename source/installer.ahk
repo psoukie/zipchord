@@ -169,8 +169,8 @@ Class clsInstaller {
         ; install zipchord.exe
         if ( ! InStr(FileExist(path), "D"))
             FileCreateDir,  % path
-        FileInstall, zipchord.exe, % exe_path, true
-        FileInstall, uninstall.exe, % path . "\uninstall.exe", true
+        FileInstall, ..\build\zipchord.exe, % exe_path, true
+        FileInstall, ..\build\uninstall.exe, % path . "\uninstall.exe", true
         FileInstall, zipchord.ico, % path . "\zipchord.ico", true
         ; install dictionaries
         if ( ! InStr(FileExist(dict_dir), "D"))
