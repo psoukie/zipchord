@@ -40,6 +40,22 @@ Zip(file,sZip) {
     psh := ComObjCreate( "Shell.Application" )
     pzip := psh.Namespace( sZip )
     pzip.CopyHere( file, 4|16 )
+
+    previous_size := -1
+    stable_count := 0
+    Loop {
+        Sleep, 200
+        FileGetSize, current_size, % sZip
+        if (current_size > 22 && current_size == previous_size) {
+            stable_count += 1
+            if (stable_count >= 3) {
+                break
+            }
+        } else {
+            stable_count := 0
+        }
+        previous_size := current_size
+    }
 }
 
 CreateZipFile(sZip) {
