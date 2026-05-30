@@ -2,3 +2,4 @@ _tests/temp.out
 build/
 *.exe
 *.zip
+.vscode/
