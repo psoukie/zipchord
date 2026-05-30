@@ -10,13 +10,12 @@ Version 2.6 brings full support for international and alternative keyboard layou
 - Keyboard and language settings includes an auto-detect button which pre-populates the character mapping based on the currently selected keyboard layout in Windows and detects the keyboard layout name.
 - A command menu was added that opens by pressing both Shift keys simultaneously. This command menu replaces the application keyboard shortcuts and allows also toggling chords and shortcuts independently.
 - Built-in support for numeric keypad keys. (See TK for details.)
-- Shortcuts (both chords and shorthands) now capitalize the expanded text when Caps Lock is on.
-
-Missing:
-- A graceful upgrade from the current keyboard and language handling. (It's best to create a new keyboard setting manually for now.)
+- Shortcuts (both chords and shorthands) now capitalize the expanded text when Caps Lock is on. (Thanks to @scottjbrown923)
+- When upgrading, old settings are backed up to `config.ini.bak` and `locales.ini.bak`. ZipChord then creates a new physical-key mapping based on the active Windows keyboard layout and removes legacy application shortcut settings.
 
 Breaking Changes:
 
+- Application keyboard shortcuts for opening ZipChord window, adding shortcuts, etc. were replaced by a command menu that opens by pressing both Shift keys together. (They can also still be accessed using the system tray menu.)
 - If you switch between keyboard layouts in Windows, add and detect additional layouts under "Keyboard and language" settings in ZipChord. The selected keyboard layout in ZipChord is tied to the physical keys. When changing keyboard layouts in Windows, either switch to the corresponding keyboard language in ZipChord or continue using the same physical key combinations to trigger your defined shortcuts.  
 - If your existing settings and dictionaries use shortcuts for numeric pad numbers and symbols, update the shortcut definitions in your dictionary to the predefined symbols `⓪`, `①`, `⊕`, `⊖` etc. (See the documentation.).
 - Custom special key definitions that were designed to allow capturing and overriding keys with non-printing characters such as `F1` or `Print Screen` are no longer supported. This was done to focus development on core functionality of hybrid text input with chords and shortcuts. If your dictionary has shortcuts that used special keys, remap them to other key combinations.
