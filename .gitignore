@@ -1,5 +1,8 @@
 _tests/temp.out
 build/
 *.exe
+*.dll
+*.lib
+*.exp
 *.zip
 .vscode/
