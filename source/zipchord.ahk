@@ -44,6 +44,7 @@ ListLines Off
 SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
+FileEncoding, UTF-8
 
 #Include version.ahk
 #Include shared.ahk

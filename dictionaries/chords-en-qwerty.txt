@@ -226,8 +226,8 @@ Punctuation Exceptions
 ----------------------
 These exceptions are used to help with specific output when using smart spaces after punctuation.
 
- .	~.~	Space+. forces a full stop without a smart spaces
- ,	~,~	Space+. forces a full stop without a smart spaces
+ .	~.~	Space+. forces a full stop without smart spaces
+ ,	~,~	Space+, forces a comma without smart spaces
 e . g .	e.g.
 i . e . i.e.
 

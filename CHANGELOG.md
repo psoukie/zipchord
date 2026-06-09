@@ -1,5 +1,15 @@
 # ZipChord Changelog
 
+## ZipChord 2.7.0
+
+**Improvements**
+
+- ZipChord now supports loading dictionary files in UTF-8 without BOM.
+
+**Fixes**
+
+- The configurations feature now supports mapping files with three columns (similar to dictionaries) and shows more helpful error messages.
+
 ## ZipChord 2.6.0
 
 **New Features**
