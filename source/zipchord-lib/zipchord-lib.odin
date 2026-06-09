@@ -107,42 +107,41 @@ zc_lookup_count :: proc "c" () -> i32 {
 	return lookup_count
 }
 
-// main :: proc() {
-// 	context.logger = log.create_console_logger()
+main :: proc() {
+	context.logger = log.create_console_logger()
 
-// 	when ODIN_DEBUG {
-// 		track: mem.Tracking_Allocator
-// 		mem.tracking_allocator_init(&track, context.allocator)
-// 		context.allocator = mem.tracking_allocator(&track)
+	when ODIN_DEBUG {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
 
-// 		defer {
-// 			if len(track.allocation_map) > 0 {
-// 				for _, entry in track.allocation_map {
-// 					fmt.eprintf("%v leaked %v bytes\n", entry.location, entry.size)
-// 				}
-// 			}
-// 			mem.tracking_allocator_destroy(&track)
-// 		}
-// 	}
+		defer {
+			if len(track.allocation_map) > 0 {
+				for _, entry in track.allocation_map {
+					fmt.eprintf("%v leaked %v bytes\n", entry.location, entry.size)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
 	
-// 	init_dictionary(&chord_dictionary, .Chord)
-// 	init_dictionary(&shorthand_dictionary, .Shorthand)
+ 	load_dictionary_file("chords-en-dvorak.txt")
 
-// 	add_to_dictionary(&chord_dictionary, "th", "the")
-// 	add_to_dictionary(&chord_dictionary, "wy", "way")
-// 	if !add_to_dictionary(&chord_dictionary, "th", "the") {
-// 		fmt.println("Already exists.")
-// 	}
-// 	log.debugf("Post-population: {}\n", chord_dictionary)
-// 	chord : string
-// 	expansion : string
-// 	chord = "th"
-// 	ok: bool
-// 	expansion, ok = lookup_in_dictionary(&chord_dictionary, chord)
-// 	log.debugf("Looked up: {}", expansion)
-// 	empty_dictionary(&chord_dictionary)
-// 	log.debugf("After-reset: {}", chord_dictionary)
-//     chord_dictionary.shortcuts["nw"] = "new"
-// 	log.debugf("After new: {}", chord_dictionary)
-// 	delete_dictionary(&chord_dictionary)
-// }
+	init_dictionary(&chord_dictionary, .Chord)
+	init_dictionary(&shorthand_dictionary, .Shorthand)
+
+	if !add_to_dictionary(&chord_dictionary, "th", "the") {
+		fmt.println("Already exists.")
+	}
+	log.debugf("Post-population: {}\n", chord_dictionary)
+	chord : string
+	chord = "af"
+	expansion, ok := lookup_in_dictionary(&chord_dictionary, chord)
+	log.debugf("Looked up: {}", expansion)
+	empty_dictionary(&chord_dictionary)
+	log.debugf("After-reset: {}", chord_dictionary)
+    chord_dictionary.shortcuts["nw"] = "new"
+	log.debugf("After new: {}", chord_dictionary)
+	test_file()
+	delete_dictionary(&chord_dictionary)
+}
