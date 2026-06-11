@@ -2,6 +2,7 @@ package zipchord_library
 
 import "base:runtime"
 import "core:slice"
+import "core:strings"
 import "core:mem"
 import "core:fmt"
 import "core:log"
@@ -56,8 +57,13 @@ zc_init :: proc "c" () -> bool {
 	context = runtime.default_context()
 	init_dictionary(&chord_dictionary, .Chord)
 	init_dictionary(&shorthand_dictionary, .Shorthand)
-
-	add_to_dictionary(&chord_dictionary, "th", "the")
+	{
+		shortcut  := "th"
+		expansion := "the"
+		add_to_dictionary(&chord_dictionary, shortcut, expansion)
+		shortcut  = "ab"
+		expansion = "about"
+	}
 	add_to_dictionary(&chord_dictionary, "wy", "way")
 	return true
 }
@@ -125,17 +131,28 @@ main :: proc() {
 		}
 	}
 	
- 	load_dictionary_file("chords-en-dvorak.txt")
+ 	// load_dictionary_file("chords-en-dvorak.txt")
 
 	init_dictionary(&chord_dictionary, .Chord)
 	init_dictionary(&shorthand_dictionary, .Shorthand)
 
-	if !add_to_dictionary(&chord_dictionary, "th", "the") {
-		fmt.println("Already exists.")
-	}
+	key_bytes := make([]u8, 2, context.allocator)
+	key_bytes[0] = 't'
+	key_bytes[1] = 'h'
+	key := string(key_bytes)
+
+	add_to_dictionary(&chord_dictionary, key, "the") 
+
+	key_bytes[0] = 'x'
+	key_bytes[1] = 'y'
+	key = string(key_bytes)
+
+	// if !add_to_dictionary(&chord_dictionary, "th", "the") {
+	// 	fmt.println("Already exists.")
+	// }
 	log.debugf("Post-population: {}\n", chord_dictionary)
 	chord : string
-	chord = "af"
+	chord = "th"
 	expansion, ok := lookup_in_dictionary(&chord_dictionary, chord)
 	log.debugf("Looked up: {}", expansion)
 	empty_dictionary(&chord_dictionary)

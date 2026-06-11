@@ -6,7 +6,7 @@ import "core:log"
 import "core:os"
 import "core:strings"
 
-load_dictionary_file :: proc(filepath: string) {
+load_dictionary_file :: proc(filepath: string, dict: ^Dictionary) {
 	data, err := os.read_entire_file(filepath, context.allocator)
 	if err != nil {
 		log.debugf("Could not read the file {}", filepath)
@@ -25,16 +25,26 @@ load_dictionary_file :: proc(filepath: string) {
 
 	i := 1
 	for line in strings.split_iterator(&it, sep) {
-		fmt.printfln("Line {}: {}", i, line)
-		columns := strings.split_n(line, "\t", 3)
-		defer delete(columns)
-		defer fmt.println("Deferred.")
-		if len(columns) >= 2 && len(columns[0]) > 0 && len(columns[1]) > 0 {
-			add_to_dictionary(&chord_dictionary, columns[0], columns[1])
+		log.debugf("Line {}: {}", i, line)
+		shortcut, expansion := extract_a_tabbed_pair(line)
+		if shortcut != "" {
+			add_to_dictionary(dict, shortcut, expansion)
 		}
 		i += 1
 	}
 }
+
+extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: string) {
+	ok: bool
+	line := line
+	shortcut, ok = strings.split_iterator(&line, "\t")
+	expansion, ok = strings.split_iterator(&line, "\t")
+	log.debugf("Shortcut: {} - {} ({})", shortcut, expansion, ok)
+	if !ok || shortcut == "" || expansion == "" {
+		return "", ""
+	}
+	return shortcut, expansion
+} 
 
 // extract_shortcut_and_expansion :: proc(line: string) {
 	
