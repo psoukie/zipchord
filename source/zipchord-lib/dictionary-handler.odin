@@ -5,6 +5,52 @@ import "base:runtime"
 import "core:log"
 import "core:os"
 import "core:strings"
+import "core:mem/virtual"
+
+Error :: runtime.Allocator_Error
+
+Dictionary :: struct {
+    arena: virtual.Arena,      // owns cloned key/value string bytes
+    data:  map[string]string,  // allocated with normal context allocator
+    normalized_keys: bool,     // e.g. chord have chars in keys sorted
+}
+
+dictionary_init :: proc(dict: ^Dictionary, normalized_keys: bool) -> (err: Error) {
+    err = virtual.arena_init_growing(&dict.arena)
+    if err != .None {
+    	return err
+    }
+
+    // Map internals use normal allocator, so resizing can free old buckets.
+    dict.data = make(map[string]string)
+    dict.normalized_keys = normalized_keys
+    return .None
+}
+
+dictionary_destroy :: proc(dict: ^Dictionary) {
+    delete(dict.data)                    // free map internals
+    virtual.arena_destroy(&dict.arena)   // free cloned strings
+    dict^ = {}
+}
+
+dictionary_add :: proc (dict: ^Dictionary, key: string, value: string) -> (err: Error) {
+	own_key, own_value: string
+	
+	alloc := virtual.arena_allocator(&dict.arena)
+
+	own_key, err = strings.clone(key, alloc)
+	if err != .None {
+		return err
+	}
+	
+	own_value, err = strings.clone(value, alloc)
+	if err != .None {
+		return err
+	}
+	
+	dict.data[own_key] = own_value
+	return .None
+}
 
 load_dictionary_file :: proc(filepath: string, dict: ^Dictionary) {
 	data, err := os.read_entire_file(filepath, context.allocator)
@@ -28,7 +74,7 @@ load_dictionary_file :: proc(filepath: string, dict: ^Dictionary) {
 		log.debugf("Line {}: {}", i, line)
 		shortcut, expansion := extract_a_tabbed_pair(line)
 		if shortcut != "" {
-			add_to_dictionary(dict, shortcut, expansion)
+			dictionary_add(dict, shortcut, expansion)
 		}
 		i += 1
 	}
@@ -64,13 +110,6 @@ remove_bom :: proc(text: string) -> string {
 // 	log.debug("Starting...")
 //  	read_file_by_lines_in_whole("chords-en-dvorak.txt")
 // }
-
-test_file :: proc() {
-	log.debugf("Chord dic in dic-handler: {}", chord_dictionary)
-	expansion2, ok := lookup_in_dictionary(&chord_dictionary, string("nw"))
-	log.debugf("Looked up in dic-handler: {}", expansion2)
-}
-
 
 dump_bytes :: proc(s: string) {
    for b, i in s {

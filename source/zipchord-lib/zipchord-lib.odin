@@ -7,45 +7,14 @@ import "core:mem"
 import "core:fmt"
 import "core:log"
 
-Dictionary_Type :: enum {
-	Chord,
-	Shorthand,
-}
-
-Dictionary :: struct {
-	shortcuts: map[string]string,
-	type:      Dictionary_Type,
-}
 
 chord_dictionary:     Dictionary
 shorthand_dictionary: Dictionary
+
 lookup_count: i32
 
-init_dictionary :: proc(dict: ^Dictionary, dict_type: Dictionary_Type) {
-	dict^.type = dict_type
-	dict^.shortcuts = make(map[string]string)
-}
-
-delete_dictionary :: proc(dict: ^Dictionary) {
-	delete(dict^.shortcuts)
-}
-
-empty_dictionary :: proc(dict: ^Dictionary) {
-	dict_type := dict^.type
-	delete_dictionary(dict)
-	init_dictionary(dict, dict_type)
-}
-
-add_to_dictionary :: proc(dict: ^Dictionary, shortcut: string, expansion: string) -> bool {
-	if shortcut in dict^.shortcuts {
-		return false
-	}
-	dict^.shortcuts[shortcut] = expansion
-	return true
-}
-
 lookup_in_dictionary :: proc(dict: ^Dictionary, shortcut: string) -> (exp: string, ok: bool) {
-	if expansion, ok := dict^.shortcuts[shortcut]; ok {
+	if expansion, ok := dict^.data[shortcut]; ok {
 		return expansion, true 
 	}
 	return "", false
@@ -55,8 +24,8 @@ lookup_in_dictionary :: proc(dict: ^Dictionary, shortcut: string) -> (exp: strin
 @export
 zc_init :: proc "c" () -> bool {
 	context = runtime.default_context()
-	init_dictionary(&chord_dictionary, .Chord)
-	init_dictionary(&shorthand_dictionary, .Shorthand)
+	dictionary_init(&chord_dictionary, .Chord)
+	dictionary_init(&shorthand_dictionary, .Shorthand)
 	{
 		shortcut  := "th"
 		expansion := "the"
@@ -133,15 +102,15 @@ main :: proc() {
 	
  	// load_dictionary_file("chords-en-dvorak.txt")
 
-	init_dictionary(&chord_dictionary, .Chord)
-	init_dictionary(&shorthand_dictionary, .Shorthand)
+	dictionary_init(&chord_dictionary, true)
+	dictionary_init(&shorthand_dictionary, false)
 
 	key_bytes := make([]u8, 2, context.allocator)
 	key_bytes[0] = 't'
 	key_bytes[1] = 'h'
 	key := string(key_bytes)
 
-	add_to_dictionary(&chord_dictionary, key, "the") 
+	dictionary_add(&chord_dictionary, key, "the") 
 
 	key_bytes[0] = 'x'
 	key_bytes[1] = 'y'
@@ -155,10 +124,12 @@ main :: proc() {
 	chord = "th"
 	expansion, ok := lookup_in_dictionary(&chord_dictionary, chord)
 	log.debugf("Looked up: {}", expansion)
-	empty_dictionary(&chord_dictionary)
+	dictionary_destroy(&chord_dictionary)
 	log.debugf("After-reset: {}", chord_dictionary)
-    chord_dictionary.shortcuts["nw"] = "new"
+	
+	dictionary_init(&chord_dictionary, true)
+
+    dictionary_add(&chord_dictionary, "nw", "new")
 	log.debugf("After new: {}", chord_dictionary)
-	test_file()
-	delete_dictionary(&chord_dictionary)
+	dictionary_destroy(&chord_dictionary)
 }
