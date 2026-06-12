@@ -4,6 +4,8 @@
 
 **Improvements**
 
+- Chord dictionaries now use `|` to separate chained chords. This removes the old ambiguity where space could mean either a chained-chord separator or a literal Space key.
+- Existing chord dictionaries using the old space-delimited format are upgraded automatically when loaded, with the original file backed up first.
 - ZipChord now supports loading dictionary files in UTF-8 without BOM.
 
 **Fixes**
