@@ -51,3 +51,13 @@ dictionary_clones_keys_and_survives_reload :: proc(t: ^testing.T) {
     testing.expect(t, lookup_err == .None, "lookup after re-init failed")
     testing.expect(t, expansion == "new", "dictionary returned the wrong value after re-init")
 }
+
+@(test)
+load_dictionary :: proc(t: ^testing.T) {
+    dict: zc.Dictionary
+    zc.dictionary_init(&dict, true)
+    defer zc.dictionary_destroy(&dict)
+	zc.dictionary_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &dict)
+    expansion, lookup_err := zc.dictionary_lookup(&dict, "th")
+	testing.expect(t, expansion == "the", "dictionary after load did not find a chord")
+}

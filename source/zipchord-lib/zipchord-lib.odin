@@ -2,41 +2,29 @@ package zipchord_library
 
 import "base:runtime"
 import "core:slice"
-import "core:strings"
-import "core:mem"
-import "core:fmt"
-import "core:log"
-
-
-chord_dictionary:     Dictionary
-shorthand_dictionary: Dictionary
-
-lookup_count: i32
-
-lookup_in_dictionary :: proc(dict: ^Dictionary, shortcut: string) -> (exp: string, ok: bool) {
-	if expansion, ok := dict^.data[shortcut]; ok {
-		return expansion, true 
-	}
-	return "", false
-}
-
 
 @export
 zc_init :: proc "c" () -> bool {
 	context = runtime.default_context()
-	dictionary_init(&chord_dictionary, .Chord)
-	dictionary_init(&shorthand_dictionary, .Shorthand)
-	{
-		shortcut  := "th"
-		expansion := "the"
-		add_to_dictionary(&chord_dictionary, shortcut, expansion)
-		shortcut  = "ab"
-		expansion = "about"
-	}
-	add_to_dictionary(&chord_dictionary, "wy", "way")
+	dictionary_init(&chord_dictionary, true)
+	dictionary_init(&shorthand_dictionary, false)
 	return true
 }
 
+@export
+zc_add_chord :: proc "c" (
+	chord: cstring,
+	expansion: cstring,
+) -> i32 {
+	context = runtime.default_context()
+
+	if chord == nil || expansion == nil {
+		return i32(Dictionary_Error.Bad_Argument)
+	}
+
+	result := dictionary_add(&chord_dictionary, string(chord), string(expansion))
+	return i32(result)
+}
 
 @export
 zc_lookup_chord :: proc "c" (
@@ -47,89 +35,27 @@ zc_lookup_chord :: proc "c" (
 	context = runtime.default_context()
 
 	if chord == nil || out_buf == nil || out_buf_len <= 0 {
-		return -1
+		return i32(Dictionary_Error.Bad_Argument)
 	}
 
-	lookup_count += 1
-	chord_string := string(chord)
-	buf_len := int(out_buf_len)
-	out := slice.bytes_from_ptr(out_buf, buf_len)
+	out := slice.bytes_from_ptr(out_buf, int(out_buf_len))
 	
-	expansion, ok := lookup_in_dictionary(&chord_dictionary, chord_string)
-	if !ok {
+	expansion, err := dictionary_lookup(&chord_dictionary, string(chord))
+	if err != .None {
 		out[0] = 0
-		return 0
+		return i32(err)
 	}
 
 	expansion_len := len(expansion)
 
-	// Need room for bytes plus null terminator.
-	if expansion_len + 1 > buf_len {
-		return -2
+	if expansion_len + 1 > len(out) {
+		out[0] = 0
+		return i32(Dictionary_Error.Buffer_Too_Small)
 	}
 
-	for i in 0..<expansion_len {
-		out[i] = expansion[i]
-	}
+    copy(out[:expansion_len], expansion)
 	out[expansion_len] = 0
 
 	return i32(expansion_len)
 }
 
-@export
-zc_lookup_count :: proc "c" () -> i32 {
-	context = runtime.default_context()
-	return lookup_count
-}
-
-main :: proc() {
-	context.logger = log.create_console_logger()
-
-	when ODIN_DEBUG {
-		track: mem.Tracking_Allocator
-		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
-
-		defer {
-			if len(track.allocation_map) > 0 {
-				for _, entry in track.allocation_map {
-					fmt.eprintf("%v leaked %v bytes\n", entry.location, entry.size)
-				}
-			}
-			mem.tracking_allocator_destroy(&track)
-		}
-	}
-	
- 	// load_dictionary_file("chords-en-dvorak.txt")
-
-	dictionary_init(&chord_dictionary, true)
-	dictionary_init(&shorthand_dictionary, false)
-
-	key_bytes := make([]u8, 2, context.allocator)
-	key_bytes[0] = 't'
-	key_bytes[1] = 'h'
-	key := string(key_bytes)
-
-	dictionary_add(&chord_dictionary, key, "the") 
-
-	key_bytes[0] = 'x'
-	key_bytes[1] = 'y'
-	key = string(key_bytes)
-
-	// if !add_to_dictionary(&chord_dictionary, "th", "the") {
-	// 	fmt.println("Already exists.")
-	// }
-	log.debugf("Post-population: {}\n", chord_dictionary)
-	chord : string
-	chord = "th"
-	expansion, ok := lookup_in_dictionary(&chord_dictionary, chord)
-	log.debugf("Looked up: {}", expansion)
-	dictionary_destroy(&chord_dictionary)
-	log.debugf("After-reset: {}", chord_dictionary)
-	
-	dictionary_init(&chord_dictionary, true)
-
-    dictionary_add(&chord_dictionary, "nw", "new")
-	log.debugf("After new: {}", chord_dictionary)
-	dictionary_destroy(&chord_dictionary)
-}
