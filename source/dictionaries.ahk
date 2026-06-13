@@ -81,60 +81,16 @@ Class clsDictionary {
     _LoadShortcuts() {
         this._entries := {}
         this._reverse_entries := {}
-        upgraded_file := ""
-        upgrade_needed := false
-        stopped_loading := false
         Loop, Read, % this._file
         {
-            line := A_LoopReadLine
-            shortcut := ""
-            columns := StrSplit(line, A_Tab, , 3)
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
             if (columns[2] && columns[1] != "") {
-                shortcut := columns[1]
-                if (this._chorded && this._NeedsLegacyChordUpgrade(shortcut)) {
-                    shortcut := this._UpgradeLegacyChordShortcut(shortcut)
-                    line := shortcut . SubStr(line, InStr(line, A_Tab))
-                    upgrade_needed := true
-                }
-                if (! this._RegisterShortcut(shortcut, columns[2]))  {
-                    if this._AskWhetherToStop() {
-                        stopped_loading := true
+                if (! this._RegisterShortcut(columns[1], columns[2]))  {
+                    if this._AskWhetherToStop()
                         Break
-                    }
                 }
             }
-            upgraded_file .= (A_Index == 1 ? "" : "`r`n") . line
         }
-        if (upgrade_needed && !stopped_loading)
-            this._UpgradeDictionaryFile(upgraded_file)
-    }
-    _NeedsLegacyChordUpgrade(shortcut) {
-        return (!InStr(shortcut, "|") && InStr(SubStr(shortcut, 2), " "))
-    }
-    _UpgradeLegacyChordShortcut(shortcut) {
-        replaced := StrReplace(shortcut, " ", "|")
-        replaced := StrReplace(replaced, "||", "| ") ; handles situations where the next chord starts with a space
-        return SubStr(shortcut, 1, 1) . SubStr(replaced, 2)
-    }
-    _UpgradeDictionaryFile(upgraded_file) {
-        FormatTime, timestamp, , % "yyyyMMdd-HHmmss"
-        backup_file := this._file . "." . timestamp . "-" . A_TickCount . ".bak"
-        FileCopy, % this._file, % backup_file, % 0
-        if (ErrorLevel) {
-            MsgBox ,, % "ZipChord", % Format("ZipChord loaded the chord dictionary successfully, but could not create the backup file '{}' and did not upgrade the dictionary file on disk.", backup_file)
-            Return false
-        }
-        FileDelete, % this._file
-        if (ErrorLevel) {
-            MsgBox ,, % "ZipChord", % Format("ZipChord loaded the chord dictionary successfully, but could not remove the old dictionary file '{}' and did not upgrade the dictionary file on disk.", this._file)
-            Return false
-        }
-        FileAppend % upgraded_file, % this._file, UTF-8
-        if (ErrorLevel) {
-            MsgBox ,, % "ZipChord", % Format("ZipChord loaded the chord dictionary successfully, but could not write the upgraded dictionary file '{}'. The original file was backed up as '{}'.", this._file, backup_file)
-            Return false
-        }
-        Return true
     }
     ; Private helper: check for duplicate letters in a shortcut and show warning if found
     _IsDuplicateChars(shortcut, word) {
@@ -149,13 +105,17 @@ Class clsDictionary {
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
         if (this._chorded) {
-            if (InStr(newch_unsorted, "|")) {
-                chunks := StrSplit(newch_unsorted, "|")
+            if ( InStr(newch_unsorted, "|") ) {
+                MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes a '|'. Please use ordinary printable characters in chords instead.", newword)
+                Return false
+            }
+            ; deal with combined chords (those that have a space _after_ the first character)
+            if (InStr(SubStr(newch_unsorted, 2), " ")) {
+                replaced := StrReplace(newch_unsorted, " ", "|")
+                replaced := StrReplace(replaced, "||", "| ") ; handles situations where the second chord starts with a space
+                replaced := SubStr(newch_unsorted, 1, 1) . SubStr(replaced, 2)
+                chunks := StrSplit(replaced, "|")
                 For _, chunk in chunks {
-                    if (chunk == "") {
-                        MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes an empty chord before or after '|'.", newword)
-                        Return false
-                    }
                     newch .= "|" . str.Arrange(chunk)
                     if (this._IsDuplicateChars(chunk, newword)) {
                         Return false
