@@ -5,15 +5,65 @@ import "base:runtime"
 import "core:log"
 import "core:os"
 import "core:strings"
+import "core:slice"
 import "core:mem/virtual"
+import "core:unicode/utf8"
 
 Dictionary_Error :: enum i32 {
     None             =  0,
     Not_Found        = -1,
-    Bad_Argument     = -2,
-    Buffer_Too_Small = -3,
-    Allocation_Error = -4,
-    Internal_Error   = -5,
+    Repeated_Key   = -2,
+    Bad_Argument     = -3,
+    Buffer_Too_Small = -4,
+    Allocation_Error = -5,
+    Internal_Error   = -6,
+}
+
+MAX_CHORD_RUNES :: 40
+MAX_CHORD_BYTES :: MAX_CHORD_RUNES * utf8.UTF_MAX
+
+Normalized_Chord :: struct {
+	bytes: [MAX_CHORD_BYTES]u8,
+	len:   int,
+}
+
+normalize_chord :: proc(raw_chord: string) -> (chord: Normalized_Chord, err: Dictionary_Error) {
+	rune_buf: [MAX_CHORD_RUNES]rune
+	rune_count := 0
+
+	if len(raw_chord)  <= MAX_CHORD_RUNES {
+		// fast path without checking
+		for r in raw_chord {
+			rune_buf[rune_count] = r
+			rune_count += 1
+		}
+	} else {
+		for r in raw_chord {
+			if rune_count >= MAX_CHORD_RUNES {
+				return chord, .Buffer_Too_Small
+			}
+			rune_buf[rune_count] = r
+			rune_count += 1
+		}
+	}
+
+	runes := rune_buf[:rune_count]
+	slice.sort(runes)
+
+	for r, i in runes {
+		if i > 0 && r == runes[i-1] {
+			return Normalized_Chord{}, .Repeated_Key  
+		}
+		encoded, n := utf8.encode_rune(r)
+		copy(chord.bytes[chord.len:chord.len+n], encoded[:n])
+		chord.len += n
+	}
+
+	return chord, .None
+}
+
+chord_to_string :: proc (chord: ^Normalized_Chord) -> string {
+	return string(chord.bytes[:chord.len])
 }
 
 Dictionary :: struct {
@@ -119,6 +169,15 @@ extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: str
 // 	dictionary_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dictionary)	
 // }
 
+main :: proc() {
+	context.logger = log.create_console_logger()
+	empty_chord := Normalized_Chord{}
+	normalized := normalize_chord("řžťcab") or_else empty_chord
+	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
+	normalized = normalize_chord("ts") or_else empty_chord
+	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
+}
+
 
 remove_bom :: proc(text: string) -> string {
     // The UTF-8 BOM is represented by the rune '\ufeff' (3 bytes)
@@ -133,3 +192,5 @@ dump_bytes :: proc(s: string) {
        fmt.printf("%d: 0x%02X\n", i, b)
    }
 }
+
+
