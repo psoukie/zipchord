@@ -6,8 +6,8 @@ import "core:slice"
 @export
 zc_init :: proc "c" () -> bool {
 	context = runtime.default_context()
-	dictionary_init(&chord_dictionary, true)
-	dictionary_init(&shorthand_dictionary, false)
+	dict_data_init(&chord_dict.dict_data)
+	dict_data_init(&shorthand_dict.dict_data)
 	return true
 }
 
@@ -19,10 +19,10 @@ zc_add_chord :: proc "c" (
 	context = runtime.default_context()
 
 	if chord == nil || expansion == nil {
-		return i32(Dictionary_Error.Bad_Argument)
+		return i32(Dict_Error.Bad_Argument)
 	}
 
-	result := dictionary_add(&chord_dictionary, string(chord), string(expansion))
+	result := dict_add(&chord_dict, string(chord), string(expansion))
 	return i32(result)
 }
 
@@ -35,12 +35,12 @@ zc_lookup_chord :: proc "c" (
 	context = runtime.default_context()
 
 	if chord == nil || out_buf == nil || out_buf_len <= 0 {
-		return i32(Dictionary_Error.Bad_Argument)
+		return i32(Dict_Error.Bad_Argument)
 	}
 
 	out := slice.bytes_from_ptr(out_buf, int(out_buf_len))
 	
-	expansion, err := dictionary_lookup(&chord_dictionary, string(chord))
+	expansion, err := dict_lookup(&chord_dict, string(chord))
 	if err != .None {
 		out[0] = 0
 		return i32(err)
@@ -50,7 +50,7 @@ zc_lookup_chord :: proc "c" (
 
 	if expansion_len + 1 > len(out) {
 		out[0] = 0
-		return i32(Dictionary_Error.Buffer_Too_Small)
+		return i32(Dict_Error.Buffer_Too_Small)
 	}
 
     copy(out[:expansion_len], expansion)

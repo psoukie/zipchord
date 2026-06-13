@@ -9,7 +9,7 @@ import "core:slice"
 import "core:mem/virtual"
 import "core:unicode/utf8"
 
-Dictionary_Error :: enum i32 {
+Dict_Error :: enum i32 {
     None             =  0,
     Not_Found        = -1,
     Repeated_Key   = -2,
@@ -27,7 +27,7 @@ Normalized_Chord :: struct {
 	len:   int,
 }
 
-normalize_chord :: proc(raw_chord: string) -> (chord: Normalized_Chord, err: Dictionary_Error) {
+normalize_chord :: proc(raw_chord: string) -> (chord: Normalized_Chord, err: Dict_Error) {
 	rune_buf: [MAX_CHORD_RUNES]rune
 	rune_count := 0
 
@@ -66,37 +66,42 @@ chord_to_string :: proc (chord: ^Normalized_Chord) -> string {
 	return string(chord.bytes[:chord.len])
 }
 
-Dictionary :: struct {
-    arena: virtual.Arena,      // owns cloned key/value string bytes
-    data:  map[string]string,  // map internals allocated with context.allocator
-    normalized_keys: bool,     // e.g. chord have chars in keys sorted
+Dict_Data :: struct {
+    arena_memory:          virtual.Arena,      // owns cloned key/value string bytes
+    shortcut_to_expansion: map[string]string,  // map internals allocated with context.allocator
 }
 
-chord_dictionary:     Dictionary
-shorthand_dictionary: Dictionary
+Chord_Dict :: struct {
+	using dict_data: Dict_Data
+}
+Shorthand_Dict :: struct {
+	using dict_data: Dict_Data
+}
 
-dictionary_init :: proc(dict: ^Dictionary, normalized_keys: bool) -> (err: Dictionary_Error ) {
-	alloc_err := virtual.arena_init_growing(&dict.arena)
+chord_dict:     Chord_Dict
+shorthand_dict: Shorthand_Dict
+
+dict_data_init :: proc(dict: ^Dict_Data) -> (err: Dict_Error ) {
+	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
     if alloc_err != .None {
     	return .Allocation_Error
     }
 
-    dict.data = make(map[string]string, context.allocator)  // Uses normal allocator, so resizing can free old buckets.
-    dict.normalized_keys = normalized_keys
+    dict.shortcut_to_expansion = make(map[string]string, context.allocator)  // Uses normal allocator, so resizing can free old buckets.
     return .None
 }
 
-dictionary_destroy :: proc(dict: ^Dictionary) {
-    delete(dict.data)                    // free map internals
-    virtual.arena_destroy(&dict.arena)   // free cloned strings
+dict_data_destroy :: proc(dict: ^Dict_Data) {
+    delete(dict.shortcut_to_expansion)          // free map internals
+    virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
     dict^ = {}
 }
 
-dictionary_add :: proc (dict: ^Dictionary, key: string, value: string) -> (err: Dictionary_Error ) {
+dict_data_add :: proc (dict: ^Dict_Data, key: string, value: string, ) -> (err: Dict_Error ) {
 	alloc_err: runtime.Allocator_Error
 	own_key, own_value: string
 	
-	alloc := virtual.arena_allocator(&dict.arena)
+	alloc := virtual.arena_allocator(&dict.arena_memory)
 
 	own_key, alloc_err = strings.clone(key, alloc)
 	if alloc_err != .None {
@@ -108,20 +113,45 @@ dictionary_add :: proc (dict: ^Dictionary, key: string, value: string) -> (err: 
 		return .Allocation_Error
 	}
 	
-	dict.data[own_key] = own_value
+	dict.shortcut_to_expansion[own_key] = own_value
 	return .None
 }
 
-dictionary_lookup :: proc(dict: ^Dictionary, key: string) -> (value: string, err: Dictionary_Error ) {
-	ok: bool
-	if value, ok = dict.data[key]; !ok {
-		return "", .Not_Found 
-	}
-	return value, .None
+chord_dict_add :: proc(dict: ^Chord_Dict, shortcut, expansion: string) -> (err: Dict_Error ) {
+	return dict_data_add(&dict.dict_data, shortcut, expansion)
 }
 
+shorthand_dict_add :: proc(dict: ^Shorthand_Dict, shortcut, expansion: string) -> (err: Dict_Error ) {
+	return dict_data_add(&dict.dict_data, shortcut, expansion)
+}
 
-dictionary_load_file :: proc(filepath: string, dict: ^Dictionary) {
+dict_add :: proc{
+	chord_dict_add,
+	shorthand_dict_add,
+}
+
+dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: string, err: Dict_Error ) {
+	ok: bool
+	if expansion, ok = dict.shortcut_to_expansion[shortcut]; !ok {
+		return "", .Not_Found 
+	}
+	return expansion, .None
+}
+
+chord_dict_lookup :: proc(dict: ^Chord_Dict, shortcut: string) -> (expansion: string, err: Dict_Error ) {
+	return dict_data_lookup(&dict.dict_data, shortcut)
+}
+
+shorthand_dict_lookup :: proc(dict: ^Shorthand_Dict, shortcut: string) -> (expansion: string, err: Dict_Error ) {
+	return dict_data_lookup(&dict.dict_data, shortcut)
+}
+
+dict_lookup :: proc{
+	chord_dict_lookup,
+	shorthand_dict_lookup,
+}
+
+dict_load_file :: proc(filepath: string, dict: ^Dict_Data) {
 	data, err := os.read_entire_file(filepath, context.allocator)
 	if err != nil {
 		log.debugf("Could not read the file {}", filepath)
@@ -143,7 +173,7 @@ dictionary_load_file :: proc(filepath: string, dict: ^Dictionary) {
 		log.debugf("Line {}: {}", i, line)
 		shortcut, expansion, ok := extract_a_tabbed_pair(line)
 		if ok {
-			dictionary_add(dict, shortcut, expansion)
+			dict_data_add(dict, shortcut, expansion)
 		} else {
 			log.debugf("NOT OK: {}", expansion)
 		}
@@ -163,20 +193,20 @@ extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: str
 	return shortcut, expansion, true
 } 
 
-// main :: proc() {
-// 	context.logger = log.create_console_logger()
-// 	dictionary_init(&chord_dictionary, true)
-// 	dictionary_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dictionary)	
-// }
-
 main :: proc() {
 	context.logger = log.create_console_logger()
-	empty_chord := Normalized_Chord{}
-	normalized := normalize_chord("řžťcab") or_else empty_chord
-	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
-	normalized = normalize_chord("ts") or_else empty_chord
-	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
+	dict_data_init(&chord_dict.dict_data)
+	// dict_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dict)	
 }
+
+// main :: proc() {
+// 	context.logger = log.create_console_logger()
+// 	empty_chord := Normalized_Chord{}
+// 	normalized := normalize_chord("řžťcab") or_else empty_chord
+// 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
+// 	normalized = normalize_chord("ts") or_else empty_chord
+// 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
+// }
 
 
 remove_bom :: proc(text: string) -> string {
