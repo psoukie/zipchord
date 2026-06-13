@@ -131,8 +131,8 @@ Class clsSettings {
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION
                 , chording:         CHORD_RESTRICT ; Chord recognition options
-                , chord_file:       "chords-en-starting.txt" ; file name for the chord dictionary
-                , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
+                , chord_file:       "en-qwerty.chords.txt" ; file name for the chord dictionary
+                , shorthand_file:   "english.shorthands.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
                 , output_delay:     3 }
@@ -180,6 +180,13 @@ Initialize(zc_version) {
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    upgraded_chord_file := chords._EnsureV2DictionaryFile(settings.chord_file)
+    upgraded_shorthand_file := shorthands._EnsureV2DictionaryFile(settings.shorthand_file)
+    if (!upgraded_chord_file || !upgraded_shorthand_file) {
+        return
+    }
+    settings.chord_file := upgraded_chord_file
+    settings.shorthand_file := upgraded_shorthand_file
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
     locale.EnsureSelectedLocaleExists()
@@ -874,10 +881,12 @@ Class clsMainUI {
         if (dict == "") {
             return
         }
-        settings[type . "_file"] := dict
         pluralized := type . "s"
-        %pluralized%.Load(dict)
-        this.UpdateDictionaryUI()
+        if (%pluralized%.Load(dict)) {
+            settings[type . "_file"] := %pluralized%._file
+            app_settings.Save()
+            this.UpdateDictionaryUI()
+        }
     }
     _btnEditDictionary(type) {
         Run % settings[type . "_file"]

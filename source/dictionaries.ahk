@@ -54,8 +54,17 @@ Class clsDictionary {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
             return
         }
-        this._file := this._GetFullFileName(filename)
+        filename := this._GetFullFileName(filename)
+        if ! FileExist(filename) {
+            dictionary_type := this._chorded ? "chord" : "shorthand"
+            MsgBox ,, % "ZipChord", % Format("The {} dictionary file '{}' could not be found.", dictionary_type, filename)
+            return false
+        }
+        this._file := this._EnsureV2DictionaryFile(filename)
+        if (!this._file)
+            return false
         this._LoadShortcuts()
+        return true
     }
     _GetFullFileName(filename) {
         if (InStr(filename, "\")) {
@@ -92,6 +101,57 @@ Class clsDictionary {
             }
         }
     }
+    _IsV2DictionaryFile(filename) {
+        v2ext := this._chorded ? ".chords.txt" : ".shorthands.txt"
+        if StrLen(v2ext) > StrLen(filename) {
+            return False
+        }
+        ext := SubStr(filename, StrLen(filename) - StrLen(v2ext) + 1)
+        return StrLower(ext) == v2ext
+    }
+    _GetCanonicalDictionaryFileName(filename) {
+        SplitPath, filename, _, file_dir, _, file_no_ext
+        prefix := this._chorded ? "chords-" : "shorthands-"
+        if (StrLower(SubStr(file_no_ext, 1, StrLen(prefix))) == prefix) {
+            file_no_ext := SubStr(file_no_ext, StrLen(prefix) + 1)
+        } 
+        return (file_dir ? file_dir . "\\" : "") . file_no_ext . (this._chorded ? ".chords.txt" : ".shorthands.txt")
+    }
+    _EnsureV2DictionaryFile(filename) {
+        if (this._IsV2DictionaryFile(filename))
+            return filename
+        canonical_file := this._GetCanonicalDictionaryFileName(filename)
+        if FileExist(canonical_file) {
+            return canonical_file
+        }
+        if (this._UpgradeDictionaryFile(filename, canonical_file)) {
+            return canonical_file
+        }
+        return false
+    }
+    _UpgradeLegacyChordShortcut(shortcut) {
+        replaced := StrReplace(shortcut, " ", "|")
+        replaced := StrReplace(replaced, "||", "| ") ; situations where the next chord starts with a space
+        return SubStr(shortcut, 1, 1) . SubStr(replaced, 2) ; keeping the first space in the first chord
+    }
+    _UpgradeDictionaryFile(old_file, new_file) {
+        upgraded_file := ""
+        Loop, Read, % old_file
+        {
+            line := A_LoopReadLine
+            columns := StrSplit(line, A_Tab, , 3)
+            if (this._chorded && columns[2] && columns[1] != "") {
+                line := this._UpgradeLegacyChordShortcut(columns[1]) . SubStr(line, InStr(line, A_Tab))
+            }
+            upgraded_file .= (A_Index == 1 ? "" : "`r`n") . line
+        }
+        FileAppend % upgraded_file, % new_file, UTF-8
+        if (ErrorLevel) {
+            MsgBox ,, % "ZipChord", % Format("ZipChord could not create the upgraded dictionary file '{}' from '{}'.", new_file, old_file)
+            Return false
+        }
+        Return true
+    }
     ; Private helper: check for duplicate letters in a shortcut and show warning if found
     _IsDuplicateChars(shortcut, word) {
         ; Detect duplicate characters: if length changes after removing duplicates, there are repeats
@@ -105,17 +165,13 @@ Class clsDictionary {
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
     _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
         if (this._chorded) {
-            if ( InStr(newch_unsorted, "|") ) {
-                MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes a '|'. Please use ordinary printable characters in chords instead.", newword)
-                Return false
-            }
-            ; deal with combined chords (those that have a space _after_ the first character)
-            if (InStr(SubStr(newch_unsorted, 2), " ")) {
-                replaced := StrReplace(newch_unsorted, " ", "|")
-                replaced := StrReplace(replaced, "||", "| ") ; handles situations where the second chord starts with a space
-                replaced := SubStr(newch_unsorted, 1, 1) . SubStr(replaced, 2)
-                chunks := StrSplit(replaced, "|")
+            if (InStr(newch_unsorted, "|")) {
+                chunks := StrSplit(newch_unsorted, "|")
                 For _, chunk in chunks {
+                    if (chunk == "") {
+                        MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", newword)
+                        Return false
+                    }
                     newch .= "|" . str.Arrange(chunk)
                     if (this._IsDuplicateChars(chunk, newword)) {
                         Return false
@@ -186,30 +242,36 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
                     FileCreateDir,  % dictionary_dir
                 }
                 _UpdateWorkingDir(dictionary_dir)
-                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/chords-en-qwerty.txt, % dictionary_dir . "\chords-en-starting.txt"
-                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/shorthands-english.txt, % dictionary_dir . "\shorthands-en-starting.txt"
+                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/en-qwerty.chords.txt, % dictionary_dir . "\en-qwerty.chords.txt"
+                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/english.shorthands.txt, % dictionary_dir . "\english.shorthands.txt"
                 return CheckDictionaryFileExists(dictionary_file, dictionary_type)
             }
         }
         errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
-        ; If we don't have the dictionary, try opening the first file with a matching naming convention.
-        new_file := dictionary_type "s*.txt"
-        if FileExist(new_file) {
-            Loop, Files, %new_file%
-                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-            Sort flist
-            new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+        canonical_pattern := dictionary_type == "chord" ? "*.chords.txt" : "*.shorthands.txt"
+        new_file := _FindFirstDictionaryFile(canonical_pattern)
+        if (new_file != "") {
             errmsg .= Format("ZipChord found the dictionary '{}' and is going to open it.", new_file)
         }
         else {
-            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in '{}'.", dictionary_type, A_WorkingDir)
-            new_file := dictionary_type "s.txt"
-            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
+            new_file := dictionary_type == "chord" ? "dictionary.chords.txt" : "dictionary.shorthands.txt"
+            errmsg .= Format("ZipChord is going to create a new '{}' dictionary in '{}'.", new_file, A_WorkingDir)
+            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord/wiki/shortcut-dictionaries for details.`n`ndm`tdemo", %new_file%, UTF-8
         }
         MsgBox ,, ZipChord, %errmsg%
         Return new_file
     }
     Return dictionary_file
+}
+
+_FindFirstDictionaryFile(pattern) {
+    flist := ""
+    if ! FileExist(pattern)
+        return ""
+    Loop, Files, %pattern%
+        flist .= A_LoopFileName . "`n"
+    Sort flist
+    return SubStr(flist, 1, InStr(flist, "`n")-1)
 }
 
 _UpdateWorkingDir(new_dir) {
