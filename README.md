@@ -36,8 +36,6 @@ ZipChord adheres to strict privacy and security principles. It does not send you
 
 Please see the Wiki pages for information including [how to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord), documentation for the [user interface](https://github.com/psoukie/zipchord/wiki/Main-Window), [custom dictionaries](https://github.com/psoukie/zipchord/wiki/Shortcut-dictionaries), and more.
 
-Dictionary files now use the filename suffixes `*.chords.txt` and `*.shorthands.txt`. Legacy dictionary files are upgraded automatically to the new naming convention when they are loaded. If you use configuration-switching `.ini` files that point to dictionaries explicitly, update those filenames manually before using them.
-
 ## Feedback
 
 If you have any questions, feedback, or suggestions, please write a note in the [Discussions](https://github.com/psoukie/zipchord/discussions). You can also report a bug if you run across anything that seems broken or create a feature suggestion under [Issues](https://github.com/psoukie/zipchord/issues).

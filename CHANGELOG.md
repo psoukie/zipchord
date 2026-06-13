@@ -4,8 +4,13 @@
 
 **Improvements**
 
-- Chord dictionaries now use `|` to separate chained chords, and dictionary filenames now use the suffixes `*.chords.txt` and `*.shorthands.txt`. This removes the old ambiguity where space could mean either a chained-chord separator or a literal Space key.
+Version 2.7 improves the dictionary format for chords:
+
+- Chord dictionaries now use `|` to separate chained chords. This removes the ambiguity where space could mean either a chained-chord separator or a literal Space key.
+- To identify the new format and to help distinguish chord from shortcut dictionaries, the new dictionary filenames now use the suffixes `*.chords.txt` and `*.shorthands.txt`.
 - Existing dictionaries using the old naming convention are upgraded automatically to the new filenames when loaded. Legacy chord dictionaries are converted to the new `|` chained-chord syntax during that upgrade.
+- If you use automatic configuration switching, update dictionary filenames in the `.ini` files manually after first using the dictionaries in ZipChord to automatically upgrade them.
+
 - ZipChord now supports loading dictionary files in UTF-8 without BOM.
 
 **Fixes**
