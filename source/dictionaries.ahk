@@ -107,12 +107,16 @@ Class clsDictionary {
             return False
         }
         ext := SubStr(filename, StrLen(filename) - StrLen(v2ext) + 1)
-        return StrLower(ext) == v2ext
+        StringLower, lowercase_ext, ext
+        return lowercase_ext == v2ext
     }
     _GetCanonicalDictionaryFileName(filename) {
         SplitPath, filename, _, file_dir, _, file_no_ext
+        MsgBox, % file_no_ext
         prefix := this._chorded ? "chords-" : "shorthands-"
-        if (StrLower(SubStr(file_no_ext, 1, StrLen(prefix))) == prefix) {
+        filename_start := SubStr(file_no_ext, 1, StrLen(prefix))
+        StringLower lowercase_prefix, filename_start 
+        if (lowercase_prefix == prefix) {
             file_no_ext := SubStr(file_no_ext, StrLen(prefix) + 1)
         } 
         return (file_dir ? file_dir . "\\" : "") . file_no_ext . (this._chorded ? ".chords.txt" : ".shorthands.txt")
