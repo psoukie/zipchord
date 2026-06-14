@@ -24,6 +24,7 @@ Class clsVisualizer {
     _mode := 0  ; 0 - off, 1 - on, 2 - on with details
     _new_line := false
     _shift_shown := false
+    _darken_fn := ObjBindMethod(this, "_Darken")
 
     Init(mode := 1) {
         if (this._mode)
@@ -38,14 +39,17 @@ Class clsVisualizer {
             Gui, Font, s24 bold, Consolas
             Gui, Add, Text, vUI_monitor_slot%A_Index% xm+%posx% ym-8 Center, % "W"
             if (mode==2) {
-                Gui, Font, s12, Segoe UI
+                Gui, Font, s10, Segoe UI
                 Gui, Add, Text, vUI_monitor_duration%A_Index% xm+%posx% ym+70 Center, % "99999"
                 posx -= 20
                 Gui, Add, Text, vUI_monitor_overlap%A_Index% xm+%posx% ym+100 Center, % "9999"
             }
         }
-        Gui, Show, h62
-        this._darken_fn := ObjBindMethod(this, "_Darken")
+        if (mode == 2) {
+            Gui, Show, h120
+        } else {
+            Gui, Show, h62
+        }
         this._UpdateUI(true)
     }
     IsOn() {
@@ -89,8 +93,8 @@ Class clsVisualizer {
             }
         }
         this._UpdateUI()
-        darken := this._darken_fn
-        SetTimer % darken, 100
+        darken_fn := this._darken_fn
+        SetTimer %darken_fn%, 100
     }
     NewLine() {
         this._new_line := true
@@ -129,11 +133,11 @@ Class clsVisualizer {
                 changed := true
             }
         }
-        darken := this._darken_fn
+        darken_fn := this._darken_fn
         if (changed)
             this._UpdateUI(true)
         else
-            SetTimer % darken, Off
+            SetTimer %darken_fn%, Off
     }
 }
 
