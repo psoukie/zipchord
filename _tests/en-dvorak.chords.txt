@@ -237,3 +237,5 @@ Newly added
 blp	~-bleeping-~
 .m	more
 ⑥s	six seven
+qj	"Mighty!"^
+qjk	Mighty-~^

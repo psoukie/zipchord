@@ -20,6 +20,9 @@ Entries by frequency
 --------------------
 
 Dx	~Dear X,{Enter}
+⑥s	six seven
+mii	"Mighty!"^
+
 	the	(undefined)
 	be	(undefined)
 	and	(undefined)
@@ -4394,4 +4397,3 @@ mrgr	merger
 indqt	inadequate
 elctrncs	electronics
 	trim	(undefined)
-⑥s	six seven
