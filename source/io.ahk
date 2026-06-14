@@ -132,6 +132,7 @@ Class clsIOrepresentation {
          , IS_ENTER := 256
          , IS_INTERRUPT := 512
          , IS_NUMERAL := 1024
+         , CAPITALIZES_NEXT := 2048
     ; affixes constants
     static AFFIX_NONE := 0 ; no prefix or suffix
         , AFFIX_PREFIX := 1 ; expansion is a prefix
@@ -531,6 +532,8 @@ Class clsIOrepresentation {
         }
         ; detect affixes to handle opening and closing smart spaces correctly
         affixes := this._DetectAffixes(expanded)
+        capitalizes_next := this._DetectCapitalizesNext(expanded)
+        expanded := this._RemoveCapitalizesNextSymbol(expanded)
         expanded := this._RemoveAffixSymbols(expanded, affixes)
         previous := this.GetChunk(chunk_id-1)
 
@@ -576,6 +579,9 @@ Class clsIOrepresentation {
         if (mark_as_capitalized) {
             this.SetChunkAttributes(chunk_id + replace_offset, this.WAS_CAPITALIZED)
         }
+        if (capitalizes_next) {
+            this.SetChunkAttributes(chunk_id + replace_offset, this.CAPITALIZES_NEXT)
+        }
 
         ; ending smart space
         if (affixes & this.AFFIX_PREFIX) {
@@ -586,7 +592,7 @@ Class clsIOrepresentation {
             }
         }
         this.OutputKeys()
-        if (! affixes) {
+        if (! (affixes & (this.AFFIX_PREFIX | this.AFFIX_SUFFIX))) {
             score.Score(score.ENTRY_CHORD)
         }
         return true
@@ -663,11 +669,16 @@ Class clsIOrepresentation {
                 return
             }
             affixes := this._DetectAffixes(expanded)
+            capitalizes_next := this._DetectCapitalizesNext(expanded)
+            expanded := this._RemoveCapitalizesNextSymbol(expanded)
             expanded := this._RemoveAffixSymbols(expanded, affixes)
             first_chunk_offset := affixes & this.AFFIX_SUFFIX ? -1 : 0 
             this.Replace(expanded, first_chunk_id + first_chunk_offset, this.length + offset)
             this.OutputKeys()
             this.SetChunkAttributes(first_chunk_id + first_chunk_offset, this.WAS_EXPANDED)
+            if (capitalizes_next) {
+                this.SetChunkAttributes(first_chunk_id + first_chunk_offset, this.CAPITALIZES_NEXT)
+            }
             return true
         }
     }
@@ -713,12 +724,18 @@ Class clsIOrepresentation {
             return true
         }
         if (start > 2 && this.GetOutput(start - 1, start - 1) == " ") {
+            if (this.TestChunkAttributes(start - 2, this.CAPITALIZES_NEXT)) {
+                return true
+            }
             preceding := this.GetChunk(start - 2).input
             with_shift := this.TestChunkAttributes(start - 2, this.WITH_SHIFT)
             if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
                 || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
                 return true
             }
+        }
+        if (start > 1 && this.TestChunkAttributes(start - 1, this.CAPITALIZES_NEXT)) {
+            return true
         }
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
         if ( start > 1 && this.TestChunkAttributes(start, this.IS_CHORD) ) {
@@ -758,7 +775,7 @@ Class clsIOrepresentation {
         if (SubStr(phrase, 1, 1) == "~") {
             affixes |= this.AFFIX_SUFFIX
         }
-        if (SubStr(phrase, StrLen(phrase), 1) == "~") {
+        if (SubStr(phrase, 0) == "~" || SubStr(phrase, -1) == "~^") {
             affixes |= this.AFFIX_PREFIX
         }
         Return affixes
@@ -767,8 +784,20 @@ Class clsIOrepresentation {
         if (affixes & this.AFFIX_SUFFIX) {
             text := SubStr(text, 2)
         }
-        if (affixes & this.AFFIX_PREFIX) {
+        if (SubStr(text, 0) == "~") {   ; removal of ~^ is handled by RemoveCapitalizesNextSymbol
             text := SubStr(text, 1, StrLen(text) - 1)
+        }
+        Return text
+    }
+    _DetectCapitalizesNext(phrase) {
+        return SubStr(phrase, 0) == "^" || SubStr(phrase, -1) == "^~"
+    }
+    _RemoveCapitalizesNextSymbol(text) {
+        if (SubStr(text, 0) == "^") {
+            return SubStr(text, 1, StrLen(text) - 1)
+        }
+        if (SubStr(text, -1) == "^~") {
+            return SubStr(text, 1, StrLen(text) - 2) . "~"
         }
         Return text
     }
