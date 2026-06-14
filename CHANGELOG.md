@@ -6,14 +6,14 @@
 
 Version 2.7 improves the dictionary format and handling:
 
-- Chord and shorthand dictionaries now support using the `^` (caret) symbol at the end of an expansion definition to auto-capitalize the following text while following the auto-capitalization setting. (#249)
+- ZipChord now automatically reloads dictionaries on the fly when they are changed. (#124) (The Reload buttons were removed from the UI.)
 - The delimiter for separating chained chords in chord dictionaries was changed to `|`  (pipe) character. This removes the ambiguity where space could mean either a chained-chord separator or a literal Space key.
+- Chord and shorthand dictionaries now support using the `^` (caret) symbol at the end of an expansion definition to auto-capitalize the text that follows while respecting the auto-capitalization setting. (#249)
 - ZipChord now supports loading dictionary files saved in UTF-8 format without BOM. (#150)
 
 Notes:
 
-- To identify the new dictionary format and help distinguish chord and shortcut dictionaries, the new dictionary filenames now use the suffixes `*.chords.txt` and `*.shorthands.txt`.
-- Existing dictionaries using the old naming convention and chain chord syntax are upgraded automatically when loaded by ZipChord.
+- To identify the new dictionary format and help distinguish chord from shortcut dictionaries, the new dictionary filenames now use the suffixes `*.chords.txt` and `*.shorthands.txt`. Existing dictionaries using the old naming convention and chain chord syntax are upgraded automatically when loaded by ZipChord. (The original files are left as a backup.)
 - If you use automatic configuration switching, update dictionary filenames in the `.ini` files manually after first using the dictionaries in ZipChord to automatically upgrade them.
 
 **Fixes**

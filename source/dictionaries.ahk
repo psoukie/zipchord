@@ -24,14 +24,17 @@ global add_shortcut := new clsAddShortcut
 Class clsDictionary {
     _chorded := false
     _file := ""
-    _file_modified := -1  ; -1 - detection stopped, 0 - reset for new file
-    _watch_fn := ObjBindMethod(this, "CheckForDictModification")
+    _file_modified := ""
+    _file_size := ""
+    _reload_due := 0
+    _watch_fn := ""
     _entries := {}
     _reverse_entries := {}
     _pause_loading := true
     
     __New(chorded_keys := false) {
         this._chorded := chorded_keys
+        this._watch_fn := ObjBindMethod(this, "CheckForDictModification")
     }
     ; Public properties and methods
     entries {
@@ -52,7 +55,7 @@ Class clsDictionary {
             return false
     }
     Load(filename := "") {
-        this._file_modified := -1 ; stop the modification detection
+        this._StopWatching()
         this._pause_loading := true
         if (filename == "") {
             filename := this._file
@@ -71,9 +74,8 @@ Class clsDictionary {
         if (!this._file)
             return false
         this._LoadShortcuts()
-        
-        this._file_modified := 0
-        SetTimer, %_watch_fn%, 250
+        this._UpdateTrackedFileState()
+        this._StartWatching()
 
         return true
     }
@@ -94,23 +96,54 @@ Class clsDictionary {
         return True
     }
 
+    _StartWatching() {
+        watch_fn := this._watch_fn
+        SetTimer, %watch_fn%, 350
+    }
+    _StopWatching() {
+        watch_fn := this._watch_fn
+        SetTimer, %watch_fn%, Off
+        this._reload_due := 0
+        this._file_modified := ""
+        this._file_size := ""
+    }
     _GetDictModifiedTime() {
         filename := this._file
         FileGetTime, last_modified, %filename%
         return last_modified
     }
+    _GetDictFileSize() {
+        filename := this._file
+        FileGetSize, file_size, %filename%
+        return file_size
+    }
+    _UpdateTrackedFileState() {
+        this._file_modified := this._GetDictModifiedTime()
+        this._file_size := this._GetDictFileSize()
+        this._reload_due := 0
+    }
 
     CheckForDictModification() {
-        if (this._file_modified == -1) {
+        Critical
+        if (this._file == "") {
             return
         }
-        last_modified := this._GetDictModifiedTime()
-        if (this._file_modified == 0) {
-            this._file_modified := last_modified
+        if ! FileExist(this._file) {
+            this._StopWatching()
             return
         }
-        if (last_modified > this._file_modified) {
-            this._file_modified := last_modified
+
+        current_modified := this._GetDictModifiedTime()
+        current_size := this._GetDictFileSize()
+
+        if (current_modified != this._file_modified || current_size != this._file_size) {
+            this._reload_due := A_TickCount + 1200
+            this._file_modified := current_modified
+            this._file_size := current_size
+            return
+        }
+        if (this._reload_due && A_TickCount >= this._reload_due) {
+            Critical Off
             this.Load()
             main_UI.UpdateDictionaryUI()
         }
@@ -225,8 +258,12 @@ Class clsDictionary {
         ObjRawSet(this._entries, newch, newword)
         if ( ! InStr(newword, " ") )
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
-        if (write_to_file)
+        if (write_to_file) {
+            this._StopWatching()
             FileAppend % "`r`n" newch_unsorted "`t" newword, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
+            this._UpdateTrackedFileState()
+            this._StartWatching()
+        }
         Return true
     }
     _IsShortcutOK(shortcut, word) {
