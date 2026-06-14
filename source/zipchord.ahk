@@ -631,8 +631,8 @@ Class clsMainUI {
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
         UI.Add(cts.selected_locale, "y+10 w170")
         UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
-        this._BuilderHelper(UI, "chord", "&Open", "&Edit", "&Reload", "xs y+20")
-        this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "Reloa&d", "xs-20 y+30")
+        this._BuilderHelper(UI, "chord", "&Open", "&Edit", "xs y+20")
+        this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "xs-20 y+30")
 
         UI.Tab(2)
         UI.Add("GroupBox", "y+20 w310 h175", "Chords")
@@ -694,13 +694,12 @@ Class clsMainUI {
         UI.Disable()  ; start disabled during loading
         this.UI := UI
     }
-    _BuilderHelper(UI, name_modifier, s_open, s_edit, s_reload, options) {
+    _BuilderHelper(UI, name_modifier, s_open, s_edit, options) {
         cts := this.controls
         UI.Add(cts[name_modifier . "_entries"], options . " w310 h135")
         UI.Add(cts[name_modifier . "_file"], "xp+20 yp+30 Section w270")
         UI.Add("Button", "xs w80 Section", s_open, ObjBindMethod(this, "_btnSelectDictionary", name_modifier))
         UI.Add("Button", "ys w80", s_edit, ObjBindMethod(this, "_btnEditDictionary", name_modifier))
-        UI.Add("Button", "ys w80", s_reload, ObjBindMethod(this, "_btnReloadDictionary", name_modifier))
         UI.Add(cts[name_modifier . "_enabled"], "xs")
     }
 
@@ -891,12 +890,7 @@ Class clsMainUI {
     _btnEditDictionary(type) {
         Run % settings[type . "_file"]
     }
-    ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
-    _btnReloadDictionary(type) {
-        pluralized := type . "s"
-        %pluralized%.Load()
-        main_UI.UpdateDictionaryUI()
-    }
+
     ; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR"
     _SanitizeNumber(orig, hex_color := false) {
         sanitized := Trim(orig)

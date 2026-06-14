@@ -24,9 +24,15 @@ global add_shortcut := new clsAddShortcut
 Class clsDictionary {
     _chorded := false
     _file := ""
+    _file_modified := -1  ; -1 - detection stopped, 0 - reset for new file
+    _watch_fn := ObjBindMethod(this, "CheckForDictModification")
     _entries := {}
     _reverse_entries := {}
     _pause_loading := true
+    
+    __New(chorded_keys := false) {
+        this._chorded := chorded_keys
+    }
     ; Public properties and methods
     entries {
         get { 
@@ -46,6 +52,7 @@ Class clsDictionary {
             return false
     }
     Load(filename := "") {
+        this._file_modified := -1 ; stop the modification detection
         this._pause_loading := true
         if (filename == "") {
             filename := this._file
@@ -64,6 +71,10 @@ Class clsDictionary {
         if (!this._file)
             return false
         this._LoadShortcuts()
+        
+        this._file_modified := 0
+        SetTimer, %_watch_fn%, 250
+
         return true
     }
     _GetFullFileName(filename) {
@@ -82,10 +93,29 @@ Class clsDictionary {
             return False
         return True
     }
-    ; Private functions
-    __New(chorded_keys := false) {
-        this._chorded := chorded_keys
+
+    _GetDictModifiedTime() {
+        filename := this._file
+        FileGetTime, last_modified, %filename%
+        return last_modified
     }
+
+    CheckForDictModification() {
+        if (this._file_modified == -1) {
+            return
+        }
+        last_modified := this._GetDictModifiedTime()
+        if (this._file_modified == 0) {
+            this._file_modified := last_modified
+            return
+        }
+        if (last_modified > this._file_modified) {
+            this._file_modified := last_modified
+            this.Load()
+            main_UI.UpdateDictionaryUI()
+        }
+    }
+
     ; Load chords from a dictionary file
     _LoadShortcuts() {
         this._entries := {}
