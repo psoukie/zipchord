@@ -12,22 +12,37 @@ import "core:unicode/utf8"
 Dict_Error :: enum i32 {
     None             =  0,
     Not_Found        = -1,
-    Repeated_Key   = -2,
+    Repeated_Key     = -2,
     Bad_Argument     = -3,
     Buffer_Too_Small = -4,
     Allocation_Error = -5,
-    Internal_Error   = -6,
+    Internal_Error   = -7,
+}
+
+Dict_Load_Error :: enum i32 {
+	None             =  0,
+    Repeated_Key     = -2,
+    Buffer_Too_Small = -4,
+	File_Read_Fail   = -6,
 }
 
 MAX_CHORD_RUNES :: 40
 MAX_CHORD_BYTES :: MAX_CHORD_RUNES * utf8.UTF_MAX
+MAX_CHAIN_BYTES :: 5 * MAX_CHORD_BYTES
 
-Normalized_Chord :: struct {
+Chord_Buffer :: struct {
 	bytes: [MAX_CHORD_BYTES]u8,
 	len:   int,
 }
 
-normalize_chord :: proc(raw_chord: string) -> (chord: Normalized_Chord, err: Dict_Error) {
+Chord_Chain_Buffer :: struct {
+	bytes: [MAX_CHAIN_BYTES]u8,
+	len:   int,
+}
+
+normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
+	chord_buf.len = 0
+	
 	rune_buf: [MAX_CHORD_RUNES]rune
 	rune_count := 0
 
@@ -40,7 +55,7 @@ normalize_chord :: proc(raw_chord: string) -> (chord: Normalized_Chord, err: Dic
 	} else {
 		for r in raw_chord {
 			if rune_count >= MAX_CHORD_RUNES {
-				return chord, .Buffer_Too_Small
+				return "", .Buffer_Too_Small
 			}
 			rune_buf[rune_count] = r
 			rune_count += 1
@@ -52,19 +67,37 @@ normalize_chord :: proc(raw_chord: string) -> (chord: Normalized_Chord, err: Dic
 
 	for r, i in runes {
 		if i > 0 && r == runes[i-1] {
-			return Normalized_Chord{}, .Repeated_Key  
+			return "", .Repeated_Key  
 		}
 		encoded, n := utf8.encode_rune(r)
-		copy(chord.bytes[chord.len:chord.len+n], encoded[:n])
-		chord.len += n
+		copy(chord_buf.bytes[chord_buf.len:chord_buf.len+n], encoded[:n])
+		chord_buf.len += n
 	}
 
-	return chord, .None
+	return string(chord_buf.bytes[:chord_buf.len]), .None
 }
 
-chord_to_string :: proc (chord: ^Normalized_Chord) -> string {
-	return string(chord.bytes[:chord.len])
+_normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Load_Error) {
+	chain_buf.len = 0
+	raw_shortcut := raw_shortcut
+	
+	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
+		return "", .Buffer_Too_Small
+	}
+	
+	for chord in strings.split_iterator(&raw_shortcut, "|") {
+		log.debugf("Chain part: {}", chord)
+	}
+
+	// copy(chain_buf.bytes[:chain_buf.len], raw_shortcut)	
+	
+	// return string(chain_buf.bytes[:chain_buf.len]), .None
+	return "x", .None
 }
+
+// chord_to_string :: proc (chord: ^Normalized_Chord) -> string {
+// 	return string(chord.bytes[:chord.len])
+// }
 
 Dict_Data :: struct {
     arena_memory:          virtual.Arena,      // owns cloned key/value string bytes
@@ -151,38 +184,35 @@ dict_lookup :: proc{
 	shorthand_dict_lookup,
 }
 
-dict_load_file :: proc(filepath: string, dict: ^Dict_Data) {
-	data, err := os.read_entire_file(filepath, context.allocator)
+dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool) -> Dict_Load_Error {
+	file_data, err := os.read_entire_file(filepath, context.allocator)
 	if err != nil {
-		log.debugf("Could not read the file {}", filepath)
-		return
+		return .File_Read_Fail
 	}
-	defer delete(data, context.allocator)
+	defer delete(file_data, context.allocator)
 
-	it := string(data)
+	it := string(file_data)
 	it = remove_bom(it)
 
-	// Detect line endings
-	sep := "\n"
-	if strings.contains(it, "\r\n") {
-		sep = "\r\n"
-	}
-
-	i := 1
-	for line in strings.split_iterator(&it, sep) {
-		log.debugf("Line {}: {}", i, line)
-		shortcut, expansion, ok := extract_a_tabbed_pair(line)
-		if ok {
-			dict_data_add(dict, shortcut, expansion)
-		} else {
-			log.debugf("NOT OK: {}", expansion)
-		}
+	i := 0
+	chain_buf: Chord_Chain_Buffer
+	for raw_line in strings.split_iterator(&it, "\n") {
 		i += 1
+		line := strings.trim_right(raw_line, "\r") 
+		log.debugf("Line {}: {}", i, line)
+		shortcut, expansion, ok := _extract_a_tabbed_pair(line)
+		if !ok {
+			log.debugf("NOT OK: {}", expansion)
+			continue
+		}
+		
+		normalized_shortcut, err := _normalize_chained_chords(shortcut, &chain_buf) 
+		dict_data_add(dict, shortcut, expansion)
 	}
+	return .None
 }
 
-@(private="file")
-extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: string, ok: bool) {
+_extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: string, ok: bool) {
 	line := line
 	shortcut = strings.split_iterator(&line, "\t") or_return
 	expansion = strings.split_iterator(&line, "\t") or_return
@@ -193,20 +223,24 @@ extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: str
 	return shortcut, expansion, true
 } 
 
-main :: proc() {
-	context.logger = log.create_console_logger()
-	dict_data_init(&chord_dict.dict_data)
-	// dict_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dict)	
-}
-
 // main :: proc() {
 // 	context.logger = log.create_console_logger()
+// 	// dict_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dict)	
+// }
+
+main :: proc() {
+	context.logger = log.create_console_logger()
+    dict: Chord_Dict
+    dict_data_init(&dict.dict_data)
+    defer dict_data_destroy(&dict.dict_data)
+	dict_data_load_file("../zipchord-lib-tests/en-dvorak.chords.txt", &dict, true)
+
 // 	empty_chord := Normalized_Chord{}
 // 	normalized := normalize_chord("řžťcab") or_else empty_chord
 // 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
 // 	normalized = normalize_chord("ts") or_else empty_chord
 // 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
-// }
+}
 
 
 remove_bom :: proc(text: string) -> string {

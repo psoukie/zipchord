@@ -57,7 +57,7 @@ load_dict :: proc(t: ^tst.T) {
     dict: zc.Chord_Dict
     zc.dict_data_init(&dict.dict_data)
     defer zc.dict_data_destroy(&dict.dict_data)
-	zc.dict_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &dict)
+	zc.dict_data_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &dict, true)
     expansion, lookup_err := zc.dict_lookup(&dict, "th")
 	tst.expect(t, expansion == "the", "dict after load did not find a chord")
 }
@@ -65,22 +65,21 @@ load_dict :: proc(t: ^tst.T) {
 @(test)
 normalize_chords :: proc(t: ^tst.T) {
     normalize :: proc(t: ^tst.T, raw, sorted: string) {
-    	normalized, err := zc.normalize_chord(raw)
+        ch_buf: zc.Chord_Buffer
+    	normalized, err := zc.normalize_chord(raw, &ch_buf)
     	tst.expect_value(t, err, zc.Dict_Error.None)
-    	ch_str := zc.chord_to_string(&normalized)
-    	tst.expect_value(t, ch_str, sorted)
-    	// log.debugf("Normalized to: {}", chord_to_string(&normalized)) // 
-    	normalized, err = zc.normalize_chord("ts")
+    	tst.expect_value(t, normalized, sorted)
 	}
 	
     normalize(t, "cabťžř", "abcřťž")
     normalize(t, "ts", "st")
     normalize(t, "a !", " !a")
 
-    noramalized, err := zc.normalize_chord("mem")
+    ch_buf: zc.Chord_Buffer
+    noramalized, err := zc.normalize_chord("mem", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Repeated_Key)
     
-    noramalized, err = zc.normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť")
+    noramalized, err = zc.normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Buffer_Too_Small)
 }
 	
