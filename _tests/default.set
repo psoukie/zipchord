@@ -16,3 +16,4 @@ default__ss-punct.out
 default__test.out
 default__punct-first-chord.out
 default__numpad.out
+default__capitalize_next.out

@@ -69,7 +69,8 @@ Class clsHintUI {
     pos_x := 0
     pos_y := 0
     _transparent_color := 0
-    hide_OSD_fn := ObjBindMethod(this, "_HideOSD")
+    _hide_OSD_fn := ObjBindMethod(this, "_HideOSD")
+    _hide_tooltip_fn := ObjBindMethod(this, "_HideTooltip")
 
     transparent_color[] {
         get {
@@ -133,7 +134,7 @@ Class clsHintUI {
             this._GetCaret(x, y, , h)
             ToolTip % " " . ReplaceWithVariants(line2) . " `n " . ReplaceWithVariants(line3) . " "
                     , x-1.5*h+settings.hint_offset_x, y+1.5*h+settings.hint_offset_y
-            hide_tooltip_fn := ObjBindMethod(this, "_HideTooltip")
+            hide_tooltip_fn := this._hide_tooltip_fn
             SetTimer, %hide_tooltip_fn%, -1800   ; hides the tooltip
         } else {
             this.ShowOnOSD(line1, ReplaceWithVariants(line2, true), ReplaceWithVariants(line3))
@@ -159,7 +160,7 @@ Class clsHintUI {
         current_pos_y := coord.y ? coord.y + settings.hint_offset_y : this.pos_y
         this.UI.Show("NoActivate X" . current_pos_x . "Y" . current_pos_y)
         this.UI.SetTransparency(this.transparent_color, this.transparency)
-        hide_osd_fn := this.hide_OSD_fn
+        hide_osd_fn := this._hide_OSD_fn
         SetTimer, %hide_osd_fn%, -1900
     }
 
@@ -168,7 +169,7 @@ Class clsHintUI {
         if (this.fading && this.transparency > 1) {
             this.transparency -= 10
             this.UI.SetTransparency(this.transparent_color, this.transparency)
-            hide_osd_fn := this.hide_OSD_fn
+            hide_osd_fn := this._hide_OSD_fn
             SetTimer, %hide_osd_fn%, -100
             return
         }

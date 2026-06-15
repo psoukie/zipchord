@@ -175,8 +175,8 @@ Class clsInstaller {
         ; install dictionaries
         if ( ! InStr(FileExist(dict_dir), "D"))
             FileCreateDir,  % this.options.my_documents_dir . "\ZipChord"
-        FileInstall, ..\dictionaries\chords-en-qwerty.txt, % dict_dir . "\chords-en-starting.txt"
-        FileInstall, ..\dictionaries\shorthands-english.txt, % dict_dir . "\shorthands-en-starting.txt"
+        FileInstall, ..\dictionaries\en-qwerty.chords.txt, % dict_dir . "\en-qwerty.chords.txt"
+        FileInstall, ..\dictionaries\english.shorthands.txt, % dict_dir . "\english.shorthands.txt"
         ; Create a ZipChord folder and application shortcut in the user's Programs folder in Start menu
         if (this.options.zipchord_shortcut || this.options.developer_shortcut) {
             if ( ! InStr(FileExist(this.options.programs_dir . "\ZipChord"), "D"))

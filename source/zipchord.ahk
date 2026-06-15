@@ -131,8 +131,8 @@ Class clsSettings {
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION
                 , chording:         CHORD_RESTRICT ; Chord recognition options
-                , chord_file:       "chords-en-starting.txt" ; file name for the chord dictionary
-                , shorthand_file:   "shorthands-en-starting.txt" ; file name for the shorthand dictionary
+                , chord_file:       "en-qwerty.chords.txt" ; file name for the chord dictionary
+                , shorthand_file:   "english.shorthands.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
                 , output_delay:     3 }
@@ -180,6 +180,13 @@ Initialize(zc_version) {
     SetWorkingDir, % settings.dictionary_dir
     settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
     settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    upgraded_chord_file := chords._EnsureV2DictionaryFile(settings.chord_file)
+    upgraded_shorthand_file := shorthands._EnsureV2DictionaryFile(settings.shorthand_file)
+    if (!upgraded_chord_file || !upgraded_shorthand_file) {
+        return
+    }
+    settings.chord_file := upgraded_chord_file
+    settings.shorthand_file := upgraded_shorthand_file
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
     locale.EnsureSelectedLocaleExists()
@@ -612,6 +619,9 @@ Class clsMainUI {
     labels := []
     closing_tip := 0
 
+    _help_fn := ObjBindMethod(this, "_Help")
+    _reset_hint_fn := ObjBindMethod(hint_UI, "Reset")
+
     ; Prepare UI
     Build() {
         global zc_version
@@ -624,8 +634,8 @@ Class clsMainUI {
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
         UI.Add(cts.selected_locale, "y+10 w170")
         UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
-        this._BuilderHelper(UI, "chord", "&Open", "&Edit", "&Reload", "xs y+20")
-        this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "Reloa&d", "xs-20 y+30")
+        this._BuilderHelper(UI, "chord", "&Open", "&Edit", "xs y+20")
+        this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "xs-20 y+30")
 
         UI.Tab(2)
         UI.Add("GroupBox", "y+20 w310 h175", "Chords")
@@ -687,13 +697,12 @@ Class clsMainUI {
         UI.Disable()  ; start disabled during loading
         this.UI := UI
     }
-    _BuilderHelper(UI, name_modifier, s_open, s_edit, s_reload, options) {
+    _BuilderHelper(UI, name_modifier, s_open, s_edit, options) {
         cts := this.controls
         UI.Add(cts[name_modifier . "_entries"], options . " w310 h135")
         UI.Add(cts[name_modifier . "_file"], "xp+20 yp+30 Section w270")
         UI.Add("Button", "xs w80 Section", s_open, ObjBindMethod(this, "_btnSelectDictionary", name_modifier))
         UI.Add("Button", "ys w80", s_edit, ObjBindMethod(this, "_btnEditDictionary", name_modifier))
-        UI.Add("Button", "ys w80", s_reload, ObjBindMethod(this, "_btnReloadDictionary", name_modifier))
         UI.Add(cts[name_modifier . "_enabled"], "xs")
     }
 
@@ -703,8 +712,8 @@ Class clsMainUI {
             FinishDebugging()
         }
         cts.debugging.value := 0 ; debugging is always set to disabled
-        call := ObjBindMethod(this, "_Help")
-        Hotkey, F1, % call, On
+        help_fn := this._help_fn
+        Hotkey, F1, %help_fn%, On
         cts.input_delay.value := settings.input_delay
         cts.output_delay.value := settings.output_delay
         ; Loop through each control and apply settings from its defined corresponding setting
@@ -815,7 +824,7 @@ Class clsMainUI {
         }
         UI_SyncModeState()
         ; reflect any changes to OSD UI
-        reset_hint_fn := ObjBindMethod(hint_UI, "Reset")
+        reset_hint_fn := this._reset_hint_fn
         SetTimer, %reset_hint_fn%, -2000
         Return true
     }
@@ -874,20 +883,17 @@ Class clsMainUI {
         if (dict == "") {
             return
         }
-        settings[type . "_file"] := dict
         pluralized := type . "s"
-        %pluralized%.Load(dict)
-        this.UpdateDictionaryUI()
+        if (%pluralized%.Load(dict)) {
+            settings[type . "_file"] := %pluralized%._file
+            app_settings.Save()
+            this.UpdateDictionaryUI()
+        }
     }
     _btnEditDictionary(type) {
         Run % settings[type . "_file"]
     }
-    ; Reload a (modified) dictionary file; rewires hotkeys because of potential custom keyboard setting
-    _btnReloadDictionary(type) {
-        pluralized := type . "s"
-        %pluralized%.Load()
-        main_UI.UpdateDictionaryUI()
-    }
+
     ; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR"
     _SanitizeNumber(orig, hex_color := false) {
         sanitized := Trim(orig)

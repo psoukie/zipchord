@@ -24,9 +24,17 @@ global add_shortcut := new clsAddShortcut
 Class clsDictionary {
     _chorded := false
     _file := ""
+    _file_modified := ""
+    _file_size := ""
+    _reload_due := 0
+    _watch_fn := ObjBindMethod(this, "CheckForDictModification")
     _entries := {}
     _reverse_entries := {}
     _pause_loading := true
+    
+    __New(chorded_keys := false) {
+        this._chorded := chorded_keys
+    }
     ; Public properties and methods
     entries {
         get { 
@@ -46,6 +54,7 @@ Class clsDictionary {
             return false
     }
     Load(filename := "") {
+        this._StopWatching()
         this._pause_loading := true
         if (filename == "") {
             filename := this._file
@@ -54,8 +63,20 @@ Class clsDictionary {
             MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
             return
         }
-        this._file := this._GetFullFileName(filename)
+        filename := this._GetFullFileName(filename)
+        if ! FileExist(filename) {
+            dictionary_type := this._chorded ? "chord" : "shorthand"
+            MsgBox ,, % "ZipChord", % Format("The {} dictionary file '{}' could not be found.", dictionary_type, filename)
+            return false
+        }
+        this._file := this._EnsureV2DictionaryFile(filename)
+        if (!this._file)
+            return false
         this._LoadShortcuts()
+        this._UpdateTrackedFileState()
+        this._StartWatching()
+
+        return true
     }
     _GetFullFileName(filename) {
         if (InStr(filename, "\")) {
@@ -73,65 +94,125 @@ Class clsDictionary {
             return False
         return True
     }
-    ; Private functions
-    __New(chorded_keys := false) {
-        this._chorded := chorded_keys
+
+    _StartWatching() {
+        watch_fn := this._watch_fn
+        SetTimer, %watch_fn%, 350
     }
+    _StopWatching() {
+        watch_fn := this._watch_fn
+        SetTimer, %watch_fn%, Off
+        this._reload_due := 0
+        this._file_modified := ""
+        this._file_size := ""
+    }
+    _GetDictModifiedTime() {
+        filename := this._file
+        FileGetTime, last_modified, %filename%
+        return last_modified
+    }
+    _GetDictFileSize() {
+        filename := this._file
+        FileGetSize, file_size, %filename%
+        return file_size
+    }
+    _UpdateTrackedFileState() {
+        this._file_modified := this._GetDictModifiedTime()
+        this._file_size := this._GetDictFileSize()
+        this._reload_due := 0
+    }
+
+    CheckForDictModification() {
+        Critical
+        if (this._file == "") {
+            return
+        }
+        if ! FileExist(this._file) {
+            this._StopWatching()
+            return
+        }
+
+        current_modified := this._GetDictModifiedTime()
+        current_size := this._GetDictFileSize()
+
+        if (current_modified != this._file_modified || current_size != this._file_size) {
+            this._reload_due := A_TickCount + 1200
+            this._file_modified := current_modified
+            this._file_size := current_size
+            return
+        }
+        if (this._reload_due && A_TickCount >= this._reload_due) {
+            Critical Off
+            this.Load()
+            main_UI.UpdateDictionaryUI()
+        }
+    }
+
     ; Load chords from a dictionary file
     _LoadShortcuts() {
         this._entries := {}
         this._reverse_entries := {}
-        upgraded_file := ""
-        upgrade_needed := false
-        stopped_loading := false
         Loop, Read, % this._file
         {
-            line := A_LoopReadLine
-            shortcut := ""
-            columns := StrSplit(line, A_Tab, , 3)
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
             if (columns[2] && columns[1] != "") {
-                shortcut := columns[1]
-                if (this._chorded && this._NeedsLegacyChordUpgrade(shortcut)) {
-                    shortcut := this._UpgradeLegacyChordShortcut(shortcut)
-                    line := shortcut . SubStr(line, InStr(line, A_Tab))
-                    upgrade_needed := true
-                }
-                if (! this._RegisterShortcut(shortcut, columns[2]))  {
-                    if this._AskWhetherToStop() {
-                        stopped_loading := true
+                if (! this._RegisterShortcut(columns[1], columns[2]))  {
+                    if this._AskWhetherToStop()
                         Break
-                    }
                 }
             }
-            upgraded_file .= (A_Index == 1 ? "" : "`r`n") . line
         }
-        if (upgrade_needed && !stopped_loading)
-            this._UpgradeDictionaryFile(upgraded_file)
     }
-    _NeedsLegacyChordUpgrade(shortcut) {
-        return (!InStr(shortcut, "|") && InStr(SubStr(shortcut, 2), " "))
+    _IsV2DictionaryFile(filename) {
+        v2ext := this._chorded ? ".chords.txt" : ".shorthands.txt"
+        if StrLen(v2ext) > StrLen(filename) {
+            return False
+        }
+        ext := SubStr(filename, StrLen(filename) - StrLen(v2ext) + 1)
+        StringLower, lowercase_ext, ext
+        return lowercase_ext == v2ext
+    }
+    _GetCanonicalDictionaryFileName(filename) {
+        SplitPath, filename, _, file_dir, _, file_no_ext
+        prefix := this._chorded ? "chords-" : "shorthands-"
+        filename_start := SubStr(file_no_ext, 1, StrLen(prefix))
+        StringLower lowercase_prefix, filename_start 
+        if (lowercase_prefix == prefix) {
+            file_no_ext := SubStr(file_no_ext, StrLen(prefix) + 1)
+        } 
+        return (file_dir ? file_dir . "\" : "") . file_no_ext . (this._chorded ? ".chords.txt" : ".shorthands.txt")
+    }
+    _EnsureV2DictionaryFile(filename) {
+        if (this._IsV2DictionaryFile(filename))
+            return filename
+        canonical_file := this._GetCanonicalDictionaryFileName(filename)
+        if FileExist(canonical_file) {
+            return canonical_file
+        }
+        if (this._UpgradeDictionaryFile(filename, canonical_file)) {
+            return canonical_file
+        }
+        return false
     }
     _UpgradeLegacyChordShortcut(shortcut) {
         replaced := StrReplace(shortcut, " ", "|")
-        replaced := StrReplace(replaced, "||", "| ") ; handles situations where the next chord starts with a space
-        return SubStr(shortcut, 1, 1) . SubStr(replaced, 2)
+        replaced := StrReplace(replaced, "||", "| ") ; situations where the next chord starts with a space
+        return SubStr(shortcut, 1, 1) . SubStr(replaced, 2) ; keeping the first space in the first chord
     }
-    _UpgradeDictionaryFile(upgraded_file) {
-        FormatTime, timestamp, , % "yyyyMMdd-HHmmss"
-        backup_file := this._file . "." . timestamp . "-" . A_TickCount . ".bak"
-        FileCopy, % this._file, % backup_file, % 0
-        if (ErrorLevel) {
-            MsgBox ,, % "ZipChord", % Format("ZipChord loaded the chord dictionary successfully, but could not create the backup file '{}' and did not upgrade the dictionary file on disk.", backup_file)
-            Return false
+    _UpgradeDictionaryFile(old_file, new_file) {
+        upgraded_file := ""
+        Loop, Read, % old_file
+        {
+            line := A_LoopReadLine
+            columns := StrSplit(line, A_Tab, , 3)
+            if (this._chorded && columns[2] && columns[1] != "") {
+                line := this._UpgradeLegacyChordShortcut(columns[1]) . SubStr(line, InStr(line, A_Tab))
+            }
+            upgraded_file .= (A_Index == 1 ? "" : "`r`n") . line
         }
-        FileDelete, % this._file
+        FileAppend % upgraded_file, % new_file, UTF-8
         if (ErrorLevel) {
-            MsgBox ,, % "ZipChord", % Format("ZipChord loaded the chord dictionary successfully, but could not remove the old dictionary file '{}' and did not upgrade the dictionary file on disk.", this._file)
-            Return false
-        }
-        FileAppend % upgraded_file, % this._file, UTF-8
-        if (ErrorLevel) {
-            MsgBox ,, % "ZipChord", % Format("ZipChord loaded the chord dictionary successfully, but could not write the upgraded dictionary file '{}'. The original file was backed up as '{}'.", this._file, backup_file)
+            MsgBox ,, % "ZipChord", % Format("ZipChord could not create the upgraded dictionary file '{}' from '{}'.", new_file, old_file)
             Return false
         }
         Return true
@@ -153,7 +234,7 @@ Class clsDictionary {
                 chunks := StrSplit(newch_unsorted, "|")
                 For _, chunk in chunks {
                     if (chunk == "") {
-                        MsgBox ,, % "ZipChord", % Format("The chord for '{}' includes an empty chord before or after '|'.", newword)
+                        MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", newword)
                         Return false
                     }
                     newch .= "|" . str.Arrange(chunk)
@@ -176,8 +257,12 @@ Class clsDictionary {
         ObjRawSet(this._entries, newch, newword)
         if ( ! InStr(newword, " ") )
             ObjRawSet(this._reverse_entries, newword, newch_unsorted)
-        if (write_to_file)
+        if (write_to_file) {
+            this._StopWatching()
             FileAppend % "`r`n" newch_unsorted "`t" newword, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
+            this._UpdateTrackedFileState()
+            this._StartWatching()
+        }
         Return true
     }
     _IsShortcutOK(shortcut, word) {
@@ -226,30 +311,36 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
                     FileCreateDir,  % dictionary_dir
                 }
                 _UpdateWorkingDir(dictionary_dir)
-                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/chords-en-qwerty.txt, % dictionary_dir . "\chords-en-starting.txt"
-                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/shorthands-english.txt, % dictionary_dir . "\shorthands-en-starting.txt"
+                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/en-qwerty.chords.txt, % dictionary_dir . "\en-qwerty.chords.txt"
+                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/english.shorthands.txt, % dictionary_dir . "\english.shorthands.txt"
                 return CheckDictionaryFileExists(dictionary_file, dictionary_type)
             }
         }
         errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
-        ; If we don't have the dictionary, try opening the first file with a matching naming convention.
-        new_file := dictionary_type "s*.txt"
-        if FileExist(new_file) {
-            Loop, Files, %new_file%
-                flist .= SubStr(A_LoopFileName, 1, StrLen(A_LoopFileName)-4) "`n"
-            Sort flist
-            new_file := SubStr(flist, 1, InStr(flist, "`n")-1) ".txt"
+        canonical_pattern := dictionary_type == "chord" ? "*.chords.txt" : "*.shorthands.txt"
+        new_file := _FindFirstDictionaryFile(canonical_pattern)
+        if (new_file != "") {
             errmsg .= Format("ZipChord found the dictionary '{}' and is going to open it.", new_file)
         }
         else {
-            errmsg .= Format("ZipChord is going to create a new '{}s.txt' dictionary in '{}'.", dictionary_type, A_WorkingDir)
-            new_file := dictionary_type "s.txt"
-            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord for details.`n`ndm`tdemo", %new_file%, UTF-8
+            new_file := dictionary_type == "chord" ? "dictionary.chords.txt" : "dictionary.shorthands.txt"
+            errmsg .= Format("ZipChord is going to create a new '{}' dictionary in '{}'.", new_file, A_WorkingDir)
+            FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord/wiki/shortcut-dictionaries for details.`n`ndm`tdemo", %new_file%, UTF-8
         }
         MsgBox ,, ZipChord, %errmsg%
         Return new_file
     }
     Return dictionary_file
+}
+
+_FindFirstDictionaryFile(pattern) {
+    flist := ""
+    if ! FileExist(pattern)
+        return ""
+    Loop, Files, %pattern%
+        flist .= A_LoopFileName . "`n"
+    Sort flist
+    return SubStr(flist, 1, InStr(flist, "`n")-1)
 }
 
 _UpdateWorkingDir(new_dir) {
@@ -284,12 +375,15 @@ Class clsAddShortcut {
                                    , text: "Sa&ve"
                               , function: ObjBindMethod(this, "_SaveShortcut", "shorthand")}}
 
+    _backspace_fn := ObjBindMethod(this, "_Backspace")
+    _ui_title := "Add or Edit Shortcut"
+
     Show(exp) {
         call := Func("OpenHelp").Bind("AddShortcut")
         Hotkey, F1, % call, On
-        call := ObjBindMethod(this, "_Backspace")
-        Hotkey, $^Backspace, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference
+        backspace_fn := this._backspace_fn
+        Hotkey, $^Backspace, %backspace_fn%, On
         this._Build()
         if (exp=="") {
             this.controls.adjust_text.Hide()
@@ -315,7 +409,7 @@ Class clsAddShortcut {
             this.controls[ctrl].Focus()
     }
     _Build() {
-        this.UI := new clsUI("Add or Edit Shortcut")
+        this.UI := new clsUI(this._ui_title)
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Add("Text", "Section", "&Expanded text")
         this.UI.Add(this.controls.text, "y+10 w220")
@@ -359,7 +453,7 @@ Class clsAddShortcut {
             this.controls["save_" . ctrl].MakeDefault()
     }
     _Backspace() {
-        if WinActive("Add Shortcut")
+        if WinActive(this._ui_title)
             SendInput ^+{Left}{Del}
         else
             SendInput ^{Backspace}
