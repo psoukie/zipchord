@@ -376,12 +376,14 @@ Class clsAddShortcut {
                                    , text: "Sa&ve"
                               , function: ObjBindMethod(this, "_SaveShortcut", "shorthand")}}
 
+    _backspace_fn := ObjBindMethod(this, "_Backspace")
+
     Show(exp) {
         call := Func("OpenHelp").Bind("AddShortcut")
         Hotkey, F1, % call, On
-        call := ObjBindMethod(this, "_Backspace")
-        Hotkey, $^Backspace, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference
+        backspace_fn := this._backspace_fn
+        Hotkey, $^Backspace, %backspace_fn%, On
         this._Build()
         if (exp=="") {
             this.controls.adjust_text.Hide()
@@ -451,7 +453,7 @@ Class clsAddShortcut {
             this.controls["save_" . ctrl].MakeDefault()
     }
     _Backspace() {
-        if WinActive("Add Shortcut")
+        if WinActive("Add or Edit Shortcut")
             SendInput ^+{Left}{Del}
         else
             SendInput ^{Backspace}

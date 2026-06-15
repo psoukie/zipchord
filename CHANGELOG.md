@@ -19,6 +19,7 @@ Notes:
 **Fixes**
 
 - The configurations feature now supports mapping files with three columns (similar to dictionaries) and shows more helpful error messages.
+- Fixes a regression where Ctrl+Backspace in the Add or Edit Shortcut window stopped working.
 
 ## ZipChord 2.6.0
 
