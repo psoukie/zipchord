@@ -376,6 +376,7 @@ Class clsAddShortcut {
                               , function: ObjBindMethod(this, "_SaveShortcut", "shorthand")}}
 
     _backspace_fn := ObjBindMethod(this, "_Backspace")
+    _ui_title := "Add or Edit Shortcut"
 
     Show(exp) {
         call := Func("OpenHelp").Bind("AddShortcut")
@@ -408,7 +409,7 @@ Class clsAddShortcut {
             this.controls[ctrl].Focus()
     }
     _Build() {
-        this.UI := new clsUI("Add or Edit Shortcut")
+        this.UI := new clsUI(this._ui_title)
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Add("Text", "Section", "&Expanded text")
         this.UI.Add(this.controls.text, "y+10 w220")
@@ -452,7 +453,7 @@ Class clsAddShortcut {
             this.controls["save_" . ctrl].MakeDefault()
     }
     _Backspace() {
-        if WinActive("Add or Edit Shortcut")
+        if WinActive(this._ui_title)
             SendInput ^+{Left}{Del}
         else
             SendInput ^{Backspace}
