@@ -24,7 +24,11 @@ Official [documentation](https://github.com/psoukie/zipchord/wiki) is available 
 
 ## Installation
 
-Download **zipchord-install-_version_.zip** or the stand-alone **zipchord-exe-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases). See the [Installation](https://github.com/psoukie/zipchord/wiki/Installation) page for details.
+Download **zipchord-install-_version_.zip** or the stand-alone **zipchord-exe-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases).
+
+If you prefer not to use the installer or compiled executable, download the release source archive, extract it anywhere on Windows, install AutoHotkey v1.1, switch the working directory to `source`, and run `zipchord.ahk`.
+
+See the [Installation](https://github.com/psoukie/zipchord/wiki/Installation) page for details.
 
 _ZipChord_ currently works only on Windows because of its dependency on AutoHotkey. Support for MacOS and Linux is planned.
 
