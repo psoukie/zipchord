@@ -1,6 +1,6 @@
 ﻿/*
 This file is part of ZipChord.
-Copyright (c) 2024 Pavel Soukenik
+Copyright (c) 2024-2026 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 */
 
@@ -10,6 +10,7 @@ Class Configuration {
     mapping := []
     app_id := 0
     use_mapping := false
+    _loop_fn := ObjBindMethod(this, "DetectAppSwitchLoop")
 
     Class MappingEntry {
         window_mask := ""
@@ -102,8 +103,8 @@ Class Configuration {
         if (config_file && str.FilenameWithExtension(config_file) != runtime_status.config_file) {
             this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
-        func := ObjBindMethod(this, "DetectAppSwitchLoop")
-        SetTimer, %func%, -10
+        loop_fn := this._loop_fn
+        SetTimer, %loop_fn%, -250
     }
  
     FindMatchingConfig() {

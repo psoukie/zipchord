@@ -27,14 +27,13 @@ Class clsDictionary {
     _file_modified := ""
     _file_size := ""
     _reload_due := 0
-    _watch_fn := ""
+    _watch_fn := ObjBindMethod(this, "CheckForDictModification")
     _entries := {}
     _reverse_entries := {}
     _pause_loading := true
     
     __New(chorded_keys := false) {
         this._chorded := chorded_keys
-        this._watch_fn := ObjBindMethod(this, "CheckForDictModification")
     }
     ; Public properties and methods
     entries {

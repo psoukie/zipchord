@@ -24,6 +24,7 @@ Class TestingClass {
     _mode := TEST_OFF
     _starting_tick := 0
     _path_backup := ""
+    _prompt_fn := ObjBindMethod(this, "_Prompt")
     mode {
         get { 
             return this._mode 
@@ -98,7 +99,7 @@ Class TestingClass {
             WireHotkeys("On")
         }
         this.Write("Switching to interactive mode...`nPress Ctrl-X to resume in the console.")
-        prompt_fn := ObjBindMethod(this, "_Prompt")
+        prompt_fn := this._prompt_fn
         Hotkey, ^x, %prompt_fn%, On
         this._mode := TEST_INTERACTIVE
         Return true
@@ -454,7 +455,7 @@ Class TestingClass {
         parsed.RemoveAt(1)
         cmd_fn := ObjBindMethod(this, command)
         if(! %cmd_fn%(parsed*)) {
-            prompt_fn := ObjBindMethod(this, "_Prompt")
+            prompt_fn := this._prompt_fn
             SetTimer % prompt_fn, -10 ; show prompt again after we're done
         }
     }

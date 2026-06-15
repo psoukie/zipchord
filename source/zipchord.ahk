@@ -619,6 +619,9 @@ Class clsMainUI {
     labels := []
     closing_tip := 0
 
+    _help_fn := ObjBindMethod(this, "_Help")
+    _reset_hint_fn := ObjBindMethod(hint_UI, "Reset")
+
     ; Prepare UI
     Build() {
         global zc_version
@@ -709,8 +712,8 @@ Class clsMainUI {
             FinishDebugging()
         }
         cts.debugging.value := 0 ; debugging is always set to disabled
-        call := ObjBindMethod(this, "_Help")
-        Hotkey, F1, % call, On
+        help_fn := this._help_fn
+        Hotkey, F1, %help_fn%, On
         cts.input_delay.value := settings.input_delay
         cts.output_delay.value := settings.output_delay
         ; Loop through each control and apply settings from its defined corresponding setting
@@ -821,7 +824,7 @@ Class clsMainUI {
         }
         UI_SyncModeState()
         ; reflect any changes to OSD UI
-        reset_hint_fn := ObjBindMethod(hint_UI, "Reset")
+        reset_hint_fn := this._reset_hint_fn
         SetTimer, %reset_hint_fn%, -2000
         Return true
     }
