@@ -679,7 +679,7 @@ QPC() {
 	DllCall("kernel32\QueryPerformanceCounter", Int64P, count)
     if (start) {
         OutputDebug, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
-        MsgBox, , QPC, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
+        ; MsgBox, , QPC, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
         start := 0
     } else start := count / frequency
 }

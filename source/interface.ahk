@@ -5,10 +5,13 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 global dll := { available: false
+    , buf_size: 4096
     , init: 0
     , load_dictionary: 0
     , lookup: 0
     , add_chord: 0 }
+
+global dll_buffer := ""
 
 Try_Dll_Init() {
     dllPath := A_ScriptDir . "\zipchord-lib.dll"
@@ -32,6 +35,7 @@ Try_Dll_Init() {
     ; Initialize DLL state.
     ok := DllCall(dll.init, "Cdecl Int")
     if (ok==0) {
+        VarSetCapacity(dll_buffer, dll.buf_size, 0)
         dll.available := true
     }
 }

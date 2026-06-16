@@ -43,21 +43,19 @@ Class clsDictionary {
     }
     LookUp(shortcut) {
         if (dll.available) {
-            bufSize := 4096
-            VarSetCapacity(outBuf, bufSize, 0)
             pShortcut := ToUtf8Ptr(shortcut, shortcutBuf)
-            written := DllCall(dll.lookup, "Ptr", pShortcut, "Int", this._chorded, "Ptr", &outBuf, "Int", bufSize, "Cdecl Int")
+            written := DllCall(dll.lookup, "Ptr", pShortcut, "Int", this._chorded, "Ptr", &dll_buffer, "Int", dll.buf_size, "Cdecl Int")
 
             if (written > 0) {
-                expansion := StrGet(&outBuf, written, "UTF-8")
+                expansion := StrGet(&dll_buffer, written, "UTF-8")
                 return expansion    
             }
             return false
         }
-        if ( this._entries.HasKey(shortcut) )
+        if ( this._entries.HasKey(shortcut) ) {
             return this._entries[shortcut]
-        else
-            return false
+        } 
+        return false
     }
     ReverseLookUp(text) {
         if ( this._reverse_entries.HasKey(text) )
