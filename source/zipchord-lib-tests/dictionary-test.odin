@@ -58,8 +58,8 @@ load_dict :: proc(t: ^tst.T) {
     zc.dict_data_init(&dict.dict_data)
     defer zc.dict_data_destroy(&dict.dict_data)
 	zc.dict_data_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &dict, true)
-    expansion, lookup_err := zc.dict_lookup(&dict, "th")
-	tst.expect(t, expansion == "the", "dict after load did not find a chord")
+    expansion, lookup_err := zc.dict_lookup(&dict, "ms")
+	tst.expect(t, expansion == "some", "dict after load did not find a chord")
 }
 
 @(test)

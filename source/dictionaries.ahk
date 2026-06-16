@@ -42,6 +42,18 @@ Class clsDictionary {
         }
     }
     LookUp(shortcut) {
+        if (dll.available) {
+            bufSize := 4096
+            VarSetCapacity(outBuf, bufSize, 0)
+            pShortcut := ToUtf8Ptr(shortcut, shortcutBuf)
+            written := DllCall(dll.lookup, "Ptr", pShortcut, "Int", this._chorded, "Ptr", &outBuf, "Int", bufSize, "Cdecl Int")
+
+            if (written > 0) {
+                expansion := StrGet(&outBuf, written, "UTF-8")
+                return expansion    
+            }
+            return false
+        }
         if ( this._entries.HasKey(shortcut) )
             return this._entries[shortcut]
         else
@@ -150,6 +162,14 @@ Class clsDictionary {
 
     ; Load chords from a dictionary file
     _LoadShortcuts() {
+        if (dll.available) {
+            pDictPath := ToUtf8Ptr(this._file, dictPathBuf)
+            loadResult := DllCall(dll.load_dictionary, "Ptr", pDictPath, "Int", this._chorded, "Cdecl Int")
+            if (loadResult!=0) {
+                MsgBox, , ZipChord Load Dictionary, % loadResult
+            }
+            return
+        }
         this._entries := {}
         this._reverse_entries := {}
         Loop, Read, % this._file

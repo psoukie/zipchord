@@ -46,6 +46,7 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
 
+#Include interface.ahk
 #Include version.ahk
 #Include shared.ahk
 
@@ -170,6 +171,7 @@ Initialize(zc_version) {
     global locale
     global updater
 
+    Try_Dll_Init()
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:

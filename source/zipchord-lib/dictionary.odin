@@ -16,29 +16,21 @@ Dict_Error :: enum i32 {
     Bad_Argument     = -3,
     Buffer_Too_Small = -4,
     Allocation_Error = -5,
-    Internal_Error   = -7,
-}
-
-Dict_Load_Error :: enum i32 {
-	None             =  0,
-    Repeated_Key     = -2,
-    Buffer_Too_Small = -4,
 	File_Read_Fail   = -6,
+    Internal_Error   = -7,
 }
 
 MAX_CHORD_RUNES :: 40
 MAX_CHORD_BYTES :: MAX_CHORD_RUNES * utf8.UTF_MAX
 MAX_CHAIN_BYTES :: 5 * MAX_CHORD_BYTES
 
-Chord_Buffer :: struct {
-	bytes: [MAX_CHORD_BYTES]u8,
+Fixed_Buffer :: struct($CAP: int) {
+	bytes: [CAP]u8,
 	len:   int,
 }
 
-Chord_Chain_Buffer :: struct {
-	bytes: [MAX_CHAIN_BYTES]u8,
-	len:   int,
-}
+Chord_Buffer       :: Fixed_Buffer(MAX_CHORD_BYTES)
+Chord_Chain_Buffer :: Fixed_Buffer(MAX_CHAIN_BYTES)
 
 normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
 	chord_buf.len = 0
@@ -77,27 +69,29 @@ normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normali
 	return string(chord_buf.bytes[:chord_buf.len]), .None
 }
 
-_normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Load_Error) {
+_normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
 	chain_buf.len = 0
 	raw_shortcut := raw_shortcut
 	
 	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
 		return "", .Buffer_Too_Small
 	}
+
+	chord_buf: Chord_Buffer
 	
-	for chord in strings.split_iterator(&raw_shortcut, "|") {
-		log.debugf("Chain part: {}", chord)
+	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
+		if chain_buf.len > 0 {
+			chain_buf.bytes[chain_buf.len] = u8('|')
+			chain_buf.len += 1
+		}
+		normalized := normalize_chord(raw_chord, &chord_buf) or_return
+		n := len(normalized)
+		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
+		chain_buf.len += n
 	}
 
-	// copy(chain_buf.bytes[:chain_buf.len], raw_shortcut)	
-	
-	// return string(chain_buf.bytes[:chain_buf.len]), .None
-	return "x", .None
+	return string(chain_buf.bytes[:chain_buf.len]), .None
 }
-
-// chord_to_string :: proc (chord: ^Normalized_Chord) -> string {
-// 	return string(chord.bytes[:chord.len])
-// }
 
 Dict_Data :: struct {
     arena_memory:          virtual.Arena,      // owns cloned key/value string bytes
@@ -171,8 +165,10 @@ dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: stri
 	return expansion, .None
 }
 
-chord_dict_lookup :: proc(dict: ^Chord_Dict, shortcut: string) -> (expansion: string, err: Dict_Error ) {
-	return dict_data_lookup(&dict.dict_data, shortcut)
+chord_dict_lookup :: proc(dict: ^Chord_Dict, raw_chord: string) -> (expansion: string, err: Dict_Error ) {
+	buf: Chord_Buffer
+	chord := normalize_chord(raw_chord, &buf) or_return
+	return dict_data_lookup(&dict.dict_data, chord)
 }
 
 shorthand_dict_lookup :: proc(dict: ^Shorthand_Dict, shortcut: string) -> (expansion: string, err: Dict_Error ) {
@@ -184,9 +180,9 @@ dict_lookup :: proc{
 	shorthand_dict_lookup,
 }
 
-dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool) -> Dict_Load_Error {
-	file_data, err := os.read_entire_file(filepath, context.allocator)
-	if err != nil {
+dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool) -> (err: Dict_Error) {
+	file_data, file_err := os.read_entire_file(filepath, context.allocator)
+	if file_err != nil {
 		return .File_Read_Fail
 	}
 	defer delete(file_data, context.allocator)
@@ -206,7 +202,11 @@ dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool)
 			continue
 		}
 		
-		normalized_shortcut, err := _normalize_chained_chords(shortcut, &chain_buf) 
+		if as_chords {
+			shortcut, err = _normalize_chained_chords(shortcut, &chain_buf) 
+		}
+		log.debugf("Saving as: {} - {}", shortcut, expansion)
+		
 		dict_data_add(dict, shortcut, expansion)
 	}
 	return .None
@@ -228,19 +228,19 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 // 	// dict_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dict)	
 // }
 
-main :: proc() {
-	context.logger = log.create_console_logger()
-    dict: Chord_Dict
-    dict_data_init(&dict.dict_data)
-    defer dict_data_destroy(&dict.dict_data)
-	dict_data_load_file("../zipchord-lib-tests/en-dvorak.chords.txt", &dict, true)
+// main :: proc() {
+// 	context.logger = log.create_console_logger()
+//     dict: Chord_Dict
+//     dict_data_init(&dict.dict_data)
+//     defer dict_data_destroy(&dict.dict_data)
+// 	dict_data_load_file("../zipchord-lib-tests/en-dvorak.chords.txt", &dict, true)
 
 // 	empty_chord := Normalized_Chord{}
 // 	normalized := normalize_chord("řžťcab") or_else empty_chord
 // 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
 // 	normalized = normalize_chord("ts") or_else empty_chord
 // 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
-}
+// }
 
 
 remove_bom :: proc(text: string) -> string {
