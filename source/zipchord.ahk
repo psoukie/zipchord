@@ -46,6 +46,7 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
 
+#Include interface.ahk
 #Include version.ahk
 #Include shared.ahk
 
@@ -170,6 +171,7 @@ Initialize(zc_version) {
     global locale
     global updater
 
+    Try_Dll_Init()
     ini.SaveLicense()
     app_settings.Load()
     ; check whether we need to upgrade existing settings file:
@@ -851,8 +853,13 @@ Class clsMainUI {
         pluralized := type . "s"
         StringUpper, uppercased, type, T
         cts[type . "_file"].value := str.Ellipsisize(settings[type . "_file"], 270)
-        entriesstr := uppercased . " dictionary (" %pluralized%.entries
-        entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
+        entriesstr := ""
+        if (dll.available) {
+            entriesstr := uppercased . " dictionary (using Odin DLL)"
+        } else {
+            entriesstr := uppercased . " dictionary (" %pluralized%.entries
+            entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
+        }
         cts[type . "_entries"].value := entriesstr
     }
 

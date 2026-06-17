@@ -5,4 +5,5 @@ build/
 *.lib
 *.exp
 *.zip
+odin-env.bat
 .vscode/

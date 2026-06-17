@@ -1,8 +1,10 @@
 ﻿#include version.ahk
 
 ahk_exe := A_ProgramFiles . "\AutoHotkey\Compiler\Ahk2Exe.exe"
+odin_exe := "odin"
 build_dir := FullPath(A_ScriptDir . "\..\build")
 zipchord_exe := build_dir . "\zipchord.exe"
+zipchord_dll := build_dir . "\zipchord-lib.dll"
 uninstall_exe := build_dir . "\uninstall.exe"
 installer_exe := build_dir . "\zipchord-install.exe"
 result_file := build_dir . "\result.txt"
@@ -10,13 +12,20 @@ result_file := build_dir . "\result.txt"
 if ( ! InStr(FileExist(build_dir), "D"))
     FileCreateDir, % build_dir
 
-build_artifacts := ["zipchord.exe", "uninstall.exe", "zipchord-install.exe", "result.txt"
+build_artifacts := ["zipchord.exe", "zipchord-lib.dll", "uninstall.exe", "zipchord-install.exe", "result.txt"
                   , "zipchord-exe-*.zip", "zipchord-install-*.zip"]
 For _, artifact in build_artifacts {
     FileDelete, % build_dir . "\\" . artifact
 }
 
 RunWait %ComSpec% /c ""%ahk_exe%" /in zipchord.ahk /out "%zipchord_exe%" /icon zipchord.ico > "%result_file%""
+RunWait %ComSpec% /c "call ..\odin-env.bat && %odin_exe% build zipchord-lib -build-mode:dll -out:..\build\zipchord-lib.dll >> ..\build\result.txt 2>&1", %A_ScriptDir%
+if !FileExist(zipchord_dll) {
+    FileAppend, `r`nERROR: zipchord-lib.dll was not created at %zipchord_dll%.`r`n, % result_file
+    FileRead, result, % result_file
+    MsgBox, % result
+    ExitApp
+}
 RunWait %ComSpec% /c ""%ahk_exe%" /in uninstall.ahk /out "%uninstall_exe%" /icon shell32_271.ico >> "%result_file%""
 RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out "%installer_exe%" /icon zipchord.ico >> "%result_file%""
 
