@@ -12,12 +12,15 @@ import "core:unicode/utf8"
 Dict_Error :: enum i32 {
     None             =  0,
     Not_Found        = -1,
-    Repeated_Key     = -2,
-    Bad_Argument     = -3,
-    Buffer_Too_Small = -4,
-    Allocation_Error = -5,
-	File_Read_Fail   = -6,
-    Internal_Error   = -7,
+    Shortcut_Exists  = -2,
+    Repeated_Key     = -3,
+	Empty_Chord      = -4,
+	Fewer_Than_Two   = -5,
+    Bad_Argument     = -6,
+    Buffer_Too_Small = -7,
+    Allocation_Error = -8,
+	File_Read_Fail   = -9,
+    Internal_Error   = -10,
 }
 
 MAX_CHORD_RUNES :: 40
@@ -80,12 +83,15 @@ _normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_
 	chord_buf: Chord_Buffer
 	
 	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
+		n := len(raw_chord)
+		if n == 0 {
+			return "", .Empty_Chord	
+		}
 		if chain_buf.len > 0 {
 			chain_buf.bytes[chain_buf.len] = u8('|')
 			chain_buf.len += 1
 		}
 		normalized := normalize_chord(raw_chord, &chord_buf) or_return
-		n := len(normalized)
 		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
 		chain_buf.len += n
 	}
@@ -150,8 +156,10 @@ dict_data_add :: proc (dict: ^Dict_Data, key: string, value: string, ) -> (err: 
 	return .None
 }
 
-chord_dict_add :: proc(dict: ^Chord_Dict, shortcut, expansion: string) -> (err: Dict_Error ) {
-	return dict_data_add(&dict.dict_data, shortcut, expansion)
+chord_dict_add :: proc(dict: ^Chord_Dict, raw_chord, expansion: string) -> (err: Dict_Error ) {
+	buf: Chord_Buffer
+	chord := normalize_chord(raw_chord, &buf) or_return
+	return dict_data_add(&dict.dict_data, chord, expansion)
 }
 
 shorthand_dict_add :: proc(dict: ^Shorthand_Dict, shortcut, expansion: string) -> (err: Dict_Error ) {
@@ -209,38 +217,53 @@ dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool)
 	for raw_line in strings.split_iterator(&it, "\n") {
 		i += 1
 		line := strings.trim_right(raw_line, "\r") 
-		log.debugf("Line {}: {}", i, line)
-		shortcut, expansion, ok := _extract_a_tabbed_pair(line)
-		if !ok {
-			log.debugf("NOT OK: {}", expansion)
+		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
+		if shortcut == "" {
 			continue
 		}
-		
-		if as_chords {
-			shortcut, err = _normalize_chained_chords(shortcut, &chain_buf) 
-		}
-		log.debugf("Saving as: {} - {}", shortcut, expansion)
-		
-		dict_data_add(dict, shortcut, expansion)
+		err := register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf)
 	}
 	return .None
+}
+
+
+register_shortcut :: proc (
+	dict_data: ^Dict_Data,
+	shortcut: string,
+	expansion: string,
+	as_chords: bool,
+	chain_buffer: ^Chord_Chain_Buffer
+) -> (err: Dict_Error) {
+	shortcut := shortcut
+
+	if len(shortcut) < 2 {  // TK: not foolproof for non-ASCII shortcuts
+		log.debugf("Error")
+		return .Fewer_Than_Two
+	}
+	
+	if as_chords {
+		shortcut = _normalize_chained_chords(shortcut, chain_buffer) or_return 
+	}
+
+	existing, lookup_err := dict_data_lookup(dict_data, shortcut)
+	if lookup_err != .Not_Found {
+		return .Shortcut_Exists
+	}
+	return dict_data_add(dict_data, shortcut, expansion)
 }
 
 _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: string, ok: bool) {
 	line := line
 	shortcut = strings.split_iterator(&line, "\t") or_return
 	expansion = strings.split_iterator(&line, "\t") or_return
-	log.debugf("Shortcut: {} - {}", shortcut, expansion)
-	if shortcut == "" || expansion == "" {
-		return "", "", false
-	}
 	return shortcut, expansion, true
 } 
 
-// main :: proc() {
-// 	context.logger = log.create_console_logger()
-// 	// dict_load_file("../zipchord-lib-tests/chords-en-dvorak.txt", &chord_dict)	
-// }
+main :: proc() {
+	context.logger = log.create_console_logger()
+	chord_dict: Chord_Dict
+	dict_data_load_file("../zipchord-lib-tests/english.shorthands.txt", &chord_dict, false)	
+}
 
 // main :: proc() {
 // 	context.logger = log.create_console_logger()

@@ -278,43 +278,64 @@ Class clsDictionary {
     }
 
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _RegisterShortcut(newch_unsorted, newword, write_to_file:=false) {
+    _Ahk_RegisterShortcut(raw_shortcut, expansion) {
         if (this._chorded) {
-            if (InStr(newch_unsorted, "|")) {
-                chunks := StrSplit(newch_unsorted, "|")
+            if (InStr(raw_shortcut, "|")) {
+                chunks := StrSplit(raw_shortcut, "|")
                 For _, chunk in chunks {
                     if (chunk == "") {
-                        MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", newword)
+                        MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", expansion)
                         Return false
                     }
                     newch .= "|" . str.Arrange(chunk)
-                    if (this._IsDuplicateChars(chunk, newword)) {
+                    if (this._IsDuplicateChars(chunk, expansion)) {
                         Return false
                     }
                 }
                 newch := SubStr(newch, 2)
             } else {
-                newch := str.Arrange(newch_unsorted)
-                if (this._IsDuplicateChars(newch, newword)) {
+                newch := str.Arrange(raw_shortcut)
+                if (this._IsDuplicateChars(newch, expansion)) {
                     Return false
                 }
             }
         } else {
-            newch := newch_unsorted
+            newch := raw_shortcut
         }
-        if (! this._IsShortcutOK(newch, newword))
+        if (! this._IsShortcutOK(newch, expansion))
             Return false
-        ObjRawSet(this._entries, newch, newword)
-        if ( ! InStr(newword, " ") )
-            ObjRawSet(this._reverse_entries, newword, newch_unsorted)
+        ObjRawSet(this._entries, newch, expansion)
+        ObjRawSet(this._reverse_entries, expansion, raw_shortcut)
+        Return true
+    }
+
+    _Dll_RegisterShortcut(raw_shortcut, expansion) {
+        pShortcut := ToUtf8Ptr(raw_shortcut, shortcutBuf)
+        pExpansion := ToUtf8Ptr(expansion, expansionBuf)
+        return DllCall(dll.register_shortcut, "Ptr", pShortcut, "Ptr", pExpansion, "Int", this._chorded, "Cdecl Int")
+    }
+    
+    _RegisterShortcut(raw_shortcut, expansion, write_to_file:=false) {
+        if (dll.available) {
+            result := this._Dll_RegisterShortcut(raw_shortcut, expansion)
+            if (result != 0) {
+                MsgBox, , ZipChord Dll Error TK, % result
+                return false
+            }
+        } else {
+            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion)) {
+                return false
+            }
+        }
         if (write_to_file) {
             this._StopWatching()
-            FileAppend % "`r`n" newch_unsorted "`t" newword, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
+            FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
             this._UpdateTrackedFileState()
             this._StartWatching()
         }
         Return true
     }
+
     _IsShortcutOK(shortcut, word) {
         dest := this._chorded ? "chord" : "shorthand"
         if (occupied := this.LookUp(shortcut)) {

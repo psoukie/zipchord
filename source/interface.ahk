@@ -29,9 +29,9 @@ Try_Dll_Init() {
     dll.load_dictionary := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_load_dictionary", "Ptr")
     dll.lookup := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_lookup", "Ptr")
     dll.reverse_lookup := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_reverse_lookup", "Ptr")
-    dll.add_chord := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_add_chord", "Ptr")
+    dll.register_shortcut := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_register_shortcut", "Ptr")
         
-    if (!dll.init || !dll.load_dictionary || !dll.lookup || !dll.reverse_lookup || !dll.add_chord) {
+    if (!dll.init || !dll.load_dictionary || !dll.lookup || !dll.reverse_lookup || !dll.register_shortcut) {
         return
     }
     ; Initialize DLL state.

@@ -26,25 +26,41 @@ zc_load_dictionary :: proc "c" (
 	}
 
 	if is_chord {
+		dict_data_destroy(&chord_dict.dict_data)
+		err := dict_data_init(&chord_dict.dict_data)
+		if err != .None {
+			return i32(err)
+		}
 		return i32(dict_data_load_file(string(filepath), &chord_dict.dict_data, true))
 	}
 
+	dict_data_destroy(&shorthand_dict.dict_data)
+	err := dict_data_init(&shorthand_dict.dict_data)
+	if err != .None {
+		return i32(err)
+	}
 	return i32(dict_data_load_file(string(filepath), &shorthand_dict.dict_data, false))
 }
 
 @export
-zc_add_chord :: proc "c" (
-	chord: cstring,
+zc_register_shortcut :: proc "c" (
+	shortcut: cstring,
 	expansion: cstring,
+	is_chord: bool,
 ) -> i32 {
 	context = runtime.default_context()
 
-	if chord == nil || expansion == nil {
+	if shortcut == nil || expansion == nil {
 		return i32(Dict_Error.Bad_Argument)
 	}
 
-	result := dict_add(&chord_dict, string(chord), string(expansion))
-	return i32(result)
+	buf: Chord_Chain_Buffer
+	if is_chord {
+		err := register_shortcut(&chord_dict.dict_data, string(shortcut), string(expansion), true, &buf)
+		return i32(err)
+	}
+	err := register_shortcut(&shorthand_dict.dict_data, string(shortcut), string(expansion), false, &buf)
+	return i32(err)
 }
 
 @export
