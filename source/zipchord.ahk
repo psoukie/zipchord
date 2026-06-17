@@ -853,8 +853,13 @@ Class clsMainUI {
         pluralized := type . "s"
         StringUpper, uppercased, type, T
         cts[type . "_file"].value := str.Ellipsisize(settings[type . "_file"], 270)
-        entriesstr := uppercased . " dictionary (" %pluralized%.entries
-        entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
+        entriesstr := ""
+        if (dll.available) {
+            entriesstr := uppercased . " dictionary (using Odin DLL)"
+        } else {
+            entriesstr := uppercased . " dictionary (" %pluralized%.entries
+            entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
+        }
         cts[type . "_entries"].value := entriesstr
     }
 
