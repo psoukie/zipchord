@@ -76,7 +76,6 @@ zc_lookup :: proc "c" (
 	}
 
 	expansion_len := len(exp)
-
 	if expansion_len + 1 > len(out) {
 		out[0] = 0
 		return i32(Dict_Error.Buffer_Too_Small)
@@ -86,4 +85,44 @@ zc_lookup :: proc "c" (
 	out[expansion_len] = 0
 
 	return i32(expansion_len)
+}
+
+@export
+zc_reverse_lookup :: proc "c" (
+	expansion: cstring,
+	is_chord: bool,
+	out_buf: rawptr,
+	out_buf_len: i32,
+) -> i32 {
+	context = runtime.default_context()
+
+	if expansion == nil || out_buf == nil || out_buf_len <= 0 {
+		return i32(Dict_Error.Bad_Argument)
+	}
+
+	out := slice.bytes_from_ptr(out_buf, int(out_buf_len))
+
+	shortcut: string
+	err: Dict_Error
+	if is_chord {
+		shortcut, err = dict_data_reverse_lookup(&chord_dict.dict_data, string(expansion))
+	} else {
+		shortcut, err = dict_data_reverse_lookup(&shorthand_dict.dict_data, string(expansion))
+	}
+		
+	if err != .None {
+		out[0] = 0
+		return i32(err)
+	}
+
+	shortcut_len := len(shortcut)
+	if shortcut_len + 1 > len(out) {
+		out[0] = 0
+		return i32(Dict_Error.Buffer_Too_Small)
+	}
+
+    copy(out[:shortcut_len], shortcut)
+	out[shortcut_len] = 0
+
+	return i32(shortcut_len)
 }

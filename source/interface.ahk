@@ -9,6 +9,7 @@ global dll := { available: false
     , init: 0
     , load_dictionary: 0
     , lookup: 0
+    , reverse_lookup: 0
     , add_chord: 0 }
 
 global dll_buffer := ""
@@ -24,12 +25,13 @@ Try_Dll_Init() {
         return
     }
     ; Cache function pointers.
-    dll.init            := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_init", "Ptr")
+    dll.init := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_init", "Ptr")
     dll.load_dictionary := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_load_dictionary", "Ptr")
-    dll.lookup    := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_lookup", "Ptr")
-    dll.add_chord       := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_add_chord", "Ptr")
+    dll.lookup := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_lookup", "Ptr")
+    dll.reverse_lookup := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_reverse_lookup", "Ptr")
+    dll.add_chord := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_add_chord", "Ptr")
         
-    if (!dll.init || !dll.load_dictionary || !dll.lookup || !dll.add_chord) {
+    if (!dll.init || !dll.load_dictionary || !dll.lookup || !dll.reverse_lookup || !dll.add_chord) {
         return
     }
     ; Initialize DLL state.

@@ -41,28 +41,53 @@ Class clsDictionary {
             return this._entries.Count() 
         }
     }
-    LookUp(shortcut) {
-        if (dll.available) {
-            pShortcut := ToUtf8Ptr(shortcut, shortcutBuf)
-            written := DllCall(dll.lookup, "Ptr", pShortcut, "Int", this._chorded, "Ptr", &dll_buffer, "Int", dll.buf_size, "Cdecl Int")
-
-            if (written > 0) {
-                expansion := StrGet(&dll_buffer, written, "UTF-8")
-                return expansion    
-            }
-            return false
-        }
+    
+    _Ahk_LookUp(shortcut) {
         if ( this._entries.HasKey(shortcut) ) {
             return this._entries[shortcut]
         } 
         return false
     }
-    ReverseLookUp(text) {
+    _Dll_LookUp(shortcut) {
+        pShortcut := ToUtf8Ptr(shortcut, shortcutBuf)
+        written := DllCall(dll.lookup, "Ptr", pShortcut, "Int", this._chorded, "Ptr", &dll_buffer, "Int", dll.buf_size, "Cdecl Int")
+
+        if (written > 0) {
+            expansion := StrGet(&dll_buffer, written, "UTF-8")
+            return expansion    
+        }
+        return false
+    }
+    LookUp(shortcut) {
+        if (dll.available) {
+            return this._Dll_LookUp(shortcut)
+        }
+        return this._Ahk_LookUp(shortcut)
+    }
+
+    _Ahk_ReverseLookUp(text) {
         if ( this._reverse_entries.HasKey(text) )
             return this._reverse_entries[text]
         else
             return false
     }
+    _Dll_ReverseLookUp(shortcut) {
+        pExpansion := ToUtf8Ptr(shortcut, shortcutBuf)
+        written := DllCall(dll.reverse_lookup, "Ptr", pExpansion, "Int", this._chorded, "Ptr", &dll_buffer, "Int", dll.buf_size, "Cdecl Int")
+
+        if (written > 0) {
+            shortcut := StrGet(&dll_buffer, written, "UTF-8")
+            return shortcut    
+        }
+        return false
+    }
+    ReverseLookUp(text) {
+        if (dll.available) {
+            return this._Dll_ReverseLookUp(text)
+        }
+        return this._Ahk_ReverseLookUp(text)
+    }
+
     Load(filename := "") {
         this._StopWatching()
         this._pause_loading := true
@@ -159,15 +184,7 @@ Class clsDictionary {
     }
 
     ; Load chords from a dictionary file
-    _LoadShortcuts() {
-        if (dll.available) {
-            pDictPath := ToUtf8Ptr(this._file, dictPathBuf)
-            loadResult := DllCall(dll.load_dictionary, "Ptr", pDictPath, "Int", this._chorded, "Cdecl Int")
-            if (loadResult!=0) {
-                MsgBox, , ZipChord Load Dictionary, % loadResult
-            }
-            return
-        }
+    _Ahk_LoadShortcuts() {
         this._entries := {}
         this._reverse_entries := {}
         Loop, Read, % this._file
@@ -181,6 +198,21 @@ Class clsDictionary {
             }
         }
     }
+    _Dll_LoadShortcuts() {
+        pDictPath := ToUtf8Ptr(this._file, dictPathBuf)
+        loadResult := DllCall(dll.load_dictionary, "Ptr", pDictPath, "Int", this._chorded, "Cdecl Int")
+        if (loadResult!=0) {
+            MsgBox, , ZipChord Load Dictionary, % loadResult
+        }
+        return
+    }
+    _LoadShortcuts() {
+        if (dll.available) {
+            return this._Dll_LoadShortcuts()
+        }
+        return this._Ahk_LoadShortcuts()
+    }
+
     _IsV2DictionaryFile(filename) {
         v2ext := this._chorded ? ".chords.txt" : ".shorthands.txt"
         if StrLen(v2ext) > StrLen(filename) {

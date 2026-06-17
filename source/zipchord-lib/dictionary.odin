@@ -95,7 +95,9 @@ _normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_
 
 Dict_Data :: struct {
     arena_memory:          virtual.Arena,      // owns cloned key/value string bytes
-    shortcut_to_expansion: map[string]string,  // map internals allocated with context.allocator
+	// map internals allocated with context.allocator
+	shortcut_to_expansion: map[string]string,
+    expansion_to_shortcut: map[string]string,
 }
 
 Chord_Dict :: struct {
@@ -114,12 +116,15 @@ dict_data_init :: proc(dict: ^Dict_Data) -> (err: Dict_Error ) {
     	return .Allocation_Error
     }
 
-    dict.shortcut_to_expansion = make(map[string]string, context.allocator)  // Uses normal allocator, so resizing can free old buckets.
+	//Uses normal allocator, so resizing can free old buckets
+	dict.shortcut_to_expansion = make(map[string]string, context.allocator)
+    dict.expansion_to_shortcut = make(map[string]string, context.allocator)
     return .None
 }
 
 dict_data_destroy :: proc(dict: ^Dict_Data) {
     delete(dict.shortcut_to_expansion)          // free map internals
+    delete(dict.expansion_to_shortcut)
     virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
     dict^ = {}
 }
@@ -141,6 +146,7 @@ dict_data_add :: proc (dict: ^Dict_Data, key: string, value: string, ) -> (err: 
 	}
 	
 	dict.shortcut_to_expansion[own_key] = own_value
+	dict.expansion_to_shortcut[own_value] = own_key
 	return .None
 }
 
@@ -178,6 +184,14 @@ shorthand_dict_lookup :: proc(dict: ^Shorthand_Dict, shortcut: string) -> (expan
 dict_lookup :: proc{
 	chord_dict_lookup,
 	shorthand_dict_lookup,
+}
+
+dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortcut: string, err: Dict_Error ) {
+	ok: bool
+	if shortcut, ok = dict.expansion_to_shortcut[expansion]; !ok {
+		return "", .Not_Found 
+	}
+	return shortcut, .None
 }
 
 dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool) -> (err: Dict_Error) {
@@ -234,10 +248,11 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 //     dict_data_init(&dict.dict_data)
 //     defer dict_data_destroy(&dict.dict_data)
 // 	dict_data_load_file("../zipchord-lib-tests/en-dvorak.chords.txt", &dict, true)
-
+// 	expansion, err := dict_lookup(&dict, "ht")
+// 	log.debugf("Expands to: {}", expansion)
 // 	empty_chord := Normalized_Chord{}
 // 	normalized := normalize_chord("řžťcab") or_else empty_chord
-// 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
+	// log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
 // 	normalized = normalize_chord("ts") or_else empty_chord
 // 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
 // }
