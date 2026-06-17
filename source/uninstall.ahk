@@ -63,7 +63,7 @@ class clsUninstall {
             Wscript.Sleep %delay%
             Dim fso, myfile, files, myfolder, folders
             Set fso = CreateObject("Scripting.FileSystemObject")
-            files = Array("%A_ScriptFullPath%", "%app_data_folder%\locales.ini", "%app_data_folder%\LICENSE.txt", "%A_ScriptDir%\zipchord.exe", "%A_ScriptDir%\zipchord.ico",  "%A_Startup%\ZipChord.lnk") 
+            files = Array("%A_ScriptFullPath%", "%app_data_folder%\locales.ini", "%app_data_folder%\LICENSE.txt", "%A_ScriptDir%\zipchord.exe", "%A_ScriptDir%\zipchord-lib.dll", "%A_ScriptDir%\zipchord.ico",  "%A_Startup%\ZipChord.lnk") 
             For each file in files
                 If fso.FileExists(file) Then
                     Set myfile = fso.GetFile(file) 
