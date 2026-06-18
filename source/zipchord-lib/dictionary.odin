@@ -202,10 +202,14 @@ dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortc
 	return shortcut, .None
 }
 
-dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool) -> (err: Dict_Error) {
+dict_data_load_file :: proc(
+	filepath: string,
+	dict: ^Dict_Data,
+	as_chords: bool
+) -> (number_imported: int, err: Dict_Error) {
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
 	if file_err != nil {
-		return .File_Read_Fail
+		return 0, .File_Read_Fail
 	}
 	defer delete(file_data, context.allocator)
 
@@ -221,9 +225,9 @@ dict_data_load_file :: proc(filepath: string, dict: ^Dict_Data, as_chords: bool)
 		if shortcut == "" {
 			continue
 		}
-		err := register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf)
+		register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf) or_return
 	}
-	return .None
+	return len(dict.shortcut_to_expansion), .None
 }
 
 
@@ -237,7 +241,6 @@ register_shortcut :: proc (
 	shortcut := shortcut
 
 	if len(shortcut) < 2 {  // TK: not foolproof for non-ASCII shortcuts
-		log.debugf("Error")
 		return .Fewer_Than_Two
 	}
 	

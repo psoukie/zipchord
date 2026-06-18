@@ -46,7 +46,7 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
 
-#Include interface.ahk
+#Include library_bindings.ahk
 #Include version.ahk
 #Include shared.ahk
 
@@ -680,7 +680,8 @@ Class clsMainUI {
         UI.Tab(5)
         UI.Add("Text", "Y+20", "ZipChord")
         UI.Add("Text", "Y+20", "Copyright © 2021–" . zc_year . " Pavel Soukenik")
-        UI.Add("Text", "Y+20", "version " . zc_version)
+        dll_indicator := dll.available ? " (with a compiled library)" : ""
+        UI.Add("Text", "Y+20", "version " . zc_version . dll_indicator)
         UI.Font("underline cBlue")
         UI.Add("Text", , "License information", Func("LinkToLicense"))
         UI.Add("Text", , "Help and documentation", Func("LinkToDocumentation"))
@@ -854,12 +855,8 @@ Class clsMainUI {
         StringUpper, uppercased, type, T
         cts[type . "_file"].value := str.Ellipsisize(settings[type . "_file"], 270)
         entriesstr := ""
-        if (dll.available) {
-            entriesstr := uppercased . " dictionary (using Odin DLL)"
-        } else {
-            entriesstr := uppercased . " dictionary (" %pluralized%.entries
-            entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
-        }
+        entriesstr := uppercased . " dictionary (" %pluralized%.entries
+        entriesstr .= (chords.entries==1) ? " " . type . ")" : " " . pluralized . ")"
         cts[type . "_entries"].value := entriesstr
     }
 

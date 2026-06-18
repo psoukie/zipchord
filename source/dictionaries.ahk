@@ -30,6 +30,7 @@ Class clsDictionary {
     _watch_fn := ObjBindMethod(this, "CheckForDictModification")
     _entries := {}
     _reverse_entries := {}
+    _dll_entries_count := 0
     _pause_loading := true
     
     __New(chorded_keys := false) {
@@ -38,6 +39,9 @@ Class clsDictionary {
     ; Public properties and methods
     entries {
         get { 
+            if (dll.available) {
+                return this._dll_entries_count
+            }
             return this._entries.Count() 
         }
     }
@@ -200,10 +204,11 @@ Class clsDictionary {
     }
     _Dll_LoadShortcuts() {
         pDictPath := ToUtf8Ptr(this._file, dictPathBuf)
-        loadResult := DllCall(dll.load_dictionary, "Ptr", pDictPath, "Int", this._chorded, "Cdecl Int")
-        if (loadResult!=0) {
-            MsgBox, , ZipChord Load Dictionary, % loadResult
+        load_result := DllCall(dll.load_dictionary, "Ptr", pDictPath, "Int", this._chorded, "Cdecl Int")
+        if (load_result < 0) {
+            MsgBox, , ZipChord Load Dictionary TK, % load_result
         }
+        this._dll_entries_count := load_result
         return
     }
     _LoadShortcuts() {
