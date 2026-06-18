@@ -25,21 +25,20 @@ zc_load_dictionary :: proc "c" (
 		return i32(Dict_Error.Bad_Argument)
 	}
 
-	if is_chord {
-		dict_data_destroy(&chord_dict.dict_data)
-		err := dict_data_init(&chord_dict.dict_data)
-		if err != .None {
-			return i32(err)
-		}
-		return i32(dict_data_load_file(string(filepath), &chord_dict.dict_data, true))
+	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
+
+	dict_data_destroy(target)
+	
+	err_init := dict_data_init(target)
+	if err_init != .None {
+		return i32(err_init)
 	}
 
-	dict_data_destroy(&shorthand_dict.dict_data)
-	err := dict_data_init(&shorthand_dict.dict_data)
+	number_loaded, err := dict_data_load_file(string(filepath), target, is_chord)
 	if err != .None {
 		return i32(err)
 	}
-	return i32(dict_data_load_file(string(filepath), &shorthand_dict.dict_data, false))
+	return i32(number_loaded)
 }
 
 @export
@@ -55,11 +54,8 @@ zc_register_shortcut :: proc "c" (
 	}
 
 	buf: Chord_Chain_Buffer
-	if is_chord {
-		err := register_shortcut(&chord_dict.dict_data, string(shortcut), string(expansion), true, &buf)
-		return i32(err)
-	}
-	err := register_shortcut(&shorthand_dict.dict_data, string(shortcut), string(expansion), false, &buf)
+	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
+	err := register_shortcut(target, string(shortcut), string(expansion), true, &buf)
 	return i32(err)
 }
 
