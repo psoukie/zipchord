@@ -55,7 +55,7 @@ zc_register_shortcut :: proc "c" (
 
 	buf: Chord_Chain_Buffer
 	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
-	err := register_shortcut(target, string(shortcut), string(expansion), true, &buf)
+	err := register_shortcut(target, string(shortcut), string(expansion), is_chord, &buf)
 	return i32(err)
 }
 

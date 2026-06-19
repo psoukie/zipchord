@@ -46,50 +46,27 @@ Class clsDictionary {
         }
     }
     
-    _Ahk_LookUp(shortcut) {
+    LookUp(shortcut) {
+        if (dll.available) {
+            return dll.LookUp(shortcut, this._chorded)
+        }
+        ; else use AHK path
         if ( this._entries.HasKey(shortcut) ) {
             return this._entries[shortcut]
         } 
         return false
-    }
-    _Dll_LookUp(shortcut) {
-        pShortcut := ToUtf8Ptr(shortcut, shortcutBuf)
-        written := DllCall(dll.lookup, "Ptr", pShortcut, "Int", this._chorded, "Ptr", &dll_buffer, "Int", dll.buf_size, "Cdecl Int")
 
-        if (written > 0) {
-            expansion := StrGet(&dll_buffer, written, "UTF-8")
-            return expansion    
+    }
+
+    ReverseLookUp(expansion) {
+        if (dll.available) {
+            return dll.ReverseLookUp(expansion, this._chorded)
+        }
+        ; else use AHK path
+        if ( this._reverse_entries.HasKey(expansion) ) {
+            return this._reverse_entries[expansion]
         }
         return false
-    }
-    LookUp(shortcut) {
-        if (dll.available) {
-            return this._Dll_LookUp(shortcut)
-        }
-        return this._Ahk_LookUp(shortcut)
-    }
-
-    _Ahk_ReverseLookUp(text) {
-        if ( this._reverse_entries.HasKey(text) )
-            return this._reverse_entries[text]
-        else
-            return false
-    }
-    _Dll_ReverseLookUp(shortcut) {
-        pExpansion := ToUtf8Ptr(shortcut, shortcutBuf)
-        written := DllCall(dll.reverse_lookup, "Ptr", pExpansion, "Int", this._chorded, "Ptr", &dll_buffer, "Int", dll.buf_size, "Cdecl Int")
-
-        if (written > 0) {
-            shortcut := StrGet(&dll_buffer, written, "UTF-8")
-            return shortcut    
-        }
-        return false
-    }
-    ReverseLookUp(text) {
-        if (dll.available) {
-            return this._Dll_ReverseLookUp(text)
-        }
-        return this._Ahk_ReverseLookUp(text)
     }
 
     Load(filename := "") {
@@ -203,10 +180,11 @@ Class clsDictionary {
         }
     }
     _Dll_LoadShortcuts() {
-        pDictPath := ToUtf8Ptr(this._file, dictPathBuf)
-        load_result := DllCall(dll.load_dictionary, "Ptr", pDictPath, "Int", this._chorded, "Cdecl Int")
+        load_result := dll.LoadDictionary(this._file, this._chorded)
         if (load_result < 0) {
-            MsgBox, , ZipChord Load Dictionary TK, % load_result
+            MsgBox, , ZipChord Load Dictionary Error TK, % load_result
+            this._dll_entries_count := "error in"
+            return
         }
         this._dll_entries_count := load_result
         return
@@ -315,16 +293,23 @@ Class clsDictionary {
     }
 
     _Dll_RegisterShortcut(raw_shortcut, expansion) {
-        pShortcut := ToUtf8Ptr(raw_shortcut, shortcutBuf)
-        pExpansion := ToUtf8Ptr(expansion, expansionBuf)
-        return DllCall(dll.register_shortcut, "Ptr", pShortcut, "Ptr", pExpansion, "Int", this._chorded, "Cdecl Int")
+        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded)       
+        if (result == -2) {
+            dest := this._chorded ? "chord" : "shorthand"
+            occupied := this.LookUp(raw_shortcut)
+            MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, raw_shortcut, occupied, expansion)
+            return false
+        }
+        if (result != 0) {
+            MsgBox, , ZipChord Dll Error TK, % result
+            return false
+        }
+        return true
     }
-    
+
     _RegisterShortcut(raw_shortcut, expansion, write_to_file:=false) {
         if (dll.available) {
-            result := this._Dll_RegisterShortcut(raw_shortcut, expansion)
-            if (result != 0) {
-                MsgBox, , ZipChord Dll Error TK, % result
+            if !(this._Dll_RegisterShortcut(raw_shortcut, expansion)) {
                 return false
             }
         } else {
@@ -334,8 +319,8 @@ Class clsDictionary {
         }
         if (write_to_file) {
             this._StopWatching()
-            FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
             this._UpdateTrackedFileState()
+            FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
             this._StartWatching()
         }
         Return true
@@ -352,7 +337,7 @@ Class clsDictionary {
             Return false
         }
         if (word=="") {
-            MsgBox ,, % "ZipChord", % "There is no word being provided for the shortcut."
+            MsgBox ,, % "ZipChord", % "There is no expansion being provided for the shortcut."
             Return false
         }
         Return True

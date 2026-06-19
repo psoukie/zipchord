@@ -4,45 +4,109 @@ Copyright (c) 2021-2026 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 */
 
-global dll := { available: false
-    , buf_size: 4096
-    , init: 0
-    , load_dictionary: 0
-    , lookup: 0
-    , reverse_lookup: 0
-    , add_chord: 0 }
+dll_buffer := ""
+global dll := New clsDllBindings
 
-global dll_buffer := ""
+Class clsDllBindings {
+    available := false
 
-Try_Dll_Init() {
-    dllPath := A_ScriptDir . "\zipchord-lib.dll"
-    if (! FileExist(dllPath) ) {
-        return
+    _buf_size := 4096
+    _init_fn := 0
+    _load_dictionary_fn := 0
+    _lookup_fn := 0
+    _reverse_lookup_fn := 0
+    _add_chord_fn := 0
+    _register_shortcut_fn := 0
+
+    __New() {
+        global dll_buffer
+        dllPath := A_ScriptDir . "\zipchord-lib.dll"
+        if (! FileExist(dllPath) ) {
+            return
+        }
+        if !(this._Cache_Pointers(dllPath)) {
+            return
+        }
+        ; Initialize DLL state.
+        if (DllCall(this._init_fn, "Cdecl Int") != 0) {
+            return        
+        }
+        ; Initialize buffer
+        capacity := VarSetCapacity(dll_buffer, this._buf_size, 0)
+        if (capacity < this._buf_size) {
+            return        
+        }
+
+        this.available := true
+             
     }
-    ; Load DLL once and keep it loaded.
-    hZipChord := DllCall("LoadLibrary", "Str", dllPath, "Ptr")
-    if (!hZipChord) {
-        return
-    }
-    ; Cache function pointers.
-    dll.init := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_init", "Ptr")
-    dll.load_dictionary := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_load_dictionary", "Ptr")
-    dll.lookup := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_lookup", "Ptr")
-    dll.reverse_lookup := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_reverse_lookup", "Ptr")
-    dll.register_shortcut := DllCall("GetProcAddress", "Ptr", hZipChord, "AStr", "zc_register_shortcut", "Ptr")
+
+    _Cache_Pointers(dllPath) {  ; Returns true for 'okay'
+        ; Load DLL once and keep it loaded.
+        hZC := DllCall("LoadLibrary", "Str", dllPath, "Ptr")
+        if (!hZC) {
+            return false
+        }
+        ; Cache function pointers.
+        this._init_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_init", "Ptr")
+        this._load_dictionary_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_load_dictionary", "Ptr")
+        this._lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_lookup", "Ptr")
+        this._reverse_lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_reverse_lookup", "Ptr")
+        this._register_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_register_shortcut", "Ptr")
         
-    if (!dll.init || !dll.load_dictionary || !dll.lookup || !dll.reverse_lookup || !dll.register_shortcut) {
-        return
+        if (this._init_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn) {
+            return true
+        }
+        return false
     }
-    ; Initialize DLL state.
-    ok := DllCall(dll.init, "Cdecl Int")
-    if (ok==0) {
-        VarSetCapacity(dll_buffer, dll.buf_size, 0)
-        dll.available := true
+
+    _StringToPtr(str, ByRef buf) {
+       bytes := StrPut(str, "UTF-8")  ; bytes needed, including terminating null
+       capacity := VarSetCapacity(buf, bytes, 0)
+        if (capacity < bytes) {
+            MsgBox , , ZipChord Error TK, Could not allocate
+            return        
+        }
+       StrPut(str, &buf, bytes, "UTF-8")
+       return &buf
+    }
+
+    LoadDictionary(dictionary_path, chorded) {
+        pDictPath := this._StringToPtr(dictionary_path, dictPathBuf)
+        return DllCall(this._load_dictionary_fn, "Ptr", pDictPath, "Int", chorded, "Cdecl Int")
+    }
+
+    RegisterShortcut(raw_shortcut, expansion, chorded) {
+        pShortcut := this._StringToPtr(raw_shortcut, shortcutBuf)
+        pExpansion := this._StringToPtr(expansion, expansionBuf)
+        return DllCall(this._register_shortcut_fn, "Ptr", pShortcut, "Ptr", pExpansion, "Int", chorded, "Cdecl Int")
+    }
+
+    Lookup(shortcut, chorded) {
+        global dll_buffer
+        pShortcut := this._StringToPtr(shortcut, shortcutBuf)
+        result := DllCall(this._lookup_fn, "Ptr", pShortcut, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
+
+        if (result > 0) {
+            return StrGet(&dll_buffer, result, "UTF-8")
+        } else {
+            return false
+        }
+    }
+
+    ReverseLookUp(expansion, chorded) {
+        global dll_buffer
+        pExpansion := this._StringToPtr(expansion, expansionBuf)
+        result := DllCall(this._reverse_lookup_fn, "Ptr", pExpansion, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
+
+        if (result > 0) {
+            return StrGet(&dll_buffer, result, "UTF-8")
+        } else {
+            return false
+        }
     }
 }
 
-; dictPath := A_ScriptDir . "\zipchord-lib-tests\en-dvorak.chords.txt"
 ; pDictPath := ToUtf8Ptr(dictPath, dictPathBuf)
 ; loadResult := DllCall(zc_load_dictionary, "Ptr", pDictPath, "Int", 1, "Cdecl Int")
 ; MsgBox, , ZipChord Load Dictionary, % loadResult
@@ -83,9 +147,3 @@ Try_Dll_Init() {
 ;     }
 ; }
 
-ToUtf8Ptr(str, ByRef buf) {
-   bytes := StrPut(str, "UTF-8")  ; includes terminating null
-   VarSetCapacity(buf, bytes, 0)
-   StrPut(str, &buf, bytes, "UTF-8")
-   return &buf
-}
