@@ -15,6 +15,14 @@ zc_init :: proc "c" () -> i32 {
 }
 
 @export
+zc_destroy :: proc "c" () -> i32 {
+	context = runtime.default_context()
+	dict_data_destroy(&chord_dict.dict_data)
+	dict_data_destroy(&shorthand_dict.dict_data)
+	return 0
+}
+
+@export
 zc_load_dictionary :: proc "c" (
 	filepath: cstring,
 	is_chord: bool,

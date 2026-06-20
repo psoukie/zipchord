@@ -1073,6 +1073,9 @@ PauseApp(from_button := false) {
 QuitApp() {
     WireHotkeys("Off")
     hint_UI.ShowOnOSD("Closing ZipChord")
+    if (dll.available) {
+        dll.Destroy()
+    }
     Sleep 1100
     ExitApp
 }

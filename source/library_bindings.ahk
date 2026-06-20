@@ -29,7 +29,7 @@ Class clsDllBindings {
         }
         ; Initialize DLL state.
         if (DllCall(this._init_fn, "Cdecl Int") != 0) {
-            return        
+            return
         }
         ; Initialize buffer
         capacity := VarSetCapacity(dll_buffer, this._buf_size, 0)
@@ -38,7 +38,6 @@ Class clsDllBindings {
         }
 
         this.available := true
-             
     }
 
     _Cache_Pointers(dllPath) {  ; Returns true for 'okay'
@@ -49,12 +48,13 @@ Class clsDllBindings {
         }
         ; Cache function pointers.
         this._init_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_init", "Ptr")
+        this._destroy_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_destroy", "Ptr")
         this._load_dictionary_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_load_dictionary", "Ptr")
         this._lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_lookup", "Ptr")
         this._reverse_lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_reverse_lookup", "Ptr")
         this._register_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_register_shortcut", "Ptr")
         
-        if (this._init_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn) {
+        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn) {
             return true
         }
         return false
@@ -69,6 +69,10 @@ Class clsDllBindings {
         }
        StrPut(str, &buf, bytes, "UTF-8")
        return &buf
+    }
+
+    Destroy() {
+        return DllCall(this._destroy_fn, "Cdecl Int")
     }
 
     LoadDictionary(dictionary_path, chorded) {
