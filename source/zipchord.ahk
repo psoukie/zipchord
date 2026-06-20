@@ -546,8 +546,8 @@ Class clsMainUI {
     UI := {}
     controls := { tabs:                 { type: "Tab3"
                                         , text: " Dictionaries | Detection | Display | Output | About "}
-                , selected_locale:      { type: "DropDownList"
-                                        , text: "&Keyboard and language"}
+                , selected_locale:      { type: "Text"
+                                        , text: "Loading..."}
                 , chord_enabled:        { type: "Checkbox"
                                         , text: "Use &chords"
                                         , setting: { parent: "mode", const: "MODE_CHORDS_ENABLED"}}
@@ -735,7 +735,7 @@ Class clsMainUI {
         this.ShowHintCustomization(false)
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
-        this.UpdateLocaleInMainUI(settings.locale)
+        this.UpdateLocaleInMainUI()
         main_UI.UpdateDictionaryUI()
         this.UI.Show()
         UI_SyncModeState()
@@ -769,7 +769,6 @@ Class clsMainUI {
                             + cts.allow_shift.value * CHORD_ALLOW_SHIFT
                             + cts.restrict_chords.value * CHORD_RESTRICT
                             + cts.immediate_shorthands.value * CHORD_IMMEDIATE_SHORTHANDS
-        settings.locale := cts.selected_locale.value
         ; settings.mode carries over the current ZIPCHORD_ENABLED setting
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
                         + cts.chord_enabled.value * MODE_CHORDS_ENABLED
@@ -831,16 +830,9 @@ Class clsMainUI {
         Return true
     }
 
-    UpdateLocaleInMainUI(selected_loc) {
-        if (runtime_status.config_file) {
-            this.controls.selected_locale.value := str.BareFilename(runtime_status.config_file) . "||"
-            main_UI.controls.selected_locale.Disable()
-            return
-        }
-        main_UI.controls.selected_locale.Enable()
-        sections := ini.LoadSections()
-        this.controls.selected_locale.value := "|" StrReplace(sections, "`n", "|")
-        this.controls.selected_locale.Choose(selected_loc)
+    UpdateLocaleInMainUI() {
+        global locale
+        this.controls.selected_locale.value := RegExReplace(settings.locale, "^\w", "$U0")
     }
 
     ; Update UI with dictionary details
@@ -875,7 +867,7 @@ Class clsMainUI {
         global locale
         WireHotkeys("Off")  ; so the user can edit the values without interference
         this.UI.Disable()
-        locale.Show(this.controls.selected_locale.value)
+        locale.Show()
     }
 
     _btnSelectDictionary(type_string) {

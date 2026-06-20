@@ -4,7 +4,7 @@ Copyright (c) 2021-2024 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
-; Locale settings (keyboard and language settings) with default values (US English)
+; Locale settings (keyboard and language settings)
 
 ; Key map container class: acts like an associative object but also provides methods.
 Class clsKeyMap {
@@ -71,6 +71,16 @@ Class clsKeyMap {
         }
     }
 
+    _GetActiveKeyboardLayoutHandle() {
+        WinGet, active_window, ID, A
+        thread_id := active_window ? DllCall("user32.dll\GetWindowThreadProcessId", "Ptr", active_window, "UInt", 0, "UInt") : 0
+        hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", thread_id, "Ptr")
+        if (!hkl) {
+            hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", 0, "Ptr")
+        }
+        return hkl
+    }
+
     ; Suggest symbols based on the currently active Windows keyboard layout.
     _SuggestSymbolsFromActiveLayout() {
         ;@ahk-neko-ignore-fn 1 line;
@@ -78,7 +88,7 @@ Class clsKeyMap {
 
         symbols_out := []
         ;@ahk-neko-ignore-fn 1 line;
-        hkl := DllCall("GetKeyboardLayout", "UInt", 0, "Ptr") ; cache per run
+        hkl := this._GetActiveKeyboardLayoutHandle()
 
         ; Reusable buffers
         VarSetCapacity(keyState, 256, 0)      ; BYTE[256]
@@ -166,28 +176,31 @@ Class clsLocale {
 }
 
 Class clsLocaleInterface {
+    STATIC_LOCALE_NAME := "a fixed layout"
     current_key_map := new clsKeyMap
+    current_locale_name := ""
     UI := {}
-    name     := { type:     "DropDownList"
-                , function: ObjBindMethod(this, "_Change")}
-    controls := { rename:   { type: "Button"
-                            , text: "&Rename"
-                            , function: ObjBindMethod(this, "_Rename")}
-                , delete:   { type: "Button"
-                            , text: "&Delete"
-                            , function: ObjBindMethod(this, "_Delete")}
-                , new:      { type: "Button"
-                            , text: "&New"
-                            , function: ObjBindMethod(this, "_New")}
-                , btn_save: { type: "Button"
-                            , text: "&Save changes"
-                            , function: ObjBindMethod(this, "_Save")}
-                , btn_close: { type: "Button"
-                            , text: "&Close"
-                            , function: ObjBindMethod(this, "Close")}
-                , btn_detect:   { type: "Button"
-                            , text: "&Auto-detect"
-                            , function: ObjBindMethod(this, "_Detect")}}
+    _layout_watch_fn := ObjBindMethod(this, "CheckForLayoutChange")
+    _last_detected_layout := ""
+    controls := { use_auto: { type: "Radio"
+                            , text: "&Automatically switch with keyboard layout"
+                            , function: ObjBindMethod(this, "_LoadCurrentLocale")}
+                , use_static: { type: "Radio"
+                              , text: "&Fixed across keyboard layout changes"
+                              , function: ObjBindMethod(this, "_LoadCurrentLocale")}
+                , kb_group: { type: "GroupBox"
+                            , text: "Keyboard mapping"}
+                , punctuation_group: { type: "GroupBox"
+                                     , text: "Punctuation settings"}
+                , btn_apply: { type: "Button"
+                             , text: "&Apply"
+                             , function: ObjBindMethod(this, "_Save")}
+                , btn_ok: { type: "Button"
+                          , text: "&OK"
+                          , function: ObjBindMethod(this, "_OK")}
+                , btn_detect: { type: "Button"
+                             , text: "&Auto-detect"
+                             , function: ObjBindMethod(this, "_Detect")}}
     options := { remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
@@ -198,37 +211,78 @@ Class clsLocaleInterface {
             , other_shift:        { type: "Edit"}}
 
     Init() {
-        if ( ! ini.LoadSections() ) {
-            default_locale := new clsLocale
-            layout_name := this.GetActiveLayoutName()
-            default_locale.Save(layout_name)
-        }
+        this.EnsureSelectedLocaleExists()
+        this._last_detected_layout := this.GetActiveLayoutName()
+        watch_fn := this._layout_watch_fn
+        SetTimer, %watch_fn%, 350
+    }
+    Build() {
         this._Build()
     }
-    EnsureSelectedLocaleExists() {
-        sections := ini.LoadSections()
-        if (! sections)
+    IsStaticMode() {
+        return (settings.locale == this.STATIC_LOCALE_NAME)
+    }
+    EnsureLocaleExists(locale_name) {
+        if (!locale_name || runtime_status.config_file) {
             return
+        }
         temp := {}
-        ; LoadProperties() returns true when the section does not exist.
-        if (ini.LoadProperties(temp, settings.locale)) {
-            locales := StrSplit(sections, "`n")
-            settings.locale := locales[1]
+        if (ini.LoadProperties(temp, locale_name)) {
+            default_locale := new clsLocale
+            default_locale.Save(locale_name)
         }
     }
+    EnsureSelectedLocaleExists() {
+        if (runtime_status.config_file) {
+            return
+        }
+        if (this.IsStaticMode()) {
+            this.EnsureLocaleExists(this.STATIC_LOCALE_NAME)
+            return
+        }
+        settings.locale := this.GetActiveLayoutName()
+        this.EnsureLocaleExists(settings.locale)
+    }
+    SwitchToActiveLayout(save_settings := true) {
+        if (runtime_status.config_file || this.IsStaticMode()) {
+            return false
+        }
+        layout_name := this.GetActiveLayoutName()
+        this.EnsureLocaleExists(layout_name)
+        changed := (settings.locale != layout_name)
+        settings.locale := layout_name
+        this._last_detected_layout := layout_name
+        if (save_settings) {
+            app_settings.Save()
+        }
+        this._ApplyLocaleToRuntime()
+        if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
+            this._LoadCurrentLocale()
+        }
+        return changed
+    }
+    _ApplyLocaleToRuntime() {
+        active_state := runtime_status.is_keyboard_wired
+        if (active_state == "On") {
+            WireHotkeys("Off")
+        }
+        keys.Load(settings.locale)
+        if (active_state == "On") {
+            WireHotkeys("On")
+        }
+        if (IsObject(main_UI)) {
+            main_UI.UpdateLocaleInMainUI()
+        }
+    }
+
     _Build() {
         UI := new clsUI("Keyboard and language settings")
         handle := main_UI.UI._handle
         Gui, +Owner%handle%
         UI.on_close := ObjBindMethod(this, "Close")
-        UI.Add("Text", "Section", "&Locale name")
-        UI.Add(this.name, "y+10 w140")
-        UI.Add(this.controls.rename, "y+30 w120")
-        UI.Add(this.controls.delete, "w120")
-        UI.Add(this.controls.new, "w120")
-        UI.Add(this.controls.btn_save, "y+30 w120")
-        UI.Add(this.controls.btn_close, "w80 Default")
-        UI.Add("GroupBox", "ys h200 w490 Section", "Locale keyboard mapping")
+        UI.Add(this.controls.use_auto, "Section w360")
+        UI.Add(this.controls.use_static, "y+10 w360")
+        UI.Add(this.controls.kb_group, "xs y+20 h160 w490 Section")
         UI.Font("s10", "Consolas")
 
         for i, key_name in this.current_key_map.Keys() {
@@ -246,8 +300,7 @@ Class clsLocaleInterface {
         }
 
         UI.Font("s10", "Segoe UI")
-        UI.Add(this.controls.btn_detect, "xs-30 yp+40 w120 Section")
-        UI.Add("GroupBox", "xs-20 yp+60 h220 w490 Section", "Locale punctuation settings")
+        UI.Add(this.controls.punctuation_group, "xs-50 y+40 h220 w490 Section")
         UI.Font("s10 w600", "Segoe UI")
         UI.Add("Text", "xs+160 yp+30", "Unmodified keys")
         UI.Add("Text", "xs+330 yp", "If Shift was pressed")
@@ -265,32 +318,31 @@ Class clsLocaleInterface {
         UI.Add(this.options.space_after_shift, "xs w145 r1")
         UI.Add(this.options.capitalizing_shift, "xs w145 r1")
         UI.Add(this.options.other_shift, "xs w145 r1")
+        UI.Font("s10", "Segoe UI")
+        UI.Add(this.controls.btn_detect, "xs-320 y+40 w120 Section")
+        UI.Add(this.controls.btn_apply, "x+170 w80")
+        UI.Add(this.controls.btn_ok, "x+10 w80 Default")
         this.UI := UI
     }
-    
-    ; Shows the locale dialog with existing locale matching locale_name; or (if set to 'false') the first available locale.
-    Show(locale_name) {
+
+    Show() {
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
-
-        if (runtime_status.config_file) {
-            locale_name := false
-            this._EnableControls(false)
-            this.name.value := str.BareFilename(runtime_status.config_file) . "||"
-        } else {
-            this._EnableControls(true)
-            sections := ini.LoadSections()
-            if (! locale_name) {
-                locales := StrSplit(sections, "`n")
-                locale_name := locales[1]
-            }
-            this.name.value := "|" StrReplace(sections, "`n", "|")
-            this.name.Choose(locale_name)
-        }
+        this.controls.use_auto.value := this.IsStaticMode() ? 0 : 1
+        this.controls.use_static.value := this.IsStaticMode() ? 1 : 0
+        this._LoadCurrentLocale()
+        this.UI.Show()
+    }
+    _LoadCurrentLocale() {
+        locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        this.current_locale_name := locale_name
+        this.EnsureLocaleExists(locale_name)
+        this._UpdateGroupTitles(locale_name)
+        this.controls.use_auto.value := (locale_name == this.STATIC_LOCALE_NAME) ? 0 : 1
+        this.controls.use_static.value := (locale_name == this.STATIC_LOCALE_NAME) ? 1 : 0
         loc_obj := new clsLocale
         loc_obj.Load(locale_name)
         this._PopulateFieldsWith(loc_obj)
-        this.UI.Show()
     }
     _PopulateFieldsWith(loc_object) {
         For key, option in this.options {
@@ -305,59 +357,14 @@ Class clsLocaleInterface {
             this.controls[key_name].value := key_map[key_name].symbol
         }
     }
-    _EnableControls(mode := true) {
-        this.name.Enable(mode)
-        for _, control in this.controls {
-            control.Enable(mode)
-        }
+
+    _UpdateGroupTitles(locale_title) {
+        this.controls.kb_group.value := "Keyboard mapping for " . locale_title
+        this.controls.punctuation_group.value := "Punctuation settings for " . locale_title
     }
-    _Change() {
-        this.Show(this.name.value)
-    }
-    _New() {
-        default_name := locale.GetActiveLayoutName()
-        InputBox, new_name, ZipChord, % "Enter a name for the new keyboard and language setting.", , , , , , , , % default_name
-        if ErrorLevel
-            Return
-        if (this._CheckIfExists(new_name))
-            return
-        new_loc := New clsLocale
-        new_loc.Save(new_name)
-        this.Show(new_name)
-    }
-    _Delete() {
-        sections := ini.LoadSections()
-        If (! InStr(sections, "`n")) {
-            MsgBox ,, % "ZipChord", % Format("The setting '{}' is the only setting on the list and cannot be deleted.", this.name.value)
-            Return
-        }
-        MsgBox, 4, % "ZipChord", % Format("Do you really want to delete the keyboard and language settings for '{}'?", this.name.value)
-        IfMsgBox Yes
-        {
-            ini.DeleteSection(this.name.value)
-            this.Show(false)
-        }
-    }
-    _Rename() {
-        InputBox, new_name, ZipChord, % Format("Enter a new name for the locale '{}':", this.name.value)
-        if ErrorLevel
-            Return
-        if (this._CheckIfExists(new_name))
-            return
-        temp_loc := new clsLocale
-        temp_loc.Load(this.name.value)
-        ini.DeleteSection(this.name.value)
-        temp_loc.Save(new_name)
-        this.Show(new_name)
-    }
-    _CheckIfExists(new_name) {
-        if(! ini.LoadProperties(locale_exists, new_name)) {
-        MsgBox, 4, % "ZipChord", % Format("There are already settings under the name '{}'. Do you wish to overwrite them?", new_name)
-            IfMsgBox No
-                Return True
-            else
-                Return False
-        }
+    _OK() {
+        this._Save()
+        this.Close()
     }
     _OnKeyClick(name) {
         key_map := this.current_key_map
@@ -389,27 +396,68 @@ Class clsLocaleInterface {
             new_loc[key] := option.value
         }
         new_loc.key_map := this.current_key_map
-        new_loc.Save(this.name.value)
         if (runtime_status.config_file) {
+            new_loc.Save(false)
             keys := new_loc
+            return
         }
+        target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        new_loc.Save(target_locale)
+        settings.locale := target_locale
+        app_settings.Save()
+        this._last_detected_layout := this.GetActiveLayoutName()
+        this._ApplyLocaleToRuntime()
+        this._LoadCurrentLocale()
     }
     Close() {
-        main_UI.UpdateLocaleInMainUI(this.name.value)
+        main_UI.UpdateLocaleInMainUI()
         main_UI.UI.Enable()
         this.UI.Hide()
     }
 
-    GetActiveLayoutName() {
-        VarSetCapacity(buf, 9*2, 0)  ; WCHAR[9] — layout name string like "00000409"
-        if (! DllCall("user32.dll\GetKeyboardLayoutName", "Str", buf)) {
-            return "Default"
-        }
+    _GetKeyboardLayoutText(layout_id) {
         RegRead, layoutName
             , % "HKLM"
-            , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . buf
+            , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . layout_id
             , % "Layout Text"
         return layoutName
+    }
+
+    GetActiveLayoutName() {
+        hkl := this.current_key_map._GetActiveKeyboardLayoutHandle()
+        if (hkl) {
+            layout_name := this._GetKeyboardLayoutText(Format("{:08X}", hkl & 0xFFFFFFFF))
+            if (layout_name) {
+                return layout_name
+            }
+        }
+
+        VarSetCapacity(layout_id, 9*2, 0)  ; WCHAR[9] — layout name string like "00000409"
+        if (DllCall("user32.dll\GetKeyboardLayoutName", "Str", layout_id)) {
+            layout_name := this._GetKeyboardLayoutText(layout_id)
+            if (layout_name) {
+                return layout_name
+            }
+        }
+        return "Default"
+    }
+
+    CheckForLayoutChange() {
+        if (runtime_status.config_file) {
+            this._last_detected_layout := this.GetActiveLayoutName()
+            return
+        }
+        current_layout := this.GetActiveLayoutName()
+        if (current_layout == this._last_detected_layout) {
+            return
+        }
+        this._last_detected_layout := current_layout
+        if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
+            this._UpdateGroupTitles(current_layout)
+        }
+        if (!this.IsStaticMode()) {
+            this.SwitchToActiveLayout()
+        }
     }
 
     _Detect() {
