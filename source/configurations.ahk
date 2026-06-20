@@ -24,15 +24,21 @@ Class Configuration {
 
     Save(config_file) {
         global app_settings
+        global locale
 
         if !(config_file) {
             MsgBox, , % "ZipChord", % "You need to specify the setting file."
             return
         }
+        save_locale_override := locale.IsStaticMode()
         was_open := CloseAllWindows()
         runtime_status.config_file := config_file
         app_settings.Save()
-        keys.Save(false)
+        if (save_locale_override) {
+            keys.Save(settings.locale)
+        } else {
+            ini.DeleteSection("Locale", config_file)
+        }
         hint_UI.ShowOnOSD("Configuration saved to", str.BareFilename(config_file))
         if (was_open) {
             main_UI.Show()
@@ -57,12 +63,12 @@ Class Configuration {
 
     Load(config_file) {
         global app_settings
+        global locale
 
         runtime_status.config_file := config_file
         WireHotkeys("Off")
-        new_settings := {}
+        new_settings := app_settings.settings.Clone()
         ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
-        keys.Load(new_settings.locale)
         force_update := new_settings.dictionary_dir != settings.dictionary_dir
         if (force_update || new_settings.chord_file != settings.chord_file) {
             chords.Load(new_settings.chord_file)
@@ -71,6 +77,11 @@ Class Configuration {
             shorthands.Load(new_settings.shorthand_file)
         }
         app_settings.Load()
+        if (locale.IsStaticMode()) {
+            keys.Load(settings.locale)
+        } else {
+            locale.SwitchToActiveLayout()
+        }
         WireHotkeys("On")
     }
 

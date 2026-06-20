@@ -163,11 +163,22 @@ Class clsLocale {
     }
 
     Save(locale_name) {
-        section := runtime_status.config_file ? "Locale" : locale_name
-        ini.SaveProperties(this, section, runtime_status.config_file)
+        global locale
+        if (!locale_name) {
+            locale_name := locale.STATIC_LOCALE_NAME
+        }
+        if (runtime_status.config_file && locale_name == locale.STATIC_LOCALE_NAME) {
+            ini.SaveProperties(this, "Locale", runtime_status.config_file)
+        } else {
+            ini.SaveProperties(this, locale_name)
+        }
     }
     Load(locale_name) {
-        if (runtime_status.config_file) {
+        global locale
+        if (!locale_name) {
+            locale_name := locale.STATIC_LOCALE_NAME
+        }
+        if (runtime_status.config_file && locale_name == locale.STATIC_LOCALE_NAME) {
             ini.LoadProperties(this, "Locale", runtime_status.config_file)
         } else {
             ini.LoadProperties(this, locale_name)
@@ -222,7 +233,7 @@ Class clsLocaleInterface {
         return (settings.locale == this.STATIC_LOCALE_NAME)
     }
     EnsureLocaleExists(locale_name) {
-        if (!locale_name || runtime_status.config_file) {
+        if (!locale_name) {
             return
         }
         temp := {}
@@ -243,14 +254,16 @@ Class clsLocaleInterface {
         this.EnsureLocaleExists(settings.locale)
     }
     SwitchToActiveLayout() {
-        if (runtime_status.config_file || this.IsStaticMode()) {
+        if (this.IsStaticMode()) {
             return
         }
         layout_name := this.GetActiveLayoutName()
         this.EnsureLocaleExists(layout_name)
         settings.locale := layout_name
         this._last_detected_layout := layout_name
-        app_settings.Save()
+        if (!runtime_status.config_file) {
+            app_settings.Save()
+        }
         this._ApplyLocaleToRuntime()
         if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
             this._LoadCurrentLocale()
@@ -430,10 +443,6 @@ Class clsLocaleInterface {
     }
 
     CheckForLayoutChange() {
-        if (runtime_status.config_file) {
-            this._last_detected_layout := this.GetActiveLayoutName()
-            return
-        }
         current_layout := this.GetActiveLayoutName()
         if (current_layout == this._last_detected_layout) {
             return
