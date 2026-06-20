@@ -33,10 +33,6 @@ Class clsDictionary {
     _dll_entries_count := 0
     _pause_loading := true
     
-    __New(chorded_keys := false) {
-        this._chorded := chorded_keys
-    }
-    ; Public properties and methods
     entries {
         get { 
             if (dll.available) {
@@ -46,6 +42,9 @@ Class clsDictionary {
         }
     }
     
+    __New(chorded_keys := false) {
+        this._chorded := chorded_keys
+    }
     LookUp(shortcut) {
         if (dll.available) {
             return dll.LookUp(shortcut, this._chorded)
@@ -319,9 +318,11 @@ Class clsDictionary {
         }
         if (write_to_file) {
             this._StopWatching()
-            this._UpdateTrackedFileState()
             FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
+            this._dll_entries_count += 1
+            this._UpdateTrackedFileState()  ; skip auto-reload and update UI
             this._StartWatching()
+            main_UI.UpdateDictionaryUI()
         }
         Return true
     }
