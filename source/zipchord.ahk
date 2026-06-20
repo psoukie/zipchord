@@ -246,6 +246,25 @@ UpgradeTo26() {
     return result
 }
 
+UpgradeTo28() {
+    global locale
+
+    selected_locale := settings.locale
+    if (!selected_locale || selected_locale == locale.STATIC_LOCALE_NAME) {
+        return false
+    }
+    active_layout := locale.GetActiveLayoutName()
+    if (selected_locale == active_layout) {
+        settings.locale := active_layout
+        return false
+    }
+    static_locale := new clsLocale
+    static_locale.Load(selected_locale)
+    static_locale.Save(locale.STATIC_LOCALE_NAME)
+    settings.locale := locale.STATIC_LOCALE_NAME
+    return true
+}
+
 UpdateSettings(from_version) {
     global updater
     if (updater.SemVerCompare("2.3.0", from_version) == 1) {
@@ -284,6 +303,11 @@ UpdateSettings(from_version) {
             upgrade_note .= "`n`nYour keyboard settings included custom special keys that are no longer supported. Remap shortcuts in your dictionaries that used them to regular keys."
         }
         MsgBox, , % "ZipChord Upgrade Note", % upgrade_note
+    }
+    if (updater.SemVerCompare("2.8.0", from_version) == 1) {
+        if (UpgradeTo28()) {
+            MsgBox, , % "ZipChord Upgrade Note", % "ZipChord now follows your active Windows keyboard layout automatically.`n`nYour existing keyboard and language settings did not match the currently active Windows layout, so they were preserved as a fixed layout."
+        }
     }
 }
 
