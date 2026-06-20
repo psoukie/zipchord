@@ -544,10 +544,11 @@ AddShortcut() {
 */
 Class clsMainUI {
     UI := {}
-    controls := { tabs:                 { type: "Tab3"
-                                        , text: " Dictionaries | Detection | Display | Output | About "}
-                , selected_locale:      { type: "Text"
+    controls := {selected_locale:      { type: "Text"
                                         , text: "Loading..."}
+                , btn_customize_locale: { type: "Button"
+                                        , text: "C&ustomize"
+                                        , function: ObjBindMethod(this, "_btnCustomizeLocale")}
                 , chord_enabled:        { type: "Checkbox"
                                         , text: "Use &chords"
                                         , setting: { parent: "mode", const: "MODE_CHORDS_ENABLED"}}
@@ -616,6 +617,7 @@ Class clsMainUI {
     controls.hint_offset_y := { type: "Edit" }
     controls.hint_size := { type: "Edit" }
     controls.hint_color := { type: "Edit" }
+    controls.tabs := { type: "Tab3", text: " Dictionaries | Detection | Display | Output | About "}
 
     labels := []
     closing_tip := 0
@@ -634,7 +636,7 @@ Class clsMainUI {
         UI.Add(cts.tabs)
         UI.Add("Text", "y+20 Section", "&Keyboard and language")
         UI.Add(cts.selected_locale, "y+10 w170")
-        UI.Add("Button", "x+20 w100", "C&ustomize", ObjBindMethod(this, "_btnCustomizeLocale"))
+        UI.Add(cts.btn_customize_locale, "x+20 w100")
         this._BuilderHelper(UI, "chord", "&Open", "&Edit", "xs y+20")
         this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "xs-20 y+30")
 
@@ -736,6 +738,7 @@ Class clsMainUI {
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI()
+        cts.btn_customize_locale.Enable(!runtime_status.config_file)
         main_UI.UpdateDictionaryUI()
         this.UI.Show()
         UI_SyncModeState()
@@ -831,7 +834,6 @@ Class clsMainUI {
     }
 
     UpdateLocaleInMainUI() {
-        global locale
         this.controls.selected_locale.value := RegExReplace(settings.locale, "^\w", "$U0")
     }
 
@@ -865,7 +867,9 @@ Class clsMainUI {
 
     _btnCustomizeLocale() {
         global locale
-        WireHotkeys("Off")  ; so the user can edit the values without interference
+        if (runtime_status.config_file) {
+            return
+        }
         this.UI.Disable()
         locale.Show()
     }

@@ -178,7 +178,6 @@ Class clsLocale {
 Class clsLocaleInterface {
     STATIC_LOCALE_NAME := "a fixed layout"
     current_key_map := new clsKeyMap
-    current_locale_name := ""
     UI := {}
     _layout_watch_fn := ObjBindMethod(this, "CheckForLayoutChange")
     _last_detected_layout := ""
@@ -243,33 +242,22 @@ Class clsLocaleInterface {
         settings.locale := this.GetActiveLayoutName()
         this.EnsureLocaleExists(settings.locale)
     }
-    SwitchToActiveLayout(save_settings := true) {
+    SwitchToActiveLayout() {
         if (runtime_status.config_file || this.IsStaticMode()) {
-            return false
+            return
         }
         layout_name := this.GetActiveLayoutName()
         this.EnsureLocaleExists(layout_name)
-        changed := (settings.locale != layout_name)
         settings.locale := layout_name
         this._last_detected_layout := layout_name
-        if (save_settings) {
-            app_settings.Save()
-        }
+        app_settings.Save()
         this._ApplyLocaleToRuntime()
         if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
             this._LoadCurrentLocale()
         }
-        return changed
     }
     _ApplyLocaleToRuntime() {
-        active_state := runtime_status.is_keyboard_wired
-        if (active_state == "On") {
-            WireHotkeys("Off")
-        }
         keys.Load(settings.locale)
-        if (active_state == "On") {
-            WireHotkeys("On")
-        }
         if (IsObject(main_UI)) {
             main_UI.UpdateLocaleInMainUI()
         }
@@ -335,7 +323,6 @@ Class clsLocaleInterface {
     }
     _LoadCurrentLocale() {
         locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
-        this.current_locale_name := locale_name
         this.EnsureLocaleExists(locale_name)
         this._UpdateGroupTitles(locale_name)
         this.controls.use_auto.value := (locale_name == this.STATIC_LOCALE_NAME) ? 0 : 1
