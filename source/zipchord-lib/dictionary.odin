@@ -262,11 +262,11 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 	return shortcut, expansion, true
 } 
 
-main :: proc() {
-	context.logger = log.create_console_logger()
-	chord_dict: Chord_Dict
-	dict_data_load_file("../zipchord-lib-tests/english.shorthands.txt", &chord_dict, false)	
-}
+// main :: proc() {
+// 	context.logger = log.create_console_logger()
+// 	chord_dict: Chord_Dict
+// 	dict_data_load_file("../zipchord-lib-tests/english.shorthands.txt", &chord_dict, false)	
+// }
 
 // main :: proc() {
 // 	context.logger = log.create_console_logger()

@@ -63,6 +63,18 @@ load_dict :: proc(t: ^tst.T) {
 }
 
 @(test)
+load_dict_with_wrapper :: proc(t: ^tst.T) {
+    init_return := zc.zc_init()
+    tst.expect_value(t, init_return, 0)
+    load_return := zc.zc_load_dictionary("../zipchord-lib-tests/en-dvorak.chords.txt", true)
+	tst.expect(t, load_return > 0, "Did not load chord dictionary.")
+    load_return = zc.zc_load_dictionary("../zipchord-lib-tests/english.shorthands.txt", false)
+	tst.expect(t, load_return > 0, "Did not load chord dictionary.")
+    expansion, lookup_err := zc.dict_lookup(&zc.shorthand_dict, "tst")
+	tst.expect(t, expansion == "test", "dict after load did not find a shorthand")
+}
+
+@(test)
 normalize_chords :: proc(t: ^tst.T) {
     normalize :: proc(t: ^tst.T, raw, sorted: string) {
         ch_buf: zc.Chord_Buffer
