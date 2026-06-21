@@ -6,9 +6,11 @@ import "core:slice"
 @export
 zc_init :: proc "c" (version: cstring) -> i32 {
 	context = runtime.default_context()
+	if version == nil {
+		return i32(Dict_Error.Bad_Argument)
+	}
 	if (string(version) != ZC_VERSION) {
-		err := Dict_Error.Version_Mismatch
-		return i32(err)
+		return i32(Dict_Error.Version_Mismatch)
 	}
 	err := dict_data_init(&chord_dict.dict_data)
 	if err != .None {
@@ -30,10 +32,12 @@ zc_destroy :: proc "c" () -> i32 {
 zc_load_dictionary :: proc "c" (
 	filepath: cstring,
 	is_chord: bool,
+	out_buf: rawptr,
+	buf_len: i32,
 ) -> i32 {
 	context = runtime.default_context()
 
-	if filepath == nil {
+	if filepath == nil || out_buf == nil || buf_len <= 0 {
 		return i32(Dict_Error.Bad_Argument)
 	}
 
@@ -46,8 +50,11 @@ zc_load_dictionary :: proc "c" (
 		return i32(err_init)
 	}
 
-	number_loaded, err := dict_data_load_file(string(filepath), target, is_chord)
+	number_loaded, shortcut, err := dict_data_load_file(string(filepath), target, is_chord)
 	if err != .None {
+		if copy_err := copy_string_to_buffer(shortcut, out_buf, buf_len); copy_err != .None {
+			return i32(copy_err)
+		}
 		return i32(err)
 	}
 	return i32(number_loaded)
@@ -76,15 +83,13 @@ zc_lookup :: proc "c" (
 	shortcut: cstring,
 	is_chord: bool,
 	out_buf: rawptr,
-	out_buf_len: i32,
+	buf_len: i32,
 ) -> i32 {
 	context = runtime.default_context()
 
-	if shortcut == nil || out_buf == nil || out_buf_len <= 0 {
+	if shortcut == nil || out_buf == nil || buf_len <= 0 {
 		return i32(Dict_Error.Bad_Argument)
 	}
-
-	out := slice.bytes_from_ptr(out_buf, int(out_buf_len))
 
 	exp: string
 	err: Dict_Error
@@ -93,22 +98,28 @@ zc_lookup :: proc "c" (
 	} else {
 		exp, err = dict_lookup(&shorthand_dict, string(shortcut))
 	}
-		
+
+	if copy_err := copy_string_to_buffer(exp, out_buf, buf_len); copy_err != .None {
+		return i32(copy_err)
+	}
+	
 	if err != .None {
-		out[0] = 0
 		return i32(err)
 	}
 
-	expansion_len := len(exp)
-	if expansion_len + 1 > len(out) {
+	return i32(Dict_Error.None)
+}
+
+copy_string_to_buffer :: proc(str: string, buf_ptr: rawptr, buf_len: i32) -> Dict_Error {
+	out := slice.bytes_from_ptr(buf_ptr, int(buf_len))
+	str_len := len(str)
+	if str_len + 1 > len(out) {
 		out[0] = 0
-		return i32(Dict_Error.Buffer_Too_Small)
+		return .Buffer_Too_Small
 	}
-
-    copy(out[:expansion_len], exp)
-	out[expansion_len] = 0
-
-	return i32(expansion_len)
+    copy(out[:str_len], str)
+	out[str_len] = 0
+	return .None
 }
 
 @export

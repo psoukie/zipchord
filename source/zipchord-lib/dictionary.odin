@@ -207,10 +207,10 @@ dict_data_load_file :: proc(
 	filepath: string,
 	dict: ^Dict_Data,
 	as_chords: bool
-) -> (number_imported: int, err: Dict_Error) {
+) -> (number_imported: int, shortcut: string, err: Dict_Error) {
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
 	if file_err != nil {
-		return 0, .File_Read_Fail
+		return 0, "", .File_Read_Fail
 	}
 	defer delete(file_data, context.allocator)
 
@@ -221,14 +221,15 @@ dict_data_load_file :: proc(
 	chain_buf: Chord_Chain_Buffer
 	for raw_line in strings.split_iterator(&it, "\n") {
 		i += 1
+		expansion: string
 		line := strings.trim_right(raw_line, "\r") 
-		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
+		shortcut, expansion = _extract_a_tabbed_pair(line) or_continue
 		if shortcut == "" {
 			continue
 		}
 		register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf) or_return
 	}
-	return len(dict.shortcut_to_expansion), .None
+	return len(dict.shortcut_to_expansion), "", .None
 }
 
 

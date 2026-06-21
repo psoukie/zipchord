@@ -179,13 +179,15 @@ Class clsDictionary {
         }
     }
     _Dll_LoadShortcuts() {
-        load_result := dll.LoadDictionary(this._file, this._chorded)
-        if (load_result < 0) {
-            MsgBox, , ZipChord Load Dictionary Error TK, % load_result
-            this._dll_entries_count := "error in"
+        global dll_buffer
+        result := dll.LoadDictionary(this._file, this._chorded)
+        if (result < 0) {
+            shortcut := StrGet(&dll_buffer, "UTF-8")
+            MsgBox, , % "ZipChord", % Format("Error {} while processing shortcut '{}'.", result, shortcut)
+            this._dll_entries_count := 0
             return
         }
-        this._dll_entries_count := load_result
+        this._dll_entries_count := result
         return
     }
     _LoadShortcuts() {

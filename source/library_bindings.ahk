@@ -85,8 +85,9 @@ Class clsDllBindings {
     }
 
     LoadDictionary(dictionary_path, chorded) {
+        global dll_buffer
         pDictPath := this._StringToPtr(dictionary_path, dictPathBuf)
-        return DllCall(this._load_dictionary_fn, "Ptr", pDictPath, "Int", chorded, "Cdecl Int")
+        return DllCall(this._load_dictionary_fn, "Ptr", pDictPath, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
     }
 
     RegisterShortcut(raw_shortcut, expansion, chorded) {
@@ -100,8 +101,8 @@ Class clsDllBindings {
         pShortcut := this._StringToPtr(shortcut, shortcutBuf)
         result := DllCall(this._lookup_fn, "Ptr", pShortcut, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
 
-        if (result > 0) {
-            return StrGet(&dll_buffer, result, "UTF-8")
+        if (result == 0) {
+            return StrGet(&dll_buffer, "UTF-8")
         } else {
             return false
         }
@@ -112,8 +113,8 @@ Class clsDllBindings {
         pExpansion := this._StringToPtr(expansion, expansionBuf)
         result := DllCall(this._reverse_lookup_fn, "Ptr", pExpansion, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
 
-        if (result > 0) {
-            return StrGet(&dll_buffer, result, "UTF-8")
+        if (result == 0) {
+            return StrGet(&dll_buffer, "UTF-8")
         } else {
             return false
         }
