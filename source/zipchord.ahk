@@ -46,8 +46,8 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
 
-#Include library_bindings.ahk
 #Include version.ahk
+#Include library_bindings.ahk
 #Include shared.ahk
 
 ; Handle messages from second instance in order to support command line manipulation of running script

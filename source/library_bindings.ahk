@@ -20,6 +20,8 @@ Class clsDllBindings {
 
     __New() {
         global dll_buffer
+        global zc_version
+        
         dllPath := A_ScriptDir . "\zipchord-lib.dll"
         if (! FileExist(dllPath) ) {
             return
@@ -28,7 +30,14 @@ Class clsDllBindings {
             return
         }
         ; Initialize DLL state.
-        if (DllCall(this._init_fn, "Cdecl Int") != 0) {
+        pVersion := this._StringToPtr(zc_version, versionBuf)
+        result := DllCall(this._init_fn, "Ptr", pVersion, "Cdecl Int")
+        if (result == -11) {
+            MsgBox , , % "ZipChord", % "The compiled library has an incompatible version. ZipChord will use its built-in AutoHotkey implementation."
+            return
+        }
+        if (result != 0) {
+            MsgBox , , % "ZipChord", % "There was an error while initializing the compiled library. ZipChord will use its built-in AutoHotkey implementation."
             return
         }
         ; Initialize buffer

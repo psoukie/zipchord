@@ -21,6 +21,7 @@ Dict_Error :: enum i32 {
     Allocation_Error = -8,
 	File_Read_Fail   = -9,
     Internal_Error   = -10,
+	Version_Mismatch = -11,
 }
 
 MAX_CHORD_RUNES :: 40

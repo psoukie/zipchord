@@ -4,8 +4,12 @@ import "base:runtime"
 import "core:slice"
 
 @export
-zc_init :: proc "c" () -> i32 {
+zc_init :: proc "c" (version: cstring) -> i32 {
 	context = runtime.default_context()
+	if (string(version) != ZC_VERSION) {
+		err := Dict_Error.Version_Mismatch
+		return i32(err)
+	}
 	err := dict_data_init(&chord_dict.dict_data)
 	if err != .None {
 		return i32(err)
