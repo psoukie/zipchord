@@ -77,12 +77,23 @@ Class Configuration {
             shorthands.Load(new_settings.shorthand_file)
         }
         app_settings.Load()
+        this._UpgradeLegacyLocaleSetting()
         if (locale.IsStaticMode()) {
             keys.Load(settings.locale)
         } else {
             locale.SwitchToActiveLayout()
         }
         WireHotkeys("On")
+    }
+
+    _UpgradeLegacyLocaleSetting() {
+        global app_settings
+        global locale
+
+        if (settings.locale = "0") {
+            settings.locale := locale.STATIC_LOCALE_NAME
+            app_settings.Save()
+        }
     }
 
     LoadMappingFile(filename) {
