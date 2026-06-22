@@ -22,7 +22,7 @@ For _, artifact in build_artifacts {
 WriteOdinVersionFile(odin_version_file, zc_version)
 
 RunWait %ComSpec% /c ""%ahk_exe%" /in zipchord.ahk /out "%zipchord_exe%" /icon zipchord.ico > "%result_file%""
-RunWait %ComSpec% /c "call ..\odin-env.bat && %odin_exe% build zipchord-lib -build-mode:dll -out:..\build\zipchord-lib.dll >> ..\build\result.txt 2>&1", %A_ScriptDir%
+RunWait %ComSpec% /c "call ..\odin-env.bat && %odin_exe% build zipchord-lib -build-mode:dll -o:speed -out:..\build\zipchord-lib.dll >> ..\build\result.txt 2>&1", %A_ScriptDir%
 if !FileExist(zipchord_dll) {
     FileAppend, `r`nERROR: zipchord-lib.dll was not created at %zipchord_dll%.`r`n, % result_file
     FileRead, result, % result_file

@@ -180,14 +180,15 @@ Class clsDictionary {
     }
     _Dll_LoadShortcuts() {
         global dll_buffer
-        result := dll.LoadDictionary(this._file, this._chorded)
+        shortcuts_loaded := 0
+        result := dll.LoadDictionary(this._file, this._chorded, shortcuts_loaded)
         if (result < 0) {
-            shortcut := StrGet(&dll_buffer, "UTF-8")
+            shortcut := dll.GetSavedString() 
             MsgBox, , % "ZipChord", % Format("Error {} while processing shortcut '{}'.", result, shortcut)
-            this._dll_entries_count := 0
+            this._dll_entries_count := shortcuts_loaded
             return
         }
-        this._dll_entries_count := result
+        this._dll_entries_count := shortcuts_loaded
         return
     }
     _LoadShortcuts() {

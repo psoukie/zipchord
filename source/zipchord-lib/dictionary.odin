@@ -2,7 +2,6 @@ package zipchord_library
 
 import "core:fmt"
 import "base:runtime"
-import "core:log"
 import "core:os"
 import "core:strings"
 import "core:slice"
@@ -27,6 +26,7 @@ Dict_Error :: enum i32 {
 MAX_CHORD_RUNES :: 40
 MAX_CHORD_BYTES :: MAX_CHORD_RUNES * utf8.UTF_MAX
 MAX_CHAIN_BYTES :: 5 * MAX_CHORD_BYTES
+STRING_BUFFER_BYTES :: 1024
 
 Fixed_Buffer :: struct($CAP: int) {
 	bytes: [CAP]u8,
@@ -35,6 +35,18 @@ Fixed_Buffer :: struct($CAP: int) {
 
 Chord_Buffer       :: Fixed_Buffer(MAX_CHORD_BYTES)
 Chord_Chain_Buffer :: Fixed_Buffer(MAX_CHAIN_BYTES)
+
+copy_string_to_buffer :: proc(str: string, buf_ptr: rawptr, buf_capacity: i32) -> Dict_Error {
+	out := slice.bytes_from_ptr(buf_ptr, int(buf_capacity))
+	str_len := len(str)
+	if str_len + 1 > len(out) {
+		out[0] = 0
+		return .Buffer_Too_Small
+	}
+    copy(out[:str_len], str)
+	out[str_len] = 0
+	return .None
+}
 
 normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
 	chord_buf.len = 0
@@ -114,8 +126,10 @@ Shorthand_Dict :: struct {
 	using dict_data: Dict_Data
 }
 
+// TK - encapsulate in an 'engine' struct
 chord_dict:     Chord_Dict
 shorthand_dict: Shorthand_Dict
+string_buf:     Fixed_Buffer(STRING_BUFFER_BYTES)
 
 dict_data_init :: proc(dict: ^Dict_Data) -> (err: Dict_Error ) {
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
@@ -203,14 +217,28 @@ dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortc
 	return shortcut, .None
 }
 
+chord_dict_reverse_lookup :: proc(dict: ^Chord_Dict, expansion: string) -> (shortcut: string, err: Dict_Error ) {
+	return dict_data_reverse_lookup(&dict.dict_data, expansion)
+}
+
+shorthand_dict_reverse_lookup :: proc(dict: ^Shorthand_Dict, expansion: string) -> (shortcut: string, err: Dict_Error ) {
+	return dict_data_reverse_lookup(&dict.dict_data, expansion)
+}
+
+dict_reverse_lookup :: proc{
+	chord_dict_reverse_lookup,
+	shorthand_dict_reverse_lookup,
+}
+
 dict_data_load_file :: proc(
 	filepath: string,
 	dict: ^Dict_Data,
-	as_chords: bool
-) -> (number_imported: int, shortcut: string, err: Dict_Error) {
+	as_chords: bool,
+	shortcuts_loaded: ^i32,
+) -> (err: Dict_Error) {
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
 	if file_err != nil {
-		return 0, "", .File_Read_Fail
+		return .File_Read_Fail
 	}
 	defer delete(file_data, context.allocator)
 
@@ -221,15 +249,22 @@ dict_data_load_file :: proc(
 	chain_buf: Chord_Chain_Buffer
 	for raw_line in strings.split_iterator(&it, "\n") {
 		i += 1
-		expansion: string
 		line := strings.trim_right(raw_line, "\r") 
-		shortcut, expansion = _extract_a_tabbed_pair(line) or_continue
+		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
 		if shortcut == "" {
 			continue
 		}
-		register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf) or_return
+		result := register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf)
+		if result != .None {
+			string_buf.len = 0
+			copy_string_to_buffer(shortcut, &string_buf.bytes, len(string_buf.bytes)) or_return
+			string_buf.len = len(shortcut)
+			shortcuts_loaded^ = i32(len(dict.shortcut_to_expansion))
+			return result		
+		}
 	}
-	return len(dict.shortcut_to_expansion), "", .None
+	shortcuts_loaded^ = i32(len(dict.shortcut_to_expansion))
+	return  .None
 }
 
 
