@@ -183,8 +183,20 @@ Class clsDictionary {
         shortcuts_loaded := 0
         result := dll.LoadDictionary(this._file, this._chorded, shortcuts_loaded)
         if (result < 0) {
-            shortcut := dll.GetSavedString() 
-            MsgBox, , % "ZipChord", % Format("Error {} while processing shortcut '{}'.", result, shortcut)
+            shortcut := dll.GetSavedString()
+            type := this._chorded ? "chord" : "shorthand"
+            reason := ""
+            Switch result {
+                Case DllError.REPEATED_KEY:
+                    reason := "a repeated key"
+                Case DllError.SHORTCUT_EXISTS:
+                    reason := "a shortcut that already exists"
+                Case DllError.FEWER_THAN_TWO:
+                    reason := "a shortcut with less than two characters"
+                Default:
+                    reason := "error code " . result
+            }
+            MsgBox, , % "ZipChord", % Format("ZipChord encountered {} while processing the {} '{}'.", reason, type, shortcut)
             this._dll_entries_count := shortcuts_loaded
             return
         }
@@ -295,18 +307,20 @@ Class clsDictionary {
     }
 
     _Dll_RegisterShortcut(raw_shortcut, expansion) {
-        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded)       
-        if (result == -2) {
-            dest := this._chorded ? "chord" : "shorthand"
-            occupied := this.LookUp(raw_shortcut)
-            MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, raw_shortcut, occupied, expansion)
-            return false
-        }
-        if (result != 0) {
-            MsgBox, , ZipChord Dll Error TK, % result
-            return false
-        }
-        return true
+        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded)
+        Switch result {
+            Case DllError.SHORTCUT_EXISTS:
+                dest := this._chorded ? "chord" : "shorthand"
+                occupied := this.LookUp(raw_shortcut)
+                MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, raw_shortcut, occupied, expansion)
+            Case DllError.FEWER_THAN_TWO:
+                MsgBox ,, % "ZipChord", % "The shortcut must be at least two characters."
+            Case DllError.NONE:
+                return true
+            Default:
+                MsgBox, , % "ZipChord", % Format("ZipChord encountered error code {}.", result)
+        }    
+        return false
     }
 
     _RegisterShortcut(raw_shortcut, expansion, write_to_file:=false) {

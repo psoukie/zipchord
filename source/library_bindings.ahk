@@ -7,6 +7,23 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 dll_buffer := ""
 global dll := New clsDllBindings
 
+class DllError {
+    static NONE             :=  0
+    static NOT_FOUND        := -1
+    static SHORTCUT_EXISTS  := -2
+    static REPEATED_KEY     := -3
+    static EMPTY_CHORD      := -4
+    static FEWER_THAN_TWO   := -5
+    static BAD_ARGUMENT     := -6
+    static BUFFER_TOO_SMALL := -7
+    static ALLOCATION_ERROR := -8
+    static FILE_READ_FAIL   := -9
+    static INTERNAL_ERROR   := -10
+    static VERSION_MISMATCH := -11
+}
+
+DllError.NONE
+
 Class clsDllBindings {
     available := false
 
