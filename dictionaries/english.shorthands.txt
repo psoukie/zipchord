@@ -574,7 +574,7 @@ drw	draw
 flm	film
 chs	choose
 evdnc	evidence
-Rpblcn	Republican
+rpblcn	Republican
 dfclt	difficult
 	century	(undefined)
 nrl	nearly
@@ -867,7 +867,7 @@ trdtnl	traditional
 	peace	(undefined)
 grn	green
 thnks	thanks
-Dmcrt	Democrat
+dmcrt	Democrat
 impct	impact
 strctr	structure
 tnght	tonight
@@ -1044,7 +1044,7 @@ grdn	garden
 acs	access
 pblsh	publish
 rcl	recall
-Svt	Soviet
+svt	Soviet
 sthrn	southern
 snt	senate
 opnn	opinion
@@ -1110,7 +1110,7 @@ hndrd	hundred
 encrg	encourage
 prfct	perfect
 psblt	possibility
-Brtsh	British
+brtsh	British
 exmn	examine
 cnvrstn	conversation
 	generally	(undefined)
@@ -1183,9 +1183,9 @@ ptntl	potential
 prsnc	presence
 insttt	institute
 scrn	screen
-Chns	Chinese
+chns	Chinese
 hrs	horse
-EErpn	European
+erpn	European
 trgt	target
 wlng	willing
 	survey	(undefined)
@@ -1269,7 +1269,7 @@ wrth	worth
 	fit	(undefined)
 chrmn	chairman
 lsn	lesson
-Chrstms	Christmas
+chrstms	Christmas
 insst	insist
 anbd	anybody
 flk	folk
@@ -1279,12 +1279,12 @@ prcdr	procedure
 asct	associate
 	inch	(undefined)
 wrm	warm
-AAfrcn	African
-Frnch	French
+afrcn	African
+frnch	French
 bsbl	baseball
 dmnstrt	demonstrate
 ft	foot
-Chrstn	Christian
+chrstn	Christian
 cmpttn	competition
 afrd	afraid
 sprd	spread
@@ -1345,7 +1345,7 @@ yth	youth
 lctn	location
 nghbr	neighbor
 drs	dress
-IIntrnt	Internet
+intrnt	Internet
 ctgr	category
 dngrs	dangerous
 extnd	extend
@@ -1404,7 +1404,7 @@ wn	wine
 mnrt	minority
 flwr	flower
 dvc	device
-IIrq	Iraqi
+irq	Iraqi
 plt	plate
 cln	clean
 alv	alive
@@ -1427,7 +1427,7 @@ intnd	intend
 	tall	(undefined)
 	shut	(undefined)
 lts	lots
-IIndn	Indian
+indn	Indian
 rspct	respect
 	colleague	(undefined)
 wrtng	writing
@@ -1534,7 +1534,7 @@ cd	code
 cnct	connect
 ylw	yellow
 instrmnt	instrument
-Jpns	Japanese
+jpns	Japanese
 pnl	panel
 lbrr	library
 expnsv	expensive
@@ -1641,7 +1641,7 @@ ultmtl	ultimately
 	wake	(undefined)
 	shirt	(undefined)
 	guide	(undefined)
-AAIDS	AIDS
+	AIDS	(undefined)
 	mix	(undefined)
 	slip	(undefined)
 	steal	(undefined)
@@ -1660,14 +1660,14 @@ brnch	branch
 chn	chain
 tlphn	telephone
 invstgt	investigate
-Grmn	German
+grmn	German
 prcntg	percentage
 otcm	outcome
 estt	estate
 	forth	(undefined)
 strs	stress
 eql	equal
-EEnglsh	English
+englsh	English
 wlfr	welfare
 tpcl	typical
 crz	crazy
@@ -1681,7 +1681,7 @@ usd	used
 mtn	motion
 cmpln	complain
 	row	(undefined)
-Jwsh	Jewish
+jwsh	Jewish
 kck	kick
 snw	snow
 prdcr	producer
@@ -1761,7 +1761,7 @@ hghw	highway
 	frame	(undefined)
 strtch	stretch
 ops	oppose
-Cthlc	Catholic
+cthlc	Catholic
 	cloud	(undefined)
 intl	initial
 vrbl	variable
@@ -1883,7 +1883,7 @@ mlk	milk
 hght	height
 asstnc	assistance
 prsnlt	personality
-IIsrl	Israeli
+isrl	Israeli
 	gay	(undefined)
 frvr	forever
 	assess	(undefined)
@@ -2061,14 +2061,14 @@ elswhr	elsewhere
 	essentially	(undefined)
 dscpln	discipline
 rpl	reply
-Mxcn	Mexican
+mxcn	Mexican
 psn	passion
 	tale	(undefined)
 dst	dust
 ks	kiss
 irn	iron
 indpndnc	independence
-Spnsh	Spanish
+spnsh	Spanish
 advnc	advance
 	pot	(undefined)
 ptt	potato
@@ -2155,12 +2155,12 @@ cmnd	command
 nrvs	nervous
 scld	so-called
 cmpttv	competitive
-AAsn	Asian
+asn	Asian
 twr	tower
 vtrn	veteran
 crtr	creature
 smk	smoke
-AArb	Arab
+arb	Arab
 prnc	prince
 alnc	alliance
 trnsprttn	transportation
@@ -2291,7 +2291,7 @@ aprvl	approval
 hstrc	historic
 	secure	(undefined)
 prprtn	preparation
-Ltn	Latin
+ltn	Latin
 lrd	lord
 tspn	teaspoon
 	musical	(undefined)
@@ -2357,7 +2357,7 @@ phrs	phrase
 yl	yell
 	personally	(undefined)
 rspndnt	respondent
-Plstnn	Palestinian
+plstnn	Palestinian
 clsc	classic
 snp	snap
 	via	(undefined)
@@ -2409,13 +2409,13 @@ brdn	burden
 	teen	(undefined)
 srvvl	survival
 unlkl	unlikely
-IItln	Italian
+itln	Italian
 chmbr	chamber
 	lost	(undefined)
 cmnct	communicate
 stpd	stupid
 	bet	(undefined)
-Mslm	Muslim
+mslm	Muslim
 	bell	(undefined)
 onn	onion
 dsgr	disagree
@@ -2451,11 +2451,11 @@ shpng	shopping
 frntr	furniture
 mrn	marine
 sttstcs	statistics
-OOlmpc	Olympic
+olmpc	Olympic
 wp	wipe
 spksmn	spokesman
 spr	super
-IIslmc	Islamic
+islmc	Islamic
 trnslt	translate
 intrprt	interpret
 tstf	testify
@@ -2532,7 +2532,7 @@ unknwn	unknown
 	tissue	(undefined)
 snk	sink
 	counter	(undefined)
-Bbl	Bible
+bbl	Bible
 lcns	license
 trgd	tragedy
 dlg	dialogue
@@ -2643,7 +2643,7 @@ pt	poet
 grdl	gradually
 prtnrshp	partnership
 cpblt	capability
-Cndn	Canadian
+cndn	Canadian
 	tech	(undefined)
 cmrc	commerce
 grndfthr	grandfather
@@ -2792,7 +2792,7 @@ cntst	contest
 strngthn	strengthen
 dmnstrtn	demonstration
 rstrctn	restriction
-IIrsh	Irish
+irsh	Irish
 hntr	hunter
 stndng	standing
 hndfl	handful
@@ -3203,7 +3203,7 @@ bfrnd	boyfriend
 intgrtn	integration
 	rat	(undefined)
 brdcst	broadcast
-Krn	Korean
+krn	Korean
 nl	nail
 	pen	(undefined)
 cnslt	consult
@@ -3302,7 +3302,7 @@ admnstr	administer
 sprvsr	supervisor
 cmprms	compromise
 grtfl	grateful
-Hspnc	Hispanic
+hspnc	Hispanic
 mndt	mandate
 alrm	alarm
 	cruise	(undefined)
@@ -3312,7 +3312,7 @@ drn	drain
 tmpl	temple
 dncr	dancer
 twl	towel
-IIslm	Islam
+islm	Islam
 cntns	continuous
 gvrn	govern
 crwn	crown
@@ -3393,7 +3393,7 @@ rbl	rebel
 idntcl	identical
 shm	shame
 dlct	delicate
-OOlmpcs	Olympics
+olmpcs	Olympics
 wdr	wider
 crptn	corruption
 hk	hook
@@ -3829,7 +3829,7 @@ explt	exploit
 jwlr	jewelry
 dbts	diabetes
 trnsltn	translation
-Dtch	Dutch
+dtch	Dutch
 	irony	(undefined)
 asctd	associated
 utlz	utilize
@@ -3877,7 +3877,7 @@ otlk	outlook
 	foster	(undefined)
 cmprs	comprise
 knwn	known
-Thnksgvng	Thanksgiving
+thnksgvng	Thanksgiving
 shrttrm	short-term
 	shed	(undefined)
 cprtv	cooperative
@@ -4054,7 +4054,7 @@ sprtv	supportive
 cmprbl	comparable
 txtr	texture
 strkng	striking
-Chrstnt	Christianity
+chrstnt	Christianity
 	dip	(undefined)
 dspntmnt	disappointment
 	sleeve	(undefined)
