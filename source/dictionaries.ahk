@@ -198,7 +198,9 @@ Class clsDictionary {
                 Case DllError.REPEATED_KEY:
                     reason := "a repeated key"
                 Case DllError.SHORTCUT_EXISTS:
-                    reason := "a shortcut that already exists"
+                    shortcut := this._chord ? str.Arrange(shortcut) : shortcut
+                    occupied := this.LookUp(shortcut)
+                    reason := "a shortcut that is already in use for '" . occupied . "'"
                 Case DllError.FEWER_THAN_TWO:
                     reason := "a shortcut with less than two characters"
                 Default:
@@ -319,7 +321,8 @@ Class clsDictionary {
         Switch result {
             Case DllError.SHORTCUT_EXISTS:
                 dest := this._chorded ? "chord" : "shorthand"
-                occupied := this.LookUp(raw_shortcut)
+                shortcut := this._chord ? str.Arrange(raw_shortcut) : raw_shortcut
+                occupied := this.LookUp(shortcut)
                 MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, raw_shortcut, occupied, expansion)
             Case DllError.FEWER_THAN_TWO:
                 MsgBox ,, % "ZipChord", % "The shortcut must be at least two characters."

@@ -183,9 +183,7 @@ dict_data_add :: proc (dict: ^Dict_Data, shortcut: string, expansion: string, ) 
 	return .None
 }
 
-chord_dict_add :: proc(dict: ^Chord_Dict, raw_chord, expansion: string) -> (err: Dict_Error ) {
-	buf: Chord_Buffer
-	chord := normalize_chord(raw_chord, &buf) or_return
+chord_dict_add :: proc(dict: ^Chord_Dict, chord, expansion: string) -> (err: Dict_Error ) {
 	return dict_data_add(&dict.dict_data, chord, expansion)
 }
 
@@ -206,9 +204,7 @@ dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: stri
 	return expansion, .None
 }
 
-chord_dict_lookup :: proc(dict: ^Chord_Dict, raw_chord: string) -> (expansion: string, err: Dict_Error ) {
-	buf: Chord_Buffer
-	chord := normalize_chord(raw_chord, &buf) or_return
+chord_dict_lookup :: proc(dict: ^Chord_Dict, chord: string) -> (expansion: string, err: Dict_Error ) {
 	return dict_data_lookup(&dict.dict_data, chord)
 }
 
