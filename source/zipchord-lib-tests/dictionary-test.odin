@@ -84,7 +84,7 @@ load_dict_with_wrapper :: proc(t: ^tst.T) {
 normalize_chords :: proc(t: ^tst.T) {
     normalize :: proc(t: ^tst.T, raw, sorted: string) {
         ch_buf: zc.Chord_Buffer
-    	normalized, err := zc.normalize_chord(raw, &ch_buf)
+    	normalized, err := zc._normalize_chord(raw, &ch_buf)
     	tst.expect_value(t, err, zc.Dict_Error.None)
     	tst.expect_value(t, normalized, sorted)
 	}
@@ -94,10 +94,10 @@ normalize_chords :: proc(t: ^tst.T) {
     normalize(t, "a !", " !a")
 
     ch_buf: zc.Chord_Buffer
-    noramalized, err := zc.normalize_chord("mem", &ch_buf)
+    noramalized, err := zc._normalize_chord("mem", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Repeated_Key)
     
-    noramalized, err = zc.normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť", &ch_buf)
+    noramalized, err = zc._normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Buffer_Too_Small)
 }
 	

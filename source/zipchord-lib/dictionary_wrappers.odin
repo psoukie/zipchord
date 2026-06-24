@@ -128,3 +128,23 @@ zc_reverse_lookup :: proc "c" (
 	
 	return err
 }
+
+@export
+zc_normalize_chord :: proc "c" (
+	raw_chord: cstring,
+	out_buf: rawptr,
+	buf_len: i32,
+) -> Dict_Error {
+	context = runtime.default_context()
+	
+	if raw_chord == nil || out_buf == nil || buf_len <= 0 {
+		return .Bad_Argument
+	}
+
+	chain_buf: Chord_Chain_Buffer
+	norm_chord, err := normalize_chained_chords(string(raw_chord), &chain_buf)
+
+	copy_string_to_buffer(norm_chord, out_buf, buf_len) or_return
+
+	return err
+}

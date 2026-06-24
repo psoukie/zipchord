@@ -48,7 +48,7 @@ copy_string_to_buffer :: proc(str: string, buf_ptr: rawptr, buf_capacity: i32) -
 	return .None
 }
 
-normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
+_normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
 	chord_buf.len = 0
 	
 	rune_buf: [MAX_CHORD_RUNES]rune
@@ -85,7 +85,7 @@ normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normali
 	return string(chord_buf.bytes[:chord_buf.len]), .None
 }
 
-_normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
+normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
 	chain_buf.len = 0
 	raw_shortcut := raw_shortcut
 	
@@ -104,7 +104,7 @@ _normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_
 			chain_buf.bytes[chain_buf.len] = u8('|')
 			chain_buf.len += 1
 		}
-		normalized := normalize_chord(raw_chord, &chord_buf) or_return
+		normalized := _normalize_chord(raw_chord, &chord_buf) or_return
 		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
 		chain_buf.len += n
 	}
@@ -183,9 +183,7 @@ dict_data_add :: proc (dict: ^Dict_Data, shortcut: string, expansion: string, ) 
 	return .None
 }
 
-chord_dict_add :: proc(dict: ^Chord_Dict, raw_chord, expansion: string) -> (err: Dict_Error ) {
-	buf: Chord_Buffer
-	chord := normalize_chord(raw_chord, &buf) or_return
+chord_dict_add :: proc(dict: ^Chord_Dict, chord, expansion: string) -> (err: Dict_Error ) {
 	return dict_data_add(&dict.dict_data, chord, expansion)
 }
 
@@ -206,9 +204,7 @@ dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: stri
 	return expansion, .None
 }
 
-chord_dict_lookup :: proc(dict: ^Chord_Dict, raw_chord: string) -> (expansion: string, err: Dict_Error ) {
-	buf: Chord_Buffer
-	chord := normalize_chord(raw_chord, &buf) or_return
+chord_dict_lookup :: proc(dict: ^Chord_Dict, chord: string) -> (expansion: string, err: Dict_Error ) {
 	return dict_data_lookup(&dict.dict_data, chord)
 }
 
@@ -294,7 +290,7 @@ register_shortcut :: proc (
 	}
 	
 	if as_chords {
-		shortcut = _normalize_chained_chords(shortcut, chain_buffer) or_return 
+		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return 
 	}
 
 	existing, lookup_err := dict_data_lookup(dict_data, shortcut)

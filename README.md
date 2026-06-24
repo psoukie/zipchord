@@ -2,25 +2,40 @@
 
 <img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-demo-border.gif" width="500" alt="ZipChord demo" />
 
-ZipChord lets you seamlessly **combine regular typing with chording and shorthands**. Chords let you type whole words by pressing a combination of keys simultaneously. That's what stenographers do and what makes them so fast.
+ZipChord is a Windows app for **hybrid typing**: it lets you mix **normal typing**, **simultaneous chords**, and **typed shorthands** in the same flow.
 
-You don't need to learn stenotyping though. Languages obey Zipf's law, so it takes only a few dozen chords to accelerate a huge amount of all your typing. For example, just 32 unique words make up 40% of the whole text of _The Lord of the Rings_. So even a small number of chords with simple key combinations can make your typing faster and more comfortable.
+Instead of learning full stenography, you can start with just a few shortcuts for the most common words and phrases. ZipChord is built around the idea that a small number of high-frequency shortcuts can speed up a large share of everyday typing.
 
-I could not find any software that supported keyboard shortcuts of more than two keys and regular typing at the same time, so I built ZipChord to make this type of typing possible.
+## Why ZipChord?
+
+- Keep using your normal keyboard and regular typing habits
+- Add simultaneous chords for frequent words
+- Expand typed abbreviations into longer text with shorthands
+- Learn gradually with real-time hints and reminders
+- Keep everything local and private on your computer
 
 ## Features
 
-- Chord recognition (also known as chorded entry or chording)
-- Shorthands that expand typed abbreviations to full words
-- Customizable user dictionaries for chords and shorthands
-- Real-time hints about available shortcuts in on-screen display or tooltips
-- Automated capitalization and smart spaces around shortcuts and punctuation
-- Customizable keyboard mapping with automated detection for different keyboard layouts
-- A command menu
+- Simultaneous chord recognition (also known as chorded entry or chording)
+- Sequential shorthands that expand typed abbreviations to full words or phrases
+- Separate customizable dictionaries for chords and shorthands
+- Real-time hints in an on-screen display or tooltips
+- Smart spaces and automatic capitalization around shortcuts and punctuation
+- Automatic switching with the active Windows keyboard layout and custom key mapping
+- Native UI and command menu for common actions
 
-## Documentation
+## Example
 
-Official [documentation](https://github.com/psoukie/zipchord/wiki) is available under the **Wiki** tab.
+- Press a chord such as `S` + `D` to output "should"
+- Type a shorthand such as "adrs" to expand to a "address"
+- Use hints while typing to discover or remember available shortcuts
+
+## Get Started
+
+- **Download:** [Latest release](https://github.com/psoukie/zipchord/releases)
+- **Install:** [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation)
+- **Learn:** [How to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord)
+- **Keyboard layouts and language settings:** [Keyboard and language settings](https://github.com/psoukie/zipchord/wiki/Keyboard-and-language-settings)
 
 ## Installation
 
@@ -28,17 +43,15 @@ Download **zipchord-install-_version_.zip** or the stand-alone **zipchord-exe-_v
 
 If you prefer not to use the installer or compiled executable, download the release source archive, extract it anywhere on Windows, install AutoHotkey v1.1, switch the working directory to `source`, and run `zipchord.ahk`.
 
-See the [Installation](https://github.com/psoukie/zipchord/wiki/Installation) page for details.
+ZipChord currently works on **Windows only**. A cross-platform version is under development.
 
-_ZipChord_ currently works only on Windows because of its dependency on AutoHotkey. Support for MacOS and Linux is planned.
+## Documentation
+
+Official [documentation](https://github.com/psoukie/zipchord/wiki) is available under the **Wiki** tab.
 
 ## Privacy
 
 ZipChord adheres to strict privacy and security principles. It does not send your typed content or configuration data anywhere. See more [privacy details](https://github.com/psoukie/zipchord/wiki/Privacy) in the Wiki.
-
-## How to Use ZipChord
-
-Please see the Wiki pages for information including [how to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord), documentation for the [user interface](https://github.com/psoukie/zipchord/wiki/Main-Window), [custom dictionaries](https://github.com/psoukie/zipchord/wiki/Shortcut-dictionaries), and more.
 
 ## Feedback
 

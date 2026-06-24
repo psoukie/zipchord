@@ -80,8 +80,9 @@ Class clsDllBindings {
         this._reverse_lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_reverse_lookup", "Ptr")
         this._register_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_register_shortcut", "Ptr")
         this._get_saved_string_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_get_saved_string", "Ptr")
+        this._normalize_chord_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_normalize_chord", "Ptr")
         
-        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn && this._get_saved_string_fn) {
+        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn && this._get_saved_string_fn && this._normalize_chord_fn) {
             return true
         }
         return false
@@ -163,6 +164,21 @@ Class clsDllBindings {
         if (result == 0) {
             return StrGet(&dll_buffer, "UTF-8")
         }
+        return false
+    }
+
+    NormalizeChord(chord) {
+        global dll_buffer
+        pChord := this._StringToPtr(chord, chordBuf)
+        result := DllCall(this._normalize_chord_fn
+                , "Ptr", pChord
+                , "Ptr", &dll_buffer
+                , "Int", this._buf_size
+                , "Cdecl Int")
+        if (result == 0) {
+            return StrGet(&dll_buffer, "UTF-8")
+        }
+        MsgBox , , % "ZipChord", % "Encountered error number " . result . " while normalizing a chord."
         return false
     }
 }

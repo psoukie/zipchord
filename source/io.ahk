@@ -227,7 +227,12 @@ Class clsIOrepresentation {
                 sequence.RemoveAt(start+1)
             }
             ; Sort to allow matching against chord dictionaries
-            chunk.input := str.Arrange(chunk.input)
+            
+            if (dll.available) {
+                chunk.input := dll.NormalizeChord(chunk.input)
+            } else {
+                chunk.input := str.Arrange(chunk.input)
+            }
             ; Set as chords, and clear punctuation and manual space attributes 
             chunk.attributes := chunk.attributes & ~this.IS_PUNCTUATION & ~this.IS_MANUAL_SPACE | this.IS_CHORD
                  
