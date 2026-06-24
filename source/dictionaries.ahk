@@ -191,14 +191,14 @@ Class clsDictionary {
         shortcuts_loaded := 0
         result := dll.LoadDictionary(this._file, this._chorded, shortcuts_loaded)
         if (result < 0) {
-            shortcut := dll.GetSavedString()
+            raw_shortcut := dll.GetSavedString()
             type := this._chorded ? "chord" : "shorthand"
             reason := ""
             Switch result {
                 Case DllError.REPEATED_KEY:
                     reason := "a repeated key"
                 Case DllError.SHORTCUT_EXISTS:
-                    shortcut := this._chord ? str.Arrange(shortcut) : shortcut
+                    shortcut := this._chorded ? dll.NormalizeChord(raw_shortcut) : raw_shortcut
                     occupied := this.LookUp(shortcut)
                     reason := "a shortcut that is already in use for '" . occupied . "'"
                 Case DllError.FEWER_THAN_TWO:
@@ -206,7 +206,7 @@ Class clsDictionary {
                 Default:
                     reason := "error code " . result
             }
-            MsgBox, , % "ZipChord", % Format("ZipChord encountered {} while processing the {} '{}'.", reason, type, shortcut)
+            MsgBox, , % "ZipChord", % Format("ZipChord encountered {} while processing the {} '{}'.", reason, type, raw_shortcut)
             this._dll_entries_count := shortcuts_loaded
             return
         }
@@ -321,7 +321,7 @@ Class clsDictionary {
         Switch result {
             Case DllError.SHORTCUT_EXISTS:
                 dest := this._chorded ? "chord" : "shorthand"
-                shortcut := this._chord ? str.Arrange(raw_shortcut) : raw_shortcut
+                shortcut := this._chorded ? dll.NormalizeChord(raw_shortcut) : raw_shortcut
                 occupied := this.LookUp(shortcut)
                 MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, raw_shortcut, occupied, expansion)
             Case DllError.FEWER_THAN_TWO:
