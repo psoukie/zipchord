@@ -47,7 +47,13 @@ Class clsDictionary {
     }
     LookUp(shortcut) {
         if (dll.available) {
-            return dll.LookUp(shortcut, this._chorded)
+            if !(this._chorded) {
+                ; convert shorthands to lowercase for AHK parity
+                StringLower, lcase_shortcut, shortcut
+                return dll.LookUp(lcase_shortcut, this._chorded)
+            } else {
+                return dll.LookUp(shortcut, this._chorded)
+            }
         }
         ; else use AHK path
         if ( this._entries.HasKey(shortcut) ) {
@@ -59,7 +65,9 @@ Class clsDictionary {
 
     ReverseLookUp(expansion) {
         if (dll.available) {
-            return dll.ReverseLookUp(expansion, this._chorded)
+            ; lowercase for parity with AHK (Dll stores lowercase version in reverse lookup)
+            StringLower, lcase_expansion, expansion
+            return dll.ReverseLookUp(lcase_expansion, this._chorded)
         }
         ; else use AHK path
         if ( this._reverse_entries.HasKey(expansion) ) {

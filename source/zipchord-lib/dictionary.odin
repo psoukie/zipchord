@@ -150,24 +150,36 @@ dict_data_destroy :: proc(dict: ^Dict_Data) {
     dict^ = {}
 }
 
-dict_data_add :: proc (dict: ^Dict_Data, key: string, value: string, ) -> (err: Dict_Error ) {
+dict_data_add :: proc (dict: ^Dict_Data, shortcut: string, expansion: string, ) -> (err: Dict_Error ) {
 	alloc_err: runtime.Allocator_Error
-	own_key, own_value: string
+	own_shortcut, own_lcase_expansion, own_expansion: string
 	
 	alloc := virtual.arena_allocator(&dict.arena_memory)
 
-	own_key, alloc_err = strings.clone(key, alloc)
+	// uses an arena allocator for 'owned' strings
+	own_shortcut, alloc_err = strings.clone(shortcut, alloc)
 	if alloc_err != .None {
 		return .Allocation_Error
 	}
 	
-	own_value, alloc_err = strings.clone(value, alloc)
+	own_lcase_expansion, alloc_err = strings.to_lower(expansion, alloc)
 	if alloc_err != .None {
 		return .Allocation_Error
 	}
+
+	// if the lowercase it different, store also the original version
+	if expansion != own_lcase_expansion {
+		own_expansion, alloc_err = strings.clone(expansion, alloc)
+		if alloc_err != .None {
+			return .Allocation_Error
+		}
+		dict.shortcut_to_expansion[own_shortcut] = own_expansion
+	} else {
+		dict.shortcut_to_expansion[own_shortcut] = own_lcase_expansion
+	}
 	
-	dict.shortcut_to_expansion[own_key] = own_value
-	dict.expansion_to_shortcut[own_value] = own_key
+	dict.expansion_to_shortcut[own_lcase_expansion] = own_shortcut
+
 	return .None
 }
 
