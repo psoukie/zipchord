@@ -7,6 +7,23 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 dll_buffer := ""
 global dll := New clsDllBindings
 
+class DllError {
+    static NONE             :=  0
+    static NOT_FOUND        := -1
+    static SHORTCUT_EXISTS  := -2
+    static REPEATED_KEY     := -3
+    static EMPTY_CHORD      := -4
+    static FEWER_THAN_TWO   := -5
+    static BAD_ARGUMENT     := -6
+    static BUFFER_TOO_SMALL := -7
+    static ALLOCATION_ERROR := -8
+    static FILE_READ_FAIL   := -9
+    static INTERNAL_ERROR   := -10
+    static VERSION_MISMATCH := -11
+}
+
+DllError.NONE
+
 Class clsDllBindings {
     available := false
 
@@ -20,6 +37,8 @@ Class clsDllBindings {
 
     __New() {
         global dll_buffer
+        global zc_version
+        
         dllPath := A_ScriptDir . "\zipchord-lib.dll"
         if (! FileExist(dllPath) ) {
             return
@@ -28,7 +47,14 @@ Class clsDllBindings {
             return
         }
         ; Initialize DLL state.
-        if (DllCall(this._init_fn, "Cdecl Int") != 0) {
+        pVersion := this._StringToPtr(zc_version, versionBuf)
+        result := DllCall(this._init_fn, "Ptr", pVersion, "Cdecl Int")
+        if (result == -11) {
+            MsgBox , , % "ZipChord", % "The compiled library has an incompatible version. ZipChord will use its built-in AutoHotkey implementation."
+            return
+        }
+        if (result != 0) {
+            MsgBox , , % "ZipChord", % "There was an error while initializing the compiled library. ZipChord will use its built-in AutoHotkey implementation."
             return
         }
         ; Initialize buffer
@@ -53,8 +79,9 @@ Class clsDllBindings {
         this._lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_lookup", "Ptr")
         this._reverse_lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_reverse_lookup", "Ptr")
         this._register_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_register_shortcut", "Ptr")
+        this._get_saved_string_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_get_saved_string", "Ptr")
         
-        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn) {
+        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn && this._get_saved_string_fn) {
             return true
         }
         return false
@@ -75,79 +102,68 @@ Class clsDllBindings {
         return DllCall(this._destroy_fn, "Cdecl Int")
     }
 
-    LoadDictionary(dictionary_path, chorded) {
+    LoadDictionary(dictionary_path, chorded, ByRef shortcuts_loaded) {
+        global dll_buffer
         pDictPath := this._StringToPtr(dictionary_path, dictPathBuf)
-        return DllCall(this._load_dictionary_fn, "Ptr", pDictPath, "Int", chorded, "Cdecl Int")
+        return DllCall(this._load_dictionary_fn
+                , "Ptr", pDictPath
+                , "Int", chorded
+                , "IntP", shortcuts_loaded
+                , "Cdecl Int")
     }
 
     RegisterShortcut(raw_shortcut, expansion, chorded) {
         pShortcut := this._StringToPtr(raw_shortcut, shortcutBuf)
         pExpansion := this._StringToPtr(expansion, expansionBuf)
-        return DllCall(this._register_shortcut_fn, "Ptr", pShortcut, "Ptr", pExpansion, "Int", chorded, "Cdecl Int")
+        return DllCall(this._register_shortcut_fn
+                , "Ptr", pShortcut
+                , "Ptr", pExpansion
+                , "Int", chorded
+                , "Cdecl Int")
+    }
+
+    GetSavedString() {
+        global dll_buffer
+        result := DllCall(this._get_saved_string_fn
+                , "Ptr", &dll_buffer
+                , "Int", this._buf_size
+                , "Cdecl Int")
+
+        if (result == 0) {
+            return StrGet(&dll_buffer, "UTF-8")
+        }
+        return ""
     }
 
     Lookup(shortcut, chorded) {
         global dll_buffer
         pShortcut := this._StringToPtr(shortcut, shortcutBuf)
-        result := DllCall(this._lookup_fn, "Ptr", pShortcut, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
+        result := DllCall(this._lookup_fn
+                , "Ptr", pShortcut
+                , "Int", chorded
+                , "Ptr", &dll_buffer
+                , "Int", this._buf_size
+                , "Cdecl Int")
 
-        if (result > 0) {
-            return StrGet(&dll_buffer, result, "UTF-8")
-        } else {
-            return false
+        if (result == 0) {
+            return StrGet(&dll_buffer, "UTF-8")
         }
+        return false
     }
 
     ReverseLookUp(expansion, chorded) {
         global dll_buffer
         pExpansion := this._StringToPtr(expansion, expansionBuf)
-        result := DllCall(this._reverse_lookup_fn, "Ptr", pExpansion, "Int", chorded, "Ptr", &dll_buffer, "Int", this._buf_size, "Cdecl Int")
-
-        if (result > 0) {
-            return StrGet(&dll_buffer, result, "UTF-8")
-        } else {
-            return false
+        result := DllCall(this._reverse_lookup_fn
+                , "Ptr", pExpansion
+                , "Int", chorded
+                , "Ptr", &dll_buffer
+                , "Int", this._buf_size
+                , "Cdecl Int")
+        if (result == 0) {
+            return StrGet(&dll_buffer, "UTF-8")
         }
+        return false
     }
 }
-
-; pDictPath := ToUtf8Ptr(dictPath, dictPathBuf)
-; loadResult := DllCall(zc_load_dictionary, "Ptr", pDictPath, "Int", 1, "Cdecl Int")
-; MsgBox, , ZipChord Load Dictionary, % loadResult
-
-; if (loadResult < 0) {
-;     MsgBox, 16, ZipChord Error, % "zc_load_dictionary failed: " . loadResult . "`n" . dictPath
-;     ExitApp
-; }
-
-; chord := "řžť"
-; expansion :="řežeť"
-
-; pChord := ToUtf8Ptr(chord, chordBuf)
-; pExpansion := ToUtf8Ptr(expansion, expansionBuf)
-
-; saved := DllCall(zc_add_chord, "Ptr", pChord, "Ptr", pExpansion, "Cdecl Int")
-
-; MsgBox, , , % "Save result: " . saved
-
-; QPC()
-; bufSize := 4096
-; VarSetCapacity(outBuf, bufSize, 0)
-
-; pChord2 := ToUtf8Ptr("ms", chordBuf)
-
-; written := DllCall(zc_lookup_chord, "Ptr", pChord2, "Ptr", &outBuf, "Int", bufSize, "Cdecl Int")
-; QPC()
-
-; if (written > 0) {
-;     expansion := StrGet(&outBuf, written, "UTF-8")
-;     MsgBox, , ZipChord Found, % expansion    
-; } else {
-;     expansion := ""
-;     if (written == -1) {
-;         MsgBox, , ZipChord Lookup, "Not found"
-;     } else {
-;         MsgBox, , ZipChord Error, % written
-;     }
-; }
 
