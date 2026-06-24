@@ -30,6 +30,7 @@ Notes:
 
 - New dictionary filenames should use the suffixes `*.chords.txt` and `*.shorthands.txt`. This indicates the file is in the new format and also helps distinguish chord dictionaries from shortcut dictionaries.
 - ZipChord upgrades dictionaries with the legacy simple `*.txt` extensions when opening them. The upgraded dictionaries are saved under the new names and the original files are left as a backup.
+- ZipChord installer no longer attempts to close a running older version and uninstaller does not delete itself to avoid antivirus false positives.
 - If you use automatic configuration switching, update dictionary filenames in the `.ini` files manually after first using the dictionaries in ZipChord to automatically upgrade them.
 
 **Fixes**
