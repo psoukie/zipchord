@@ -11,10 +11,9 @@ Version 2.8 simplifies how ZipChord handles keyboard layouts and adds support fo
 
 Notes:
 
-- See https://github.com/psoukie/zipchord/wiki/Keyboard-and-language-settings for details.
-- When upgrading, your previous keyboard layout will be treated as the new automatic mode if its name matches the currently active Windows layout. Otherwise, the previous keyboard and language settings are preserved as a fixed custom layout.
-- Configuration files now store their own keyboard and language settings only when the configuration uses the fixed custom layout. Otherwise, configurations follow the normal Windows-layout-based locale settings.
-- ZipChord now uses an optional compiled Odin library when it is available next to `zipchord.exe`. It is included with the Windows installer, but ZipChord works fully without it. The library is a part of the longer-term path toward a cross-platform ZipChord.
+- For details on the new keyboard and language settings, see <https://github.com/psoukie/zipchord/wiki/Keyboard-and-language-settings>
+- When upgrading, your previous keyboard layout will be treated as the new automatic mode if its name matches the currently active Windows layout. Otherwise, it will be treated as a fixed custom layout.
+- ZipChord now uses an optional compiled library when it is available next to `zipchord.exe`. It is included with the Windows installer, but ZipChord works fully without it. The library is a part of the roadmap toward a cross-platform ZipChord. (This release covers shortcut loading, adding, and lookup.)
 
 ## ZipChord 2.7.0
 
