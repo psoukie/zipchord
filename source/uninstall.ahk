@@ -14,29 +14,45 @@ uninstall := New clsUninstall
 Return
 
 class clsUninstall {
+    ZC_UNIQUE_STRING := "ZC ZipChord RUNNING"
+
     __New() {
         global full_command_line
         if (RegExMatch(full_command_line, " /restart(?!\S)")) {
-            this._Unintstall()
+            this._Uninstall()
         }
         MsgBox , 1, % "Uninstall ZipChord", % "This will uninstall ZipChord.`n`nDictionaries and other files you have created will stay untouched."
         IfMsgBox Cancel
             ExitApp
-        SetWorkingDir, % A_Temp
-        Process, Close, % "zipchord.exe"
-        this.CreateUninstallScript(2000)
-        this._DeleteRegistry()
         this._CheckAdmin()
-        this._RunUninstallScript()
+        this._Uninstall()
     }
-    _Unintstall() {
-        Process, Close, % "zipchord.exe"
-        SetWorkingDir, % A_Temp
-        this._RunUninstallScript()
+    _Uninstall() {
+        if (!this._EnsureZipChordClosed())
+            ExitApp
+        this._DeleteInstalledFiles()
+        this._DeleteRegistry()
+        this._ShowCompletionMessage()
+        ExitApp
     }
     _DeleteRegistry() {
         RegDelete, % "HKEY_CURRENT_USER\Software\ZipChord"
         RegDelete, % "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\ZipChord"
+    }
+    _EnsureZipChordClosed() {
+        loop {
+            if (!this._DetectRunningZipChord())
+                return true
+            MsgBox, 5, % "Uninstall ZipChord", % "ZipChord is currently running.`n`nPlease close ZipChord before continuing uninstallation, then click Retry."
+            IfMsgBox Cancel
+                return false
+        }
+    }
+    _DetectRunningZipChord() {
+        DetectHiddenWindows, On
+        WinGet, target_hwnd, ID, % this.ZC_UNIQUE_STRING
+        DetectHiddenWindows, Off
+        return target_hwnd
     }
     _CheckAdmin() {
         if (A_ScriptDir == A_ProgramFiles . "\ZipChord" && !A_IsAdmin) {
@@ -50,43 +66,43 @@ class clsUninstall {
                 else
                     Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%", % A_Temp
             }
-            return true
+            ExitApp
         }
     }
-    CreateUninstallScript(delay) {
-        app_data_folder := % A_AppData . "\ZipChord"
-        programs_folder := % A_Programs . "\ZipChord"
-        FileDelete, % A_Temp . "\ZC_uninstall.vbs"
-        ; Adapts code by cooljeans and SKAN from https://www.autohotkey.com/board/topic/1488-make-exe-file-delete-itself/
-        FileAppend,
-            (LTrim
-            Wscript.Sleep %delay%
-            Dim fso, myfile, files, myfolder, folders
-            Set fso = CreateObject("Scripting.FileSystemObject")
-            files = Array("%A_ScriptFullPath%", "%app_data_folder%\locales.ini", "%app_data_folder%\LICENSE.txt", "%A_ScriptDir%\zipchord.exe", "%A_ScriptDir%\zipchord-lib.dll", "%A_ScriptDir%\zipchord.ico",  "%A_Startup%\ZipChord.lnk") 
-            For each file in files
-                If fso.FileExists(file) Then
-                    Set myfile = fso.GetFile(file) 
-                    myfile.Delete(true)
-                End If
-            Next
-            folders = Array("%A_ScriptDir%", "%app_data_folder%", "%programs_folder%")
-            For each folder in folders
-                If fso.FolderExists(folder) Then
-                    Set myfolder = fso.GetFolder(folder)
-                End If
-                If (myfolder = "%programs_folder%")  Or (myfolder.Files.Count = 0 And myfolder.SubFolders.Count = 0) Then
-                    myfolder.Delete(true)
-                End If
-            Next
-            fso.DeleteFile WScript.ScriptFullName
-            Set fso = Nothing
-            )
-        , % A_Temp . "\ZC_uninstall.vbs"
+    _DeleteInstalledFiles() {
+        app_data_folder := A_AppData . "\ZipChord"
+        programs_folder := A_Programs . "\ZipChord"
+        startup_shortcut := A_Startup . "\ZipChord.lnk"
+        install_files := [A_ScriptDir . "\zipchord.exe"
+                        , A_ScriptDir . "\zipchord-lib.dll"
+                        , A_ScriptDir . "\zipchord.ico"
+                        , app_data_folder . "\locales.ini"
+                        , app_data_folder . "\LICENSE.txt"
+                        , startup_shortcut
+                        , programs_folder . "\ZipChord.lnk"
+                        , programs_folder . "\ZipChord Developer.lnk"
+                        , programs_folder . "\Uninstall ZipChord.lnk"]
+        for _, path in install_files {
+            if FileExist(path)
+                FileDelete, % path
+        }
+        this._DeleteFolderIfEmpty(programs_folder)
+        this._DeleteFolderIfEmpty(app_data_folder)
     }
-    _RunUninstallScript() {
-        Run, % "cscript.exe " . A_InitialWorkingDir . "\ZC_uninstall.vbs"
-        ExitApp
-        programs_folder := programs_folder ; to bypass syntax warning
+    _DeleteFolderIfEmpty(path) {
+        if !InStr(FileExist(path), "D")
+            return
+        has_entries := false
+        Loop, Files, % path . "\*", FD
+        {
+            has_entries := true
+            break
+        }
+        if (!has_entries)
+            FileRemoveDir, % path
+    }
+    _ShowCompletionMessage() {
+        remaining_path := A_ScriptFullPath
+        MsgBox, , % "Uninstall ZipChord", % "ZipChord has been uninstalled.`n`nThe uninstaller file was left in place:`n" . remaining_path . "`n`nYou can delete it manually if you no longer need it."
     }
 }

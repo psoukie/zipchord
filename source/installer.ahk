@@ -19,6 +19,7 @@ ListLines Off
 installer := new clsInstaller
 
 Class clsInstaller {
+    ZC_UNIQUE_STRING := "ZC ZipChord RUNNING"
     notice := A_IsAdmin ? "" : "  (will need Admin access)"
     dictionary_dir_full := A_MyDocuments . "\ZipChord"
     controls := { destination_Programs: { type: "Radio"
@@ -52,13 +53,20 @@ Class clsInstaller {
         else
             this.ShowUI()
     }
-    ClosePreviousZipChord() {
-        ProcessName := "zipchord.exe"
-        Process, Exist, %ProcessName%
-        PID := ErrorLevel
-        if (PID) {
-            Process, Close, %PID%
+    _EnsureZipChordClosed() {
+        loop {
+            if (!this._DetectRunningZipChord())
+                return true
+            MsgBox, 5, % "ZipChord Setup", % "ZipChord is currently running.`n`nPlease close ZipChord before continuing setup, then click Retry."
+            IfMsgBox Cancel
+                return false
         }
+    }
+    _DetectRunningZipChord() {
+        DetectHiddenWindows, On
+        WinGet, target_hwnd, ID, % this.ZC_UNIQUE_STRING
+        DetectHiddenWindows, Off
+        return target_hwnd
     }
     ShowUI() {
         global zc_version
@@ -83,7 +91,8 @@ Class clsInstaller {
         this.UI := UI
     }
     _btnInstall() {
-        this.ClosePreviousZipChord()
+        if (!this._EnsureZipChordClosed())
+            return
         this._UpdateOptions()
         this._SaveOptions()
         this._SaveRegistryInfo()
@@ -146,13 +155,15 @@ Class clsInstaller {
     }
     _SaveRegistryInfo() {
         global zc_app_name
+        global zc_version
+        path := this.options.installation_dir
 
         ; This needs to happen before we elevate user rights to Admin
         ini.SaveProperty(this.dictionary_dir_full, "dictionary_dir", CONFIG_SECTION, CONFIG_FILE)
         ; create uninstallation registry entries
         reg_uninstall := "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZipChord"
         RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayName, %zc_app_name%
-        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, UninstallString, % this.options.installation_dir . "\uninstall.exe"
+        RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, UninstallString, % path . "\uninstall.exe"
         RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayIcon, % path . "\zipchord.ico"
         RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, DisplayVersion, %zc_version%
         RegWrite, REG_SZ, HKEY_CURRENT_USER, %reg_uninstall%, URLInfoAbout, % "https://github.com/psoukie/zipchord/wiki/"
@@ -162,7 +173,6 @@ Class clsInstaller {
     _Install() {
         global zc_app_name
         global zc_version
-        Process, Close, % "zipchord.exe"
         path := this.options.installation_dir
         exe_path := path . "\zipchord.exe"
         dict_dir := this.options.dictionary_dir
@@ -189,7 +199,7 @@ Class clsInstaller {
         if (this.options.developer_shortcut)
             FileCreateShortcut, % exe_path, % this.options.programs_dir . "\ZipChord\ZipChord Developer.lnk", % dict_dir, "dev", %zc_app_name% . " Developer", % path . "\zipchord.ico"
         if (this.options.autostart) {
-            FileCreateShortcut, % exe_path, % this.options.startup_dir . "ZipChord.lnk", % dict_dir, , %zc_app_name%, % path . "\zipchord.ico"
+            FileCreateShortcut, % exe_path, % this.options.startup_dir . "\ZipChord.lnk", % dict_dir, , %zc_app_name%, % path . "\zipchord.ico"
         }
         MsgBox, , % "ZipChord", % "Setup has completed."
          if (A_Args[1] != "/elevate")
