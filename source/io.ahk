@@ -11,6 +11,7 @@ Class clsClassifier {
     _buffer := []    ; stores clsKeyEvent objects
     Class clsKeyEvent {
         key := 0
+        is_key_down := true
         with_shift := false
         start := 0
         end := 0
@@ -21,100 +22,110 @@ Class clsClassifier {
             return this._buffer.Length()
         }
     }
-    lifted [] {      ; number of keys in buffer that were already released
-        get {
-            For _, event in this._buffer
-                if (event.end)
-                    lifted++        
-            return lifted
-        }
-    }
-    _GetOverlap(first, last, timestamp) {
-        start := this._buffer[last].start
-        end := timestamp
-        count := last - first + 1
-        Loop %count% {
-            if (event_end := this._buffer[first - 1 + A_Index].end) {
-                end := Min(end, event_end)
-            }
-        }
-        Return end-start
-    }
-    _DetectRoll(cutoff) {
-        time := this._buffer[cutoff].end
-        count := this.length - cutoff
-        Loop %count%
-        {
-            if (this._buffer[cutoff + A_Index].start > time)
-                return true
-        }
-        return false
-    }
-    Input(key, timestamp) {
+    
+    Input(hotkey, timestamp) {
         global io
-        key := SubStr(key, 2)
-        if (SubStr(key, 1, 1) == "+") {
-            with_shift := True
-            key := SubStr(key, 2)
-        } else with_shift := False
-
-        key := StrReplace(key, "Space", " ")
-
-        if (SubStr(key, -2)==" Up") {
-            key := SubStr(key, 1, StrLen(key)-3)
-            lifted := true
+        ev := new this.clsKeyEvent
+        
+        ; translate the hotkey string
+        ev.key := SubStr(hotkey, 2)
+        if (SubStr(ev.key, 1, 1) == "+") {
+            ev.with_shift := true
+            ev.key := SubStr(ev.key, 2)
         } else {
-            lifted := false
+            ev.with_shift := False
         }
 
-        if (lifted) {
-            index := this._index[key]
-            this._buffer[index].end := timestamp
-            if (index) {
-                this._index.Delete(key)
-                this._Classify(index, timestamp)
-            }
-            ; otherwise, the lifted key was already classified and removed from buffer.
+        ev.key := StrReplace(ev.key, "Space", " ")
+
+        if (SubStr(ev.key, -2) == " Up") {
+            ev.is_key_down := false
+            ev.key := SubStr(ev.key, 1, StrLen(ev.key)-3)
+        }
+
+        ev.key := (StrLen(ev.key)>1) ? "{" . ev.key . "}" : ev.key
+
+        if (ev.is_key_down) {
+            ; Process a key down event
+            ev.start := timestamp
+            this._buffer.Push(ev)
+            this._index[ev.key] := this.length
+            io.Add(ev.key, ev.with_shift)
             return
         }
-        ; Process a key down:
-        event := new this.clsKeyEvent
-        if (StrLen(key)>1) {
-            key := "{" . key . "}"
-        }
-        event.key := key
-        event.start := timestamp
-        event.with_shift := with_shift
-        this._buffer.Push(event)
-        this._index[key] := this._buffer.Length()
 
-        io.Add(key, with_shift)
+        ; Process a key up event: look up the event, record lift time, and classify
+        index := this._index[ev.key]
+        if !(index) {
+            ; key is no longer in buffer and cannot participate in a chord
+            return
+        }
+        
+        orig_ev := this._buffer[index]
+        orig_ev.end := timestamp
+    
+        this._index.Delete(orig_ev.key)
+        this._Classify(timestamp)
     }
+
     Interrupt(type := "*Interrupt*") {
         global io
         this._buffer := []
         this._index := {}
         io.ClearSequence(type)
     }
-    _Classify(index, timestamp) {
-        ; This classification mirrors the 2.1 version of detecting chords.
+
+    _OpeningPairMeetsDelay(end) {
+        start := this._buffer[2].start
+        return end - start > settings.input_delay
+    }
+
+    _Classify(end) {
         global io
-        static first_up
+        this.DebugTiming()
+        ; single key was pressed and released?
         if (this.length == 1) {
             this._buffer.RemoveAt(1)
             io.Chord(0)
             return
         }
-        if (this.lifted == 1)
-            first_up := index
-        if (this.lifted == 2) {
-            if (this._GetOverlap(1, 2, timestamp) > settings.input_delay && ! this._DetectRoll(first_up)) {
-                io.Chord(this.length)
-            } else {
-                io.Chord(0)
-            }
-            this._buffer := []
-            this._index := {}
+        ; two or more keys were pressed as a potential chord
+        if (this._OpeningPairMeetsDelay(end)) {
+            io.Chord(this.length)
+        } else {
+            io.Chord(0)
+        }
+        ; clear buffer and index -- keys that were part of the chord candidate are ignored
+        this._buffer := []
+        this._index := {}
+    }
+
+    _ClassifyByPercentage(end) {
+        global io
+        this.DebugTiming()
+        ; single key was pressed and released?
+        if (this.length == 1) {
+            this._buffer.RemoveAt(1)
+            io.Chord(0)
+            return
+        }
+    
+        ; two or more keys were pressed as a potential chord
+        chord_length := this._KeysMeetingOverlap(end)) {
+        io.Chord(chord_length)
+
+        ; clear buffer and index -- keys that were part of the chord candidate are ignored
+        this._buffer := []
+        this._index := {}
+    }
+
+    DebugTiming() {
+        if (A_Args[2] != "test-vs") {
+            return
+        }
+        OutputDebug, % "`n`nTiming sequence:"
+        For i, ev in this._buffer {
+            OutputDebug, % "`n" . i . " " . ev.key . ": " ev.start . " -> " . ev.end
         }
     }
 } 
