@@ -1,5 +1,17 @@
 # ZipChord Changelog
 
+## ZipChord 2.9.0-dev
+
+Unreleased development changes since 2.8.x.
+
+**New Features**
+
+- Added a new chord-detection mode based on relative key overlap, in addition to the existing fixed duration mode.
+
+**Notes**
+
+- The overlap-based chord detection is still under development for edge cases around deferred keys.
+
 ## ZipChord 2.8.0
 
 Version 2.8 simplifies how ZipChord handles keyboard layouts and adds support for an optional compiled library.

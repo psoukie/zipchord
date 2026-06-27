@@ -97,7 +97,7 @@ Class clsClassifier {
             if (candidate_span <= 0) {
                 continue
             }
-            if (common_overlap / candidate_span >= .75) {
+            if (common_overlap / candidate_span >= settings.input_overlap / 100) {
                 return this.length + 1 - A_Index
             }
         }
@@ -110,10 +110,10 @@ Class clsClassifier {
         ; single key was pressed and released?
         if (this.length > 1) {
             ; two or more keys were pressed as a potential chord
-            if (settings.classify_by == CLASSIFY_BY_DURATION) {
-                chord_length := this._ClassifyByDuration(end)    
-            } else {
+            if (settings.chording & CHORD_BY_OVERLAP) {
                 chord_length := this._ClassifyByPercentage(end, index)    
+            } else {
+                chord_length := this._ClassifyByDuration(end)    
             }
         }
 

@@ -68,6 +68,7 @@ global CAP_OFF      := 1 ; no auto-capitalization,
      , CHORD_ALLOW_SHIFT          := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
      , CHORD_RESTRICT             := 4  ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener"
      , CHORD_IMMEDIATE_SHORTHANDS := 8  ; Shorthands fire without waiting for space or punctuation
+     , CHORD_BY_OVERLAP := 16  ; detect chords by percentage of overlap rather than duration
 
 global MODE_CHORDS_ENABLED     := 1
      , MODE_SHORTHANDS_ENABLED := 2
@@ -136,6 +137,7 @@ Class clsSettings {
                 , shorthand_file:   "english.shorthands.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
                 , input_delay:      70
+                , input_overlap:    65
                 , output_delay:     3 }
     GetSettingsFile() {
         return runtime_status.config_file ? runtime_status.config_file : this.settings_file
@@ -586,6 +588,8 @@ Class clsMainUI {
                                         , text: "Loading..."}
                 , input_delay:          { type: "Edit"
                                         , text: "99"}
+                , input_overlap:        { type: "Edit"
+                                        , text: "99"}
                 , output_delay:         { type: "Edit"
                                         , text: "99"}
                 , restrict_chords:      { type: "Checkbox"
@@ -629,16 +633,25 @@ Class clsMainUI {
                                         , text: "Automatically check for &updates"
                                         , setting: {parent: "preferences", const: "PREF_CHECK_UPDATES"}}
                 , debugging:            { type: "Checkbox"
-                                        , text: "&Log this session (debugging)"}
-                , btn_pause:            { type: "Button"
-                                        , function: Func("PauseApp").Bind(true)
-                                        , text: UI_STR_PAUSE} }
+                                        , text: "&Log this session (debugging)"}}
+                                        
     ; Broken off separately from above due to AHK expression length limits
+    controls.btn_pause := { type: "Button"
+                            , function: Func("PauseApp").Bind(true)
+                            , text: UI_STR_PAUSE}
     controls.hint_offset_x := { type: "Edit" }
     controls.hint_offset_y := { type: "Edit" }
     controls.hint_size := { type: "Edit" }
     controls.hint_color := { type: "Edit" }
     controls.tabs := { type: "Tab3", text: " Dictionaries | Detection | Display | Output | About "}
+    controls.chord_by_duration := { type: "Radio"
+                            , text: "By minimum held &duration"
+                            , function: ObjBindMethod(this, "_SetChordModeUI", False)}
+    controls.chord_by_overlap := { type: "Radio"
+                            , text: "By relative overlap of keys"
+                            , function: ObjBindMethod(this, "_SetChordModeUI", True)}
+    controls.chord_by_label := { type: "Text"
+                            , text: "Loading..."}
 
     labels := []
     closing_tip := 0
@@ -662,14 +675,17 @@ Class clsMainUI {
         this._BuilderHelper(UI, "shorthand", "Ope&n", "Edi&t", "xs-20 y+30")
 
         UI.Tab(2)
-        UI.Add("GroupBox", "y+20 w310 h175", "Chords")
-        UI.Add("Text", "xp+20 yp+30 Section", "&Detection delay (ms)")
+        UI.Add("GroupBox", "y+20 w310 h135", "Chord &detection")
+        UI.Add(cts.chord_by_duration, "xp+20 yp+30 Section")
+        UI.Add(cts.chord_by_overlap, "y+10")
+        UI.Add(cts.chord_by_label, "w200")
         UI.Add(cts.input_delay, "Right xp+200 yp-2 w40 Number")
-        UI.Add(cts.restrict_chords, "xs")
+        UI.Add(cts.input_overlap, "Right xp yp w40 Number")
+        UI.Add("GroupBox", "xs-20 y+40 w310 h175", "Shortcut options")
+        UI.Add(cts.restrict_chords, "xp+20 yp+30")
         UI.Add(cts.allow_shift)
         UI.Add(cts.delete_unrecognized)
-        UI.Add("GroupBox", "xs-20 y+40 w310 h70", "Shorthands")
-        UI.Add(cts.immediate_shorthands, "xp+20 yp+30 Section")
+        UI.Add(cts.immediate_shorthands, "Section")
 
         UI.Tab(3)
         UI.Add("Text", "y+20 Section", "&Show hints")
@@ -739,7 +755,9 @@ Class clsMainUI {
         cts.debugging.value := 0 ; debugging is always set to disabled
         help_fn := this._help_fn
         Hotkey, F1, %help_fn%, On
+        this._SetChordModeUI(settings.chording & CHORD_BY_OVERLAP)
         cts.input_delay.value := settings.input_delay
+        cts.input_overlap.value := settings.input_overlap
         cts.output_delay.value := settings.output_delay
         ; Loop through each control and apply settings from its defined corresponding setting
         for _, control in this.controls {
@@ -784,6 +802,12 @@ Class clsMainUI {
         previous_mode := settings.mode
         ; gather new settings from UI...
         settings.input_delay := cts.input_delay.value + 0
+        if ( (temp:=this._SanitizeNumber(cts.input_overlap.value, "percentage")) =="ERROR") {
+            MsgBox ,, % "ZipChord", % "The overlap setting needs to be a number between 0 and 100."
+            Return false
+        } else {
+            settings.input_overlap := temp + 0
+        }
         settings.output_delay := cts.output_delay.value + 0
         settings.capitalization := cts.capitalization.value
         settings.spacing := cts.space_before.value * SPACE_BEFORE_CHORD
@@ -793,6 +817,7 @@ Class clsMainUI {
                             + cts.allow_shift.value * CHORD_ALLOW_SHIFT
                             + cts.restrict_chords.value * CHORD_RESTRICT
                             + cts.immediate_shorthands.value * CHORD_IMMEDIATE_SHORTHANDS
+                            + cts.chord_by_overlap.value * CHORD_BY_OVERLAP
         ; settings.mode carries over the current ZIPCHORD_ENABLED setting
         settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
                         + cts.chord_enabled.value * MODE_CHORDS_ENABLED
@@ -804,19 +829,25 @@ Class clsMainUI {
         settings.preferences := cts.show_on_startup.value ? (settings.preferences | PREF_SHOW_CONFIG) : (settings.preferences & ~PREF_SHOW_CONFIG)
         settings.preferences := cts.update_check.value ? (settings.preferences | PREF_CHECK_UPDATES) : (settings.preferences & ~PREF_CHECK_UPDATES)
 
-        if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value)) == "ERROR") {
+        if ( (temp:=this._SanitizeNumber(cts.hint_offset_x.value, "integer")) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
-        } else settings.hint_offset_x := temp
-        if ( (temp:=this._SanitizeNumber(cts.hint_offset_y.value)) == "ERROR") {
+        } else {
+            settings.hint_offset_x := temp + 0
+        }
+        if ( (temp:=this._SanitizeNumber(cts.hint_offset_y.value, "integer")) == "ERROR") {
             MsgBox ,, % "ZipChord", % "The offset needs to be a positive or negative number."
             Return false
-        } else settings.hint_offset_y := temp
+        } else {
+            settings.hint_offset_y := temp + 0
+        }
         settings.hint_size := cts.hint_size.value
-        if ( (temp:=this._SanitizeNumber(cts.hint_color.value, true)) =="ERROR") {
+        if ( (temp:=this._SanitizeNumber(cts.hint_color.value, "hex_color")) =="ERROR") {
             MsgBox ,, % "ZipChord", % "The color needs to be entered as hex code, such as '34cc97' or '#34cc97'."
             Return false
-        } else settings.hint_color := temp
+        } else {
+            settings.hint_color := temp
+        }
         ; ...and save them to config.ini
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
@@ -874,6 +905,23 @@ Class clsMainUI {
         cts[type . "_entries"].value := entriesstr
     }
 
+    _SetChordModeUI(by_overlap := -1) {  ; -1 means autodetection; otherwise a boolean
+        if (by_overlap == -1) {
+            by_overlap := this.controls.chord_by_overlap.value    
+        }
+        if (by_overlap) {
+            this.controls.chord_by_overlap.value := true
+            this.controls.chord_by_label.value :=  "Percentage overlap"
+            this.controls.input_delay.Hide()
+            this.controls.input_overlap.Show()
+        } else {
+            this.controls.chord_by_duration.value := true
+            this.controls.chord_by_label.value := "Duration in milliseconds"
+            this.controls.input_delay.Show()
+            this.controls.input_overlap.Hide()
+        }
+    }
+
     Close() {
         Hotkey, F1, Off
         this.UI.Hide()
@@ -915,21 +963,40 @@ Class clsMainUI {
     }
 
     ; Process input to ensure it is an integer (or a color hex code if the second parameter is true), return number or "ERROR"
-    _SanitizeNumber(orig, hex_color := false) {
+    _SanitizeNumber(orig, mode) {
         sanitized := Trim(orig)
-        format := "integer"
-        if (hex_color) {
-            format := "xdigit"
-            if (SubStr(orig, 1, 1) == "#")
-                sanitized := SubStr(orig, 2)
-            if (StrLen(sanitized)!=6)
+        if ( mode == "integer" || mode == "percentage" ) {
+            if sanitized is not integer
                 return "ERROR"
         }
-        if sanitized is %format%
+
+        if (mode == "integer") {
             return sanitized
-        else
-            return "ERROR"
+        }
+    
+        if (mode == "percentage") {
+            if (sanitized < 0 || sanitized > 100) {
+                return "ERROR"        
+            }
+            return sanitized
+        }
+
+        if (mode == "hex_color") {
+            if (SubStr(orig, 1, 1) == "#") {
+                sanitized := SubStr(orig, 2)
+            }
+            if (StrLen(sanitized) != 6) {
+                return "ERROR"
+            }
+            if sanitized is not xdigit
+                return "ERROR"
+
+            return sanitized
+        }
+    
+        MsgBox , , "ZipChord", "Error: Incorrect internal call to _SanitizeNumber"
     }
+
     ; Shows or hides controls for hints customization (1 = show, 0 = hide)
     ShowHintCustomization(show_controls := true) {
         cts := this.controls
