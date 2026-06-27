@@ -65,7 +65,7 @@ Class clsClassifier {
         orig_ev.end := timestamp
     
         this._index.Delete(orig_ev.key)
-        this._Classify(timestamp)
+        this._Classify(timestamp, index)
     }
 
     Interrupt(type := "*Interrupt*") {
@@ -75,43 +75,48 @@ Class clsClassifier {
         io.ClearSequence(type)
     }
 
-    _OpeningPairMeetsDelay(end) {
+    _ClassifyByDuration(end) {
         start := this._buffer[2].start
-        return end - start > settings.input_delay
-    }
-
-    _Classify(end) {
-        global io
-        this.DebugTiming()
-        ; single key was pressed and released?
-        if (this.length == 1) {
-            this._buffer.RemoveAt(1)
-            io.Chord(0)
-            return
-        }
-        ; two or more keys were pressed as a potential chord
-        if (this._OpeningPairMeetsDelay(end)) {
-            io.Chord(this.length)
+        if (end - start > settings.input_delay) {
+            return this.length
         } else {
-            io.Chord(0)
+            return 0
         }
-        ; clear buffer and index -- keys that were part of the chord candidate are ignored
-        this._buffer := []
-        this._index := {}
     }
 
-    _ClassifyByPercentage(end) {
-        global io
-        this.DebugTiming()
-        ; single key was pressed and released?
-        if (this.length == 1) {
-            this._buffer.RemoveAt(1)
-            io.Chord(0)
-            return
+    _ClassifyByPercentage(end, lifted_index) {
+        ; test the full buffer then drop earlier keys
+        last_start := this._buffer[this.length].start
+        common_overlap := end - last_start
+        
+        max_first := Min(lifted_index, this.length - 1)
+        Loop % max_first {
+            ev := this._buffer[A_Index]
+            candidate_span := end - ev.start
+            
+            if (candidate_span <= 0) {
+                continue
+            }
+            if (common_overlap / candidate_span >= .75) {
+                return this.length + 1 - A_Index
+            }
         }
-    
-        ; two or more keys were pressed as a potential chord
-        chord_length := this._KeysMeetingOverlap(end)) {
+        return 0 ; no chord detected
+    }
+
+    _Classify(end, index) {
+        global io
+        chord_length := 0
+        ; single key was pressed and released?
+        if (this.length > 1) {
+            ; two or more keys were pressed as a potential chord
+            if (settings.classify_by == CLASSIFY_BY_DURATION) {
+                chord_length := this._ClassifyByDuration(end)    
+            } else {
+                chord_length := this._ClassifyByPercentage(end, index)    
+            }
+        }
+
         io.Chord(chord_length)
 
         ; clear buffer and index -- keys that were part of the chord candidate are ignored
