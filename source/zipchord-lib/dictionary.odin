@@ -1,5 +1,11 @@
 package zipchord_library
 
+/*
+This file is part of ZipChord.
+Copyright (c) 2021-2026 Pavel Soukenik
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
+*/
+
 import "core:fmt"
 import "base:runtime"
 import "core:os"
