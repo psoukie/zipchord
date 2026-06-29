@@ -454,7 +454,8 @@ Class TestingClass {
         StringUpper command, command, T
         parsed.RemoveAt(1)
         cmd_fn := ObjBindMethod(this, command)
-        if(! %cmd_fn%(parsed*)) {
+        result := %cmd_fn%(parsed*)
+        if(! result || result == -1) {  ; errors should re-show propmt too
             prompt_fn := this._prompt_fn
             SetTimer % prompt_fn, -10 ; show prompt again after we're done
         }
