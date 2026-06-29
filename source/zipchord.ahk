@@ -449,7 +449,7 @@ KeyDown:
         visualizer.Pressed(modified_key, shifted)
     }
     ; QPC()
-    classifier.Input(key, tick)
+    io.Input(key, tick)
     ; QPC()
     Critical Off
 Return
@@ -484,13 +484,13 @@ KeyUp:
         visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
     }
     ; QPC()
-    classifier.Input(key, tick_up)
+    io.Input(key, tick_up)
     ; QPC()
     Critical Off
 Return
 
 Interrupt:
-    classifier.Interrupt()
+    io.Interrupt()
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Interrupt*", true)
@@ -500,7 +500,7 @@ Interrupt:
 Return
 
 Enter_key:
-    classifier.Interrupt("~Enter")
+    io.Interrupt("~Enter")
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("~Enter", true)
