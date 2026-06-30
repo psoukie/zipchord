@@ -132,6 +132,7 @@ Class clsIOrepresentation {
                 continue
             }
             if (common_overlap / candidate_span >= settings.input_overlap / 100) {
+                this._classification_start := 0
                 return this.length + 1 - current
             }
         }
