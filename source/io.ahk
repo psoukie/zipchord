@@ -42,8 +42,6 @@ Class clsIOrepresentation {
     _index := {}     ; associateve arary that indexes _buffer:  _index[{key}] points to that key's record in _buffer
     output_buffer := ""  ; stores what will be sent as simulated keystrokes
 
-    SEQUENCE_WINDOW := 6 ; sequence length to maintain
-
     length [] {
         get {
             return this._sequence.Length()
@@ -141,7 +139,6 @@ Class clsIOrepresentation {
     }
 
     _Classify(end, index) {
-        this.DebugSequence()
         if (this._classification_start == 0) {
             return
         }
@@ -286,14 +283,6 @@ Class clsIOrepresentation {
     }
 
     ClearSequence(type := "") {
-        if (type=="") {
-            items_to_remove := this.length - this.SEQUENCE_WINDOW
-            if (items_to_remove < 1) {
-                return
-            }
-            this._sequence.RemoveAt(1, items_to_remove)
-            return
-        }
         new_chunk := new this.clsChunk
         if (type=="~Enter") {
             new_chunk.attributes := this.IS_ENTER
@@ -302,6 +291,7 @@ Class clsIOrepresentation {
             new_chunk.attributes := this.IS_INTERRUPT
         }
         this._sequence := []
+        this._classification_start := 0
         this._sequence.Push(new_chunk)
         if (visualizer.IsOn()) {
             visualizer.NewLine()
