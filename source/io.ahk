@@ -4,7 +4,30 @@ Copyright (c) 2023-2026 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 */
 
+; ; Future refactor:
+; Class IO_Key_Cls {
+;     key := 0
+;     with_shift := false
+;     start := 0
+;     end := 0
+; }
+
+; io_keys := []          ; IO_Key entries
+; io_keys_index := -1    ; 'pointer' to current location in io_keys, -1 means not set
+
+; Class IO_Token_Cls {
+;     attributes := 0
+; }
+
+; io_tokens := []        ; IO_Token entries
+; io_tokens_index := -1  ; 'pointer' to current location in io_tokens, -1 means not set
+
+
 io := new clsIOrepresentation
+
+global io_events := []
+global io_events_index := {}         ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+global io_events_classified := true
 
 Class clsIOrepresentation {
     static NONE := 0
@@ -27,7 +50,6 @@ Class clsIOrepresentation {
 
     Class clsChunk {
         key := 0
-        is_key_down := true
         with_shift := false
         start := 0
         end := 0
@@ -38,9 +60,6 @@ Class clsIOrepresentation {
 
     pre_shifted := false
     _sequence := []
-    _classification_start := 0
-    _index := {}     ; associateve arary that indexes _buffer:  _index[{key}] points to that key's record in _buffer
-    output_buffer := ""  ; stores what will be sent as simulated keystrokes
 
     length [] {
         get {
@@ -53,9 +72,20 @@ Class clsIOrepresentation {
             return this._expansion_in_last_get 
         }
     }
+
+    output_buffer := ""  ; stores what will be sent as simulated keystrokes
     
+    IO_Events_Reset() {
+        OutputDebug % "`nEMPTYING EVENTS"
+        io_events := []
+        io_events_index := {}
+        io_events_classified := true
+    }
+
     Input(hotkey, timestamp) {
         ev := new this.clsChunk
+        is_key_down := true
+        ; io_key := new IO_Key_Cls
         
         ; translate the hotkey string
         ev.key := SubStr(hotkey, 2)
@@ -69,63 +99,143 @@ Class clsIOrepresentation {
         ev.key := StrReplace(ev.key, "Space", " ")
 
         if (SubStr(ev.key, -2) == " Up") {
-            ev.is_key_down := false
+            is_key_down := false
             ev.key := SubStr(ev.key, 1, StrLen(ev.key)-3)
         }
 
         ev.key := (StrLen(ev.key) > 1) ? "{" . ev.key . "}" : ev.key
 
-        if (ev.is_key_down) {
+        if (is_key_down) {
             ; Process a key down event
             ev.start := timestamp
-            this._sequence.Push(ev)
-            this._index[ev.key] := this.length
-            this.Add(ev.key, ev.with_shift, ev)
-            if (this._classification_start == 0) {
-                this._classification_start := this.length
+            this.ProcessKeyDown(ev)
+            io_events.Push(ev)
+            io_events_classified := false
+            io_events_index[ev.key] := io_events.Length()
+        } else {
+            ; Process a key up event: look up the event, record lift time, and classify
+            if !(io_events_index.HasKey(ev.key)) {
+                return
             }
-            return
+            index := io_events_index[ev.key]
+            io_events_index.Delete(ev.key)
+            if (!index || index > io_events.Length()) {
+                return
+            }
+            this._sequence[index].end := timestamp
+            this._Classify(timestamp, index)
+            if (io_events_index.Length() == 0 && io_events.Length() != 0) {
+                this.IO_Events_Reset()
+            }
         }
-
-        ; Process a key up event: look up the event, record lift time, and classify
-        index := this._index[ev.key]
-        if !(index) {
-            return
-        }
-        this._sequence[index].end := timestamp
+        this.DebugSequence()
+    }
     
-        this._Classify(timestamp, index)
+    ProcessKeyDown(ByRef ev) {
+        entry := "" . ev.key
+        ev.input := entry
+        if (with_shift) {
+            ev.attributes |= this.WITH_SHIFT
+            ev.output := str.ToAscii(entry, ["Shift"])
+        } else {
+            ev.output := entry
+        }
+        if ( !with_shift && InStr(keys.punctuation_plain, entry) )
+                || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
+            ev.attributes |= this.IS_PUNCTUATION
+        }
+        if (entry == " ") {
+            ev.attributes |= this.IS_MANUAL_SPACE
+        }
+        if (!with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+            ev.attributes |= this.IS_NUMERAL
+        }
+        if (this.pre_shifted) {
+            ev.attributes |= this.WAS_CAPITALIZED
+            this.pre_shifted := false
+        }
     }
 
-    Interrupt(type := "*Interrupt*") {
-        global io
-        this._sequence := []
-        this._index := {}
-        io.ClearSequence(type)
+    _ShiftIndeces(count) {
+        for key, index in io_events_index {
+            if (index <= count) {
+                OutputDebug % "`nDeleting index for " . key
+                io_events_index.Delete(key)
+                continue
+            }
+            OutputDebug % "`n shifting " . key . " from " index 
+            io_events_index[key] := index - count
+            OutputDebug % " to " . io_events_index[key] 
+        }
+    }
+
+    Add_Keys_To_Sequence(count) {
+        Loop % count {
+            this._sequence.Push(io_events[A_Index])
+        }
+        if (count == io_events.Length()) {
+            this.IO_Events_Reset()
+        } else {
+            this._ShiftIndeces(count)           
+        }
+    }
+
+    ; Transform key presses into a chord and add to sequence
+    Add_Chord_To_Sequence() {
+        ev := io_events[1]
+        
+        ev_length := io_events.Length()
+        Loop, % ev_length
+        {
+            next_ev := io_events[A_Index + 1] 
+            ev.key .= next_ev.key     ; store original key sequence
+            ev.input .= next_ev.input 
+            ev.output .= next_ev.output
+            ev.attributes |= next_ev.attributes
+        }
+
+        ; Set as chord and clear punctuation and manual space attributes 
+        ev.attributes := ev.attributes & ~this.IS_PUNCTUATION & ~this.IS_MANUAL_SPACE | this.IS_CHORD
+             
+        ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
+        if ( (settings.chording & CHORD_ALLOW_SHIFT) && (ev.attributes & this.WITH_SHIFT) ) {
+            ev.input := "+" . ev.input
+            ev.attributes := ev.attributes & ~this.WITH_SHIFT
+        }
+    
+        ; Sort to allow matching against chord dictionaries        
+        if (dll.available) {
+            ev.input := dll.NormalizeChord(ev.input)
+        } else {
+            ev.input := str.Arrange(ev.input)
+        }
+
+        this._sequence.Push(ev)
+        this.IO_Events_Reset()
     }
 
     _ClassifyByDuration(end) {
         ; get and compare against the overlap of the second key in the chord (regardless of chord length)
         chord_length := 0
-        start := this._sequence[this._classification_start + 1].start
+        start := io_events[1].start
         if (end - start > settings.input_delay) {
-            chord_length := this.length + 1 - this._classification_start
+            this.Add_Chord_To_Sequence(io_events.Length())
+        } else {
+            this.Add_Keys_To_Sequence(io_events.Length())
         }
-        this._classification_start := 0
-        return chord_length
     }
 
     _ClassifyByPercentage(end, lifted_index) {
         ; test the full buffer then drop earlier keys
-        last_start := this._sequence[this.length].start
+        last_start := io_events[io_events.Length()].start
         common_overlap := end - last_start
         
         start_iter := this._classification_start
-        end_iter := Min(lifted_index, this.length - 1)
+        end_iter := Min(lifted_index, io_events.Length() - 1)
         iters := end_iter - start_iter + 1
         Loop % iters {
             current := start_iter + A_Index - 1
-            ev := this._sequence[current]
+            ev := io_events[current]
             candidate_span := end - ev.start
             
             if (candidate_span <= 0) {
@@ -133,18 +243,20 @@ Class clsIOrepresentation {
             }
             if (common_overlap / candidate_span >= settings.input_overlap / 100) {
                 this._classification_start := 0
-                return this.length + 1 - current
+                return io_events.Length() + 1 - current
             }
         }
         return 0 ; no chord detected
     }
 
     _Classify(end, index) {
-        if (this._classification_start == 0) {
+        if (io_events_classified) {
             return
         }
-        if (this.length - this._classification_start < 1) {
-            this._classification_start := 0
+        io_events_classified := true
+        if (io_events.Length() == 1) {
+            ; process simple key press
+            this.Add_Keys_To_Sequence(1)
             this.RunModules()
             return
         }
@@ -155,14 +267,11 @@ Class clsIOrepresentation {
             if (chord_length == 0) {
                 this._classification_start := index
                 this.RunModules()
-                return
             }
         } else {
             chord_length := this._ClassifyByDuration(end)    
+            this.RunModules()
         }
-
-        this.Chord(chord_length)
-        this.RunModules()
     }
 
     PreShift() {
@@ -176,6 +285,14 @@ Class clsIOrepresentation {
     __New() {
         this.ClearSequence("*Interrupt*")
     }
+
+; TK - needs to go into IO
+; this.CapitalizeTypingAsNeeded(entry, ev.attributes)
+; this.RemoveSmartSpaceAsNeeded(ev.attributes)
+; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
+; if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
+;     this.TryImmediateShorthand()
+; }
 
     AugmentedAdd(entry, with_shift) {
         entry := "" . entry
@@ -231,42 +348,6 @@ Class clsIOrepresentation {
         }
     }
 
-    /**
-    * Transform chord key presses into chunks
-    */
-    Chord(count) {
-        if (count < 2) {
-            return
-        }
-        sequence := this._sequence
-        start := 1 + this.length - count
-        count -= 1
-        chunk := sequence[start]
-        Loop, %count%
-        {
-            next_chunk := sequence[start+1] 
-            chunk.input .= next_chunk.input 
-            chunk.output .= next_chunk.output
-            chunk.attributes |= next_chunk.attributes
-            sequence.RemoveAt(start+1)
-        }
-
-        ; Sort to allow matching against chord dictionaries        
-        if (dll.available) {
-            chunk.input := dll.NormalizeChord(chunk.input)
-        } else {
-            chunk.input := str.Arrange(chunk.input)
-        }
-        ; Set as chords, and clear punctuation and manual space attributes 
-        chunk.attributes := chunk.attributes & ~this.IS_PUNCTUATION & ~this.IS_MANUAL_SPACE | this.IS_CHORD
-             
-        ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
-        if ( (settings.chording & CHORD_ALLOW_SHIFT) && (chunk.attributes & this.WITH_SHIFT) ) {
-            chunk.input := "+" . chunk.input
-            chunk.attributes := chunk.attributes & ~this.WITH_SHIFT
-        }
-    }
-
     Combine(start, end) {
         sequence := this._sequence
         if (start > sequence.Length() || end > sequence.Length()) {
@@ -284,6 +365,9 @@ Class clsIOrepresentation {
     }
 
     ClearSequence(type := "") {
+        this.IO_Events_Reset()
+        this._sequence := []
+
         new_chunk := new this.clsChunk
         if (type=="~Enter") {
             new_chunk.attributes := this.IS_ENTER
@@ -291,9 +375,6 @@ Class clsIOrepresentation {
         if (type=="*Interrupt*") {
             new_chunk.attributes := this.IS_INTERRUPT
         }
-        this._sequence := []
-        this._classification_start := 0
-        this._sequence.Push(new_chunk)
         if (visualizer.IsOn()) {
             visualizer.NewLine()
         }
@@ -383,7 +464,7 @@ Class clsIOrepresentation {
     }
     Backspace(with_ctrl := false) {
         if ( this.length < 2 || this.TestChunkAttributes(this.length, this.WAS_EXPANDED) || with_ctrl ) {
-            this.Interrupt()
+            this.ClearSequence("*Interrupt*")
             return
         }
         if ( this.TestChunkAttributes(this.length, this.IS_CHORD) ) {
@@ -881,8 +962,15 @@ Class clsIOrepresentation {
         if (A_Args[2] != "test-vs") {
             return
         }
-        OutputDebug, % "`n`nIO sequence:"
-        OutputDebug, % "Classifying starts at " . this._classification_start 
+        OutputDebug, % "`n`nKeys:"
+        OutputDebug, % "Classifying starts at " . this._classification_start
+        len := io_events.Length()
+        Loop % len
+        {
+            ev := io_events[A_Index]
+            OutputDebug, % "`n" . i . ": " ev.input . " > " . ev.output . " (" . ev.attributes . ")"
+        }
+        OutputDebug, % "`n`nSequence:"
         For i, chunk in this._sequence {
             OutputDebug, % "`n" . i . ": " chunk.input . " > " . chunk.output . " (" . chunk.attributes . ")"
         }

@@ -490,7 +490,7 @@ KeyUp:
 Return
 
 Interrupt:
-    io.Interrupt()
+    io.ClearSequence("*Interrupt*")
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("*Interrupt*", true)
@@ -500,7 +500,7 @@ Interrupt:
 Return
 
 Enter_key:
-    io.Interrupt("~Enter")
+    io.ClearSequence("~Enter")
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log("~Enter", true)
