@@ -27,7 +27,6 @@ io := new clsIOrepresentation
 
 global io_events := []
 global io_events_index := {}         ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
-global io_events_classified := true
 
 Class clsIOrepresentation {
     static NONE := 0
@@ -79,7 +78,6 @@ Class clsIOrepresentation {
         OutputDebug % "`nEMPTYING EVENTS"
         io_events := []
         io_events_index := {}
-        io_events_classified := true
     }
 
     Input(hotkey, timestamp) {
@@ -110,7 +108,6 @@ Class clsIOrepresentation {
             ev.start := timestamp
             this.ProcessKeyDown(ev)
             io_events.Push(ev)
-            io_events_classified := false
             io_events_index[ev.key] := io_events.Length()
         } else {
             ; Process a key up event: look up the event, record lift time, and classify
@@ -124,7 +121,7 @@ Class clsIOrepresentation {
             }
             io_events[index].end := timestamp
             this._Classify(timestamp, index)
-            if (io_events_index.Length() == 0 && io_events.Length() != 0) {
+            if (io_events_index.Count() == 0 && io_events.Length() != 0) {
                 this.IO_Events_Reset()
             }
         }
@@ -173,7 +170,9 @@ Class clsIOrepresentation {
 
     Add_Keys_To_Sequence(count) {
         Loop % count {
-            this._sequence.Push(io_events[A_Index])
+            ev := io_events[A_Index]
+            this._sequence.Push(ev)
+            this.ProcessNewEvent(ev)
         }
         if (count == io_events.Length()) {
             this.IO_Events_Reset()
@@ -231,12 +230,9 @@ Class clsIOrepresentation {
         last_start := io_events[io_events.Length()].start
         common_overlap := end - last_start
         
-        start_iter := 1    ; because we will convert any prefix keys into key events and shift if not matched
         end_iter := Min(lifted_index, io_events.Length() - 1)
-        iters := end_iter - start_iter + 1
-        Loop % iters {
-            ev := io_events[A_Index]
-            candidate_span := end - ev.start
+        Loop % end_iter {
+            candidate_span := end - io_events[A_Index].start
             
             if (candidate_span <= 0) {
                 continue
@@ -249,14 +245,14 @@ Class clsIOrepresentation {
                 return
             }
         }
-        this.Add_Keys_To_Sequence(end_iter)
+        if (lifted_index == io_events.Length()) {
+            this.Add_Keys_To_Sequence(lifted_index)
+        } else {
+            this.Add_Keys_To_Sequence(end_iter)
+        }
     }
 
     _Classify(end, index) {
-        if (io_events_classified) {
-            return
-        }
-        io_events_classified := true
         if (io_events.Length() == 1) {
             ; process simple key press
             this.Add_Keys_To_Sequence(1)
@@ -288,14 +284,6 @@ Class clsIOrepresentation {
     __New() {
         this.ClearSequence("*Interrupt*")
     }
-
-; TK - needs to go into IO
-; this.CapitalizeTypingAsNeeded(entry, ev.attributes)
-; this.RemoveSmartSpaceAsNeeded(ev.attributes)
-; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
-; if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
-;     this.TryImmediateShorthand()
-; }
 
     AugmentedAdd(entry, with_shift) {
         entry := "" . entry
@@ -485,7 +473,15 @@ Class clsIOrepresentation {
 
     ; Below are the functions that were first attempt at modules.
     ; When I recreate modules, it should be pure functions only.
-
+    ProcessNewEvent(ev) {
+        this.CapitalizeTypingAsNeeded(ev.key, ev.attributes)
+        this.RemoveSmartSpaceAsNeeded(ev.attributes)
+        ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
+        if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
+            this.TryImmediateShorthand()
+        }
+    }
+    
     RunModules() {
         if (this.ChordModule()) {
             return
