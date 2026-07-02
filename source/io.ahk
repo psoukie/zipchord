@@ -122,7 +122,7 @@ Class clsIOrepresentation {
             if (!index || index > io_events.Length()) {
                 return
             }
-            this._sequence[index].end := timestamp
+            io_events[index].end := timestamp
             this._Classify(timestamp, index)
             if (io_events_index.Length() == 0 && io_events.Length() != 0) {
                 this.IO_Events_Reset()
@@ -134,20 +134,20 @@ Class clsIOrepresentation {
     ProcessKeyDown(ByRef ev) {
         entry := "" . ev.key
         ev.input := entry
-        if (with_shift) {
+        if (ev.with_shift) {
             ev.attributes |= this.WITH_SHIFT
             ev.output := str.ToAscii(entry, ["Shift"])
         } else {
             ev.output := entry
         }
-        if ( !with_shift && InStr(keys.punctuation_plain, entry) )
-                || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
+        if ( !ev.with_shift && InStr(keys.punctuation_plain, entry) )
+                || ( ev.with_shift && InStr(keys.punctuation_shift, entry) ) {
             ev.attributes |= this.IS_PUNCTUATION
         }
         if (entry == " ") {
             ev.attributes |= this.IS_MANUAL_SPACE
         }
-        if (!with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+        if (!ev.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
             ev.attributes |= this.IS_NUMERAL
         }
         if (this.pre_shifted) {
@@ -156,7 +156,9 @@ Class clsIOrepresentation {
         }
     }
 
-    _ShiftIndeces(count) {
+    _Shift_IO_Keys_Window(count) {
+        io_events.RemoveAt(1, count)
+        
         for key, index in io_events_index {
             if (index <= count) {
                 OutputDebug % "`nDeleting index for " . key
@@ -176,7 +178,7 @@ Class clsIOrepresentation {
         if (count == io_events.Length()) {
             this.IO_Events_Reset()
         } else {
-            this._ShiftIndeces(count)           
+            this._Shift_IO_Keys_Window(count)           
         }
     }
 
@@ -184,7 +186,7 @@ Class clsIOrepresentation {
     Add_Chord_To_Sequence() {
         ev := io_events[1]
         
-        ev_length := io_events.Length()
+        ev_length := io_events.Length() - 1
         Loop, % ev_length
         {
             next_ev := io_events[A_Index + 1] 
@@ -216,10 +218,9 @@ Class clsIOrepresentation {
 
     _ClassifyByDuration(end) {
         ; get and compare against the overlap of the second key in the chord (regardless of chord length)
-        chord_length := 0
-        start := io_events[1].start
+        start := io_events[2].start
         if (end - start > settings.input_delay) {
-            this.Add_Chord_To_Sequence(io_events.Length())
+            this.Add_Chord_To_Sequence()
         } else {
             this.Add_Keys_To_Sequence(io_events.Length())
         }
@@ -230,23 +231,25 @@ Class clsIOrepresentation {
         last_start := io_events[io_events.Length()].start
         common_overlap := end - last_start
         
-        start_iter := this._classification_start
+        start_iter := 1    ; because we will convert any prefix keys into key events and shift if not matched
         end_iter := Min(lifted_index, io_events.Length() - 1)
         iters := end_iter - start_iter + 1
         Loop % iters {
-            current := start_iter + A_Index - 1
-            ev := io_events[current]
+            ev := io_events[A_Index]
             candidate_span := end - ev.start
             
             if (candidate_span <= 0) {
                 continue
             }
             if (common_overlap / candidate_span >= settings.input_overlap / 100) {
-                this._classification_start := 0
-                return io_events.Length() + 1 - current
+                if (A_Index > 1) {
+                    this.Add_Keys_To_Sequence(A_Index - 1)
+                }
+                this.Add_Chord_To_Sequence()
+                return
             }
         }
-        return 0 ; no chord detected
+        this.Add_Keys_To_Sequence(end_iter)
     }
 
     _Classify(end, index) {
@@ -260,18 +263,18 @@ Class clsIOrepresentation {
             this.RunModules()
             return
         }
+    
         ; two or more keys were pressed as a potential chord
-        chord_length := 0
         if (settings.chording & CHORD_BY_OVERLAP) {
-            chord_length := this._ClassifyByPercentage(end, index)
-            if (chord_length == 0) {
-                this._classification_start := index
+            this._ClassifyByPercentage(end, index)
+            if (io_events.Length() == 0) {
                 this.RunModules()
             }
         } else {
-            chord_length := this._ClassifyByDuration(end)    
+            this._ClassifyByDuration(end)    
             this.RunModules()
         }
+        
     }
 
     PreShift() {
@@ -378,6 +381,7 @@ Class clsIOrepresentation {
         if (visualizer.IsOn()) {
             visualizer.NewLine()
         }
+        this._sequence.Push(new_chunk)
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end) {
