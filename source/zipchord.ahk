@@ -449,7 +449,7 @@ KeyDown:
         visualizer.Pressed(modified_key, shifted)
     }
     ; QPC()
-    io.Input(key, tick)
+    io.ProcessKey(key, tick)
     ; QPC()
     Critical Off
 Return
@@ -484,7 +484,9 @@ KeyUp:
         visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
     }
     ; QPC()
-    io.Input(key, tick_up)
+    if (io.ProcessKey(key, tick_up)) {
+        io.ProcessTokens()
+    }
     ; QPC()
     Critical Off
 Return
