@@ -88,7 +88,6 @@ Class clsIOrepresentation {
         if (is_key_down) {
             ; Process a key down event
             ev.start := timestamp
-            this.ProcessKeyDown(ev)
             io_keys.Push(ev)
             io_keys_index[ev.key] := io_keys.Length()
         } else {
@@ -112,31 +111,6 @@ Class clsIOrepresentation {
         this.DebugTokens()
     }
     
-    ProcessKeyDown(ByRef ev) {
-        entry := "" . ev.key
-        ev.input := entry
-        if (ev.with_shift) {
-            ev.attributes |= this.WITH_SHIFT
-            ev.output := str.ToAscii(entry, ["Shift"])
-        } else {
-            ev.output := entry
-        }
-        if ( !ev.with_shift && InStr(keys.punctuation_plain, entry) )
-                || ( ev.with_shift && InStr(keys.punctuation_shift, entry) ) {
-            ev.attributes |= this.IS_PUNCTUATION
-        }
-        if (entry == " ") {
-            ev.attributes |= this.IS_MANUAL_SPACE
-        }
-        if (!ev.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
-            ev.attributes |= this.IS_NUMERAL
-        }
-        if (this.pre_shifted) {
-            ev.attributes |= this.WAS_CAPITALIZED
-            this.pre_shifted := false
-        }
-    }
-
     _Shift_IO_Keys_Window(count) {
         io_keys.RemoveAt(1, count)
         
@@ -347,9 +321,32 @@ Class clsIOrepresentation {
         return (io_tokens[token_id].attributes & bitmask)
     }
 
-    GetToken(token_id) {
-        return io_tokens[token_id]
+    ; TK -- needs to be called when parsing individual tokens
+    ProcessKeyToken(ByRef ev) {
+        entry := "" . ev.key
+        ev.input := entry
+        if (ev.with_shift) {
+            ev.attributes |= this.WITH_SHIFT
+            ev.output := str.ToAscii(entry, ["Shift"])
+        } else {
+            ev.output := entry
+        }
+        if ( !ev.with_shift && InStr(keys.punctuation_plain, entry) )
+                || ( ev.with_shift && InStr(keys.punctuation_shift, entry) ) {
+            ev.attributes |= this.IS_PUNCTUATION
+        }
+        if (entry == " ") {
+            ev.attributes |= this.IS_MANUAL_SPACE
+        }
+        if (!ev.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+            ev.attributes |= this.IS_NUMERAL
+        }
+        if (this.pre_shifted) {
+            ev.attributes |= this.WAS_CAPITALIZED
+            this.pre_shifted := false
+        }
     }
+
     GetInput(start := 1, end := 0) {
         return this._Get(start, end)
     }
@@ -405,7 +402,7 @@ Class clsIOrepresentation {
             return
         }
         if ( this.TestTokenAttributes(io_tokens.Length(), this.IS_CHORD) ) {
-            token := this.GetToken(io_tokens.Length())
+            token := io_tokens[io_tokens.Length()]
             token.input := "XX" ; so the token cannot be matched to any chord later
             token.output := SubStr(token.output, 1, StrLen(token.output) - 1)
             if (StrLen(token.output) == 1) {
@@ -488,7 +485,7 @@ Class clsIOrepresentation {
         }
         ; for punctuation that removes spaces
         if (attribs & this.IS_PUNCTUATION) {
-            token := this.GetToken(io_tokens.Length())
+            token := io_tokens[io_tokens.Length()]
             if ( (!(token.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, token.input))
                     || ((token.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, token.input)) ) {
                 return this._RemoveSmartSpace()
@@ -509,7 +506,7 @@ Class clsIOrepresentation {
     }
 
     AddSpaceAfterPunctuation() {
-        token := this.GetToken(io_tokens.Length())
+        token := io_tokens[io_tokens.Length()]
         attribs := token.attributes
         if ( !(settings.spacing & SPACE_PUNCTUATION) || this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_INTERRUPT) ) {
             return
@@ -579,7 +576,7 @@ Class clsIOrepresentation {
         capitalizes_next := this._DetectCapitalizesNext(expanded)
         expanded := this._RemoveCapitalizesNextSymbol(expanded)
         expanded := this._RemoveAffixSymbols(expanded, affixes)
-        previous := this.GetToken(token_id-1)
+        previous := io_tokens[token_id-1]
 
         if ( (settings.chording & CHORD_RESTRICT)
                 && this._IsRestricted(token_id-1)
@@ -643,7 +640,7 @@ Class clsIOrepresentation {
     }
 
     _FixLastToken() {
-        token := this.GetToken(io_tokens.Length())
+        token := io_tokens[io_tokens.Length()]
         last_character := SubStr(token.output, StrLen(token.output), 1)
         if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
             token.input := StrReplace(token.input, last_character)
@@ -666,7 +663,7 @@ Class clsIOrepresentation {
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(io_tokens.Length()-1) ) {
             Return False
         }
-        raw_output := this.GetToken(io_tokens.Length()).output
+        raw_output := io_tokens[io_tokens.Length()].output
         this.output_buffer .= "{Backspace " . StrLen(raw_output) . "}"
         io_tokens.RemoveAt(io_tokens.Length())
         Return true
@@ -691,7 +688,7 @@ Class clsIOrepresentation {
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
             return
         }
-        attributes := this.GetToken(first_token_id - 1).attributes
+        attributes := io_tokens[first_token_id - 1].attributes
         if ( attributes & this.IS_INTERRUPT
                 || (attributes & this.WAS_EXPANDED && !(attributes & this.IS_PREFIX)) ) {
             return
@@ -771,7 +768,7 @@ Class clsIOrepresentation {
             if (this.TestTokenAttributes(start - 2, this.CAPITALIZES_NEXT)) {
                 return true
             }
-            preceding := this.GetToken(start - 2).input
+            preceding := io_tokens[start - 2].input
             with_shift := this.TestTokenAttributes(start - 2, this.WITH_SHIFT)
             if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
                 || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
@@ -783,7 +780,7 @@ Class clsIOrepresentation {
         }
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
         if ( start > 1 && this.TestTokenAttributes(start, this.IS_CHORD) ) {
-            preceding := this.GetToken(start - 1).input
+            preceding := io_tokens[start - 1].input
             with_shift := this.TestTokenAttributes(start - 1, this.WITH_SHIFT)
             if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
                 || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
