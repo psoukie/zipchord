@@ -4,29 +4,33 @@ Copyright (c) 2023-2026 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
 */
 
-; ; Future refactor:
-; Class IO_Key_Cls {
-;     key := 0
-;     with_shift := false
-;     start := 0
-;     end := 0
-; }
 
-; io_keys := []          ; IO_Key entries
-; io_keys_index := -1    ; 'pointer' to current location in io_keys, -1 means not set
+Class clsKey {
+    key := 0
+    with_shift := false
+    start := 0
+    end := 0
+    input := ""
+    output := ""
+    attributes := 0
+}
 
-; Class IO_Token_Cls {
-;     attributes := 0
-; }
-
-; io_tokens := []        ; IO_Token entries
-; io_tokens_index := -1  ; 'pointer' to current location in io_tokens, -1 means not set
-
-
-io := new clsIOrepresentation
+Class clsToken {
+    key := 0
+    with_shift := false
+    start := 0
+    end := 0
+    input := ""
+    output := ""
+    attributes := 0
+}
 
 global io_keys := []
 global io_keys_index := {}         ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+
+global io_tokens := []
+
+io := new clsIOrepresentation
 
 Class clsIOrepresentation {
     static NONE := 0
@@ -47,43 +51,21 @@ Class clsIOrepresentation {
         , AFFIX_PREFIX := 1 ; expansion is a prefix
         , AFFIX_SUFFIX := 2 ; expansion is a suffix
 
-    Class clsToken {
-        key := 0
-        with_shift := false
-        start := 0
-        end := 0
-        input := ""
-        output := ""
-        attributes := 0
-    }
 
     pre_shifted := false
-    _sequence := []
-
-    length [] {
-        get {
-            return this._sequence.Length()
-        }
-    }
-    _expansion_in_last_get := 0
-    expansion_in_last_get [] {
-        get {
-            return this._expansion_in_last_get 
-        }
-    }
+    expansion_in_last_get := false
 
     output_buffer := ""  ; stores what will be sent as simulated keystrokes
     
-    IO_keys_Reset() {
+    IO_Keys_Reset() {
         OutputDebug % "`nEMPTYING EVENTS"
         io_keys := []
         io_keys_index := {}
     }
 
     ProcessKey(hotkey, timestamp) {
-        ev := new this.clsToken
+        ev := new clsToken
         is_key_down := true
-        ; io_key := new IO_Key_Cls
         
         ; translate the hotkey string
         ev.key := SubStr(hotkey, 2)
@@ -124,10 +106,10 @@ Class clsIOrepresentation {
             this._Classify(timestamp, index)
 
             if (io_keys_index.Count() == 0 && io_keys.Length() != 0) {
-                this.IO_keys_Reset()
+                this.IO_Keys_Reset()
             }
         }
-        this.DebugSequence()
+        this.DebugTokens()
     }
     
     ProcessKeyDown(ByRef ev) {
@@ -170,27 +152,27 @@ Class clsIOrepresentation {
         }
     }
 
-    Add_Keys_To_Sequence(count) {
+    Add_Keys_To_Tokens(count) {
         Loop % count {
             ev := io_keys[A_Index]
-            this._sequence.Push(ev)
+            io_tokens.Push(ev)
         }
         if (count == io_keys.Length()) {
-            this.IO_keys_Reset()
+            this.IO_Keys_Reset()
         } else {
             this._Shift_IO_Keys_Window(count)           
         }
     }
 
-    ; Transform key presses into a chord and add to sequence
-    Add_Chord_To_Sequence() {
+    ; Transform key presses into a chord and add to tokens
+    Add_Chord_To_Tokens() {
         ev := io_keys[1]
         
         ev_length := io_keys.Length() - 1
         Loop, % ev_length
         {
             next_ev := io_keys[A_Index + 1] 
-            ev.key .= next_ev.key     ; store original key sequence
+            ev.key .= next_ev.key     ; store original key tokens
             ev.input .= next_ev.input 
             ev.output .= next_ev.output
             ev.attributes |= next_ev.attributes
@@ -212,17 +194,17 @@ Class clsIOrepresentation {
             ev.input := str.Arrange(ev.input)
         }
 
-        this._sequence.Push(ev)
-        this.IO_keys_Reset()
+        io_tokens.Push(ev)
+        this.IO_Keys_Reset()
     }
 
     _ClassifyByDuration(end) {
         ; get and compare against the overlap of the second key in the chord (regardless of chord length)
         start := io_keys[2].start
         if (end - start > settings.input_delay) {
-            this.Add_Chord_To_Sequence()
+            this.Add_Chord_To_Tokens()
         } else {
-            this.Add_Keys_To_Sequence(io_keys.Length())
+            this.Add_Keys_To_Tokens(io_keys.Length())
         }
     }
 
@@ -240,23 +222,23 @@ Class clsIOrepresentation {
             }
             if (common_overlap / candidate_span >= settings.input_overlap / 100) {
                 if (A_Index > 1) {
-                    this.Add_Keys_To_Sequence(A_Index - 1)
+                    this.Add_Keys_To_Tokens(A_Index - 1)
                 }
-                this.Add_Chord_To_Sequence()
+                this.Add_Chord_To_Tokens()
                 return
             }
         }
         if (lifted_index == io_keys.Length()) {
-            this.Add_Keys_To_Sequence(lifted_index)
+            this.Add_Keys_To_Tokens(lifted_index)
         } else {
-            this.Add_Keys_To_Sequence(end_iter)
+            this.Add_Keys_To_Tokens(end_iter)
         }
     }
 
     _Classify(end, index) {  ; -> bool if keys is empty and ready for token processing
         if (io_keys.Length() == 1) {
             ; process a lone key press in io_keys
-            this.Add_Keys_To_Sequence(1)
+            this.Add_Keys_To_Tokens(1)
             return true
         }
     
@@ -272,18 +254,18 @@ Class clsIOrepresentation {
     PreShift() {
         this.pre_shifted := !this.pre_shifted
         ; and we cheat to allow shorthands:
-        if (this.TestTokenAttributes(this.length, this.IS_INTERRUPT)) {
-            this.ClearTokenAttributes(this.length, this.IS_INTERRUPT)
-            this.SetTokenAttributes(this.length, this.IS_MANUAL_SPACE)
+        if (this.TestTokenAttributes(io_tokens.Length(), this.IS_INTERRUPT)) {
+            this.ClearTokenAttributes(io_tokens.Length(), this.IS_INTERRUPT)
+            this.SetTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE)
         }
     }
     __New() {
-        this.ClearSequence("*Interrupt*")
+        this.ClearTokens("*Interrupt*")
     }
 
     AugmentedAdd(entry, with_shift) {
         entry := "" . entry
-        token := new this.clsToken
+        token := new clsToken
         token.input := entry
         if (with_shift) {
             token.attributes |= this.WITH_SHIFT
@@ -301,30 +283,29 @@ Class clsIOrepresentation {
         if (!with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
             token.attributes |= this.IS_NUMERAL
         }
-        this._sequence.Push(token)
+        io_tokens.Push(token)
     }
 
     Combine(start, end) {
-        sequence := this._sequence
-        if (start > sequence.Length() || end > sequence.Length()) {
-            MsgBox, , % "ZipChord", "IO Representation error: Requested combining tokens that exceed the length of _sequence."
+        if (start > io_tokens.Length() || end > io_tokens.Length()) {
+            MsgBox, , % "ZipChord", "IO Representation error: Requested combining tokens that exceed the length of _io_tokens."
             Return true
         }
         following := start + 1
         count := end - start
         Loop, %count%
         {
-            sequence[start].input .= "|" . sequence[following].input 
-            sequence[start].output .= sequence[following].output
-            sequence.RemoveAt(following)
+            io_tokens[start].input .= "|" . io_tokens[following].input 
+            io_tokens[start].output .= io_tokens[following].output
+            io_tokens.RemoveAt(following)
         }
     }
 
-    ClearSequence(type := "") {
+    ClearTokens(type := "") {
         this.IO_keys_Reset()
-        this._sequence := []
+        io_tokens := []
 
-        new_token := new this.clsToken
+        new_token := new clsToken
         if (type=="~Enter") {
             new_token.attributes := this.IS_ENTER
         }
@@ -334,25 +315,25 @@ Class clsIOrepresentation {
         if (visualizer.IsOn()) {
             visualizer.NewLine()
         }
-        this._sequence.Push(new_token)
+        io_tokens.Push(new_token)
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end) {
-            end := this.length
+            end := io_tokens.Length()
         }
         if (start != end) {
             this.Combine(start, end)
         }
-        old_output := this._sequence[start].output
-        this._sequence[start].output := new_output
+        old_output := io_tokens[start].output
+        io_tokens[start].output := new_output
         this._ReplaceOutput(old_output, new_output, start)
     }
 
     SetTokenAttributes(token_id, bitmask, set := true) {
         if (set) {
-            this._sequence[token_id].attributes |= bitmask
+            io_tokens[token_id].attributes |= bitmask
         } else {
-            this._sequence[token_id].attributes &= ~bitmask
+            io_tokens[token_id].attributes &= ~bitmask
         }
     }
     ClearTokenAttributes(token_id, bitmask) {
@@ -360,14 +341,14 @@ Class clsIOrepresentation {
     }
     TestTokenAttributes(token_id, bitmask) {
         ; purposefully returns true if one of the bitmask conditions are true (therefore, not comparing to bitmask)
-        if (token_id > this.length || token_id < 1) {
+        if (token_id > io_tokens.Length() || token_id < 1) {
             return false
         }
-        return (this._sequence[token_id].attributes & bitmask)
+        return (io_tokens[token_id].attributes & bitmask)
     }
 
     GetToken(token_id) {
-        return this._sequence[token_id]
+        return io_tokens[token_id]
     }
     GetInput(start := 1, end := 0) {
         return this._Get(start, end)
@@ -377,29 +358,28 @@ Class clsIOrepresentation {
     }
     _Get(start := 1, end := 0, get_output := false) {
         this._expansion_in_last_get := false
-        sequence := this._sequence
         what := get_output ? "output" : "input" 
         separator := get_output ? "" : "|"
         if (! end) {
-            end := this.length 
+            end := io_tokens.Length() 
         }
-        if (start > sequence.Length() || end > sequence.Length()) {
-            MsgBox, , % "ZipChord", "IO Representation error: Requested getting tokens that exceed the length of _sequence."
+        if (start > io_tokens.Length() || end > io_tokens.Length()) {
+            MsgBox, , % "ZipChord", "IO Representation error: Requested getting tokens that exceed the length of _io_tokens."
             Return true
         }
         count := end - start + 1
         i := start
         Loop, %count%
         {
-            if (sequence[i].attributes & this.WAS_EXPANDED) {
+            if (io_tokens[i].attributes & this.WAS_EXPANDED) {
                 this._expansion_in_last_get := true
             }
-            representation .= separator . sequence[i++][what]
+            representation .= separator . io_tokens[i++][what]
         }
         Return SubStr(representation, StrLen(separator)+1)
     }
     _ReplaceOutput(old_output, new_output, start) {
-        if (start != this.length) {
+        if (start != io_tokens.Length()) {
             backup_content := this.GetOutput(start+1)
         }
         adj := StrLen(old_output . backup_content)
@@ -420,12 +400,12 @@ Class clsIOrepresentation {
         }
     }
     Backspace(with_ctrl := false) {
-        if ( this.length < 2 || this.TestTokenAttributes(this.length, this.WAS_EXPANDED) || with_ctrl ) {
-            this.ClearSequence("*Interrupt*")
+        if ( io_tokens.Length() < 2 || this.TestTokenAttributes(io_tokens.Length(), this.WAS_EXPANDED) || with_ctrl ) {
+            this.ClearTokens("*Interrupt*")
             return
         }
-        if ( this.TestTokenAttributes(this.length, this.IS_CHORD) ) {
-            token := this.GetToken(this.length)
+        if ( this.TestTokenAttributes(io_tokens.Length(), this.IS_CHORD) ) {
+            token := this.GetToken(io_tokens.Length())
             token.input := "XX" ; so the token cannot be matched to any chord later
             token.output := SubStr(token.output, 1, StrLen(token.output) - 1)
             if (StrLen(token.output) == 1) {
@@ -433,14 +413,14 @@ Class clsIOrepresentation {
             }
             return
         }
-        this._sequence.RemoveAt(this.length)
+        io_tokens.RemoveAt(io_tokens.Length())
     }
 
     ; Below are the functions that were first attempt at modules.
     ; When I recreate modules, it should be pure functions only.
     
     ProcessTokens() {
-        ; Add code that gets and loops through the new sequence
+        ; Add code that gets and loops through the new tokens
         this.CapitalizeTypingAsNeeded(ev.key, ev.attributes)
         this.RemoveSmartSpaceAsNeeded(ev.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
@@ -451,7 +431,7 @@ Class clsIOrepresentation {
         if (this.ChordModule()) {
             return
         }
-        if ( this.TestTokenAttributes(this.length, this.IS_CHORD) ) {
+        if ( this.TestTokenAttributes(io_tokens.Length(), this.IS_CHORD) ) {
             if (this._RemoveRawChord()) {
                 this.OutputKeys()
                 return
@@ -461,22 +441,22 @@ Class clsIOrepresentation {
         if (this.DeDoubleSpace()) {
             return
         }
-        if ! ( this.TestTokenAttributes(this.length, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+        if ! ( this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
             return
         }
         if (this.DoShorthandsAndHints()) {
             score.Score(score.ENTRY_SHORTHAND)
-        } else if ! ( this.TestTokenAttributes(this.length - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+        } else if ! ( this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
             score.Score(score.ENTRY_MANUAL)
         }
         this.AddSpaceAfterPunctuation()
     }
 
     DoShorthandsAndHints() {
-        loop_length := this.length - 1
+        loop_length := io_tokens.Length() - 1
         Loop %loop_length%
         {
-            text := this.GetOutput(A_Index+1, this.length-1)
+            text := this.GetOutput(A_Index+1, io_tokens.Length()-1)
             if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
                 continue
             }
@@ -496,42 +476,42 @@ Class clsIOrepresentation {
         }
         if ( this._ShouldCapitalize() ) {
             upper_cased := RegExReplace(character, "(^.)", "$U1")
-            this.Replace(upper_cased, this.length)
+            this.Replace(upper_cased, io_tokens.Length())
             this.OutputKeys()
-            this.SetTokenAttributes(this.length, this.WAS_CAPITALIZED)
+            this.SetTokenAttributes(io_tokens.Length(), this.WAS_CAPITALIZED)
         }
     }
 
     RemoveSmartSpaceAsNeeded(attribs) {
-        if ! (this.TestTokenAttributes(this.length-1, this.SMART_SPACE_AFTER)) {
+        if ! (this.TestTokenAttributes(io_tokens.Length()-1, this.SMART_SPACE_AFTER)) {
             return
         }
         ; for punctuation that removes spaces
         if (attribs & this.IS_PUNCTUATION) {
-            token := this.GetToken(this.length)
+            token := this.GetToken(io_tokens.Length())
             if ( (!(token.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_plain, token.input))
                     || ((token.attributes & this.WITH_SHIFT) && InStr(keys.remove_space_shift, token.input)) ) {
                 return this._RemoveSmartSpace()
             }
         }
         ; for manual_space-punctuation-numeral and numeral-punctuation-numeral
-        if (attribs & this.IS_NUMERAL && this.TestTokenAttributes(this.length - 2, this.IS_PUNCTUATION)
-                && this.TestTokenAttributes(this.length - 3, this.IS_NUMERAL | this.IS_MANUAL_SPACE | this.IS_ENTER)) {
+        if (attribs & this.IS_NUMERAL && this.TestTokenAttributes(io_tokens.Length() - 2, this.IS_PUNCTUATION)
+                && this.TestTokenAttributes(io_tokens.Length() - 3, this.IS_NUMERAL | this.IS_MANUAL_SPACE | this.IS_ENTER)) {
             return this._RemoveSmartSpace()
         }
     }
 
     _RemoveSmartSpace() {
-        this.Replace("", this.length - 1, this.length - 1)
+        this.Replace("", io_tokens.Length() - 1, io_tokens.Length() - 1)
         this.OutputKeys()
-        this._sequence.RemoveAt(this.length - 1)
+        io_tokens.RemoveAt(io_tokens.Length() - 1)
         return true
     }
 
     AddSpaceAfterPunctuation() {
-        token := this.GetToken(this.length)
+        token := this.GetToken(io_tokens.Length())
         attribs := token.attributes
-        if ( !(settings.spacing & SPACE_PUNCTUATION) || this.TestTokenAttributes(this.length - 1, this.IS_INTERRUPT) ) {
+        if ( !(settings.spacing & SPACE_PUNCTUATION) || this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_INTERRUPT) ) {
             return
         }
         if (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, token.input) )
@@ -543,9 +523,9 @@ Class clsIOrepresentation {
 
     ; Remove a double space if the user types a space after punctuation smart space
     DeDoubleSpace() {
-        if ( this.TestTokenAttributes(this.length - 1, this.SMART_SPACE_AFTER)
-                && this.TestTokenAttributes(this.length, this.IS_MANUAL_SPACE) ) {
-            this._sequence.RemoveAt(this.length - 1)
+        if ( this.TestTokenAttributes(io_tokens.Length() - 1, this.SMART_SPACE_AFTER)
+                && this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE) ) {
+            io_tokens.RemoveAt(io_tokens.Length() - 1)
             this.output_buffer .= "{Backspace}"
             this.OutputKeys()
             return true
@@ -557,7 +537,7 @@ Class clsIOrepresentation {
         if (! (settings.mode & MODE_CHORDS_ENABLED)) {
             return false
         }
-        count := this.length
+        count := io_tokens.Length()
         Loop %count%
         {
             candidate := this.GetInput(A_Index)
@@ -569,7 +549,7 @@ Class clsIOrepresentation {
             if (expanded) {
                 ; check whether chord is used to complete typing of a shorthand
                 if (this.TryImmediateShorthand(-1)) {
-                    return this._ProcessChord(this.length, expanded) 
+                    return this._ProcessChord(io_tokens.Length(), expanded) 
                 }
                 return this._ProcessChord(A_Index, expanded)
             }
@@ -663,13 +643,13 @@ Class clsIOrepresentation {
     }
 
     _FixLastToken() {
-        token := this.GetToken(this.length)
+        token := this.GetToken(io_tokens.Length())
         last_character := SubStr(token.output, StrLen(token.output), 1)
         if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
             token.input := StrReplace(token.input, last_character)
             token.output := StrReplace(token.output, last_character)
             if ( StrLen(token.input) == 1 ) {
-                this.ClearTokenAttributes(this.length, this.IS_CHORD)
+                this.ClearTokenAttributes(io_tokens.Length(), this.IS_CHORD)
             }
             this.AugmentedAdd(last_character, false)
         }
@@ -683,20 +663,20 @@ Class clsIOrepresentation {
         ; Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled and a non-existing chord is
         ; registered while typing a word, this input is left alone because it is safe to assume it was intended as normal
         ; typing.
-        if (settings.chording & CHORD_RESTRICT && this._IsRestricted(this.length-1) ) {
+        if (settings.chording & CHORD_RESTRICT && this._IsRestricted(io_tokens.Length()-1) ) {
             Return False
         }
-        raw_output := this.GetToken(this.length).output
+        raw_output := this.GetToken(io_tokens.Length()).output
         this.output_buffer .= "{Backspace " . StrLen(raw_output) . "}"
-        this._sequence.RemoveAt(this.length)
+        io_tokens.RemoveAt(io_tokens.Length())
         Return true
     }
 
     TryImmediateShorthand(last_token_offset := 0) {
-        loop_length := this.length - 1
+        loop_length := io_tokens.Length() - 1
         Loop %loop_length%
         {
-            text := this.GetOutput(A_Index+1, this.length + last_token_offset)
+            text := this.GetOutput(A_Index+1, io_tokens.Length() + last_token_offset)
             if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
                 continue
             }
@@ -729,7 +709,7 @@ Class clsIOrepresentation {
                 this.SetTokenAttributes(first_token_id, this.WAS_CAPITALIZED)
             }
             ; Ignore strings such as USD, or aptX
-            if ( this._DetectShiftWithin(first_token_id + 1, this.length + offset) ) {
+            if ( this._DetectShiftWithin(first_token_id + 1, io_tokens.Length() + offset) ) {
                 return
             }
             affixes := this._DetectAffixes(expanded)
@@ -737,7 +717,7 @@ Class clsIOrepresentation {
             expanded := this._RemoveCapitalizesNextSymbol(expanded)
             expanded := this._RemoveAffixSymbols(expanded, affixes)
             first_token_offset := affixes & this.AFFIX_SUFFIX ? -1 : 0 
-            this.Replace(expanded, first_token_id + first_token_offset, this.length + offset)
+            this.Replace(expanded, first_token_id + first_token_offset, io_tokens.Length() + offset)
             this.OutputKeys()
             this.SetTokenAttributes(first_token_id + first_token_offset, this.WAS_EXPANDED)
             if (capitalizes_next) {
@@ -781,10 +761,10 @@ Class clsIOrepresentation {
 
     _ShouldCapitalize(start := 0) {
         if (start == 0) {
-            start := this.length
+            start := io_tokens.Length()
         }
         ; first character after Enter
-        if (start == 2 && (this._sequence[start - 1].attributes & this.IS_ENTER) ) {
+        if (start == 2 && (io_tokens[start - 1].attributes & this.IS_ENTER) ) {
             return true
         }
         if (start > 2 && this.GetOutput(start - 1, start - 1) == " ") {
@@ -819,7 +799,7 @@ Class clsIOrepresentation {
             return false
         }
         token_id := start_token_id
-        if (end_token_id > this.length) {
+        if (end_token_id > io_tokens.Length()) {
             MsgBox ,, % "ZipChord", % "Error: The function _DetectShiftWithin was called with incorrect end range."
             Return false
         }
@@ -867,11 +847,11 @@ Class clsIOrepresentation {
     }
 
     _AddSmartSpace() {
-        smart_space := new this.clsToken
+        smart_space := new clsToken
         smart_space.input := ""
         smart_space.output := " "
         smart_space.attributes |= this.SMART_SPACE_AFTER
-        this._sequence.Push(smart_space)
+        io_tokens.Push(smart_space)
         this.output_buffer .= "{Space}"
     }
 
@@ -922,7 +902,7 @@ Class clsIOrepresentation {
     }
 
 
-    DebugSequence() {
+    DebugTokens() {
         if (A_Args[2] != "test-vs") {
             return
         }
@@ -934,8 +914,8 @@ Class clsIOrepresentation {
             ev := io_keys[A_Index]
             OutputDebug, % "`n" . i . ": " ev.input . " > " . ev.output . " (" . ev.attributes . ")"
         }
-        OutputDebug, % "`n`nSequence:"
-        For i, token in this._sequence {
+        OutputDebug, % "`n`nTokens:"
+        For i, token in io_tokens {
             OutputDebug, % "`n" . i . ": " token.input . " > " . token.output . " (" . token.attributes . ")"
         }
     }
