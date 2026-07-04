@@ -12,17 +12,7 @@ Class clsKey {
     end := 0
 }
 
-Class TokenType {
-    static UNDEFINED := 0
-         , CHARACTER := 1  ; other than those listed below
-         , CHORD := 2
-         , MANUAL_SPACE := 3
-         , NUMERAL := 4
-         , PUNCTUATION := 5
-}
-
 Class clsToken {
-    type := TokenType.UNDEFINED
     raw_input := ""
     input := ""
     output := ""
@@ -117,7 +107,6 @@ Class clsIOrepresentation {
 
             return result
         }
-        this.DebugTokens()
     }
     
     _Shift_IO_Keys_Window(count) {
@@ -129,9 +118,7 @@ Class clsIOrepresentation {
                 io_keys_index.Delete(key)
                 continue
             }
-            OutputDebug % "`n shifting " . key . " from " index 
             io_keys_index[key] := index - count
-            OutputDebug % " to " . io_keys_index[key] 
         }
     }
 
@@ -151,15 +138,12 @@ Class clsIOrepresentation {
         if ( !key.with_shift && InStr(keys.punctuation_plain, entry) )
                 || ( key.with_shift && InStr(keys.punctuation_shift, entry) ) {
             token.attributes |= this.IS_PUNCTUATION
-            token.type := TokenType.PUNCTUATION
         }
         if (entry == " ") {
             token.attributes |= this.IS_MANUAL_SPACE
-            token.type := TokenType.MANUAL_SPACE
         }
         if (!key.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
             token.attributes |= this.IS_NUMERAL
-            token.type := TokenType.NUMERAL
         }
         return token
     }
@@ -169,6 +153,7 @@ Class clsIOrepresentation {
             key := io_keys[A_Index]
             token := this.Key_To_Token(key)
             io_tokens.Push(token)
+            this.ProcessTokens()
         }
         if (count == io_keys.Length()) {
             this.IO_Keys_Reset()
@@ -193,7 +178,6 @@ Class clsIOrepresentation {
         }
 
         token.attributes |= this.IS_CHORD
-        token.type := TokenType.CHORD
              
         ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
         if ( (settings.chording & CHORD_ALLOW_SHIFT) && (token.attributes & this.WITH_SHIFT) ) {
@@ -217,6 +201,7 @@ Class clsIOrepresentation {
         start := io_keys[2].start
         if (end - start > settings.input_delay) {
             this.Add_Chord_To_Tokens()
+            this.ProcessTokens()
         } else {
             this.Add_Keys_To_Tokens(io_keys.Length())
         }
@@ -253,16 +238,17 @@ Class clsIOrepresentation {
         if (io_keys.Length() == 1) {
             ; process a lone key press in io_keys
             this.Add_Keys_To_Tokens(1)
-            return true
+            return false
         }
     
         ; two or more keys were pressed as a potential chord
         if (settings.chording & CHORD_BY_OVERLAP) {
             this._ClassifyByPercentage(end, index)
+            return io_keys.Length() == 0
         } else {
-            this._ClassifyByDuration(end)    
+            this._ClassifyByDuration(end)
+            return false    
         }
-        return io_keys.Length() == 0
     }
 
     PreShift() {
@@ -369,7 +355,7 @@ Class clsIOrepresentation {
         return this._Get(start, end, true)
     }
     _Get(start := 1, end := 0, get_output := false) {
-        this._expansion_in_last_get := false
+        this.expansion_in_last_get := false
         what := get_output ? "output" : "input" 
         separator := get_output ? "" : "|"
         if (! end) {
@@ -384,7 +370,7 @@ Class clsIOrepresentation {
         Loop, %count%
         {
             if (io_tokens[i].attributes & this.WAS_EXPANDED) {
-                this._expansion_in_last_get := true
+                this.expansion_in_last_get := true
             }
             representation .= separator . io_tokens[i++][what]
         }
@@ -432,47 +418,66 @@ Class clsIOrepresentation {
     ; When I recreate modules, it should be pure functions only.
     
     ProcessTokens() {
-        ; Add code that gets and loops through the new tokens
-        if (io_tokens_prev >= io_tokens.Length()) {
+        backup_tokens := []
+        backup_length := 0
+        if ((settings.chording & CHORD_BY_OVERLAP) && io_tokens_prev >= io_tokens.Length()) {
             ; should not happen
             return
         }
-        loop % io_tokens.Length() - io_tokens_prev
+        ; count := io_tokens.Length() - io_tokens_prev
+        ; if (count > 1) {
+        ;     loop % count - 1
+        ;     {
+        ;         index := io_tokens_prev + A_Index
+        ;         backup_token := io_tokens[index]
+        ;         backup_tokens.Push(backup_token)
+        ;         backup_length += StrLen(backup_token.output)
+        ;     }
+        ; }
+        loop % io_tokens.Length()
         {
-            token := io_tokens[A_Index + io_tokens_prev]
+            token := io_tokens[A_Index]
             if ( token.attributes & this.IS_CHORD ) {
-                this._ProcessChord()  ; should be the last or only token
+                if (this._ProcessChord()) {  ; should be the last or only token
+                    return
+                }
             } else {
-                this._ProcessToken(token)
+                this._ProcessChar(token)
             }
         }
+        this.DebugTokens()
         io_tokens_prev := io_tokens.Length()
+
+        if (this.DeDoubleSpace()) {
+            return
+        }
+
+        ; Process shorthands if we have a space or punctuation
+        if ! ( this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            return
+        }
+        if (this.DoShorthandsAndHints()) {
+            OutputDebug "`nSHORTHANDS starting"
+            score.Score(score.ENTRY_SHORTHAND)
+        } else if ! ( this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            score.Score(score.ENTRY_MANUAL)
+        }
+
+        this.AddSpaceAfterPunctuation()
     }
 
-    _ProcessToken(token) {
+    _ProcessChar(token) {
         this.CapitalizeTypingAsNeeded(token.input, token.attributes)
         this.RemoveSmartSpaceAsNeeded(token.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
         if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
             this.TryImmediateShorthand()
         }
-        this.AddSpaceAfterPunctuation()
-                if (this.DeDoubleSpace()) {
-            return
-        }
-        if ! ( this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
-            return
-        }
-        if (this.DoShorthandsAndHints()) {
-            score.Score(score.ENTRY_SHORTHAND)
-        } else if ! ( this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
-            score.Score(score.ENTRY_MANUAL)
-        }
     }
     
     _ProcessChord() {
         if (this.ChordModule()) {
-            return
+            return true
         }
         if ( this.TestTokenAttributes(io_tokens.Length(), this.IS_CHORD) ) {
             if (this._RemoveRawChord()) {
