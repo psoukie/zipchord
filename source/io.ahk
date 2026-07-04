@@ -33,7 +33,7 @@ global io_keys := []
 global io_keys_index := {}         ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 
 global io_tokens := []
-global io_tokens_start := 1
+global io_tokens_prev := 1
 
 io := new clsIOrepresentation
 
@@ -157,7 +157,7 @@ Class clsIOrepresentation {
             token.attributes |= this.IS_MANUAL_SPACE
             token.type := TokenType.MANUAL_SPACE
         }
-        if (!token.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+        if (!key.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
             token.attributes |= this.IS_NUMERAL
             token.type := TokenType.NUMERAL
         }
@@ -197,8 +197,8 @@ Class clsIOrepresentation {
              
         ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
         if ( (settings.chording & CHORD_ALLOW_SHIFT) && (token.attributes & this.WITH_SHIFT) ) {
-            token.input := "+" . ev.input
-            token.attributes := ev.attributes & ~this.WITH_SHIFT
+            token.input := "+" . token.input
+            token.attributes := token.attributes & ~this.WITH_SHIFT
         }
     
         ; Sort to allow matching against chord dictionaries        
@@ -330,6 +330,7 @@ Class clsIOrepresentation {
             visualizer.NewLine()
         }
         io_tokens.Push(new_token)
+        io_tokens_prev := 1
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end) {
@@ -432,29 +433,30 @@ Class clsIOrepresentation {
     
     ProcessTokens() {
         ; Add code that gets and loops through the new tokens
-        if (io_tokens_start >= io_tokens.Length()) {
+        if (io_tokens_prev >= io_tokens.Length()) {
             ; should not happen
-            this.ClearTokens("*Interrupt*")
             return
         }
-        loop % io_tokens.Length() - io_tokens_start + 1
+        loop % io_tokens.Length() - io_tokens_prev
         {
-            token := io_tokens[A_Index + io_tokens_start - 1]
-            if ( token && this.IS_CHORD ) {
+            token := io_tokens[A_Index + io_tokens_prev]
+            if ( token.attributes & this.IS_CHORD ) {
                 this._ProcessChord()  ; should be the last or only token
             } else {
                 this._ProcessToken(token)
             }
         }
+        io_tokens_prev := io_tokens.Length()
     }
 
     _ProcessToken(token) {
-        this.CapitalizeTypingAsNeeded(token.key, token.attributes)
-        this.RemoveSmartSpaceAsNeeded(ev.attributes)
+        this.CapitalizeTypingAsNeeded(token.input, token.attributes)
+        this.RemoveSmartSpaceAsNeeded(token.attributes)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
         if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
             this.TryImmediateShorthand()
         }
+        this.AddSpaceAfterPunctuation()
     }
     
     _ProcessChord() {
@@ -479,7 +481,6 @@ Class clsIOrepresentation {
         } else if ! ( this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
             score.Score(score.ENTRY_MANUAL)
         }
-        this.AddSpaceAfterPunctuation()
     }
         
     DoShorthandsAndHints() {
@@ -935,14 +936,6 @@ Class clsIOrepresentation {
     DebugTokens() {
         if (A_Args[2] != "test-vs") {
             return
-        }
-        OutputDebug, % "`n`nKeys:"
-        OutputDebug, % "Classifying starts at " . this._classification_start
-        len := io_keys.Length()
-        Loop % len
-        {
-            ev := io_keys[A_Index]
-            OutputDebug, % "`n" . i . ": " ev.input . " > " . ev.output . " (" . ev.attributes . ")"
         }
         OutputDebug, % "`n`nTokens:"
         For i, token in io_tokens {
