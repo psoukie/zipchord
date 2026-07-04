@@ -466,7 +466,7 @@ KeyUp:
             key := ReplaceScanCode(test_key)
         }
         if (test.mode > TEST_STANDBY) {
-            test.Log(A_ThisHotkey, true)
+            test.Log(key, true)
         }
     }
     if (visualizer.IsOn()) {
