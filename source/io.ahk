@@ -457,6 +457,17 @@ Class clsIOrepresentation {
             this.TryImmediateShorthand()
         }
         this.AddSpaceAfterPunctuation()
+                if (this.DeDoubleSpace()) {
+            return
+        }
+        if ! ( this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            return
+        }
+        if (this.DoShorthandsAndHints()) {
+            score.Score(score.ENTRY_SHORTHAND)
+        } else if ! ( this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            score.Score(score.ENTRY_MANUAL)
+        }
     }
     
     _ProcessChord() {
@@ -469,17 +480,6 @@ Class clsIOrepresentation {
                 return
             }
             this._FixLastToken()
-        }
-        if (this.DeDoubleSpace()) {
-            return
-        }
-        if ! ( this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
-            return
-        }
-        if (this.DoShorthandsAndHints()) {
-            score.Score(score.ENTRY_SHORTHAND)
-        } else if ! ( this.TestTokenAttributes(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
-            score.Score(score.ENTRY_MANUAL)
         }
     }
         
