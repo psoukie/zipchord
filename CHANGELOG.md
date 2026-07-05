@@ -8,6 +8,10 @@ Unreleased development changes since 2.8.x.
 
 - Added a new chord-detection mode based on relative key overlap, in addition to the existing fixed duration mode.
 
+**Improvements**
+
+- Locale key-mapping changes now take effect immediately after clicking Apply or OK in the Keyboard and language settings window.
+
 **Notes**
 
 - The overlap-based chord detection is still under development for edge cases around deferred keys.

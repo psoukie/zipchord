@@ -310,12 +310,10 @@ UpdateSettings(from_version) {
     }
 }
 
-; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
-WireHotkeys(state) {
+RefreshScanCodeMapping() {
     global keys
     global SC_mapping
     global NUMPAD_PRINTABLE_MAPPING
-    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
     SC_mapping := {}
 
     For _, key_name in keys.key_map.Keys() {
@@ -324,6 +322,26 @@ WireHotkeys(state) {
         }
         SC := "SC0" . keys.key_map[key_name].SC
         SC_mapping[SC] := keys.key_map[key_name].symbol
+    }
+
+    For key_name, symbol in NUMPAD_PRINTABLE_MAPPING {
+        SC_mapping[key_name] := symbol
+    }
+}
+
+; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
+WireHotkeys(state) {
+    global keys
+    global NUMPAD_PRINTABLE_MAPPING
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
+
+    RefreshScanCodeMapping()
+
+    For _, key_name in keys.key_map.Keys() {
+        if (keys.key_map[key_name].symbol == "") {
+            continue
+        }
+        SC := "SC0" . keys.key_map[key_name].SC
 
         Hotkey, % "~" . SC, KeyDown, %state%
         Hotkey, % "~+" . SC, KeyDown, %state%
@@ -332,8 +350,6 @@ WireHotkeys(state) {
     }
 
     For key_name, symbol in NUMPAD_PRINTABLE_MAPPING {
-        SC_mapping[key_name] := symbol
-
         Hotkey, % "~" . key_name, KeyDown, %state%
         Hotkey, % "~+" . key_name, KeyDown, %state%
         Hotkey, % "~" . key_name . " Up", KeyUp, %state%
