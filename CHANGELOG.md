@@ -1,5 +1,12 @@
 # ZipChord Changelog
 
+## ZipChord 2.8.1
+
+**Fixes**
+
+- Locale key-mapping changes now take effect immediately after clicking Apply or OK in the Keyboard and language settings window.
+- Fixes to test console in saving key symbols and error handling.
+
 ## ZipChord 2.8.0
 
 Version 2.8 simplifies how ZipChord handles keyboard layouts and adds support for an optional compiled library.
