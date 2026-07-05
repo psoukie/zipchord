@@ -13,14 +13,15 @@ Class clsKey {
 }
 
 Class clsToken {
-    raw_input := ""
     input := ""
     output := ""
     attributes := 0
 }
 
 global io_keys := []
-global io_keys_index := {}         ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+global io_keys_index := {}      ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+io_backup_keys := []   ; temporarily holds original tokens of a chord candidate
+io_remaining_backup := ""
 
 global io_tokens := []
 global io_tokens_prev := 1
@@ -126,7 +127,6 @@ Class clsIOrepresentation {
     Key_To_Token(key) {
         token := new clsToken
         entry := "" . key.key
-        token.raw_input := entry
         token.input := entry
         if (key.with_shift) {
             token.attributes |= this.WITH_SHIFT
@@ -164,12 +164,15 @@ Class clsIOrepresentation {
 
     ; Transform key presses into a chord and add to tokens
     Add_Chord_To_Tokens() {
+        global io_backup_keys
+
         token := new clsToken
+        io_backup_keys := []
         
         Loop, % io_keys.Length()
         {
             key := io_keys[A_Index] 
-            token.raw_input .= key.key     ; store original key tokens
+            io_backup_keys.Push(key)
             token.input .= key.key     ; store original key tokens
             token.output .= key.key
             if (key.with_shift) {
@@ -377,8 +380,11 @@ Class clsIOrepresentation {
         Return SubStr(representation, StrLen(separator)+1)
     }
     _ReplaceOutput(old_output, new_output, start) {
-        if (start != io_tokens.Length()) {
-            backup_content := this.GetOutput(start+1)
+        global io_remaining_backup
+        
+        ; check a TBC remaining-backup content variable.
+        if (start != io_tokens.Length() || io_remaining_backup) {
+            backup_content := this.GetOutput(start+1) . io_remaining_backup
         }
         adj := StrLen(old_output . backup_content)
         if (adj == 1) { 
@@ -418,35 +424,20 @@ Class clsIOrepresentation {
     ; When I recreate modules, it should be pure functions only.
     
     ProcessTokens() {
-        backup_tokens := []
-        backup_length := 0
-        if ((settings.chording & CHORD_BY_OVERLAP) && io_tokens_prev >= io_tokens.Length()) {
-            ; should not happen
-            return
-        }
-        ; count := io_tokens.Length() - io_tokens_prev
-        ; if (count > 1) {
-        ;     loop % count - 1
-        ;     {
-        ;         index := io_tokens_prev + A_Index
-        ;         backup_token := io_tokens[index]
-        ;         backup_tokens.Push(backup_token)
-        ;         backup_length += StrLen(backup_token.output)
-        ;     }
+        ; if ((settings.chording & CHORD_BY_OVERLAP) && io_tokens_prev >= io_tokens.Length()) {
+        ;     ; should not happen
+        ;     return
         ; }
-        loop % io_tokens.Length()
-        {
-            token := io_tokens[A_Index]
-            if ( token.attributes & this.IS_CHORD ) {
-                if (this._ProcessChord()) {  ; should be the last or only token
-                    return
-                }
-            } else {
-                this._ProcessChar(token)
+    
+        token := io_tokens[io_tokens.Length()]
+        if ( token.attributes & this.IS_CHORD ) {
+            if (this._ProcessChord()) {  ; should be the last or only token
+                return
             }
+        } else {
+            this._ProcessChar(token)
         }
         this.DebugTokens()
-        io_tokens_prev := io_tokens.Length()
 
         if (this.DeDoubleSpace()) {
             return
@@ -476,18 +467,31 @@ Class clsIOrepresentation {
     }
     
     _ProcessChord() {
-        if (this.ChordModule()) {
+        if (this.TryChordModule()) {
             return true
         }
-        if ( this.TestTokenAttributes(io_tokens.Length(), this.IS_CHORD) ) {
-            if (this._RemoveRawChord()) {
-                this.OutputKeys()
-                return
-            }
-            this._FixLastToken()
+        if (this._RemoveRawChord()) {
+            this.OutputKeys()
+            return
+        }
+        this._ProcessChordAsChars()
+    }
+
+    _ProcessChordAsChars() {
+        global io_backup_keys
+        global io_remaining_backup
+        
+        backup_text := io_tokens[io_tokens.Length()].output
+        io_tokens.Remove_At(io_tokens.Length())
+        
+        for i, backup_key in io_backup_keys {
+            backup_token := this.Key_To_Token(backup_key)
+            io_remaining_backup := SubStr(backup_text, i + 1)
+            io_tokens.Push(backup_token)
+            this.ProcessTokens()
         }
     }
-        
+
     DoShorthandsAndHints() {
         loop_length := io_tokens.Length() - 1
         Loop %loop_length%
@@ -506,6 +510,9 @@ Class clsIOrepresentation {
     }
 
     CapitalizeTypingAsNeeded(character, attribs) {
+        if (StrLen(character) != 1) {
+            return
+        }
         if ( settings.capitalization != CAP_ALL || (attribs & this.IS_PUNCTUATION)
                 || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.WITH_SHIFT) ) {
             return
@@ -569,7 +576,7 @@ Class clsIOrepresentation {
         return false
     }
 
-    ChordModule() {
+    TryChordModule() {
         if (! (settings.mode & MODE_CHORDS_ENABLED)) {
             return false
         }
@@ -676,19 +683,6 @@ Class clsIOrepresentation {
             score.Score(score.ENTRY_CHORD)
         }
         return true
-    }
-
-    _FixLastToken() {
-        token := io_tokens[io_tokens.Length()]
-        last_character := SubStr(token.output, StrLen(token.output), 1)
-        if (last_character == " " ||  InStr(keys.punctuation_plain, last_character) ) {
-            token.input := StrReplace(token.input, last_character)
-            token.output := StrReplace(token.output, last_character)
-            if ( StrLen(token.input) == 1 ) {
-                this.ClearTokenAttributes(io_tokens.Length(), this.IS_CHORD)
-            }
-            this.AugmentedAdd(last_character, false)
-        }
     }
 
     ; Remove characters of non-existing chord if 'delete mistyped chords' option is enabled.

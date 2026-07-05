@@ -44,6 +44,5 @@
 ~Space
 {Backspace}
 ~h
-{Backspace}H
 ~t
 {Backspace 2}The{Space}

@@ -6,9 +6,8 @@
 ~.
 {Space}
 ~.
-{Backspace 2}.
 ~m
-{Backspace 2} More{Space}
+{Backspace 2}More{Space}
 ~t
 ~h
 ~i
@@ -29,7 +28,6 @@
 *Hint*
 {Space}
 ~m
-{Backspace}M
 ~.
 {Backspace 2}More{Space}
 ~t
@@ -42,6 +40,5 @@
 ~Space
 {Backspace}
 ~m
-{Backspace}M
 ~.
 {Backspace 2}More{Space}
