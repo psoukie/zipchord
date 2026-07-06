@@ -86,6 +86,7 @@ Class clsIOrepresentation {
                 ev.with_shift := true
                 this.pre_shifted := false
             }
+            ; TK - check if key is already in io_keys
             io_keys.Push(ev)
             io_keys_index[ev.key] := io_keys.Length()
         } else {
@@ -432,6 +433,7 @@ Class clsIOrepresentation {
         token := io_tokens[io_tokens.Length()]
         if ( token.attributes & this.IS_CHORD ) {
             if (this._ProcessChord()) {  ; should be the last or only token
+                this.SendTokensAsKeys()
                 return
             }
         } else {
@@ -440,11 +442,13 @@ Class clsIOrepresentation {
         this.DebugTokens()
 
         if (this.DeDoubleSpace()) {
+            this.SendTokensAsKeys()
             return
         }
 
         ; Process shorthands if we have a space or punctuation
         if ! ( this.TestTokenAttributes(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
+            this.SendTokensAsKeys()
             return
         }
         if (this.DoShorthandsAndHints()) {
@@ -455,6 +459,7 @@ Class clsIOrepresentation {
         }
 
         this.AddSpaceAfterPunctuation()
+        this.SendTokensAsKeys()
     }
 
     _ProcessChar(token) {
@@ -931,6 +936,42 @@ Class clsIOrepresentation {
         }
     }
 
+    SendTokensAsKeys(starting_index := 0) {
+        global symbol_to_SC_map
+
+        if !(starting_index) {
+            return
+        }
+        ; SendInput % "{Text} >>"
+
+        Loop % io_tokens.Length() {
+            token := io_tokens[A_Index]
+
+            if (token.attributes & this.IS_INTERRUPT ||  token.attributes & this.IS_ENTER) {
+                continue
+            }
+
+            if (token.attributes & this.SMART_SPACE_AFTER) {
+                SendInput % "{Space}"
+                continue
+            }
+            if (token.attributes & this.WAS_EXPANDED) {
+                SendInput % "{Text}" token.output
+                continue
+            }
+        
+            if ! (symbol_to_SC_map.HasKey(token.output)) {
+                MsgBox , , ERROR
+                continue
+            }
+
+            SC_key := str.SCHexToString(symbol_to_SC_map[token.output])
+            SC_prefix := token.attributes & this.WITH_SHIFT ? "+" : ""
+            SendInput % SC_prefix . "{" . SC_key . "}"
+        }
+        
+        ; SendInput % "{Text}<< "
+    }
 
     DebugTokens() {
         if (A_Args[2] != "test-vs") {

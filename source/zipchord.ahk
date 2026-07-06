@@ -85,7 +85,8 @@ global UI_STR_PAUSE  := "&Pause ZipChord"
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
-SC_mapping := {} ; dynamically created scan-code number to key-symbol mapping
+SC_to_symbol_map := {} ; dynamically created scan-code number to key-symbol mapping
+symbol_to_SC_map := {} ; reverse map
 
 #Include configurations.ahk
 #Include hints.ahk
@@ -296,31 +297,36 @@ UpdateSettings(from_version) {
 
 RefreshScanCodeMapping() {
     global keys
-    global SC_mapping
-    SC_mapping := {}
+    global SC_to_symbol_map
+    global symbol_to_SC_map
+    SC_to_symbol_map := {}
+    symbol_to_SC_map := {}
 
     For _, key_name in keys.key_map.Keys() {
         if (keys.key_map[key_name].symbol == "") {
             continue
         }
         SC := keys.key_map[key_name].SC
-        SC_mapping[SC] := keys.key_map[key_name].symbol
+        symbol := keys.key_map[key_name].symbol
+        SC_to_symbol_map[SC] := symbol 
+        symbol_to_SC_map[symbol] := SC
     }
 
-    For num_SC, symbol in keys.key_map.NUMPAD_MAPPING {
-        SC_mapping[num_SC] := symbol
+    For num_SC, num_symbol in keys.key_map.NUMPAD_MAPPING {
+        SC_to_symbol_map[num_SC] := num_symbol
+        symbol_to_SC_map[num_symbol] := num_SC
     }
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
-    global SC_mapping
+    global SC_to_symbol_map
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
 
     RefreshScanCodeMapping()
 
-    For sc_hex, symbol in SC_mapping {
+    For sc_hex, symbol in SC_to_symbol_map {
         SC := str.SCHexToString(sc_hex)
         Hotkey, % "~" . SC, KeyDown, %state%
         Hotkey, % "~+" . SC, KeyDown, %state%
@@ -378,15 +384,14 @@ Simulate_Shift:
 Return
 
 ; Replace mapped scan code and named-key tokens inside a hotkey string
-ReplaceScanCode(key) {
-    global SC_mapping
+SCHotkeyToSymbolHotkey(key) {
+    global SC_to_symbol_map
     pos := 1
     if (pos := InStr(key, "SC", true)) {
-        ; candidate = "SC" + 3 chars
-        candidate := "0x" . SubStr(key, pos+2, 3)
+        candidate := "0x" . SubStr(key, pos+2, 3)   ; "SC" + 3 chars
         SC := candidate + 0
-        if (SC_mapping.HasKey(SC)) {
-            repl := SC_mapping[SC]
+        if (SC_to_symbol_map.HasKey(SC)) {
+            repl := SC_to_symbol_map[SC]
             return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
         }
     }
@@ -396,14 +401,14 @@ ReplaceScanCode(key) {
 KeyDown:
     Critical
     tick := A_TickCount
-    key := ReplaceScanCode(A_ThisHotkey)
+    key := SCHotkeyToSymbolHotkey(A_ThisHotkey)
     if (key == "") {
         Critical Off
         Return
     }
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
-            key := ReplaceScanCode(test_key)
+            key := SCHotkeyToSymbolHotkey(test_key)
             tick := test_timestamp
         }
         if (test.mode > TEST_STANDBY) {
@@ -433,7 +438,7 @@ Return
 KeyUp:
     Critical
     tick_up := A_TickCount
-    key := ReplaceScanCode(A_ThisHotkey)
+    key := SCHotkeyToSymbolHotkey(A_ThisHotkey)
     if (key == "") {
         Critical Off
         Return
@@ -441,7 +446,7 @@ KeyUp:
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             tick_up := test_timestamp
-            key := ReplaceScanCode(test_key)
+            key := SCHotkeyToSymbolHotkey(test_key)
         }
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
