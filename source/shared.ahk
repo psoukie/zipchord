@@ -327,6 +327,10 @@ Class clsStringFunctions {
         return StrReplace(joined, "`n")
     }
 
+    SCHexToString(hex) {
+        return "SC" . Format("{:03X}", hex)
+    }
+
     ; Convert to ASCII
     ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
     ToAscii(Key, Modifiers := "") {

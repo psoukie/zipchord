@@ -27,10 +27,26 @@ Class clsKeyMap {
         , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
         , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
 
-    SCAN_CODES := ["29", "02", "03", "04", "05", "06", "07", "08", "09", "0A", "0B", "0C", "0D"
-          , "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1A", "1B", "2B"
-          , "1E", "1F", "20", "21", "22", "23", "24", "25", "26", "27", "28"
-          , "2C", "2D", "2E", "2F", "30", "31", "32", "33", "34", "35"]
+    SCAN_CODES := [0x29, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D
+          , 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x2B
+          , 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+          , 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35]
+
+    NUMPAD_MAPPING := { 0x52: "⓪"
+            , 0x4F: "①"
+            , 0x50: "②"
+            , 0x51: "③"
+            , 0x4B: "④"
+            , 0x4C: "⑤"
+            , 0x4D: "⑥"
+            , 0x47: "⑦"
+            , 0x48: "⑧"
+            , 0x49: "⑨"
+            , 0x4E: "⊕"
+            , 0x4A: "⊖"
+            , 0x37: "⊗"
+            , 0x135: "⊘"
+            , 0x053: "⊙"}
 
     __New() {
         ; Build default scan-code to symbols mapping
@@ -96,8 +112,7 @@ Class clsKeyMap {
 
         for i, name in this.KEY_LIST
         {
-            sc := "0x" . this.SCAN_CODES[i]
-            sc := sc + 0
+            sc := this.SCAN_CODES[i]
             if (!sc)
                 sc := GetKeySC(name)
             if (!sc) {
@@ -369,8 +384,8 @@ Class clsLocaleInterface {
     }
     _OnKeyClick(name) {
         key_map := this.current_key_map
-        Prompt := "Type the character(s) to represent " . name . ":"
-        InputBox, mapped, % "Set mapping for " name, %Prompt%, , 300, 120
+        Prompt := "Type a character to represent the key " . name
+        InputBox, mapped, % "Set mapping for " . name, %Prompt%, , 300, 120
         if (ErrorLevel)
             return
         mapped := Trim(mapped)

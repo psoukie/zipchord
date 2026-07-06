@@ -85,23 +85,7 @@ global UI_STR_PAUSE  := "&Pause ZipChord"
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
-SC_mapping := {} ; dynamically created scan code (or numpad hotkey) to key symbol mapping
-
-NUMPAD_PRINTABLE_MAPPING := { Numpad0: "⓪"
-    , Numpad1: "①"
-    , Numpad2: "②"
-    , Numpad3: "③"
-    , Numpad4: "④"
-    , Numpad5: "⑤"
-    , Numpad6: "⑥"
-    , Numpad7: "⑦"
-    , Numpad8: "⑧"
-    , Numpad9: "⑨"
-    , NumpadAdd: "⊕"
-    , NumpadSub: "⊖"
-    , NumpadMult: "⊗"
-    , NumpadDiv: "⊘"
-    , NumpadDot: "⊙" }
+SC_mapping := {} ; dynamically created scan-code number to key-symbol mapping
 
 #Include configurations.ahk
 #Include hints.ahk
@@ -313,47 +297,35 @@ UpdateSettings(from_version) {
 RefreshScanCodeMapping() {
     global keys
     global SC_mapping
-    global NUMPAD_PRINTABLE_MAPPING
     SC_mapping := {}
 
     For _, key_name in keys.key_map.Keys() {
         if (keys.key_map[key_name].symbol == "") {
             continue
         }
-        SC := "SC0" . keys.key_map[key_name].SC
+        SC := keys.key_map[key_name].SC
         SC_mapping[SC] := keys.key_map[key_name].symbol
     }
 
-    For key_name, symbol in NUMPAD_PRINTABLE_MAPPING {
-        SC_mapping[key_name] := symbol
+    For num_SC, symbol in keys.key_map.NUMPAD_MAPPING {
+        SC_mapping[num_SC] := symbol
     }
 }
 
 ; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
 WireHotkeys(state) {
     global keys
-    global NUMPAD_PRINTABLE_MAPPING
+    global SC_mapping
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
 
     RefreshScanCodeMapping()
 
-    For _, key_name in keys.key_map.Keys() {
-        if (keys.key_map[key_name].symbol == "") {
-            continue
-        }
-        SC := "SC0" . keys.key_map[key_name].SC
-
+    For sc_hex, symbol in SC_mapping {
+        SC := str.SCHexToString(sc_hex)
         Hotkey, % "~" . SC, KeyDown, %state%
         Hotkey, % "~+" . SC, KeyDown, %state%
         Hotkey, % "~" . SC . " Up", KeyUp, %state%
         Hotkey, % "~+" . SC . " Up", KeyUp, %state%
-    }
-
-    For key_name, symbol in NUMPAD_PRINTABLE_MAPPING {
-        Hotkey, % "~" . key_name, KeyDown, %state%
-        Hotkey, % "~+" . key_name, KeyDown, %state%
-        Hotkey, % "~" . key_name . " Up", KeyUp, %state%
-        Hotkey, % "~+" . key_name . " Up", KeyUp, %state%
     }
 
     Hotkey, % "~Space", KeyDown, %state%
@@ -411,25 +383,13 @@ ReplaceScanCode(key) {
     pos := 1
     if (pos := InStr(key, "SC", true)) {
         ; candidate = "SC" + 3 chars
-        candidate := SubStr(key, pos, 5)
-        if (SC_mapping.HasKey(candidate)) {
-            repl := SC_mapping[candidate]
+        candidate := "0x" . SubStr(key, pos+2, 3)
+        SC := candidate + 0
+        if (SC_mapping.HasKey(SC)) {
+            repl := SC_mapping[SC]
             return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
         }
     }
-    if (pos := InStr(key, "Numpad", true)) {
-        if (up_pos := InStr(key, " ", true, pos)) {
-            candidate := SubStr(key, pos, up_pos - pos)
-            suffix := SubStr(key, up_pos)
-        } else {
-            candidate := SubStr(key, pos)
-            suffix := ""
-        }
-        if (SC_mapping.HasKey(candidate)) {
-            repl := SC_mapping[candidate]
-            return SubStr(key, 1, pos-1) . repl . suffix
-        }
-    } 
     return key
 }
 
