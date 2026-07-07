@@ -69,8 +69,8 @@ Class clsClassifier {
 
         if (lifted) {
             index := this._index[key]
-            this._buffer[index].end := timestamp
             if (index) {
+                this._buffer[index].end := timestamp
                 this._index.Delete(key)
                 this._Classify(index, timestamp)
             }
@@ -81,6 +81,10 @@ Class clsClassifier {
         event := new this.clsKeyEvent
         if (StrLen(key)>1) {
             key := "{" . key . "}"
+        }
+        if (this._index.HasKey(key)) {
+            ; already pressed
+            return
         }
         event.key := key
         event.start := timestamp

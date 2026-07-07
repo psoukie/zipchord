@@ -271,6 +271,7 @@ Class clsLocaleInterface {
     }
     _ApplyLocaleToRuntime() {
         keys.Load(settings.locale)
+        RefreshScanCodeMapping()
         if (IsObject(main_UI)) {
             main_UI.UpdateLocaleInMainUI()
         }
@@ -399,6 +400,7 @@ Class clsLocaleInterface {
         if (runtime_status.config_file) {
             new_loc.Save(false)
             keys := new_loc
+            RefreshScanCodeMapping()
             return
         }
         target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
