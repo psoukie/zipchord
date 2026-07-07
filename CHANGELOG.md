@@ -5,7 +5,9 @@
 **Fixes**
 
 - Locale key-mapping changes now take effect immediately after clicking Apply or OK in the Keyboard and language settings window.
-- Fixes to test console in saving key symbols and error handling.
+- Fixes a bug where repeated key down events without a key up resulted in error messages.
+- Adds additional human readable error messages for compiled library errors.  
+- Fixes how test console saves key symbols and handles errors.
 
 ## ZipChord 2.8.0
 

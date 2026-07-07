@@ -22,7 +22,7 @@ class DllError {
     static VERSION_MISMATCH := -11
 }
 
-dll_error_text := { 0: "No error"
+dll_error_text := {0: "No error"
     , -1: "shortcut not found"
     , -2: "shortcut exists"
     , -3: "repeated key"
@@ -33,8 +33,7 @@ dll_error_text := { 0: "No error"
     , -8: "allocation"
     , -9: "file read"
     , -10: "internal"
-    , -11: "version mismatch"
-}
+    , -11: "version mismatch"}
 
 Class clsDllBindings {
     available := false
@@ -191,7 +190,9 @@ Class clsDllBindings {
         if (result == 0) {
             return StrGet(&dll_buffer, "UTF-8")
         }
-        MsgBox , , % "ZipChord", % "Encountered error number " . result . " while normalizing a chord."
+        if (result == DllError.REPEATED_KEY) {
+            return false
+        } 
         err := dll_error_text.HasKey(result) ? dll_error_text[result] : "an unknown (" . result . ")"
         MsgBox , , % "ZipChord", % "Encountered " . err . " error while normalizing a chord."
         return false
