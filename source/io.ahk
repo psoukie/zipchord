@@ -378,7 +378,7 @@ Class clsIOrepresentation {
             }
             representation .= separator . io_tokens[i++][what]
         }
-        Return SubStr(representation, StrLen(separator)+1)
+        return SubStr(representation, StrLen(separator)+1)
     }
     _ReplaceOutput(old_output, new_output, start) {
         global io_remaining_backup
@@ -891,6 +891,7 @@ Class clsIOrepresentation {
     }
 
     OutputKeys() {
+        return   ; TK - bypassed
         if (this.output_buffer == "") {
             return
         }
@@ -936,14 +937,19 @@ Class clsIOrepresentation {
         }
     }
 
-    SendTokensAsKeys(starting_index := 0) {
+    SendTokensAsKeys(starting_index := 1) {
         global symbol_to_SC_map
 
         if !(starting_index) {
             return
         }
         ; SendInput % "{Text} >>"
-
+        ;
+        length := StrLen(this.GetInput(1))
+        if (length > 0) {
+            SendInput % "{Backspace " . length . "}"
+        }
+        
         Loop % io_tokens.Length() {
             token := io_tokens[A_Index]
 
@@ -951,7 +957,7 @@ Class clsIOrepresentation {
                 continue
             }
 
-            if (token.attribs & this.SMART_SPACE_AFTER) {
+            if (token.attribs & this.SMART_SPACE_AFTER || token.attribs & this.IS_MANUAL_SPACE) {
                 SendInput % "{Space}"
                 continue
             }
