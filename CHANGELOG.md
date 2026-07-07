@@ -1,6 +1,6 @@
 # ZipChord Changelog
 
-## ZipChord 2.8.1
+## ZipChord 2.8.2
 
 **Fixes**
 
@@ -9,7 +9,7 @@
 - Adds additional human readable error messages for compiled library errors.  
 - Fixes how test console saves key symbols and handles errors.
 
-## ZipChord 2.8.0
+## ZipChord 2.8.1
 
 Version 2.8 simplifies how ZipChord handles keyboard layouts and adds support for an optional compiled library.
 
