@@ -191,7 +191,9 @@ Class clsDllBindings {
         if (result == 0) {
             return StrGet(&dll_buffer, "UTF-8")
         }
-        MsgBox , , % "ZipChord", % "Encountered error number " . result . " while normalizing a chord."
+        if (result == DllError.REPEATED_KEY) {
+            return false
+        } 
         err := dll_error_text.HasKey(result) ? dll_error_text[result] : "an unknown (" . result . ")"
         MsgBox , , % "ZipChord", % "Encountered " . err . " error while normalizing a chord."
         return false
