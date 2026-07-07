@@ -8,15 +8,16 @@ Unreleased development changes since 2.8.x.
 
 - Added a new chord-detection mode based on relative key overlap, in addition to the existing fixed duration mode.
 
-**Improvements**
+## ZipChord 2.8.2
+
+**Fixes**
 
 - Locale key-mapping changes now take effect immediately after clicking Apply or OK in the Keyboard and language settings window.
+- Fixes a bug where repeated key down events without a key up resulted in error messages.
+- Adds additional human readable error messages for compiled library errors.  
+- Fixes how test console saves key symbols and handles errors.
 
-**Notes**
-
-- The overlap-based chord detection is still under development for edge cases around deferred keys.
-
-## ZipChord 2.8.0
+## ZipChord 2.8.1
 
 Version 2.8 simplifies how ZipChord handles keyboard layouts and adds support for an optional compiled library.
 
