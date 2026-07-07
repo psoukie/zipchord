@@ -188,6 +188,7 @@ Class clsDictionary {
     }
     _Dll_LoadShortcuts() {
         global dll_buffer
+        global dll_error_text
         shortcuts_loaded := 0
         result := dll.LoadDictionary(this._file, this._chorded, shortcuts_loaded)
         if (result < 0) {
@@ -204,7 +205,7 @@ Class clsDictionary {
                 Case DllError.FEWER_THAN_TWO:
                     reason := "a shortcut with less than two characters"
                 Default:
-                    reason := "error code " . result
+                    reason := dll_error_text.HasKey(result) ? dll_error_text[result] : "an unknown error (" . result . ")"
             }
             MsgBox, , % "ZipChord", % Format("ZipChord encountered {} while processing the {} '{}'.", reason, type, raw_shortcut)
             this._dll_entries_count := shortcuts_loaded
