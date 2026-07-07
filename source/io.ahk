@@ -47,12 +47,10 @@ Class clsIOrepresentation {
         , AFFIX_PREFIX := 1 ; expansion is a prefix
         , AFFIX_SUFFIX := 2 ; expansion is a suffix
 
-
     pre_shifted := false
     expansion_in_last_get := false
 
-    output_buffer := ""  ; stores what will be sent as simulated keystrokes
-    
+
     IO_Keys_Reset() {
         OutputDebug % "`nEMPTYING EVENTS"
         io_keys := []
@@ -379,25 +377,8 @@ Class clsIOrepresentation {
         }
         return SubStr(representation, StrLen(separator)+1)
     }
-    _ReplaceOutput(old_output, new_output, start) {
-        global io_remaining_backup
-        
-        ; check a TBC remaining-backup content variable.
-        if (start != io_tokens.Length() || io_remaining_backup) {
-            backup_content := this.GetOutput(start+1) . io_remaining_backup
-        }
-        adj := StrLen(old_output . backup_content)
-        if (adj == 1) { 
-            this.output_buffer .= "{Backspace}"
-        } else {
-            this.output_buffer .= "{Backspace " . adj . "}"
-        }
-        if ( new_output . backup_content != "") {
-            this.output_buffer .= new_output . backup_content
-        }
-    }
 
-    ; Delay output by defined delay
+    ; TK restore delay output by defined delay
     _DelayOutput() {
         if (settings.output_delay) {
             Sleep settings.output_delay
@@ -570,9 +551,9 @@ Class clsIOrepresentation {
             return
         }
         if ( this._ShouldCapitalize() ) {
-            upper_cased := RegExReplace(character, "(^.)", "$U1")
-            this.Replace(upper_cased, io_tokens.Length())
-            this.SetTokenAttribs(io_tokens.Length(), this.WAS_CAPITALIZED)
+            token_id := io_tokens.Length()
+            io_tokens[token_id].output := RegExReplace(character, "(^.)", "$U1")
+            this.SetTokenAttribs(token_id, this.WAS_CAPITALIZED)
         }
     }
 
@@ -743,8 +724,6 @@ Class clsIOrepresentation {
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(io_tokens.Length()-1) ) {
             Return false
         }
-        raw_output := io_tokens[io_tokens.Length()].output
-        this.output_buffer .= "{Backspace " . StrLen(raw_output) . "}"
         io_tokens.RemoveAt(io_tokens.Length())
         Return true
     }
@@ -928,7 +907,6 @@ Class clsIOrepresentation {
         smart_space.output := " "
         smart_space.attribs |= this.SMART_SPACE_AFTER
         io_tokens.Push(smart_space)
-        this.output_buffer .= "{Space}"
     }
 
     SendInput(sequence, symbol_sequence := "") {
@@ -936,7 +914,7 @@ Class clsIOrepresentation {
             SendInput % sequence
         } else {
             if (symbol_sequence != "") {
-                test.Log(symbol_sequence)
+                test.Log("~" . symbol_sequence)
             } else {
                 test.Log(sequence)
             }
@@ -972,7 +950,7 @@ Class clsIOrepresentation {
                 continue
             }
 
-            if (token.attribs & this.WAS_EXPANDED || token.attribs & this.WAS_EXPANDED) {
+            if (token.attribs & this.WAS_EXPANDED || token.attribs & this.WAS_CAPITALIZED) {
                 this.SendInput("{Text}" . token.output)
                 continue
             }
