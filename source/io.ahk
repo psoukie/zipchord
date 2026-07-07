@@ -432,7 +432,10 @@ Class clsIOrepresentation {
                 return index
             }
         }
-        return -1
+        if (io_prev_tokens.Length() == io_tokens.Length()) {
+            return -1  ; identical
+        }
+        return io_prev_tokens.Length() + 1  ; extra new tokens
     }
     
     _GetPrevRemainingLength(start) {
@@ -472,8 +475,10 @@ Class clsIOrepresentation {
         if (first_modified == -1) {
             return   ; no changes
         }
-        delete_sequence := "{Backspace " . this._GetPrevRemainingLength(first_modified) . "}"
-        this.SendInput(delete_sequence)
+        chars_to_del := this._GetPrevRemainingLength(first_modified)
+        if (chars_to_del > 0) {
+            this.SendInput("{Backspace " . chars_to_del . "}")
+        }
 
         this.SendTokensAsKeys(first_modified)
     }
@@ -926,11 +931,15 @@ Class clsIOrepresentation {
         this.output_buffer .= "{Space}"
     }
 
-    SendInput(sequence) {
+    SendInput(sequence, symbol_sequence := "") {
         if (A_Args[1] != "dev") {
             SendInput % sequence
         } else {
-            test.Log(sequence)
+            if (symbol_sequence != "") {
+                test.Log(symbol_sequence)
+            } else {
+                test.Log(sequence)
+            }
             if (test.mode != TEST_RUNNING) {
                 SendInput % sequence
             }
@@ -954,6 +963,15 @@ Class clsIOrepresentation {
                 this.SendInput("{Space}")
                 continue
             }
+
+            if (token.attribs & this.IS_PUNCTUATION) {
+                ; exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
+                SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
+                SC_prefix := token.attribs & this.WITH_SHIFT ? "+" : ""
+                this.SendInput(SC_prefix . "{" . SC_key . "}", SC_prefix . token.input)
+                continue
+            }
+
             if (token.attribs & this.WAS_EXPANDED || token.attribs & this.WAS_EXPANDED) {
                 this.SendInput("{Text}" . token.output)
                 continue
@@ -967,7 +985,7 @@ Class clsIOrepresentation {
 
             SC_key := str.SCHexToString(symbol_to_SC_map[token.output])
             SC_prefix := token.attribs & this.WITH_SHIFT ? "+" : ""
-            this.SendInput(SC_prefix . "{" . SC_key . "}")
+            this.SendInput(SC_prefix . "{" . SC_key . "}", SC_prefix . token.output)
         }
     }
 
