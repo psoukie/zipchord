@@ -24,7 +24,7 @@ io_backup_keys := []   ; temporarily holds original tokens of a chord candidate
 io_remaining_backup := ""
 
 global io_tokens := []
-global io_tokens_prev := 1
+io_prev_tokens := []
 
 io := new clsIOrepresentation
 
@@ -320,7 +320,6 @@ Class clsIOrepresentation {
             visualizer.NewLine()
         }
         io_tokens.Push(new_token)
-        io_tokens_prev := 1
     }
     Replace(new_output, start := 1, end := 0) {
         if (! end) {
@@ -421,45 +420,89 @@ Class clsIOrepresentation {
         io_tokens.RemoveAt(io_tokens.Length())
     }
 
-    ; Below are the functions that were first attempt at modules.
-    ; When I recreate modules, it should be pure functions only.
+    _FindFirstModifiedToken() {
+        global io_prev_tokens
+        
+        for index, prev_token in io_prev_tokens {
+            if (index > io_tokens.Length()) {
+                return index
+            }
+            new_token := io_tokens[index]
+            if (new_token.input != prev_token.input || new_token.output != prev_token.output || new_token.attribs != prev_token.attribs) {
+                return index
+            }
+        }
+        return -1
+    }
     
+    _GetPrevRemainingLength(start) {
+        global io_prev_tokens
+
+        length := 0
+        end := io_prev_tokens.Length()
+        count := end - start + 1
+        i := start
+        loop % count
+        {
+            length += StrLen(io_prev_tokens[i++].output)
+        }
+        return length
+    }
+  
+    _CopyTokensIntoPrev() {
+        global io_prev_tokens
+
+        io_prev_tokens := []
+
+        for i, token in io_tokens {
+            token_copy := new clsToken
+            token_copy.input := token.input
+            token_copy.output := token.output
+            token_copy.attribs := token.attribs
+            io_prev_tokens.Push(token_copy)
+        }
+    }
+
     ProcessTokens() {
-        ; if ((settings.chording & CHORD_BY_OVERLAP) && io_tokens_prev >= io_tokens.Length()) {
-        ;     ; should not happen
-        ;     return
-        ; }
-    
+        global io_prev_tokens
+
+        this._CopyTokensIntoPrev()
+        this.ProcessLastToken()
+        first_modified := this._FindFirstModifiedToken()
+        if (first_modified == -1) {
+            return   ; no changes
+        }
+        delete_sequence := "{Backspace " . this._GetPrevRemainingLength(first_modified) . "}"
+        this.SendInput(delete_sequence)
+
+        this.SendTokensAsKeys(first_modified)
+    }
+
+    ProcessLastToken() {
         token := io_tokens[io_tokens.Length()]
         if ( token.attribs & this.IS_CHORD ) {
             if (this._ProcessChord()) {  ; should be the last or only token
-                this.SendTokensAsKeys()
                 return
             }
         } else {
             this._ProcessChar(token)
         }
-        this.DebugTokens()
 
         if (this.DeDoubleSpace()) {
-            this.SendTokensAsKeys()
             return
         }
 
         ; Process shorthands if we have a space or punctuation
         if ! ( this.TestTokenAttribs(io_tokens.Length(), this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
-            this.SendTokensAsKeys()
             return
         }
         if (this.DoShorthandsAndHints()) {
-            OutputDebug "`nSHORTHANDS starting"
             score.Score(score.ENTRY_SHORTHAND)
         } else if ! ( this.TestTokenAttribs(io_tokens.Length() - 1, this.IS_MANUAL_SPACE | this.IS_PUNCTUATION) ) {
             score.Score(score.ENTRY_MANUAL)
         }
 
         this.AddSpaceAfterPunctuation()
-        this.SendTokensAsKeys()
     }
 
     _ProcessChar(token) {
@@ -476,7 +519,6 @@ Class clsIOrepresentation {
             return true
         }
         if (this._RemoveRawChord()) {
-            this.OutputKeys()
             return
         }
         this._ProcessChordAsChars()
@@ -525,7 +567,6 @@ Class clsIOrepresentation {
         if ( this._ShouldCapitalize() ) {
             upper_cased := RegExReplace(character, "(^.)", "$U1")
             this.Replace(upper_cased, io_tokens.Length())
-            this.OutputKeys()
             this.SetTokenAttribs(io_tokens.Length(), this.WAS_CAPITALIZED)
         }
     }
@@ -551,7 +592,6 @@ Class clsIOrepresentation {
 
     _RemoveSmartSpace() {
         this.Replace("", io_tokens.Length() - 1, io_tokens.Length() - 1)
-        this.OutputKeys()
         io_tokens.RemoveAt(io_tokens.Length() - 1)
         return true
     }
@@ -565,7 +605,6 @@ Class clsIOrepresentation {
         if (( !(attribs & this.WITH_SHIFT) && InStr(keys.space_after_plain, token.input) )
                 || (attribs & this.WITH_SHIFT) && InStr(keys.space_after_shift, token.input) ) {
             this._AddSmartSpace()
-            this.OutputKeys()
         }
     }
 
@@ -575,7 +614,6 @@ Class clsIOrepresentation {
                 && this.TestTokenAttribs(io_tokens.Length(), this.IS_MANUAL_SPACE) ) {
             io_tokens.RemoveAt(io_tokens.Length() - 1)
             this.output_buffer .= "{Backspace}"
-            this.OutputKeys()
             return true
         }
         return false
@@ -683,7 +721,6 @@ Class clsIOrepresentation {
                 this._AddSmartSpace()
             }
         }
-        this.OutputKeys()
         if (! (affixes & (this.AFFIX_PREFIX | this.AFFIX_SUFFIX))) {
             score.Score(score.ENTRY_CHORD)
         }
@@ -753,7 +790,6 @@ Class clsIOrepresentation {
             expanded := this._RemoveAffixSymbols(expanded, affixes)
             first_token_offset := affixes & this.AFFIX_SUFFIX ? -1 : 0 
             this.Replace(expanded, first_token_id + first_token_offset, io_tokens.Length() + offset)
-            this.OutputKeys()
             this.SetTokenAttribs(first_token_id + first_token_offset, this.WAS_EXPANDED)
             if (capitalizes_next) {
                 this.SetTokenAttribs(first_token_id + first_token_offset, this.CAPITALIZES_NEXT)
@@ -890,93 +926,49 @@ Class clsIOrepresentation {
         this.output_buffer .= "{Space}"
     }
 
-    OutputKeys() {
-        return   ; TK - bypassed
-        if (this.output_buffer == "") {
-            return
-        }
-        if (A_Args[1] == "dev") {
-            test.Log(this.output_buffer)
-            if (test.mode == TEST_RUNNING) {
-                this.output_buffer := ""
-                return
-            }
-        }
-        this.SendIndividualKeys(this.output_buffer)
-        this.output_buffer := ""
-    }
-
-    SendIndividualKeys(str) {
-        ; expand repeats like {Backspace 2}
-        while RegExMatch(str, "\{([A-Za-z]+)\s+(\d+)\}", m) {
-            rep := ""
-            Loop % m2
-                rep .= "{" m1 "}"
-            str := StrReplace(str, m, rep)
-        }
-
-        pos := 1
-        while (pos <= StrLen(str)) {
-            this._DelayOutput()
-            ch := SubStr(str, pos, 1)
-            if (ch = "{") {
-                end := InStr(str, "}", false, pos)
-                if (!end)  { ; malformed, send rest as text
-                    token := SubStr(str, pos)
-                    pos := StrLen(str)+1
-                }
-                else {
-                    token := SubStr(str, pos, end-pos+1)
-                    pos := end+1
-                }
-                SendInput % token            ; send special key token
-            } else {
-                token := SubStr(str, pos, 1), pos++
-                SendInput % "{Text}" token   ; send literal character safely
+    SendInput(sequence) {
+        if (A_Args[1] != "dev") {
+            SendInput % sequence
+        } else {
+            test.Log(sequence)
+            if (test.mode != TEST_RUNNING) {
+                SendInput % sequence
             }
         }
     }
-
-    SendTokensAsKeys(starting_index := 1) {
+    
+    SendTokensAsKeys(start) {
         global symbol_to_SC_map
 
-        if !(starting_index) {
-            return
-        }
-        ; SendInput % "{Text} >>"
-        ;
-        length := StrLen(this.GetInput(1))
-        if (length > 0) {
-            SendInput % "{Backspace " . length . "}"
-        }
-        
-        Loop % io_tokens.Length() {
-            token := io_tokens[A_Index]
+        end := io_tokens.Length()
+        count := end - start + 1
+        i := start
+        Loop % count {
+            token := io_tokens[i++]
 
             if (token.attribs & this.IS_INTERRUPT ||  token.attribs & this.IS_ENTER) {
                 continue
             }
 
             if (token.attribs & this.SMART_SPACE_AFTER || token.attribs & this.IS_MANUAL_SPACE) {
-                SendInput % "{Space}"
+                this.SendInput("{Space}")
                 continue
             }
-            if (token.attribs & this.WAS_EXPANDED) {
-                SendInput % "{Text}" token.output
+            if (token.attribs & this.WAS_EXPANDED || token.attribs & this.WAS_EXPANDED) {
+                this.SendInput("{Text}" . token.output)
                 continue
             }
         
             if ! (symbol_to_SC_map.HasKey(token.output)) {
+                ; TK -- should remove
                 MsgBox , , % "ERROR with attribs: " . token.attribs
                 continue
             }
 
             SC_key := str.SCHexToString(symbol_to_SC_map[token.output])
             SC_prefix := token.attribs & this.WITH_SHIFT ? "+" : ""
-            SendInput % SC_prefix . "{" . SC_key . "}"
+            this.SendInput(SC_prefix . "{" . SC_key . "}")
         }
-        
-        ; SendInput % "{Text}<< "
     }
 
     DebugTokens() {
