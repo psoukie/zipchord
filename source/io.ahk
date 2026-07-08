@@ -21,9 +21,9 @@ Class clsToken {
 global io_keys := []
 global io_keys_index := {}      ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 io_backup_keys := []   ; temporarily holds original tokens of a chord candidate
-io_remaining_backup := ""
 
 global io_tokens := []
+io_new_tokens := []
 io_prev_tokens := []
 
 io := new clsIOrepresentation
@@ -52,7 +52,6 @@ Class clsIOrepresentation {
 
 
     IO_Keys_Reset() {
-        OutputDebug % "`nEMPTYING EVENTS"
         io_keys := []
         io_keys_index := {}
     }
@@ -148,11 +147,12 @@ Class clsIOrepresentation {
     }
 
     Add_Keys_To_Tokens(count) {
+        global io_new_tokens
+        
         Loop % count {
             key := io_keys[A_Index]
             token := this.Key_To_Token(key)
-            io_tokens.Push(token)
-            this.ProcessTokens()
+            io_new_tokens.Push(token)
         }
         if (count == io_keys.Length()) {
             this.IO_Keys_Reset()
@@ -164,6 +164,7 @@ Class clsIOrepresentation {
     ; Transform key presses into a chord and add to tokens
     Add_Chord_To_Tokens() {
         global io_backup_keys
+        global io_new_tokens
 
         token := new clsToken
         io_backup_keys := []
@@ -194,7 +195,7 @@ Class clsIOrepresentation {
             token.input := str.Arrange(token.input)
         }
 
-        io_tokens.Push(token)
+        io_new_tokens.Push(token)
         this.IO_Keys_Reset()
     }
 
@@ -203,7 +204,6 @@ Class clsIOrepresentation {
         start := io_keys[2].start
         if (end - start > settings.input_delay) {
             this.Add_Chord_To_Tokens()
-            this.ProcessTokens()
         } else {
             this.Add_Keys_To_Tokens(io_keys.Length())
         }
@@ -240,7 +240,7 @@ Class clsIOrepresentation {
         if (io_keys.Length() == 1) {
             ; process a lone key press in io_keys
             this.Add_Keys_To_Tokens(1)
-            return false
+            return true
         }
     
         ; two or more keys were pressed as a potential chord
@@ -249,7 +249,7 @@ Class clsIOrepresentation {
             return io_keys.Length() == 0
         } else {
             this._ClassifyByDuration(end)
-            return false    
+            return true    
         }
     }
 
@@ -263,29 +263,6 @@ Class clsIOrepresentation {
     }
     __New() {
         this.ClearTokens("*Interrupt*")
-    }
-
-    AugmentedAdd(entry, with_shift) {
-        entry := "" . entry
-        token := new clsToken
-        token.input := entry
-        if (with_shift) {
-            token.attribs |= this.WITH_SHIFT
-            token.output := str.ToAscii(entry, ["Shift"])
-        } else {
-            token.output := entry
-        }
-        if ( !with_shift && InStr(keys.punctuation_plain, entry) )
-                || ( with_shift && InStr(keys.punctuation_shift, entry) ) {
-            token.attribs |= this.IS_PUNCTUATION
-        }
-        if (entry == " ") {
-            token.attribs |= this.IS_MANUAL_SPACE
-        }
-        if (!with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
-            token.attribs |= this.IS_NUMERAL
-        }
-        io_tokens.Push(token)
     }
 
     Combine(start, end) {
@@ -398,7 +375,7 @@ Class clsIOrepresentation {
             }
             return
         }
-        io_tokens.RemoveAt(io_tokens.Length())
+        io_tokens.Pop()
     }
 
     _FindFirstModifiedToken() {
@@ -432,26 +409,43 @@ Class clsIOrepresentation {
         }
         return length
     }
-  
+
+    _PushTokenClone(token) {
+        global io_prev_tokens
+        
+        token_copy := new clsToken
+        token_copy.input := token.input
+        token_copy.output := token.output
+        token_copy.attribs := token.attribs
+        io_prev_tokens.Push(token_copy)
+    }
+    
     _CopyTokensIntoPrev() {
         global io_prev_tokens
+        global io_new_tokens
 
         io_prev_tokens := []
-
         for i, token in io_tokens {
-            token_copy := new clsToken
-            token_copy.input := token.input
-            token_copy.output := token.output
-            token_copy.attribs := token.attribs
-            io_prev_tokens.Push(token_copy)
+            this._PushTokenClone(token)
+        }
+        for i, token in io_new_tokens {
+            this._PushTokenClone(token)
         }
     }
 
     ProcessTokens() {
         global io_prev_tokens
+        global io_new_tokens
 
         this._CopyTokensIntoPrev()
-        this.ProcessLastToken()
+
+        while (io_new_tokens.Length() > 0) {
+            token := io_new_tokens[1]
+            io_tokens.Push(token)
+            io_new_tokens.RemoveAt(1)
+            this.ProcessLastToken()
+        }    
+
         first_modified := this._FindFirstModifiedToken()
         if (first_modified == -1) {
             return   ; no changes
@@ -512,16 +506,14 @@ Class clsIOrepresentation {
 
     _ProcessChordAsChars() {
         global io_backup_keys
-        global io_remaining_backup
+        global io_new_tokens
         
         backup_text := io_tokens[io_tokens.Length()].output
-        io_tokens.RemoveAt(io_tokens.Length())
+        io_tokens.Pop()
         
         for i, backup_key in io_backup_keys {
             backup_token := this.Key_To_Token(backup_key)
-            io_remaining_backup := SubStr(backup_text, i + 1)
-            io_tokens.Push(backup_token)
-            this.ProcessTokens()
+            io_new_tokens.InsertAt(i, backup_token)
         }
     }
 
@@ -724,7 +716,7 @@ Class clsIOrepresentation {
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(io_tokens.Length()-1) ) {
             Return false
         }
-        io_tokens.RemoveAt(io_tokens.Length())
+        io_tokens.Pop()
         Return true
     }
 
