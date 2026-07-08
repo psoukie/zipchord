@@ -470,7 +470,6 @@ Class clsLocaleInterface {
 
     CheckForLayoutChange() {
         current_layout := this.GetActiveLayoutName()
-        OutputDebug % "`nLayout: " . current_layout
         if (current_layout == this._last_detected_layout) {
             return
         }
