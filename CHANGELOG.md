@@ -8,6 +8,10 @@ Unreleased development changes since 2.8.x.
 
 - Added a new chord-detection mode based on relative key overlap, in addition to the existing fixed duration mode.
 
+**Fixes**
+
+- ZipChord cannot detect the system keyboard layout when its own UI is not shown. A workaround was added where after opening the UI or command menu (pressing both Shifts), ZipChord is able to detect and switch it's keyboard and language settings.
+
 ## ZipChord 2.8.2
 
 **Fixes**

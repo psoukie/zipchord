@@ -237,9 +237,7 @@ Class clsLocaleInterface {
 
     Init() {
         this.EnsureSelectedLocaleExists()
-        this._last_detected_layout := this.GetActiveLayoutName()
-        watch_fn := this._layout_watch_fn
-        SetTimer, %watch_fn%, 350
+         this._last_detected_layout := this.GetActiveLayoutName()
     }
     Build() {
         this._Build()
@@ -265,7 +263,11 @@ Class clsLocaleInterface {
             this.EnsureLocaleExists(this.STATIC_LOCALE_NAME)
             return
         }
-        settings.locale := this.GetActiveLayoutName()
+        active_layout := this.GetActiveLayoutName()
+        if (!active_layout) {
+            return
+        }
+        settings.locale := active_layout
         this.EnsureLocaleExists(settings.locale)
     }
     SwitchToActiveLayout() {
@@ -273,6 +275,12 @@ Class clsLocaleInterface {
             return
         }
         layout_name := this.GetActiveLayoutName()
+        this._SwitchToLayout(layout_name)
+    }
+    _SwitchToLayout(layout_name) {
+        if (!layout_name) {
+            return
+        }
         this.EnsureLocaleExists(layout_name)
         settings.locale := layout_name
         this._last_detected_layout := layout_name
@@ -352,6 +360,9 @@ Class clsLocaleInterface {
     }
     _LoadCurrentLocale() {
         locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        if (!locale_name) {
+            locale_name := settings.locale ? settings.locale : this.STATIC_LOCALE_NAME
+        }
         this.EnsureLocaleExists(locale_name)
         this._UpdateGroupTitles(locale_name)
         this.controls.use_auto.value := (locale_name == this.STATIC_LOCALE_NAME) ? 0 : 1
@@ -419,10 +430,16 @@ Class clsLocaleInterface {
             return
         }
         target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        if (!target_locale) {
+            target_locale := settings.locale ? settings.locale : this.STATIC_LOCALE_NAME
+        }
         new_loc.Save(target_locale)
         settings.locale := target_locale
         app_settings.Save()
-        this._last_detected_layout := this.GetActiveLayoutName()
+        active_layout := this.GetActiveLayoutName()
+        if (active_layout) {
+            this._last_detected_layout := active_layout
+        }
         this._ApplyLocaleToRuntime()
         this._LoadCurrentLocale()
     }
@@ -441,14 +458,6 @@ Class clsLocaleInterface {
     }
 
     GetActiveLayoutName() {
-        hkl := this.current_key_map._GetActiveKeyboardLayoutHandle()
-        if (hkl) {
-            layout_name := this._GetKeyboardLayoutText(Format("{:08X}", hkl & 0xFFFFFFFF))
-            if (layout_name) {
-                return layout_name
-            }
-        }
-
         VarSetCapacity(layout_id, 9*2, 0)  ; WCHAR[9] — layout name string like "00000409"
         if (DllCall("user32.dll\GetKeyboardLayoutName", "Str", layout_id)) {
             layout_name := this._GetKeyboardLayoutText(layout_id)
@@ -461,6 +470,7 @@ Class clsLocaleInterface {
 
     CheckForLayoutChange() {
         current_layout := this.GetActiveLayoutName()
+        OutputDebug % "`nLayout: " . current_layout
         if (current_layout == this._last_detected_layout) {
             return
         }
@@ -469,7 +479,7 @@ Class clsLocaleInterface {
             this._UpdateGroupTitles(current_layout)
         }
         if (!this.IsStaticMode()) {
-            this.SwitchToActiveLayout()
+            this._SwitchToLayout(current_layout)
         }
     }
 
