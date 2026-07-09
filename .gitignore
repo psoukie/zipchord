@@ -1,4 +1,5 @@
 _tests/temp.out
+_tests/*.txt
 build/
 *.exe
 *.dll
