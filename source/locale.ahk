@@ -48,6 +48,38 @@ Class clsKeyMap {
             , 0x135: "⊘"
             , 0x053: "⊙"}
 
+    NUMPAD_AHK_MAPPING := { 0x52: "Numpad0"
+            , 0x4F: "Numpad1"
+            , 0x50: "Numpad2"
+            , 0x51: "Numpad3"
+            , 0x4B: "Numpad4"
+            , 0x4C: "Numpad5"
+            , 0x4D: "Numpad6"
+            , 0x47: "Numpad7"
+            , 0x48: "Numpad8"
+            , 0x49: "Numpad9"
+            , 0x4E: "NumpadAdd"
+            , 0x4A: "NumpadSub"
+            , 0x37: "NumpadMult"
+            , 0x135: "NumpadDiv"
+            , 0x053: "NumpadDot"}
+
+    AHK_NUMPAD_SYMBOL_MAPPING := { "Numpad0": "⓪"
+            , "Numpad1": "①"
+            , "Numpad2": "②"
+            , "Numpad3": "③"
+            , "Numpad4": "④"
+            , "Numpad5": "⑤"
+            , "Numpad6": "⑥"
+            , "Numpad7": "⑦"
+            , "Numpad8": "⑧"
+            , "Numpad9": "⑨"
+            , "NumpadAdd": "⊕"
+            , "NumpadSub": "⊖"
+            , "NumpadMult": "⊗"
+            , "NumpadDiv": "⊘"
+            , "NumpadDot": "⊙"}
+
     __New() {
         ; Build default scan-code to symbols mapping
         symbols := this._SuggestSymbolsFromActiveLayout()
