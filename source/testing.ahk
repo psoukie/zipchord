@@ -313,6 +313,7 @@ Class TestingClass {
             this.Write("----------------`nTest case output`n----------------")
             this.Show(testcase)
         }
+        this.Compare(testcase, "temp.out")
     }
     _GetConfigAndInFilenames(testcase) {
         config_file := SubStr(testcase, 1, InStr(testcase, "__") - 1) . ".ini"
