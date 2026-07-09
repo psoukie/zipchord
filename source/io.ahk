@@ -145,6 +145,7 @@ Class clsIOrepresentation {
         if (entry == " ") {
             token.attribs |= this.IS_MANUAL_SPACE
         }
+        ; TK - this check needs to be modified (0123... need to be locale definable)
         if (!key.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
             token.attribs |= this.IS_NUMERAL
         }

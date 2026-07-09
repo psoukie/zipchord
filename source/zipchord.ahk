@@ -395,6 +395,19 @@ SCHotkeyToSymbolHotkey(key) {
             return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
         }
     }
+
+    if (pos := InStr(key, "Numpad", true)) {
+        if (up_pos := InStr(key, " ", true, pos)) {
+            candidate := SubStr(key, pos, up_pos - pos)
+            suffix := SubStr(key, up_pos)
+        } else {
+            candidate := SubStr(key, pos)
+            suffix := ""
+        }
+        repl := keys.key_map.AHK_NUMPAD_SYMBOL_MAPPING[candidate]
+        return SubStr(key, 1, pos-1) . repl . suffix
+    }
+    
     return key
 }
 

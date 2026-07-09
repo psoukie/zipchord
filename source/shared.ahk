@@ -328,7 +328,11 @@ Class clsStringFunctions {
     }
 
     SCHexToString(hex) {
-        return "SC" . Format("{:03X}", hex)
+        if (hex <= 0x35) {
+            return "SC" . Format("{:03X}", hex)
+        } else {
+            return keys.key_map.NUMPAD_AHK_MAPPING[hex]
+        }
     }
 
     ; Convert to ASCII
