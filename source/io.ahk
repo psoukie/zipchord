@@ -187,15 +187,15 @@ Class clsIOrepresentation {
              
         ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
         if ( (settings.chording & CHORD_ALLOW_SHIFT) && (first.attribs & this.WITH_SHIFT) ) {
-            first.input := "+" . first.input
+            first.chord := "+" . first.chord
             first.attribs := first.attribs & ~this.WITH_SHIFT
         }
     
         ; Sort to allow matching against chord dictionaries        
         if (dll.available) {
-            first.input := dll.NormalizeChord(first.input)
+            first.chord := dll.NormalizeChord(first.chord)
         } else {
-            first.input := str.Arrange(first.input)
+            first.chord := str.Arrange(first.chord)
         }
 
         this.IOKeysReset()
@@ -528,8 +528,15 @@ Class clsIOrepresentation {
                 || (attribs & this.IS_MANUAL_SPACE) || (attribs & this.WITH_SHIFT) ) {
             return
         }
+
+        token_id := io_tokens.Length()
+        
+        ; do not capitalize numerals
+        if (io_tokens[token_id].attribs & this.IS_NUMERAL) {
+            return
+        }
+
         if ( this._ShouldCapitalize() ) {
-            token_id := io_tokens.Length()
             io_tokens[token_id].output := RegExReplace(character, "(^.)", "$U1")
             this.SetTokenAttribs(token_id, this.WAS_CAPITALIZED)
         }
@@ -576,8 +583,7 @@ Class clsIOrepresentation {
     DeDoubleSpace() {
         if ( this.TestTokenAttribs(io_tokens.Length() - 1, this.SMART_SPACE_AFTER)
                 && this.TestTokenAttribs(io_tokens.Length(), this.IS_MANUAL_SPACE) ) {
-            io_tokens.RemoveAt(io_tokens.Length() - 1)
-            this.output_buffer .= "{Backspace}"
+            io_tokens.Pop()
             return true
         }
         return false
