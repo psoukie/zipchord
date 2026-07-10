@@ -32,53 +32,22 @@ Class clsKeyMap {
           , 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
           , 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35]
 
-    NUMPAD_MAPPING := { 0x52: "⓪"
-            , 0x4F: "①"
-            , 0x50: "②"
-            , 0x51: "③"
-            , 0x4B: "④"
-            , 0x4C: "⑤"
-            , 0x4D: "⑥"
-            , 0x47: "⑦"
-            , 0x48: "⑧"
-            , 0x49: "⑨"
-            , 0x4E: "⊕"
-            , 0x4A: "⊖"
-            , 0x37: "⊗"
-            , 0x135: "⊘"
-            , 0x053: "⊙"}
+    NUMPAD_MAPPING := { 0x52: {symbol: "⓪", ahk: "Numpad0"}
+            , 0x4F: {symbol: "①", ahk: "Numpad1"}
+            , 0x50: {symbol: "②", ahk: "Numpad2"}
+            , 0x51: {symbol: "③", ahk: "Numpad3"}
+            , 0x4B: {symbol: "④", ahk: "Numpad4"}
+            , 0x4C: {symbol: "⑤", ahk: "Numpad5"}
+            , 0x4D: {symbol: "⑥", ahk: "Numpad6"}
+            , 0x47: {symbol: "⑦", ahk: "Numpad7"}
+            , 0x48: {symbol: "⑧", ahk: "Numpad8"}
+            , 0x49: {symbol: "⑨", ahk: "Numpad9"}
+            , 0x4E: {symbol: "⊕", ahk: "NumpadAdd"}
+            , 0x4A: {symbol: "⊖", ahk: "NumpadSub"}
+            , 0x37: {symbol: "⊗", ahk: "NumpadMult"}
+            , 0x135: {symbol: "⊘", ahk: "NumpadDiv"}
+            , 0x053:  {symbol: "⊙", ahk: "NumpadDot"} }
 
-    NUMPAD_AHK_MAPPING := { 0x52: "Numpad0"
-            , 0x4F: "Numpad1"
-            , 0x50: "Numpad2"
-            , 0x51: "Numpad3"
-            , 0x4B: "Numpad4"
-            , 0x4C: "Numpad5"
-            , 0x4D: "Numpad6"
-            , 0x47: "Numpad7"
-            , 0x48: "Numpad8"
-            , 0x49: "Numpad9"
-            , 0x4E: "NumpadAdd"
-            , 0x4A: "NumpadSub"
-            , 0x37: "NumpadMult"
-            , 0x135: "NumpadDiv"
-            , 0x053: "NumpadDot"}
-
-    AHK_NUMPAD_SYMBOL_MAPPING := { "Numpad0": "⓪"
-            , "Numpad1": "①"
-            , "Numpad2": "②"
-            , "Numpad3": "③"
-            , "Numpad4": "④"
-            , "Numpad5": "⑤"
-            , "Numpad6": "⑥"
-            , "Numpad7": "⑦"
-            , "Numpad8": "⑧"
-            , "Numpad9": "⑨"
-            , "NumpadAdd": "⊕"
-            , "NumpadSub": "⊖"
-            , "NumpadMult": "⊗"
-            , "NumpadDiv": "⊘"
-            , "NumpadDot": "⊙"}
 
     __New() {
         ; Build default scan-code to symbols mapping

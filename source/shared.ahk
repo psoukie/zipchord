@@ -331,7 +331,7 @@ Class clsStringFunctions {
         if (hex <= 0x35) {
             return "SC" . Format("{:03X}", hex)
         } else {
-            return keys.key_map.NUMPAD_AHK_MAPPING[hex]
+            return keys.key_map.NUMPAD_MAPPING[hex].ahk
         }
     }
 

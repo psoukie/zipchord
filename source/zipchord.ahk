@@ -87,6 +87,7 @@ global settings := app_settings.settings
 
 SC_to_symbol_map := {} ; dynamically created scan-code number to key-symbol mapping
 symbol_to_SC_map := {} ; reverse map
+ahk_numpad_to_symbol_map := {} 
 
 #Include configurations.ahk
 #Include hints.ahk
@@ -299,6 +300,8 @@ RefreshScanCodeMapping() {
     global keys
     global SC_to_symbol_map
     global symbol_to_SC_map
+    global ahk_numpad_to_symbol_map
+
     SC_to_symbol_map := {}
     symbol_to_SC_map := {}
 
@@ -312,9 +315,10 @@ RefreshScanCodeMapping() {
         symbol_to_SC_map[symbol] := SC
     }
 
-    For num_SC, num_symbol in keys.key_map.NUMPAD_MAPPING {
-        SC_to_symbol_map[num_SC] := num_symbol
-        symbol_to_SC_map[num_symbol] := num_SC
+    For num_SC, num_reps in keys.key_map.NUMPAD_MAPPING {
+        SC_to_symbol_map[num_SC] := num_reps.symbol
+        symbol_to_SC_map[num_reps.symbol] := num_SC
+        ahk_numpad_to_symbol_map[num_reps.ahk] := num_reps.symbol
     }
 }
 
@@ -386,6 +390,8 @@ Return
 ; Replace mapped scan code and named-key tokens inside a hotkey string
 SCHotkeyToSymbolHotkey(key) {
     global SC_to_symbol_map
+    global ahk_numpad_to_symbol_map
+    
     pos := 1
     if (pos := InStr(key, "SC", true)) {
         candidate := "0x" . SubStr(key, pos+2, 3)   ; "SC" + 3 chars
@@ -404,7 +410,7 @@ SCHotkeyToSymbolHotkey(key) {
             candidate := SubStr(key, pos)
             suffix := ""
         }
-        repl := keys.key_map.AHK_NUMPAD_SYMBOL_MAPPING[candidate]
+        repl := ahk_numpad_to_symbol_map[candidate]
         return SubStr(key, 1, pos-1) . repl . suffix
     }
     
