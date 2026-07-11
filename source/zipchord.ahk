@@ -391,7 +391,7 @@ Return
 SCHotkeyToSymbolHotkey(key) {
     global SC_to_symbol_map
     global ahk_numpad_to_symbol_map
-    
+
     pos := 1
     if (pos := InStr(key, "SC", true)) {
         candidate := "0x" . SubStr(key, pos+2, 3)   ; "SC" + 3 chars
@@ -485,7 +485,10 @@ KeyUp:
     }
     ; QPC()
     if (io.ProcessKey(key, tick_up)) {
-        io.ProcessTokens()
+        edits := io.ProcessTokens() 
+        if (edits.Count() > 0) {
+            io.ProcessEdits(edits)
+        }
     }
     ; QPC()
     Critical Off

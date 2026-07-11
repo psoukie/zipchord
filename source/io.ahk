@@ -33,9 +33,9 @@ Class clsTokenAttribsBitSet {
 }
 
 Class clsAffixBitSet {
-    AFFIX_NONE := 0 ; no prefix or suffix
-    AFFIX_PREFIX := 1 ; expansion is a prefix
-    AFFIX_SUFFIX := 2 ; expansion is a suffix
+    AFFIX_NONE   := 0   ; no prefix or suffix
+    AFFIX_PREFIX := 1   ; expansion is a prefix
+    AFFIX_SUFFIX := 2   ; expansion is a suffix
 }
 
 Class clsToken {
@@ -49,13 +49,11 @@ Class clsToken {
 global TokenType := new clsTokenTypeEnum
 global Attribs := new clsTokenAttribsBitSet
 global Affixes := new clsAffixBitSet
-global io_keys := []
-global io_keys_index := {}      ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 
-io_chord_backup := new clsToken   ; temporarily holds original tokens of a chord candidate
-io_restore_tombstones := false
+global io_keys := []         ; window of overlapping key events 
+global io_keys_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 
-global io_tokens := []
+global io_tokens := []       ; window of tokenized input
 io_new_tokens := []
 io_prev_tokens := []
 io_tokens_to_ignore := 0
@@ -473,19 +471,16 @@ Class clsIOrepresentation {
         if (first_modified == -1) {
             return   ; no changes
         }
-        chars_to_del := this._GetPrevRemainingLength(first_modified)
-        if (chars_to_del > 0) {
-            this.ProcessOutput("{Backspace " . chars_to_del . "}")
-        }
 
-        this.SendTokensAsKeys(first_modified)
+        return this.PrepareEdits(first_modified)
     }
 
     ProcessLastToken() {
         global io_tokens_to_ignore
 
         token := this.LastToken()
-        
+
+        ; TK - bug - chained chords leave extra character.
         if (token.type == TokenType.CHORD_CANDIDATE) {
             ; Process a chord (which is the last or only token)
             backup_input := token.input
@@ -950,30 +945,14 @@ Class clsIOrepresentation {
         io_tokens.Push(smart_space)
     }
 
-    _SendOutput(sequence) {
-        if (settings.output_delay) {
-            Sleep settings.output_delay
-        }
-        SendInput % sequence
-    }
-    
-    ProcessOutput(sequence, symbol_sequence := "") {
-        if (A_Args[1] != "dev") {
-            this._SendOutput(sequence)
-        } else {
-            if (symbol_sequence != "") {
-                test.Log("~" . symbol_sequence)
-            } else {
-                test.Log(sequence)
-            }
-            if (test.mode != TEST_RUNNING) {
-                this._SendOutput(sequence)
-            }
-        }
-    }
-    
-    SendTokensAsKeys(start) {
+    PrepareEdits(start) {
         global symbol_to_SC_map
+        io_edits := []
+
+        chars_to_del := this._GetPrevRemainingLength(start)
+        if (chars_to_del > 0) {
+            io_edits.Push("{Backspace " . chars_to_del . "}")
+        }
 
         end := io_tokens.Length()
         count := end - start + 1
@@ -981,16 +960,14 @@ Class clsIOrepresentation {
         Loop % count {
             token := io_tokens[i++]
 
-            if (token.attribs & Attribs.TOMBSTONED) {
-                continue
-            }
-            
-            if (token.type == TokenType.INTERRUPT || token.type == TokenType.ENTER) {
+            if (token.attribs & Attribs.TOMBSTONED
+                    || token.type == TokenType.INTERRUPT
+                    || token.type == TokenType.ENTER) {
                 continue
             }
 
             if (token.type == TokenType.SMART_SPACE || token.type == TokenType.MANUAL_SPACE) {
-                this.ProcessOutput("{Space}")
+                io_edits.Push("{Space}")
                 continue
             }
 
@@ -998,12 +975,12 @@ Class clsIOrepresentation {
                 ; exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
                 SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
                 SC_prefix := token.attribs & Attribs.WITH_SHIFT ? "+" : ""
-                this.ProcessOutput(SC_prefix . "{" . SC_key . "}", SC_prefix . token.input)
+                io_edits.Push(SC_prefix . "{" . SC_key . "}")
                 continue
             }
 
             if (token.type == TokenType.EXPANSION || token.attribs & Attribs.WAS_CAPITALIZED) {
-                this.ProcessOutput("{Text}" . token.output)
+                io_edits.Push("{Text}" . token.output)
                 continue
             }
         
@@ -1015,10 +992,32 @@ Class clsIOrepresentation {
 
             SC_key := str.SCHexToString(symbol_to_SC_map[token.output])
             SC_prefix := token.attribs & Attribs.WITH_SHIFT ? "+" : ""
-            this.ProcessOutput(SC_prefix . "{" . SC_key . "}", SC_prefix . token.output)
+            io_edits.Push(SC_prefix . "{" . SC_key . "}")
         }
+
+        return io_edits
     }
 
+    _SendOutput(edit) {
+        if (settings.output_delay && test.mode != TEST_RUNNING) {
+            Sleep settings.output_delay
+        }
+        SendInput % edit
+    }
+    
+    ProcessEdits(edits) {
+        for _, edit in edits {
+            if (A_Args[1] != "dev") {
+                this._SendOutput(edit)
+            } else {
+                test.Log(edit)
+                if (test.mode != TEST_RUNNING) {
+                    this._SendOutput(edit)
+                }
+            }
+        }
+    }
+    
     DebugTokens() {
         if (A_Args[2] != "test-vs") {
             return
