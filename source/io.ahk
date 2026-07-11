@@ -99,7 +99,10 @@ Class clsIOrepresentation {
                 ev.with_shift := true
                 this.pre_shifted := false
             }
-            ; TK - check if key is already in io_keys
+            ; ignore if the key is already registered
+            if (io_keys_index.HasKey(ev.key)) {
+                return
+            }
             io_keys.Push(ev)
             io_keys_index[ev.key] := io_keys.Length()
         } else {
