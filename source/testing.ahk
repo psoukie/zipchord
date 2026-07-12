@@ -200,10 +200,9 @@ Class TestingClass {
         this.Monitor("output", "null")
     }
     Log(raw_event, is_input := false) {
-        event := SCHotkeyToSymbolHotkey(raw_event)
-        if (event != raw_event) {
-            event := "~" . StrReplace(StrReplace(event, "{"), "}")
-        }
+        stripped_raw := StrReplace(StrReplace(raw_event, "{"), "}")
+        converted_event := SCHotkeyToSymbolHotkey(stripped_raw)
+        event := converted_event == stripped_raw ? raw_event : "~" . converted_event
         if (this._input && is_input) {
             if (!this._starting_tick)
                 this._starting_tick := A_TickCount
