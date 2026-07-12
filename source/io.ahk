@@ -426,6 +426,8 @@ Class clsIOrepresentation {
         for key, value in token {
             token_copy[key] := value
         }
+        ; Exclude FIRST_IN_CHORD so resolving a rejected candidate does not create a false edit indication.
+        token_copy.attribs &= ~TokenAttribs.FIRST_IN_CHORD
         io_prev_tokens.Push(token_copy)
     }
     
@@ -460,8 +462,9 @@ Class clsIOrepresentation {
             token := io_new_tokens[1]
             io_tokens.Push(token)
             io_new_tokens.RemoveAt(1)
-            tokens_to_ignore := this.ProcessLastToken() 
+            tokens_to_ignore := this.ProcessLastToken()
         }
+        io_chord := new clsChordCandidate  ; reset io_chord
 
         first_modified := this._FindFirstModifiedToken()
         if (first_modified == -1) {
@@ -500,25 +503,28 @@ Class clsIOrepresentation {
             token.input := io_chord.candidate
             tokens_to_ignore := io_chord.token_count - 1
             if (this.TryChordModule()) {
+                token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
                 return tokens_to_ignore
             }
 
-            io_chord := new clsChordCandidate  ; reset io_chord
-            token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
             token.input := backup_input
             if (this._RemoveRawChord()) {
                 ; if we removed the chord, the first key was popped and we ignore the rest
                 return tokens_to_ignore
             }
-        } else {
-            ; Process a char
-            this._CapitalizeTypingAsNeeded(token)
-            this._RemoveSmartSpaceAsNeeded(token)
-            ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
-            if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
-                this.TryImmediateShorthand()
-            }
         }
+
+        token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
+        tokens_to_ignore := 0
+
+        ; Process a char
+        this._CapitalizeTypingAsNeeded(token)
+        this._RemoveSmartSpaceAsNeeded(token)
+        ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
+        if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
+            this.TryImmediateShorthand()
+        }
+
         if (this._DeDoubleSpace()) {
             return tokens_to_ignore
         }
@@ -878,7 +884,7 @@ Class clsIOrepresentation {
             return true
         }
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
-        if ( start > 1 && io_tokens[start].attribs && TokenAttribs.FIRST_IN_CHORD) {
+        if ( start > 1 && io_tokens[start].attribs & TokenAttribs.FIRST_IN_CHORD) {
             preceding := io_tokens[start - 1].input
             with_shift := io_tokens[start - 1].attribs & TokenAttribs.WITH_SHIFT
             if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
