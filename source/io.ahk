@@ -48,7 +48,7 @@ Class clsToken {
 
 global TokenType := new clsTokenTypeEnum
 global TokenAttribs := new clsTokenAttribsBitSet
-global Affixes := new clsAffixBitSet
+global AffixPos := new clsAffixBitSet
 
 global io_keys := []         ; window of overlapping key events 
 global io_keys_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
@@ -469,6 +469,7 @@ Class clsIOrepresentation {
 
         edits := this.PrepareEdits(first_modified)
         this.ShortenTokenWindow()
+        this.DebugTokens()
 
         return edits
     }
@@ -672,14 +673,14 @@ Class clsIOrepresentation {
 
         if ( (settings.chording & CHORD_RESTRICT)
                 && this._IsRestricted(token_id-1)
-                && !(affixes & Affixes.AFFIX_SUFFIX) ) {
+                && !(affixes & AffixPos.AFFIX_SUFFIX) ) {
             return false
         }
         
         ; if there is a smart space, we have to delete it for suffixes
         if (previous.type == TokenType.SMART_SPACE) {
             add_leading_space := false
-            if (affixes & Affixes.AFFIX_SUFFIX) {
+            if (affixes & AffixPos.AFFIX_SUFFIX) {
                 replace_offset := -1
             }
         }
@@ -703,7 +704,7 @@ Class clsIOrepresentation {
                 || previous.type == TokenType.ENTER 
                 || previous.output == " "
                 || previous.attribs & TokenAttribs.IS_PREFIX
-                || affixes & Affixes.AFFIX_SUFFIX) {
+                || affixes & AffixPos.AFFIX_SUFFIX) {
             add_leading_space := false
         }
         if (add_leading_space) {
@@ -721,14 +722,14 @@ Class clsIOrepresentation {
         }
 
         ; ending smart space
-        if (affixes & Affixes.AFFIX_PREFIX) {
+        if (affixes & AffixPos.AFFIX_PREFIX) {
             io_tokens[tb_replaced_id].attribs |= TokenAttribs.IS_PREFIX
         } else {
             if (settings.spacing & SPACE_AFTER_CHORD) {
                 this._AddSmartSpace()
             }
         }
-        if (! (affixes & (Affixes.AFFIX_PREFIX | Affixes.AFFIX_SUFFIX))) {
+        if (! (affixes & (AffixPos.AFFIX_PREFIX | AffixPos.AFFIX_SUFFIX))) {
             score.Score(score.ENTRY_CHORD)
         }
         return true
@@ -797,7 +798,7 @@ Class clsIOrepresentation {
             capitalizes_next := this._DetectCapitalizesNext(expanded)
             expanded := this._RemoveCapitalizesNextSymbol(expanded)
             expanded := this._RemoveAffixSymbols(expanded, affixes)
-            first_token_offset := affixes & Affixes.AFFIX_SUFFIX ? -1 : 0 
+            first_token_offset := affixes & AffixPos.AFFIX_SUFFIX ? -1 : 0 
             tb_replaced_id := first_token_id + first_token_offset
             this.Replace(expanded, tb_replaced_id, io_tokens.Length() + offset)
             io_tokens[tb_replaced_id].type := TokenType.EXPANSION
@@ -906,17 +907,17 @@ Class clsIOrepresentation {
 
     ; detect and adjust expansion for suffixes and prefixes
     _DetectAffixes(phrase) {
-        affixes := Affixes.AFFIX_NONE
+        affixes := AffixPos.AFFIX_NONE
         if (SubStr(phrase, 1, 1) == "~") {
-            affixes |= Affixes.AFFIX_SUFFIX
+            affixes |= AffixPos.AFFIX_SUFFIX
         }
         if (SubStr(phrase, 0) == "~" || SubStr(phrase, -1) == "~^") {
-            affixes |= Affixes.AFFIX_PREFIX
+            affixes |= AffixPos.AFFIX_PREFIX
         }
         Return affixes
     }
     _RemoveAffixSymbols(text, affixes) {
-        if (affixes & Affixes.AFFIX_SUFFIX) {
+        if (affixes & AffixPos.AFFIX_SUFFIX) {
             text := SubStr(text, 2)
         }
         if (SubStr(text, 0) == "~") {   ; removal of ~^ is handled by RemoveCapitalizesNextSymbol
@@ -1002,13 +1003,7 @@ Class clsIOrepresentation {
     _SendOutput(edit) {
         SendInput % edit
         if (settings.output_delay && test.mode != TEST_RUNNING) {
-            count := 1
-            ; if (SubStr(edit, 2, 10) == "Backspace ") {
-            ;     count := RegExMatch(edit, "\d+", match) ? match + 0 : 1  ; returns the number of repeats
-            ; }
-            ; Critical Off
-            Sleep count * settings.output_delay
-            ; Critical On
+            Sleep settings.output_delay
         }
     }
     
