@@ -477,22 +477,6 @@ Class clsIOrepresentation {
         return edits
     }
 
-    _ProcessShorthands(token) {
-        ; Process shorthands only if we have a space or punctuation
-        if (token.type != TokenType.MANUAL_SPACE && token.type != TokenType.PUNCTUATION) {
-            return
-        }
-        
-        if (this.DoShorthandsAndHints()) {
-            score.Score(score.ENTRY_SHORTHAND)
-        } else {
-            prev_type := this.NextToLastToken().type
-            if (prev_type != TokenType.MANUAL_SPACE && prev_type != TokenType.PUNCTUATION) {
-                score.Score(score.ENTRY_MANUAL)
-            }
-        }
-    }
-
     ProcessLastToken() {   ; -> int tokens_to_ignore
         tokens_to_ignore := 0
         token := this.LastToken()
@@ -522,7 +506,7 @@ Class clsIOrepresentation {
         this._RemoveSmartSpaceAsNeeded(token)
         ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
         if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
-            this.TryImmediateShorthand()
+            this._TryShorthandsAndHints(false, true)
         }
 
         if (this._DeDoubleSpace()) {
@@ -533,19 +517,37 @@ Class clsIOrepresentation {
         return tokens_to_ignore
     }
 
-    DoShorthandsAndHints() {
+    _TryShorthandsAndHints(with_hints := false, include_last_token := false) {
+        last_token_offset := include_last_token ? 0 : -1
         loop_length := io_tokens.Length() - 1
         Loop %loop_length%
         {
-            text := this.GetOutput(A_Index+1, io_tokens.Length()-1)
-            if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
+            text := this.GetOutput(A_Index+1, io_tokens.Length() + last_token_offset)
+            if (this.expansion_in_last_get || this._IsRestricted(A_Index)) {
                 continue
             }
-            if ( this.ShorthandModule(text, A_Index+1) ) {
+            if (this.ShorthandModule(text, A_Index + 1, last_token_offset)) {
                 return true
             }
-            if ( this.HintModule(text, A_Index+1) ) {
+            if (with_hints && this._HintModule(text, A_Index + 1)) {
                 return false
+            }
+        }
+        return false
+    }
+
+    _ProcessShorthands(token) {
+        ; Process shorthands only if we have a space or punctuation
+        if (token.type != TokenType.MANUAL_SPACE && token.type != TokenType.PUNCTUATION) {
+            return
+        }
+        
+        if (this._TryShorthandsAndHints(true)) {
+            score.Score(score.ENTRY_SHORTHAND)
+        } else {
+            prev_type := this.NextToLastToken().type
+            if (prev_type != TokenType.MANUAL_SPACE && prev_type != TokenType.PUNCTUATION) {
+                score.Score(score.ENTRY_MANUAL)
             }
         }
     }
@@ -650,7 +652,7 @@ Class clsIOrepresentation {
             expanded := chords.LookUp(candidate)
             if (expanded) {
                 ; check whether chord is used to complete typing of a shorthand
-                if (this.TryImmediateShorthand(-1)) {
+                if (this._TryShorthandsAndHints()) {
                     return this._ExpandChord(io_tokens.Length(), expanded) 
                 }
                 return this._ExpandChord(A_Index, expanded)
@@ -763,20 +765,6 @@ Class clsIOrepresentation {
         Return true
     }
 
-    TryImmediateShorthand(last_token_offset := 0) {
-        loop_length := io_tokens.Length() - 1
-        Loop %loop_length%
-        {
-            text := this.GetOutput(A_Index+1, io_tokens.Length() + last_token_offset)
-            if ( this.expansion_in_last_get || this._IsRestricted(A_Index) ) {
-                continue
-            }
-            if ( this.ShorthandModule(text, A_Index+1, last_token_offset) ) {
-                return true
-            }
-        }
-    }
-
     ShorthandModule(text, first_token_id, offset := -1) {
         global hint_delay
         if (! (settings.mode & MODE_SHORTHANDS_ENABLED)) {
@@ -791,38 +779,40 @@ Class clsIOrepresentation {
         }
         
         expanded := shorthands.LookUp(text)
-        if (expanded) {
-            hint_delay.Shorten()
-            ; capitalize the whole word on Caps Lock or the first character as needed
-            if (GetKeyState("CapsLock", "T")) {
-                expanded := Format("{:U}", expanded)
-                io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
-            } else if ( io_tokens[first_token_id].attribs & TokenAttribs.WITH_SHIFT
-                    || ( settings.capitalization != CAP_OFF
-                    && this._ShouldCapitalize(first_token_id) ) ) {
-                expanded := RegExReplace(expanded, "(^.)", "$U1")
-                io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
-            }
-            ; Ignore strings such as USD, or aptX
-            if ( this._DetectShiftWithin(first_token_id + 1, io_tokens.Length() + offset) ) {
-                return
-            }
-            affixes := this._DetectAffixes(expanded)
-            capitalizes_next := this._DetectCapitalizesNext(expanded)
-            expanded := this._RemoveCapitalizesNextSymbol(expanded)
-            expanded := this._RemoveAffixSymbols(expanded, affixes)
-            first_token_offset := affixes & AffixPos.AFFIX_SUFFIX ? -1 : 0 
-            tb_replaced_id := first_token_id + first_token_offset
-            this.Replace(expanded, tb_replaced_id, io_tokens.Length() + offset)
-            io_tokens[tb_replaced_id].type := TokenType.EXPANSION
-            if (capitalizes_next) {
-                io_tokens[tb_replaced_id].attribs |= TokenAttribs.CAPITALIZES_NEXT
-            }
-            return true
+        if (! expanded) {
+            return false
         }
+        
+        hint_delay.Shorten()
+        ; capitalize the whole word on Caps Lock or the first character as needed
+        if (GetKeyState("CapsLock", "T")) {
+            expanded := Format("{:U}", expanded)
+            io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
+        } else if ( io_tokens[first_token_id].attribs & TokenAttribs.WITH_SHIFT
+                || ( settings.capitalization != CAP_OFF
+                && this._ShouldCapitalize(first_token_id) ) ) {
+            expanded := RegExReplace(expanded, "(^.)", "$U1")
+            io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
+        }
+        ; Ignore strings such as USD, or aptX
+        if ( this._DetectShiftWithin(first_token_id + 1, io_tokens.Length() + offset) ) {
+            return
+        }
+        affixes := this._DetectAffixes(expanded)
+        capitalizes_next := this._DetectCapitalizesNext(expanded)
+        expanded := this._RemoveCapitalizesNextSymbol(expanded)
+        expanded := this._RemoveAffixSymbols(expanded, affixes)
+        first_token_offset := affixes & AffixPos.AFFIX_SUFFIX ? -1 : 0 
+        tb_replaced_id := first_token_id + first_token_offset
+        this.Replace(expanded, tb_replaced_id, io_tokens.Length() + offset)
+        io_tokens[tb_replaced_id].type := TokenType.EXPANSION
+        if (capitalizes_next) {
+            io_tokens[tb_replaced_id].attribs |= TokenAttribs.CAPITALIZES_NEXT
+        }
+        return true
     }
 
-    HintModule(text, first_token_id) {
+    _HintModule(text, first_token_id) {
         global hint_delay
         if ( settings.hints & HINT_OFF || ! (hint_delay.HasElapsed()) ) {
             return
