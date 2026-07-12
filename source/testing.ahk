@@ -199,21 +199,25 @@ Class TestingClass {
         this.Monitor("input", "null")
         this.Monitor("output", "null")
     }
-    Log(output, is_input := false) {
+    Log(raw_event, is_input := false) {
+        event := SCHotkeyToSymbolHotkey(raw_event)
+        if (event != raw_event) {
+            event := "~" . StrReplace(StrReplace(event, "{"), "}")
+        }
         if (this._input && is_input) {
             if (!this._starting_tick)
                 this._starting_tick := A_TickCount
             timestamp := A_TickCount - this._starting_tick
             if (this._input == TEST_DEST_CONSOLE)
-                this.Write("IN: " . timestamp . "`t" . output)
+                this.Write("IN: " . timestamp . "`t" . event)
             else
-                this._input_obj.Write(timestamp . "`t" . output . "`n")
+                this._input_obj.Write(timestamp . "`t" . event . "`n")
         }
         if (this._output && !is_input) {
             if (this._output == TEST_DEST_CONSOLE)
-                this.Write("OUT: " . output)
+                this.Write("OUT: " . event)
             else
-                this._output_obj.Write(output . "`n")
+                this._output_obj.Write(event . "`n")
         }
     }
     Play(cfg:="", in_file:="") {
@@ -312,8 +316,11 @@ Class TestingClass {
             this.Show("temp.out")
             this.Write("----------------`nTest case output`n----------------")
             this.Show(testcase)
+            test_base_name := SubStr(testcase, 1, StrLen(testcase) - 4)
+            RunWait % "fc.exe /a /n " . test_base_name . ".txt temp.txt"
+        } else {
+            this.Compare(testcase, "temp.out")
         }
-        this.Compare(testcase, "temp.out")
     }
     _GetConfigAndInFilenames(testcase) {
         config_file := SubStr(testcase, 1, InStr(testcase, "__") - 1) . ".ini"
