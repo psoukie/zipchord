@@ -1,56 +1,47 @@
 ~h
 ~t
-{Backspace 2}the{Space}
+{Backspace 2}
+{Text}the
+{Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~t
 ~h
 ~e
-{Backspace 3}there{Space}
+{Backspace 3}
+{Text}there
+{Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~e
 ~u
 ~s
-{Backspace 3}this{Space}
+{Backspace 3}
+{Text}this
+{Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~e
 ~u
 ~s
-{Backspace 3}this{Space}
+{Backspace 3}
+{Text}this
+{Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~e
 ~u
 ~s
-{Backspace 3}this{Space}
+{Backspace 3}
+{Text}this
+{Space}
 ~Space
-{Backspace}
-~e
-~u
-~s
-~Space
-~e
-~u
-~s
-~Space
-~e
-~u
-~s
-~Space
-~e
-~u
-~s
-{Backspace 3}this{Space}
-~Space
-{Backspace}
-~e
-~u
-~s
-{Backspace 3}this{Space}
-~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~e
 ~u
 ~s
@@ -62,4 +53,36 @@
 ~e
 ~u
 ~s
-{Backspace 3}this{Space}
+~Space
+~e
+~u
+~s
+{Backspace 3}
+{Text}this
+{Space}
+~Space
+{Backspace 2}
+{Space}
+~e
+~u
+~s
+{Backspace 3}
+{Text}this
+{Space}
+~Space
+{Backspace 2}
+{Space}
+~e
+~u
+~s
+~Space
+~e
+~u
+~s
+~Space
+~e
+~u
+~s
+{Backspace 3}
+{Text}this
+{Space}
