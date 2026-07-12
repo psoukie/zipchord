@@ -639,6 +639,9 @@ Class clsIOrepresentation {
         count := io_tokens.Length()
         Loop %count%
         {
+            if (io_tokens[A_Index].type == TokenType.INTERRUPT || io_tokens[A_Index].type == TokenType.ENTER) {
+                continue
+            }
             candidate := this.GetInput(A_Index)
             if (StrLen(candidate) < 2) {
                 return false
