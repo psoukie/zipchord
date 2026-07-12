@@ -616,7 +616,7 @@ Class clsIOrepresentation {
     DeDoubleSpace() {
         if ( this.NextToLastToken().type == TokenType.SMART_SPACE
                 && this.LastToken().type == TokenType.MANUAL_SPACE ) {
-            io_tokens.Pop()
+            io_tokens.RemoveAt(io_tokens.Length() - 1)
             return true
         }
         return false
