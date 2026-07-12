@@ -61,6 +61,7 @@ io_tokens_to_ignore := 0
 io := new clsIOrepresentation
 
 Class clsIOrepresentation {
+    SEQUENCE_WINDOW := 11
     pre_shifted := false
     expansion_in_last_get := false
 
@@ -130,7 +131,6 @@ Class clsIOrepresentation {
         
         for key, index in io_keys_index {
             if (index <= count) {
-                OutputDebug % "`nDeleting index for " . key
                 io_keys_index.Delete(key)
                 continue
             }
@@ -279,21 +279,29 @@ Class clsIOrepresentation {
         this.ClearTokens("*Interrupt*")
     }
 
-    ClearTokens(type := "") {
+    ClearTokens(type) {
         this.IOKeysReset()
         io_tokens := []
-
         new_token := new clsToken
+
         if (type=="~Enter") {
             new_token.type := TokenType.ENTER
-        }
-        if (type=="*Interrupt*") {
+        } else {
             new_token.type := TokenType.INTERRUPT
         }
         if (visualizer.IsOn()) {
             visualizer.NewLine()
         }
         io_tokens.Push(new_token)
+    }
+
+    ShortenTokenWindow() {
+        items_to_remove := io_tokens.Length() - this.SEQUENCE_WINDOW
+        if (items_to_remove < 1) {
+            return
+        }
+        io_tokens.RemoveAt(1, items_to_remove)
+        return        
     }
 
     LastToken() {
@@ -460,6 +468,8 @@ Class clsIOrepresentation {
         }
 
         edits := this.PrepareEdits(first_modified)
+        this.ShortenTokenWindow()
+
         return edits
     }
 
@@ -986,7 +996,6 @@ Class clsIOrepresentation {
             io_edits.Push(SC_prefix . "{" . SC_key . "}")
         }
 
-        this.DebugTokens()
         return io_edits
     }
 
