@@ -16,12 +16,11 @@ Class clsTokenTypeEnum {
     CHARACTER       := 0
     INTERRUPT       := 1
     ENTER           := 2
-    CHORD_CANDIDATE := 3
-    EXPANSION       := 4
-    MANUAL_SPACE    := 5
-    SMART_SPACE     := 6
-    NUMERAL         := 7
-    PUNCTUATION     := 8
+    MANUAL_SPACE    := 3
+    SMART_SPACE     := 4
+    NUMERAL         := 5
+    PUNCTUATION     := 6
+    EXPANSION       := 7
 }
 
 Class clsTokenAttribsBitSet {
@@ -29,7 +28,8 @@ Class clsTokenAttribsBitSet {
     WAS_CAPITALIZED  := 2
     IS_PREFIX        := 4
     CAPITALIZES_NEXT := 8
-    TOMBSTONED       := 16
+    FIRST_IN_CHORD   := 16
+    TOMBSTONED       := 32
 }
 
 Class clsAffixBitSet {
@@ -39,11 +39,16 @@ Class clsAffixBitSet {
 }
 
 Class clsToken {
-    type := 0     ; of clsTokenType 
-    input := ""
-    output := ""
-    attribs := 0  ; of clsAttribs
-    chord := ""
+    type    := 0     ; of clsTokenType 
+    input   := ""
+    output  := ""
+    attribs := 0     ; of clsAttribs
+}
+
+Class clsChordCandidate {
+    candidate   := ""
+    token_count := 0
+    with_shift  := false
 }
 
 global TokenType := new clsTokenTypeEnum
@@ -54,9 +59,9 @@ global io_keys := []         ; window of overlapping key events
 global io_keys_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 
 global io_tokens := []       ; window of tokenized input
+global io_chord := new clsChordCandidate
 io_new_tokens := []
 io_prev_tokens := []
-io_tokens_to_ignore := 0
 
 io := new clsIOrepresentation
 
@@ -180,34 +185,35 @@ Class clsIOrepresentation {
     ; Transform key presses into a chord and add to tokens
     AddChordToTokens() {
         global io_new_tokens
+        accum_input := ""
 
-        first := this.KeyToToken(io_keys[1])
-        first.type := TokenType.CHORD_CANDIDATE
-        first.chord := first.input
-        io_new_tokens.Push(first)
-        
-        Loop, % io_keys.Length() - 1
+        io_length := io_keys.Length()
+        io_chord.token_count := io_length
+        Loop, % io_length
         {
-            key := io_keys[A_Index + 1] 
-            first.chord .= key.key
+            key := io_keys[A_Index] 
+            accum_input .= key.key
             if (key.with_shift) {
-                first.attribs |= TokenAttribs.WITH_SHIFT
+                io_chord.with_shift := true
             }
             token := this.KeyToToken(key)
+            if (A_Index == 1) {
+                token.attribs |= TokenAttribs.FIRST_IN_CHORD
+            }
             io_new_tokens.Push(token)
         }
              
-        ;For chords, if Shift is allowed as a separate key in chord key, we add it as part of the entry if it was pressed.
-        if ( (settings.chording & CHORD_ALLOW_SHIFT) && (first.attribs & TokenAttribs.WITH_SHIFT) ) {
-            first.chord := "+" . first.chord
-            first.attribs &= ~TokenAttribs.WITH_SHIFT
+        ;For chords, if Shift is allowed as a separate key in chords, we add it as part of the sequence.
+        if (settings.chording & CHORD_ALLOW_SHIFT && io_chord.with_shift) {
+            accum_input := "+" . accum_input
+            io_chord.with_shift := false
         }
     
         ; Sort to allow matching against chord dictionaries        
         if (dll.available) {
-            first.chord := dll.NormalizeChord(first.chord)
+            io_chord.candidate := dll.NormalizeChord(accum_input)
         } else {
-            first.chord := str.Arrange(first.chord)
+            io_chord.candidate := str.Arrange(accum_input)
         }
 
         this.IOKeysReset()
@@ -369,12 +375,9 @@ Class clsIOrepresentation {
             io_tokens.Pop()
             token := this.LastToken()
         }
-        if (token.type == TokenType.EXPANSION) {
-            token.input := "" ; TK possibly unsafe workaround to prevent matching with a chained chord later
+        if (token.type == TokenType.EXPANSION && StrLen(token.output) > 1) {
+            ; TK Can possibly misbehave with a chained chord later since we're leaving .input as is
             token.output := SubStr(token.output, 1, StrLen(token.output) - 1)
-            if (StrLen(token.output) == 1) {
-                token.type := TokenType.CHARACTER
-            }
             return
         }
 
@@ -419,11 +422,10 @@ Class clsIOrepresentation {
     _PushTokenClone(token) {
         global io_prev_tokens
 
-        ; skips copying .type and .chord on purpose
         token_copy := new clsToken
-        token_copy.input := token.input
-        token_copy.output := token.output
-        token_copy.attribs := token.attribs
+        for key, value in token {
+            token_copy[key] := value
+        }
         io_prev_tokens.Push(token_copy)
     }
     
@@ -443,24 +445,23 @@ Class clsIOrepresentation {
     ProcessTokens() {
         global io_prev_tokens
         global io_new_tokens
-        global io_tokens_to_ignore
 
         edits := []
-        io_tokens_to_ignore := 0
+        tokens_to_ignore := 0
         this._CopyTokensIntoPrev()
 
         ; TK - 'SPACE + W' does not work as chord
         while (io_new_tokens.Length() > 0) {
-            if (io_tokens_to_ignore > 0) {
+            if (tokens_to_ignore > 0) {
                 io_new_tokens.RemoveAt(1)
-                io_tokens_to_ignore -= 1
+                tokens_to_ignore -= 1
                 continue
             }
             token := io_new_tokens[1]
             io_tokens.Push(token)
             io_new_tokens.RemoveAt(1)
-            this.ProcessLastToken()
-        }    
+            tokens_to_ignore := this.ProcessLastToken() 
+        }
 
         first_modified := this._FindFirstModifiedToken()
         if (first_modified == -1) {
@@ -469,46 +470,12 @@ Class clsIOrepresentation {
 
         edits := this.PrepareEdits(first_modified)
         this.ShortenTokenWindow()
-        this.DebugTokens()
 
         return edits
     }
 
-    ProcessLastToken() {
-        global io_tokens_to_ignore
-
-        token := this.LastToken()
-
-        ; TK - bug - chained chords leave extra character.
-        if (token.type == TokenType.CHORD_CANDIDATE) {
-            ; Process a chord (which is the last or only token)
-            backup_input := token.input
-            token.input := token.chord
-            io_tokens_to_ignore := StrLen(token.chord) - 1
-            if (this.TryChordModule()) {
-                return
-            }
-
-            io_tokens_to_ignore := 0
-            token.input := backup_input
-            if (this._RemoveRawChord()) {
-                return
-            }
-        } else {
-            ; Process a char
-            this._CapitalizeTypingAsNeeded(token)
-            this._RemoveSmartSpaceAsNeeded(token)
-            ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
-            if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
-                this.TryImmediateShorthand()
-            }
-        }
-
-        if (this.DeDoubleSpace()) {
-            return
-        }
-
-        ; Process shorthands if we have a space or punctuation
+    _ProcessShorthands(token) {
+        ; Process shorthands only if we have a space or punctuation
         if (token.type != TokenType.MANUAL_SPACE && token.type != TokenType.PUNCTUATION) {
             return
         }
@@ -521,8 +488,43 @@ Class clsIOrepresentation {
                 score.Score(score.ENTRY_MANUAL)
             }
         }
+    }
 
-        this.AddSpaceAfterPunctuation()
+    ProcessLastToken() {   ; -> int tokens_to_ignore
+        tokens_to_ignore := 0
+        token := this.LastToken()
+
+        if (token.attribs & TokenAttribs.FIRST_IN_CHORD) {
+            ; Process a chord (which is the last or only token)
+            backup_input := token.input
+            token.input := io_chord.candidate
+            tokens_to_ignore := io_chord.token_count - 1
+            if (this.TryChordModule()) {
+                return tokens_to_ignore
+            }
+
+            io_chord := new clsChordCandidate  ; reset io_chord
+            token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
+            token.input := backup_input
+            if (this._RemoveRawChord()) {
+                ; if we removed the chord, the first key was popped and we ignore the rest
+                return tokens_to_ignore
+            }
+        } else {
+            ; Process a char
+            this._CapitalizeTypingAsNeeded(token)
+            this._RemoveSmartSpaceAsNeeded(token)
+            ; now, the slightly chaotic immediate mode allowing shorthands triggered as soon as they are completed:
+            if (settings.chording & CHORD_IMMEDIATE_SHORTHANDS) {
+                this.TryImmediateShorthand()
+            }
+        }
+        if (this._DeDoubleSpace()) {
+            return tokens_to_ignore
+        }
+        this._ProcessShorthands(token)
+        this._AddSpaceAfterPunctuation()
+        return tokens_to_ignore
     }
 
     DoShorthandsAndHints() {
@@ -600,10 +602,11 @@ Class clsIOrepresentation {
         return true
     }
 
-    AddSpaceAfterPunctuation() {
+    _AddSpaceAfterPunctuation() {
         token := this.LastToken()
         attribs := token.attribs
         if ( !(settings.spacing & SPACE_PUNCTUATION)
+                || token.type != TokenType.PUNCTUATION
                 || this.NextToLastToken().type == TokenType.INTERRUPT ) {
             return
         }
@@ -614,7 +617,7 @@ Class clsIOrepresentation {
     }
 
     ; Remove a double space if the user types a space after punctuation smart space
-    DeDoubleSpace() {
+    _DeDoubleSpace() {
         if ( this.NextToLastToken().type == TokenType.SMART_SPACE
                 && this.LastToken().type == TokenType.MANUAL_SPACE ) {
             io_tokens.RemoveAt(io_tokens.Length() - 1)
@@ -660,6 +663,7 @@ Class clsIOrepresentation {
             mark_as_capitalized := true
         } else if ( io_tokens[token_id].attribs & TokenAttribs.WITH_SHIFT
                 || io_tokens[token_id].attribs & TokenAttribs.WAS_CAPITALIZED
+                || io_chord.with_shift
                 || ( settings.capitalization != CAP_OFF && this._ShouldCapitalize(token_id) ) ) {
             expanded := RegExReplace(expanded, "(^.)", "$U1")
             mark_as_capitalized := true
@@ -740,11 +744,11 @@ Class clsIOrepresentation {
         if !(settings.chording & CHORD_DELETE_UNRECOGNIZED) {
             return false
         }
-        ; Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled and a non-existing chord is
-        ; registered while typing a word, this input is left alone because it is safe to assume it was intended as normal
-        ; typing.
+        ; Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled
+        ; and a non-existing chord is detected while typing, we leave the mistyped chord because
+        ; it is safe to assume it was intended as normal typing.
         if (settings.chording & CHORD_RESTRICT && this._IsRestricted(io_tokens.Length()-1) ) {
-            Return false
+            return false
         }
         io_tokens.Pop()
         Return true
@@ -874,7 +878,7 @@ Class clsIOrepresentation {
             return true
         }
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
-        if ( start > 1 && io_tokens[start].type == TokenType.CHORD_CANDIDATE) {
+        if ( start > 1 && io_tokens[start].attribs && TokenAttribs.FIRST_IN_CHORD) {
             preceding := io_tokens[start - 1].input
             with_shift := io_tokens[start - 1].attribs & TokenAttribs.WITH_SHIFT
             if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
