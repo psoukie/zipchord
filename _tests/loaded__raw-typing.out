@@ -6,7 +6,8 @@
 ~,
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~s
 ~o
 ~Space
@@ -66,7 +67,8 @@
 *Hint*
 {Space}
 ~a
-{Backspace}A
+{Backspace 1}
+{Text}A
 ~n
 ~d
 ~Space
@@ -78,7 +80,8 @@
 *Hint*
 {Space}
 ~+'
-{Backspace 2}"
+{Backspace 2}
+~+'
 ~+f
 ~o
 ~r
@@ -120,11 +123,13 @@
 *Hint*
 {Space}
 ~+'
-{Backspace 2}"
+{Backspace 2}
+~+'
 ~.
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~+h
 ~m
 ~m
@@ -144,7 +149,8 @@
 *Hint*
 {Space}
 ~a
-{Backspace}A
+{Backspace 1}
+{Text}A
 ~n
 ~d
 ~Space
@@ -156,7 +162,9 @@
 *Hint*
 {Space}
 ~n
-{Backspace}N
+~o
+{Backspace 2}
+{Text}N
 ~o
 ~w
 ~Space
