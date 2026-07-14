@@ -591,6 +591,8 @@ Class TestingClass {
                     this.Write("`n Enter", "")
                 Case "Backspace":
                     this.Write("`n Backspace", "")
+                Case "Shift*":
+                    this.Write("`n Shift", "")
                 Default:
                     if (ch_time==-1)
                         ch_time := 0
