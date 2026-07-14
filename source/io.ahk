@@ -91,7 +91,7 @@ Class clsIOrepresentation {
 
         if (SubStr(ev.key, -2) == " Up") {
             is_key_down := false
-            ev.key := SubStr(ev.key, 1, StrLen(ev.key)-3)
+            ev.key := SubStr(ev.key, 1, StrLen(ev.key) - 3)
         }
 
         ev.key := (StrLen(ev.key) > 1) ? "{" . ev.key . "}" : ev.key
@@ -276,9 +276,8 @@ Class clsIOrepresentation {
     PreShift() {
         this.pre_shifted := !this.pre_shifted
         ; and we cheat to allow shorthands:
-        token := this.LastToken()
-        if (token.type == TokenType.INTERRUPT) {
-            token.type := TokenType.MANUAL_SPACE
+        if (LastToken().type == TokenType.INTERRUPT) {
+            LastToken().type := TokenType.MANUAL_SPACE
         }
     }
     __New() {
@@ -302,7 +301,7 @@ Class clsIOrepresentation {
     }
 
     ShortenTokenWindow() {
-        items_to_remove := io_tokens.Length() - this.SEQUENCE_WINDOW
+        items_to_remove := LastTokenId() - this.SEQUENCE_WINDOW
         if (items_to_remove < 1) {
             return
         }
@@ -310,17 +309,9 @@ Class clsIOrepresentation {
         return        
     }
 
-    LastToken() {
-        return io_tokens[io_tokens.Length()]
-    }
-
-    NextToLastToken() {
-        return io_tokens[io_tokens.Length() - 1]
-    }
-    
     Replace(new_output, start := 1, end := -1) {
         if (end == -1) {
-            end := io_tokens.Length()
+            end := LastTokenId()
         }
         if (start != end) {
             Loop, % end - start
@@ -332,7 +323,7 @@ Class clsIOrepresentation {
         }
         io_tokens[start].output := new_output
     }
-
+    
     GetInput(start := 1, end := 0) {
         return this._Get(start, end)
     }
@@ -344,9 +335,9 @@ Class clsIOrepresentation {
         what := get_output ? "output" : "input" 
         separator := get_output ? "" : "|"
         if (! end) {
-            end := io_tokens.Length() 
+            end := LastTokenId() 
         }
-        if (start > io_tokens.Length() || end > io_tokens.Length()) {
+        if (start > LastTokenId() || end > LastTokenId()) {
             MsgBox, , % "ZipChord", "IO Representation error: Requested getting tokens that exceed the length of _io_tokens."
             Return true
         }
@@ -366,15 +357,14 @@ Class clsIOrepresentation {
     }
 
     Backspace(with_ctrl := false) {
-        if ( io_tokens.Length() < 2 || this.LastToken().type == TokenType.EXPANSION || with_ctrl ) {
+        if ( LastTokenId() < 2 || LastToken().type == TokenType.EXPANSION || with_ctrl ) {
             this.ClearTokens("*Interrupt*")
             return
         }
-        token := this.LastToken()
-        while (token.attribs & TokenAttribs.TOMBSTONED) {
+        while (LastToken().attribs & TokenAttribs.TOMBSTONED) {
             io_tokens.Pop()
-            token := this.LastToken()
         }
+        token := LastToken()
         if (token.type == TokenType.EXPANSION && StrLen(token.output) > 1) {
             ; TK Can possibly misbehave with a chained chord later since we're leaving .input as is
             token.output := SubStr(token.output, 1, StrLen(token.output) - 1)
@@ -388,7 +378,7 @@ Class clsIOrepresentation {
         global io_prev_tokens
         
         for index, prev_token in io_prev_tokens {
-            if (index > io_tokens.Length()) {
+            if (index > LastTokenId()) {
                 return index
             }
             new_token := io_tokens[index]
@@ -479,7 +469,7 @@ Class clsIOrepresentation {
 
     ProcessLastToken() {   ; -> int tokens_to_ignore
         tokens_to_ignore := 0
-        token := this.LastToken()
+        token := LastToken()
 
         if (token.attribs & TokenAttribs.FIRST_IN_CHORD) {
             ; Process a chord (which is the last or only token)
@@ -519,10 +509,10 @@ Class clsIOrepresentation {
 
     _TryShorthandsAndHints(with_hints := false, include_last_token := false) {
         last_token_offset := include_last_token ? 0 : -1
-        loop_length := io_tokens.Length() - 1
+        loop_length := LastTokenId() - 1
         Loop %loop_length%
         {
-            text := this.GetOutput(A_Index+1, io_tokens.Length() + last_token_offset)
+            text := this.GetOutput(A_Index+1, LastTokenId() + last_token_offset)
             if (this.expansion_in_last_get || this._IsRestricted(A_Index)) {
                 continue
             }
@@ -545,7 +535,7 @@ Class clsIOrepresentation {
         if (this._TryShorthandsAndHints(true)) {
             score.Score(score.ENTRY_SHORTHAND)
         } else {
-            prev_type := this.NextToLastToken().type
+            prev_type := PreviousLiveToken().type
             if (prev_type != TokenType.MANUAL_SPACE && prev_type != TokenType.PUNCTUATION) {
                 score.Score(score.ENTRY_MANUAL)
             }
@@ -576,7 +566,7 @@ Class clsIOrepresentation {
     }
 
     _RemoveSmartSpaceAsNeeded(token) {
-        if (this.NextToLastToken().type != TokenType.SMART_SPACE) {
+        if (PreviousLiveToken().type != TokenType.SMART_SPACE) {
             return
         }
 
@@ -584,38 +574,44 @@ Class clsIOrepresentation {
         type := token.type
         ; for punctuation that removes spaces
         if (type == TokenType.PUNCTUATION) {
-            if ( (!(attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.remove_space_plain, token.input))
-                    || ((attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.remove_space_shift, token.input)) ) {
-                return this._RemoveSmartSpace()
+            if ( (!(attribs & TokenAttribs.WITH_SHIFT)
+                && InStr(keys.remove_space_plain, token.input))
+                || ((attribs & TokenAttribs.WITH_SHIFT)
+                && InStr(keys.remove_space_shift, token.input)) ) {
+                io_tokens.RemoveAt(PreviousLiveTokenId())   ; not tombstoning because we've just added it
+                return true
             }
         }
+        
         ; for manual_space-punctuation-numeral and numeral-punctuation-numeral
+        before_space_token := PreviousLiveToken(2)
         if (type != TokenType.NUMERAL
-                || io_tokens.Length() < 4
-                || io_tokens[io_tokens.Length() - 2].type != TokenType.PUNCTUATION) {
-            return
+                || before_space_token == -1
+                || before_space_token.type != TokenType.PUNCTUATION) {
+            return false
         }
         
-        prev_type := io_tokens[io_tokens.Length() - 3].type
-        if (prev_type == TokenType.NUMERAL
-                || prev_type == TokenType.MANUAL_SPACE
-                || prev_type == TokenType.ENTER) {
-            return this._RemoveSmartSpace()
+        before_punct_token := PreviousLiveToken(3)
+        if (before_punct_token == -1) {
+            return false
         }
-    }
+        before_punct_type := before_punct_token.type
+        if (before_punct_type == TokenType.NUMERAL
+                || before_punct_type == TokenType.MANUAL_SPACE
+                || before_punct_type == TokenType.ENTER) {
+            io_tokens.RemoveAt(PreviousLiveTokenId())
+            return true
+        }
 
-    _RemoveSmartSpace() {
-        this.Replace("", io_tokens.Length() - 1, io_tokens.Length() - 1)
-        io_tokens.RemoveAt(io_tokens.Length() - 1)
-        return true
+        return false
     }
 
     _AddSpaceAfterPunctuation() {
-        token := this.LastToken()
+        token := LastToken()
         attribs := token.attribs
         if ( !(settings.spacing & SPACE_PUNCTUATION)
                 || token.type != TokenType.PUNCTUATION
-                || this.NextToLastToken().type == TokenType.INTERRUPT ) {
+                || PreviousLiveToken().type == TokenType.INTERRUPT ) {
             return
         }
         if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.space_after_plain, token.input) )
@@ -626,9 +622,9 @@ Class clsIOrepresentation {
 
     ; Remove a double space if the user types a space after punctuation smart space
     _DeDoubleSpace() {
-        if ( this.NextToLastToken().type == TokenType.SMART_SPACE
-                && this.LastToken().type == TokenType.MANUAL_SPACE ) {
-            io_tokens.RemoveAt(io_tokens.Length() - 1)
+        if ( PreviousLiveToken().type == TokenType.SMART_SPACE
+                && LastToken().type == TokenType.MANUAL_SPACE ) {
+            io_tokens.RemoveAt(PreviousLiveTokenId())
             return true
         }
         return false
@@ -638,8 +634,7 @@ Class clsIOrepresentation {
         if (! (settings.mode & MODE_CHORDS_ENABLED)) {
             return false
         }
-        count := io_tokens.Length()
-        Loop %count%
+        Loop % LastTokenId()
         {
             if (io_tokens[A_Index].type == TokenType.INTERRUPT || io_tokens[A_Index].type == TokenType.ENTER) {
                 continue
@@ -653,7 +648,7 @@ Class clsIOrepresentation {
             if (expanded) {
                 ; check whether chord is used to complete typing of a shorthand
                 if (this._TryShorthandsAndHints()) {
-                    return this._ExpandChord(io_tokens.Length(), expanded) 
+                    return this._ExpandChord(LastTokenId(), expanded) 
                 }
                 return this._ExpandChord(A_Index, expanded)
             }
@@ -664,7 +659,7 @@ Class clsIOrepresentation {
         global hint_delay
         mark_as_capitalized := false
         add_leading_space := true
-        replace_offset := 0
+        tb_replaced_id := token_id
 
         hint_delay.Shorten()
 
@@ -684,19 +679,20 @@ Class clsIOrepresentation {
         capitalizes_next := this._DetectCapitalizesNext(expanded)
         expanded := this._RemoveCapitalizesNextSymbol(expanded)
         expanded := this._RemoveAffixSymbols(expanded, affixes)
-        previous := io_tokens[token_id-1]
+        previous_id := PreviousLiveTokenId(1, token_id)
+        prev_token := io_tokens[previous_id]
 
         if ( (settings.chording & CHORD_RESTRICT)
-                && this._IsRestricted(token_id-1)
+                && this._IsRestricted(previous_id)
                 && !(affixes & AffixPos.AFFIX_SUFFIX) ) {
             return false
         }
         
-        ; if there is a smart space, we have to delete it for suffixes
-        if (previous.type == TokenType.SMART_SPACE) {
+        ; if there is a smart space, we set the edit point to it for suffixes
+        if (prev_token.type == TokenType.SMART_SPACE) {
             add_leading_space := false
             if (affixes & AffixPos.AFFIX_SUFFIX) {
-                replace_offset := -1
+                tb_replaced_id := previous_id
             }
         }
         ; if adding smart spaces before is disabled, we don't add it
@@ -705,20 +701,20 @@ Class clsIOrepresentation {
         }
         
         ; if the last output was punctuation that does not ask for a space
-        if ( ( !(previous.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.punctuation_plain, previous.input)
-                && !InStr(keys.space_after_plain, previous.input) )
-                || (previous.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.punctuation_shift, previous.input)
-                && !InStr(keys.space_after_shift, previous.input) )  {
+        if ( ( !(prev_token.attribs & TokenAttribs.WITH_SHIFT)
+                && InStr(keys.punctuation_plain, prev_token.input)
+                && !InStr(keys.space_after_plain, prev_token.input) )
+                || (prev_token.attribs & TokenAttribs.WITH_SHIFT)
+                && InStr(keys.punctuation_shift, prev_token.input)
+                && !InStr(keys.space_after_shift, prev_token.input) )  {
             add_leading_space := false
         }
         
         ; and we don't add a space after interruption, Enter, a space, after a prefix, and for suffix
-        if (previous.type == TokenType.INTERRUPT
-                || previous.type == TokenType.ENTER 
-                || previous.output == " "
-                || previous.attribs & TokenAttribs.IS_PREFIX
+        if (prev_token.type == TokenType.INTERRUPT
+                || prev_token.type == TokenType.ENTER 
+                || prev_token.output == " "
+                || prev_token.attribs & TokenAttribs.IS_PREFIX
                 || affixes & AffixPos.AFFIX_SUFFIX) {
             add_leading_space := false
         }
@@ -726,7 +722,6 @@ Class clsIOrepresentation {
             expanded := " " . expanded
         }
 
-        tb_replaced_id := token_id + replace_offset
         this.Replace(expanded, tb_replaced_id)
         io_tokens[tb_replaced_id].type := TokenType.EXPANSION
         if (mark_as_capitalized) {
@@ -758,7 +753,7 @@ Class clsIOrepresentation {
         ; Note: When "Restrict chords while typing" and "Delete mistyped chords" are both enabled
         ; and a non-existing chord is detected while typing, we leave the mistyped chord because
         ; it is safe to assume it was intended as normal typing.
-        if (settings.chording & CHORD_RESTRICT && this._IsRestricted(io_tokens.Length()-1) ) {
+        if (settings.chording & CHORD_RESTRICT && this._IsRestricted(PreviousLiveTokenId())) {
             return false
         }
         io_tokens.Pop()
@@ -795,7 +790,7 @@ Class clsIOrepresentation {
             io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
         }
         ; Ignore strings such as USD, or aptX
-        if ( this._DetectShiftWithin(first_token_id + 1, io_tokens.Length() + offset) ) {
+        if ( this._DetectShiftWithin(first_token_id + 1, LastTokenId() + offset) ) {
             return
         }
         affixes := this._DetectAffixes(expanded)
@@ -804,7 +799,7 @@ Class clsIOrepresentation {
         expanded := this._RemoveAffixSymbols(expanded, affixes)
         first_token_offset := affixes & AffixPos.AFFIX_SUFFIX ? -1 : 0 
         tb_replaced_id := first_token_id + first_token_offset
-        this.Replace(expanded, tb_replaced_id, io_tokens.Length() + offset)
+        this.Replace(expanded, tb_replaced_id, LastTokenId() + offset)
         io_tokens[tb_replaced_id].type := TokenType.EXPANSION
         if (capitalizes_next) {
             io_tokens[tb_replaced_id].attribs |= TokenAttribs.CAPITALIZES_NEXT
@@ -856,35 +851,47 @@ Class clsIOrepresentation {
 
     _ShouldCapitalize(start := 0) {
         if (start == 0) {
-            start := io_tokens.Length()
+            start := LastTokenId()
         }
+        previous_token := PreviousLiveToken(1, start)
+        if (previous_token == -1) {
+            return false
+        }
+
         ; first character after Enter
-        if (start == 2 && (io_tokens[start - 1].type == TokenType.ENTER) ) {
+        if (previous_token.type == TokenType.ENTER
+            || previous_token.attribs & TokenAttribs.CAPITALIZES_NEXT) {
             return true
         }
-        if (start > 2 && this.GetOutput(start - 1, start - 1) == " ") {
-            if (io_tokens[start - 2].attribs & TokenAttribs.CAPITALIZES_NEXT) {
-                return true
-            }
-            preceding := io_tokens[start - 2].input
-            with_shift := io_tokens[start - 2].attribs & TokenAttribs.WITH_SHIFT
-            if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
-                || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
-                return true
-            }
-        }
-        if (start > 1 && io_tokens[start - 1].attribs & TokenAttribs.CAPITALIZES_NEXT) {
-            return true
-        }
+
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
-        if ( start > 1 && io_tokens[start].attribs & TokenAttribs.FIRST_IN_CHORD) {
-            preceding := io_tokens[start - 1].input
-            with_shift := io_tokens[start - 1].attribs & TokenAttribs.WITH_SHIFT
-            if ( StrLen(preceding)==1 && (!with_shift && InStr(keys.capitalizing_plain, preceding))
-                || (with_shift && InStr(keys.capitalizing_shift, preceding)) ) {
+        if (io_tokens[start].attribs & TokenAttribs.FIRST_IN_CHORD) {
+            prev_input := previous_token.input
+            with_shift := previous_token.attribs & TokenAttribs.WITH_SHIFT
+            if (StrLen(prev_input) == 1
+                && (!with_shift && InStr(keys.capitalizing_plain, prev_input))
+                || (with_shift && InStr(keys.capitalizing_shift, prev_input)) ) {
                 return true
             }
         }
+        
+        before_previous_token := PreviousLiveToken(2, start)
+        if (before_previous_token == -1) {
+            return false
+        }
+        if (previous_token.output == " ") {
+            if (before_previous_token.attribs & TokenAttribs.CAPITALIZES_NEXT) {
+                return true
+            }
+            before_prev_input := before_previous_token.input
+            with_shift := before_previous_token.attribs & TokenAttribs.WITH_SHIFT
+            if ( StrLen(before_prev_input) == 1
+                && (!with_shift && InStr(keys.capitalizing_plain, before_prev_input))
+                || (with_shift && InStr(keys.capitalizing_shift, before_prev_input)) ) {
+                return true
+            }
+        }
+
         return false
     }
 
@@ -894,7 +901,7 @@ Class clsIOrepresentation {
             return false
         }
         token_id := start_token_id
-        if (end_token_id > io_tokens.Length()) {
+        if (end_token_id > LastTokenId()) {
             MsgBox ,, % "ZipChord", % "Error: The function _DetectShiftWithin was called with incorrect end range."
             Return false
         }
@@ -958,7 +965,7 @@ Class clsIOrepresentation {
             io_edits.Push("{Backspace " . chars_to_del . "}")
         }
 
-        end := io_tokens.Length()
+        end := LastTokenId()
         count := end - start + 1
         i := start
         Loop % count {
@@ -1032,4 +1039,39 @@ Class clsIOrepresentation {
             OutputDebug, % "`n" . i . ": " token.input . " > " . token.output . " (" . token.attribs . ")"
         }
     }
+}
+
+
+; Helper Functions
+; 
+LastTokenId() {
+    return io_tokens.Length()
+}
+
+LastToken() {
+    return io_tokens[LastTokenId()]
+}
+
+PreviousLiveTokenId(count := 1, start_id := -1) {
+    ; by default, retrieves the next to last token in io_tokens
+    index := start_id == -1 ? LastTokenId() : start_id
+    counter := 0
+    while (index > 1) {
+        index -= 1
+        if !(io_tokens[index].attribs & TokenAttribs.TOMBSTONED) {
+            counter += 1
+            if (counter == count) {
+                return index
+            }
+        }
+    }
+    return -1  ; indicating no previous live token is in the 'window'
+}
+
+PreviousLiveToken(count := 1, start_id := -1) {
+    token_id := PreviousLiveTokenId(count, start_id)
+    if (token_id == -1) {
+        return -1  ; does not exist
+    }
+    return io_tokens[token_id]
 }
