@@ -17,7 +17,8 @@
 ~e
 ~u
 ~s
-{Backspace 3}this
+{Backspace 3}
+{Text}this
 ~+2
 ~Space
 ~t
@@ -38,11 +39,13 @@
 ~s
 ~u
 ~e
-{Backspace 3}this
+{Backspace 3}
+{Text}this
 ~+9
 ~Space
 ~e
 ~u
 ~s
-{Backspace 3}this
+{Backspace 3}
+{Text}this
 ~+0

@@ -9,19 +9,25 @@
 ~o
 ~u
 ~s
-{Backspace 3}Should
+{Backspace 3}
+{Text}Should
 ~e
 ~b
-{Backspace 2}be
+{Backspace 2}
+{Text}be
 ~.
 ~f
 ~r
 ~m
 ~Space
-{Backspace 4}from 
+{Backspace 4}
+{Text}from
+{Space}
 ~f
 ~r
 ~m
 ~Space
-{Backspace 4}From 
+{Backspace 4}
+{Text}From
+{Space}
 ~.

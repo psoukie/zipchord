@@ -2,7 +2,8 @@
 ~e
 ~u
 ~s
-{Backspace 3}this
+{Backspace 3}
+{Text}this
 ~Backspace
 ~Backspace
 ~Backspace
@@ -16,10 +17,14 @@
 ~Backspace
 ~s
 ~Space
-{Backspace 4}this 
+{Backspace 4}
+{Text}this
+{Space}
 ~f
 ~r
 ~m
 ~Space
-{Backspace 4}from 
+{Backspace 4}
+{Text}from
+{Space}
 ~.
