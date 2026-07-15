@@ -57,6 +57,7 @@ global AffixPos := new clsAffixBitSet
 
 global io_keys := []         ; window of overlapping key events 
 global io_keys_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+first_lift := 0              ; acts as a union of bool (0 - false), and int for first lifted key index 
 
 global io_tokens := []       ; window of tokenized input
 global io_chord := new clsChordCandidate
@@ -72,9 +73,12 @@ Class clsIOrepresentation {
 
 
     IOKeysReset() {
+        global first_lift
+        
         io_keys := []
         io_keys_index := {}
-    }
+        first_lift := false
+     }
 
     ProcessKey(hotkey, timestamp) {
         ev := new clsKey
@@ -126,7 +130,6 @@ Class clsIOrepresentation {
             if (io_keys_index.Count() == 0 && io_keys.Length() != 0) {
                 this.IOKeysReset()
             }
-
             return result
         }
     }
@@ -203,7 +206,7 @@ Class clsIOrepresentation {
             io_new_tokens.Push(token)
         }
              
-        ;For chords, if Shift is allowed as a separate key in chords, we add it as part of the sequence.
+        ; If Shift is allowed as a separate key in chords, we add it as part of the sequence.
         if (settings.chording & CHORD_ALLOW_SHIFT && io_chord.with_shift) {
             accum_input := "+" . accum_input
             io_chord.with_shift := false
@@ -219,13 +222,37 @@ Class clsIOrepresentation {
         this.IOKeysReset()
     }
 
+    ; Detect rolling typing
+    _IsRollingTyping() {
+        global first_lift
+        first_lift_end := io_keys[first_lift].end
+        Loop, % io_keys.Length() - first_lift
+        {
+            if (io_keys[first_lift + A_Index].start > first_lift_end) {
+                return true
+            }
+        }
+        return false
+    }
+
+    ; Identifies chords based on the overlap of the first two keys in the chord
+    ; with a "rolling typing" protection if more keys were pressed after the first lift.
     _ClassifyByDuration(end) {
-        ; get and compare against the overlap of the second key in the chord (regardless of chord length)
-        start := io_keys[2].start
-        if (end - start > settings.input_delay) {
-            this.AddChordToTokens()
-        } else {
+        global first_lift
+
+        ; Determine the overlap of the first two keys
+        overlap_end := end
+        Loop 2 {
+            if (key_end := io_keys[A_Index].end) {
+                overlap_end := Min(overlap_end, key_end)
+            }
+        }
+        ; treat as keys if overlap is too short or we have rolling typing 
+        if (overlap_end - io_keys[2].start <= settings.input_delay
+                || this._IsRollingTyping()) {
             this.AddKeysToTokens(io_keys.Length())
+        } else {
+            this.AddChordToTokens()
         }
     }
 
@@ -257,6 +284,8 @@ Class clsIOrepresentation {
     }
 
     _Classify(end, index) {  ; -> bool if keys is empty and ready for token processing
+        global first_lift        
+
         if (io_keys.Length() == 1) {
             ; process a lone key press in io_keys
             this.AddKeysToTokens(1)
@@ -264,6 +293,11 @@ Class clsIOrepresentation {
         }
     
         ; two or more keys were pressed as a potential chord
+        if (! first_lift) {
+            first_lift := index
+            return false
+        }
+        
         if (settings.chording & CHORD_BY_OVERLAP) {
             this._ClassifyByPercentage(end, index)
             return io_keys.Length() == 0
