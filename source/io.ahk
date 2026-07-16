@@ -237,9 +237,14 @@ Class clsIOrepresentation {
 
     ; Identifies chords based on the overlap of the first two keys in the chord
     ; with a "rolling typing" protection if more keys were pressed after the first lift.
-    _ClassifyByDuration(end) {
+    _ClassifyByDuration(end, lifted_index) {
         global first_lift
 
+        if (! first_lift) {
+            first_lift := lifted_index
+            return false
+        }
+        
         ; Determine the overlap of the first two keys
         overlap_end := end
         Loop 2 {
@@ -254,12 +259,12 @@ Class clsIOrepresentation {
         } else {
             this.AddChordToTokens()
         }
+        return true
     }
 
     _ClassifyByPercentage(end, lifted_index) {
         ; test the full buffer then drop earlier keys
-        last_start := io_keys[io_keys.Length()].start
-        common_overlap := end - last_start
+        common_overlap := end - io_keys[io_keys.Length()].start
         
         end_iter := Min(lifted_index, io_keys.Length() - 1)
         Loop % end_iter {
@@ -283,9 +288,7 @@ Class clsIOrepresentation {
         }
     }
 
-    _Classify(end, index) {  ; -> bool if keys is empty and ready for token processing
-        global first_lift        
-
+    _Classify(end, lifted_index) {  ; -> bool if keys is empty and ready for token processing
         if (io_keys.Length() == 1) {
             ; process a lone key press in io_keys
             this.AddKeysToTokens(1)
@@ -293,17 +296,11 @@ Class clsIOrepresentation {
         }
     
         ; two or more keys were pressed as a potential chord
-        if (! first_lift) {
-            first_lift := index
-            return false
-        }
-        
         if (settings.chording & CHORD_BY_OVERLAP) {
-            this._ClassifyByPercentage(end, index)
+            this._ClassifyByPercentage(end, lifted_index)
             return io_keys.Length() == 0
         } else {
-            this._ClassifyByDuration(end)
-            return true    
+            return this._ClassifyByDuration(end, lifted_index)
         }
     }
 
