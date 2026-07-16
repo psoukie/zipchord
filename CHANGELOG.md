@@ -10,7 +10,8 @@ Unreleased development changes since 2.8.x.
 
 **Fixes**
 
-- ZipChord cannot detect the system keyboard layout when its own UI is not shown. A workaround was added where after opening the UI or command menu (pressing both Shifts), ZipChord is able to detect and switch it's keyboard and language settings.
+- Fixes incorrect output around smart spaces or auto-capitalization that happened when keys are mapped to different symbols than they normally produce. (#267)
+- A workaround was added because ZipChord cannot detect system keyboard layout changes when its own UI is not in focus. Now, when you open the command menu (by pressing both Shifts) or the main ZipChord window, ZipChord detects and switches its keyboard and language settings. (#271)
 
 ## ZipChord 2.8.2
 
