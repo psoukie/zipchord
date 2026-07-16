@@ -50,7 +50,9 @@
 ~.
 {Space}
 ~m
-{Backspace}M
+~a
+{Backspace 2}
+{Text}M
 ~a
 ~y
 ~b
@@ -76,7 +78,8 @@
 *Hint*
 ~Enter
 ~a
-{Backspace}A
+{Backspace 1}
+{Text}A
 ~n
 ~d
 ~Space
@@ -89,10 +92,12 @@
 *Hint*
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~+b
 ~u
@@ -101,15 +106,20 @@
 *Hint*
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~h
-{Backspace}H
+~o
+{Backspace 2}
+{Text}H
 ~o
 ~w
 ~Space

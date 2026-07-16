@@ -7,7 +7,9 @@
 ~i
 ~i
 ~Space
-{Backspace 4}"Mighty!" 
+{Backspace 4}
+{Text}"Mighty!"
+{Space}
 ~m
 ~y
 ~Enter
@@ -15,13 +17,17 @@
 ~i
 ~i
 ~Space
-{Backspace 4}"Mighty!" 
+{Backspace 4}
+{Text}"Mighty!"
+{Space}
 ~y
 ~m
-{Backspace 2}my
+{Backspace 2}
+{Text}my
 ~q
 ~j
-{Backspace 2}"Mighty!"
+{Backspace 2}
+{Text}"Mighty!"
 ~w
 ~h
 ~e
@@ -30,15 +36,18 @@
 ~.
 ~q
 ~j
-{Backspace 2}"Mighty!"
+{Backspace 2}
+{Text}"Mighty!"
 ~h
 ~t
-{Backspace 2}the
+{Backspace 2}
+{Text}the
 ~.
 ~q
 ~j
 ~k
-{Backspace 3}Mighty-
+{Backspace 3}
+{Text}Mighty-
 ~m
 ~i
 ~g
@@ -48,8 +57,10 @@
 ~j
 ~q
 ~k
-{Backspace 3}Mighty-
+{Backspace 3}
+{Text}Mighty-
 ~h
 ~t
-{Backspace 2}the
+{Backspace 2}
+{Text}the
 *Interrupt*

@@ -4,7 +4,8 @@
 ~l
 ~Space
 ~.
-{Backspace 2}.
+{Backspace 2}
+{Text}.
 ~c
 ~o
 ~m
@@ -16,13 +17,15 @@
 ~p
 ~l
 ~b
-{Backspace 3}-bleeping-
+{Backspace 3}
+{Text}-bleeping-
 ~l
 ~i
 ~e
 ~v
 ~a
-{Backspace 2}have
+{Backspace 2}
+{Text}have
 ~b
 ~l
 ~e

@@ -199,21 +199,24 @@ Class TestingClass {
         this.Monitor("input", "null")
         this.Monitor("output", "null")
     }
-    Log(output, is_input := false) {
+    Log(raw_event, is_input := false) {
+        stripped_raw := StrReplace(StrReplace(raw_event, "{"), "}")
+        converted_event := SCHotkeyToSymbolHotkey(stripped_raw)
+        event := converted_event == stripped_raw ? raw_event : "~" . converted_event
         if (this._input && is_input) {
             if (!this._starting_tick)
                 this._starting_tick := A_TickCount
             timestamp := A_TickCount - this._starting_tick
             if (this._input == TEST_DEST_CONSOLE)
-                this.Write("IN: " . timestamp . "`t" . output)
+                this.Write("IN: " . timestamp . "`t" . event)
             else
-                this._input_obj.Write(timestamp . "`t" . output . "`n")
+                this._input_obj.Write(timestamp . "`t" . event . "`n")
         }
         if (this._output && !is_input) {
             if (this._output == TEST_DEST_CONSOLE)
-                this.Write("OUT: " . output)
+                this.Write("OUT: " . event)
             else
-                this._output_obj.Write(output . "`n")
+                this._output_obj.Write(event . "`n")
         }
     }
     Play(cfg:="", in_file:="") {
@@ -296,13 +299,27 @@ Class TestingClass {
             this._Batch(filename)
             return
         }
+        show_text := false
+        if (filename && testcase=="text") {
+            testcase := filename
+            show_text := true
+        }
         if (! this._CheckFilename(testcase, "testcase", true)) {
             return
         }
         filenames := this._GetConfigAndInFilenames(testcase)
         FileDelete, % "temp.out"
         this.Compose(filenames.config, filenames.in, "temp.out")
-        this.Compare(testcase, "temp.out")
+        if (show_text) {
+            this.Write("Current output`n--------------")
+            this.Show("temp.out")
+            this.Write("----------------`nTest case output`n----------------")
+            this.Show(testcase)
+            test_base_name := SubStr(testcase, 1, StrLen(testcase) - 4)
+            RunWait % "fc.exe /a /n " . test_base_name . ".txt temp.txt"
+        } else {
+            this.Compare(testcase, "temp.out")
+        }
     }
     _GetConfigAndInFilenames(testcase) {
         config_file := SubStr(testcase, 1, InStr(testcase, "__") - 1) . ".ini"
@@ -411,7 +428,12 @@ Class TestingClass {
             Case "in":
                 this.Write(this._FormatInput(file))
             Case "out":
-                this.Write(this._FormatOutput(file))
+                output := this._FormatOutput(file)
+                this.Write(output)
+                txt_file := SubStr(file, 1, lastDot - 1) . ".txt"
+                txt_output := FileOpen(txt_file, "w", "UTF-8-RAW")
+                txt_output.Write(output)
+                txt_output.Close()
             Default:
                 RunWait %ComSpec% /c type %file%       
         }
@@ -569,6 +591,8 @@ Class TestingClass {
                     this.Write("`n Enter", "")
                 Case "Backspace":
                     this.Write("`n Backspace", "")
+                Case "Shift*":
+                    this.Write("`n Shift", "")
                 Default:
                     if (ch_time==-1)
                         ch_time := 0
@@ -662,7 +686,7 @@ Class TestingClass {
                     close := InStr(line, "*", false, i+1)
                     token := close ? SubStr(line, i, close-i+1) : SubStr(line, i)
                     if (token = "*Hint*") {
-                        ; skip
+                        out .= "[hint]"
                     } else if (token = "*Interrupt*") {
                         out .= "`n*interrupted*`n"
                     } else {
@@ -902,11 +926,16 @@ generates against the original output stored in the test cases.
 
 test <testcase>
 test set <testset>
+test text <testcase>
 
-  <testcase>    Run the specified test case file and compare the output
-                against the test case.
-  <testset>     Run a set of test cases listed in the specified test set.
-                (Use 'add' to add test cases to a test set.)
+  <testcase>    Test case file to run and compare the output for.
+  <testset>     File name of set of test cases to run in a batch.
+  set           Runs a set of test cases, showing the file comparison
+                between the current output and the original test case.
+  text          Runs a test case, shows the formatted text for both
+                the current output and of the original testcase.
+
+Note: Use the 'add' command to add test cases to a test set.
 )")
             Case "version":
                 this.Write("

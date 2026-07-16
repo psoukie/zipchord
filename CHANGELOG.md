@@ -1,5 +1,18 @@
 # ZipChord Changelog
 
+## ZipChord 2.9.0-dev
+
+Unreleased development changes since 2.8.x.
+
+**New Features**
+
+- Added a new chord-detection mode based on relative key overlap, in addition to the existing fixed duration mode.
+
+**Fixes**
+
+- Fixes incorrect output around smart spaces or auto-capitalization that happened when keys are mapped to different symbols than they normally produce. (#267)
+- A workaround was added because ZipChord cannot detect system keyboard layout changes when its own UI is not in focus. Now, when you open the command menu (by pressing both Shifts) or the main ZipChord window, ZipChord detects and switches its keyboard and language settings. (#271)
+
 ## ZipChord 2.8.2
 
 **Fixes**

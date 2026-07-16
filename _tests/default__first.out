@@ -87,10 +87,12 @@
 *Hint*
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~+b
 ~u
@@ -99,13 +101,16 @@
 *Hint*
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~.
-{Backspace 2}.
+{Backspace 2}
+~.
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~h
 ~o
 ~w

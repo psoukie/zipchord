@@ -2,15 +2,19 @@
 ~Enter
 ~'
 ~n
-{Backspace 2}Un
+{Backspace 2}
+{Text}Un
 ~k
 ~n
 ~w
 ~.
 ~n
-{Backspace 5}know.n
-{Backspace 2}ing{Space}
+{Backspace 5}
+{Text}know
+{Text}ing
+{Space}
 ~.
-{Backspace 2}.
 ~l
-{Backspace 2}ly{Space}
+{Backspace 3}
+{Text}ly
+{Space}

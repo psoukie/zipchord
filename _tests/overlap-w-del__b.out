@@ -2,30 +2,26 @@
 ~t
 {Backspace 2}
 {Text}the
+{Space}
 ~Space
+{Backspace 2}
+{Space}
 ~t
 ~h
 ~e
-{Backspace 3}
-{Text}there
+~Space
+*Hint*
+~e
+~u
+~s
 ~Space
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
 ~Space
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-~Space
-~e
-~u
-~s
-{Backspace 3}
-{Text}this
 ~Space
 ~e
 ~u
@@ -42,14 +38,6 @@
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
-~Space
-~e
-~u
-~s
-{Backspace 3}
-{Text}this
 ~Space
 ~e
 ~u
@@ -62,5 +50,7 @@
 ~e
 ~u
 ~s
-{Backspace 3}
-{Text}this
+~Space
+~e
+~u
+~s

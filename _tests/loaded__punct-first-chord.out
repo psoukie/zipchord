@@ -6,9 +6,10 @@
 ~.
 {Space}
 ~.
-{Backspace 2}.
 ~m
-{Backspace 2} More{Space}
+{Backspace 2}
+{Text}More
+{Space}
 ~t
 ~h
 ~i
@@ -17,10 +18,13 @@
 *Hint*
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~.
 ~m
-{Backspace 2}More{Space}
+{Backspace 2}
+{Text}More
+{Space}
 ~t
 ~h
 ~i
@@ -29,9 +33,10 @@
 *Hint*
 {Space}
 ~m
-{Backspace}M
 ~.
-{Backspace 2}More{Space}
+{Backspace 2}
+{Text}More
+{Space}
 ~t
 ~h
 ~i
@@ -40,8 +45,10 @@
 *Hint*
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~m
-{Backspace}M
 ~.
-{Backspace 2}More{Space}
+{Backspace 2}
+{Text}More
+{Space}

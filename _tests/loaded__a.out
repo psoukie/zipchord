@@ -5,9 +5,12 @@
 ~e
 ~u
 ~s
-{Backspace 3}this{Space}
+{Backspace 3}
+{Text}this
+{Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~i
 ~s
 ~Space
@@ -32,7 +35,8 @@
 *Hint*
 {Space}
 ~+/
-{Backspace 2}?
+{Backspace 2}
+~+/
 {Space}
 *Interrupt*
 *Interrupt*
@@ -42,8 +46,10 @@
 ~+1
 {Space}
 ~Space
-{Backspace}
+{Backspace 2}
+{Space}
 ~h
-{Backspace}H
 ~t
-{Backspace 2}The{Space}
+{Backspace 2}
+{Text}The
+{Space}

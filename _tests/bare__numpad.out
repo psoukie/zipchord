@@ -10,7 +10,9 @@
 ~⑥
 ~s
 ~Space
-{Backspace 3}six seven 
+{Backspace 3}
+{Text}six seven
+{Space}
 ~s
 ~h
 ~o
@@ -32,7 +34,8 @@
 *Hint*
 ~⑥
 ~s
-{Backspace 2}six seven
+{Backspace 2}
+{Text}six seven
 ~c
 ~h
 ~o

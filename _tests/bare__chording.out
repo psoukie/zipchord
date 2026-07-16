@@ -1,20 +1,24 @@
 ~n
 ~o
-{Backspace 2}on
+{Backspace 2}
+{Text}on
 ~t
 ~h
-{Backspace 2}the
+{Backspace 2}
+{Text}the
 ~n
 ~e
 ~w
 ~.
 ~i
 ~s
-{Backspace 2}is
+{Backspace 2}
+{Text}is
 ~u
 ~e
 ~s
-{Backspace 3}this
+{Backspace 3}
+{Text}this
 ~b
 ~e
 ~t

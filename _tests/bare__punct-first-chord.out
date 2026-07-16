@@ -6,7 +6,8 @@
 ~.
 ~.
 ~m
-{Backspace 2}more
+{Backspace 2}
+{Text}more
 ~t
 ~h
 ~i
@@ -15,7 +16,8 @@
 ~Space
 ~.
 ~m
-{Backspace 2}more
+{Backspace 2}
+{Text}more
 ~t
 ~h
 ~i
@@ -23,7 +25,8 @@
 ~.
 ~m
 ~.
-{Backspace 2}more
+{Backspace 2}
+{Text}more
 ~t
 ~h
 ~i
@@ -32,4 +35,5 @@
 ~Space
 ~m
 ~.
-{Backspace 2}more
+{Backspace 2}
+{Text}more

@@ -1,0 +1,43 @@
+~Enter
+~Space
+~a
+~n
+{Backspace 3}
+{Text}An
+{Space}
+~Enter
+~Space
+~a
+~n
+{Backspace 2}
+{Text}and
+{Space}
+~Enter
+~a
+~n
+~Space
+{Backspace 3}
+{Text}An
+{Space}
+~Enter
+~Space
+~a
+~n
+{Backspace 2}
+{Text}and
+{Space}
+~Space
+~a
+~n
+{Backspace 4}
+{Space}
+{Text}and
+{Space}
+~Enter
+~Space
+~a
+~n
+{Backspace 2}
+{Text}and
+{Space}
+*Interrupt*

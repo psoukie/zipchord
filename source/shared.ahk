@@ -327,6 +327,14 @@ Class clsStringFunctions {
         return StrReplace(joined, "`n")
     }
 
+    SCHexToString(hex) {
+        if (hex <= 0x35) {
+            return "SC" . Format("{:03X}", hex)
+        } else {
+            return keys.key_map.NUMPAD_MAPPING[hex].ahk
+        }
+    }
+
     ; Convert to ASCII
     ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
     ToAscii(Key, Modifiers := "") {
