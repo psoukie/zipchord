@@ -449,8 +449,7 @@ Class clsLocaleInterface {
         this.UI.Hide()
     }
 
-    ProcessLayoutChange(layout) {
-        current_layout := layout.name
+    ProcessLayoutChange(current_layout) {
         if (!current_layout || current_layout == this._last_detected_layout) {
             return
         }

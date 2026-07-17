@@ -8,7 +8,7 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 ; OS-specific keyboard layout, input, and output handling
 
 Class clsOsKeyboard {
-    DEBOUNCE_MS := 750
+    DEBOUNCE_MS := 500
 
     current_layout_name := ""
     _current_hkl := 0
@@ -39,7 +39,7 @@ Class clsOsKeyboard {
             this._current_hkl := hkl
             this._pending_hkl := 0
             this._pending_since := 0
-            return layout.name
+            return layout_name
         }
 
         if (this.current_layout_name) {
@@ -99,7 +99,7 @@ Class clsOsKeyboard {
         process_id := 0
         thread_id := DllCall("user32.dll\GetWindowThreadProcessId"
             , "Ptr", hwnd, "UInt*", process_id, "UInt")
-        if (!thread_id || process_id == DllCall("kernel32.dll\GetCurrentProcessId", "UInt")) {
+        if (!thread_id) {
             return false
         }
 

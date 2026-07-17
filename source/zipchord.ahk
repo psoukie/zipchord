@@ -320,7 +320,9 @@ Class clsWatcher {
         Critical
         switched_layout_name := kb.CheckForLayoutChange()
         if (switched_layout_name) {
-            hint_UI.ShowOnOSD("Switched Layout", switched_layout_name)
+            if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
+                hint_UI.ShowOnOSD("Switching to", switched_layout_name)
+            }
             locale.ProcessLayoutChange(switched_layout_name)
         }
         Critical Off
