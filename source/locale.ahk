@@ -206,7 +206,6 @@ Class clsLocaleInterface {
     STATIC_LOCALE_NAME := "a fixed layout"
     current_key_map := new clsKeyMap
     UI := {}
-    _layout_watch_fn := ObjBindMethod(this, "CheckForLayoutChange")
     _last_detected_layout := ""
     controls := { use_auto: { type: "Radio"
                             , text: "&Automatically switch with keyboard layout"
@@ -238,7 +237,7 @@ Class clsLocaleInterface {
 
     Init() {
         this.EnsureSelectedLocaleExists()
-         this._last_detected_layout := this.GetActiveLayoutName()
+         this._last_detected_layout := kb.GetActiveLayoutName()
     }
     Build() {
         this._Build()
@@ -264,7 +263,7 @@ Class clsLocaleInterface {
             this.EnsureLocaleExists(this.STATIC_LOCALE_NAME)
             return
         }
-        active_layout := this.GetActiveLayoutName()
+        active_layout := kb.GetActiveLayoutName()
         if (!active_layout) {
             return
         }
@@ -275,7 +274,7 @@ Class clsLocaleInterface {
         if (this.IsStaticMode()) {
             return
         }
-        layout_name := this.GetActiveLayoutName()
+        layout_name := kb.GetActiveLayoutName()
         this._SwitchToLayout(layout_name)
     }
     _SwitchToLayout(layout_name) {
@@ -360,7 +359,7 @@ Class clsLocaleInterface {
         this.UI.Show()
     }
     _LoadCurrentLocale() {
-        locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : kb.GetActiveLayoutName()
         if (!locale_name) {
             locale_name := settings.locale ? settings.locale : this.STATIC_LOCALE_NAME
         }
@@ -430,14 +429,14 @@ Class clsLocaleInterface {
             RefreshScanCodeMapping()
             return
         }
-        target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : kb.GetActiveLayoutName()
         if (!target_locale) {
             target_locale := settings.locale ? settings.locale : this.STATIC_LOCALE_NAME
         }
         new_loc.Save(target_locale)
         settings.locale := target_locale
         app_settings.Save()
-        active_layout := this.GetActiveLayoutName()
+        active_layout := kb.GetActiveLayoutName()
         if (active_layout) {
             this._last_detected_layout := active_layout
         }
@@ -450,28 +449,9 @@ Class clsLocaleInterface {
         this.UI.Hide()
     }
 
-    _GetKeyboardLayoutText(layout_id) {
-        RegRead, layoutName
-            , % "HKLM"
-            , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . layout_id
-            , % "Layout Text"
-        return layoutName
-    }
-
-    GetActiveLayoutName() {
-        VarSetCapacity(layout_id, 9*2, 0)  ; WCHAR[9] — layout name string like "00000409"
-        if (DllCall("user32.dll\GetKeyboardLayoutName", "Str", layout_id)) {
-            layout_name := this._GetKeyboardLayoutText(layout_id)
-            if (layout_name) {
-                return layout_name
-            }
-        }
-        return "Default"
-    }
-
-    CheckForLayoutChange() {
-        current_layout := this.GetActiveLayoutName()
-        if (current_layout == this._last_detected_layout) {
+    ProcessLayoutChange(layout) {
+        current_layout := layout.name
+        if (!current_layout || current_layout == this._last_detected_layout) {
             return
         }
         this._last_detected_layout := current_layout
