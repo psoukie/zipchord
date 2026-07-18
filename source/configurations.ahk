@@ -10,7 +10,6 @@ Class Configuration {
     mapping := []
     app_id := 0
     use_mapping := false
-    _loop_fn := ObjBindMethod(this, "DetectAppSwitchLoop")
 
     Class MappingEntry {
         window_mask := ""
@@ -112,21 +111,15 @@ Class Configuration {
         }
         this.use_mapping := true
         hint_UI.ShowOnOSD("Activated automatic", "configuration switching")
-        this.DetectAppSwitchLoop()
     }
 
-    DetectAppSwitchLoop() {
+    DetectAppSwitch() {
         this.app_id := WinExist("A")
         WinWaitNotActive, % "ahk_id " . this.app_id
-        if ! (this.use_mapping) {
-            return
-        }
         config_file := this.FindMatchingConfig()
         if (config_file && str.FilenameWithExtension(config_file) != runtime_status.config_file) {
             this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
-        loop_fn := this._loop_fn
-        SetTimer, %loop_fn%, -250
     }
  
     FindMatchingConfig() {

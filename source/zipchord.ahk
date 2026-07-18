@@ -318,12 +318,19 @@ Class clsWatcher {
 
     RunChecks() {
         Critical
+        chords.CheckForDictModification()
+        shorthands.CheckForDictModification()
         switched_layout_name := kb.CheckForLayoutChange()
-        if (switched_layout_name) {
-            if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
-                hint_UI.ShowOnOSD("Switching to", switched_layout_name)
+        if (config.use_mapping) {
+            ; TK: The path when the configurations feature is used is not adapted / completed yet.
+            config.DetectAppSwitch()
+        } else {
+            if (switched_layout_name) {
+                if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
+                    hint_UI.ShowOnOSD("Switching to", switched_layout_name)
+                }
+                locale.ProcessLayoutChange(switched_layout_name)
             }
-            locale.ProcessLayoutChange(switched_layout_name)
         }
         Critical Off
     }

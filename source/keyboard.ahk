@@ -16,18 +16,6 @@ Class clsOsKeyboard {
     _pending_since := 0
     _hkl_to_name_cache := {}
 
-    Start(on_change) {
-        this._on_change := on_change
-        watch_fn := this._watch_fn
-        interval := this.POLL_INTERVAL
-        SetTimer, %watch_fn%, %interval%
-    }
-
-    Stop() {
-        watch_fn := this._watch_fn
-        SetTimer, %watch_fn%, Off
-    }
-
     GetActiveLayoutName() {
         hkl := this._GetForegroundHkl()
         if (! hkl) {
