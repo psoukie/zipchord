@@ -25,6 +25,7 @@ Class Configuration {
 
     Save(config_file) {
         global app_settings
+        global runtime_config_file
 
         if !(config_file) {
             MsgBox, , % "ZipChord", % "You need to specify the setting file."
@@ -63,6 +64,7 @@ Class Configuration {
 
     Load(config_file) {
         global app_settings
+        global runtime_config_file
 
         runtime_config_file := config_file
         WireHotkeys("Off")

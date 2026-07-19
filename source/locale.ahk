@@ -175,6 +175,8 @@ Class clsLocale {
     }
 
     Save(locale_name) {
+        global runtime_config_file
+
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
@@ -184,7 +186,10 @@ Class clsLocale {
             ini.SaveProperties(this, locale_name)
         }
     }
+
     Load(locale_name) {
+        global runtime_config_file
+
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
@@ -418,6 +423,8 @@ Class clsLocaleInterface {
     }
 
     _Save() {
+        global runtime_config_file
+
         new_loc := new clsLocale
         For key, option in this.options {
             new_loc[key] := option.value
@@ -454,6 +461,7 @@ locale_UI := new clsLocaleInterface
 
 LocaleSwitchToLayout(layout_name) {
     global locale_UI
+    global runtime_config_file
 
     if (!layout_name) {
         return

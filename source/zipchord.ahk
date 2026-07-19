@@ -86,10 +86,12 @@ global STATIC_LOCALE_NAME := "a fixed layout"
 
 app_settings := New clsSettings()
 global settings := app_settings.settings
+runtime_config_file := ""
 
 SC_to_symbol_map := {} ; dynamically created scan-code number to key-symbol mapping
 symbol_to_SC_map := {} ; reverse map
 ahk_numpad_to_symbol_map := {} 
+
 
 #Include configurations.ahk
 #Include hints.ahk
@@ -102,8 +104,6 @@ if (A_Args[1] == "dev") {
     #Include *i visualizer.ahk
     #Include *i testing.ahk
 }
-
-global runtime_config_file := ""
 
 global main_UI := new clsMainUI
 central_watcher := new clsWatcher
@@ -128,12 +128,17 @@ Class clsSettings {
                 , input_delay:      70
                 , input_overlap:    65
                 , output_delay:     3 }
+
     GetSettingsFile() {
+        global runtime_config_file
         return runtime_config_file ? runtime_config_file : this.settings_file
     }
+
     GetSectionName() {
+        global runtime_config_file
         return runtime_config_file ? "Application" : "Default"
     }
+
     Register(setting_name, value := 0) {
         if (this.settings.HasKey(setting_name)) {
             return false
@@ -557,6 +562,8 @@ Class clsMainUI {
     }
 
     Show() {
+        global runtime_config_file
+
         kb.SetZipChordToHkl()
         cts := this.controls
         if (A_Args[1] == "dev" && cts.debugging.value) {
@@ -746,9 +753,12 @@ Class clsMainUI {
 
     _btnCustomizeLocale() {
         global locale_UI
+        global runtime_config_file
+
         if (runtime_config_file) {
             return
         }
+
         this.UI.Disable()
         locale_UI.Show()
     }
