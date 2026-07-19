@@ -333,6 +333,7 @@ Class clsWatcher {
 
     RunChecks() {
         global locale_UI
+        
         chords.CheckForDictModification()
         shorthands.CheckForDictModification()
         layout_changed := kb.CheckForLayoutChange()
@@ -952,11 +953,6 @@ Update_Menus() {
         Menu, ZipChordCommand, Disable, 4&
         Menu, ZipChordCommand, Disable, 5&
     }
-}
-
-UI_CommandMenu_Update() {
-
-
 }
 
 PauseApp(from_button := false) {

@@ -343,6 +343,7 @@ Class clsLocaleInterface {
         global app_settings
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
+        WireHotkeys("Off")  ; so we're not processing key presses
         this.current_locale := settings.locale
         this.RefreshUI()
         this.UI.Show()
@@ -360,7 +361,7 @@ Class clsLocaleInterface {
         if (this.controls.use_static.value) {
             this.current_locale := STATIC_LOCALE_NAME
         } else {
-            this.current_locale := kb.GetActiveLayoutName()
+            this.current_locale := kb.current_layout_name
         }
         this.RefreshUI()
     }
@@ -395,7 +396,6 @@ Class clsLocaleInterface {
     }
     _OK() {
         this._Save()
-        ApplyLocaleToRuntime()
         this.Close()
     }
     _OnKeyClick(name) {
@@ -436,15 +436,18 @@ Class clsLocaleInterface {
             locale.RefreshScanCodeMapping()
             return
         }
-        target_locale := this.controls.use_static.value ? STATIC_LOCALE_NAME : kb.GetActiveLayoutName()
-        if (!target_locale) {
-            target_locale := settings.locale ? settings.locale : STATIC_LOCALE_NAME
-        }
-        new_loc.Save(target_locale)
-        settings.locale := target_locale
+        new_loc.Save(this.current_locale)
+        settings.locale := this.current_locale
         app_settings.Save()
     }
+
     Close() {
+        if (! app_settings.IsStaticMode()) {
+            LocaleSwitchToLayout(kb.current_layout_name)
+        } else {
+            ApplyLocaleToRuntime()
+        }
+        WireHotkeys("On")  ; resume processing key presses
         main_UI.UpdateLocaleInMainUI()
         main_UI.UI.Enable()
         this.UI.Hide()
@@ -497,19 +500,20 @@ ProcessLayoutChange(layout_name) {
     global app_settings
     global locale_UI
 
+    if (locale_UI.UI.IsShown()) {
+        locale_UI.LocaleProcessLayoutChange(layout_name)
+        return
+    }
+
     if (app_settings.IsStaticMode()) {
         return
     }
 
-    if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
-        hint_UI.ShowOnOSD("Switching to", layout_name)
-    }
+    LocaleSwitchToLayout(layout_name)
+
     if (main_UI.UI.IsShown()) {
         main_UI.UpdateLocaleInMainUI()
-    }
-    if (locale_UI.UI.IsShown()) {
-        locale_UI.LocaleProcessLayoutChange(layout_name)
-    } else if (!app_settings.IsStaticMode()) {
-        LocaleSwitchToLayout(layout_name)
+    } else {
+        hint_UI.ShowOnOSD("Switching to", layout_name)
     }
 }
