@@ -36,7 +36,6 @@ WireHotkeys(state) {
         Hotkey, % "~" A_LoopField, Interrupt, %state%
         Hotkey, % "~^" A_LoopField, Interrupt, %state%
     }
-    runtime_status.is_keyboard_wired := state
 }
 
 Class clsOsKeyboard {

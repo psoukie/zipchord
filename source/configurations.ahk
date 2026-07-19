@@ -32,7 +32,7 @@ Class Configuration {
         }
         save_locale_override := app_settings.IsStaticMode()
         was_open := CloseAllWindows()
-        runtime_status.config_file := config_file
+        runtime_config_file := config_file
         app_settings.Save()
         if (save_locale_override) {
             locale.Save(settings.locale)
@@ -63,9 +63,8 @@ Class Configuration {
 
     Load(config_file) {
         global app_settings
-        global locale_UI
 
-        runtime_status.config_file := config_file
+        runtime_config_file := config_file
         WireHotkeys("Off")
         new_settings := app_settings.settings.Clone()
         ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
@@ -82,7 +81,7 @@ Class Configuration {
             locale.Load(settings.locale)
         } else {
             layout_name := kb.GetActiveLayoutName()
-            locale_UI.SwitchToLayout(layout_name)
+            LocaleSwitchToLayout(layout_name)
         }
         WireHotkeys("On")
     }
@@ -127,7 +126,7 @@ Class Configuration {
     ProcessConfigChange(layout_name) {
         config_file := this.FindMatchingConfig(layout_name)
 
-        if (config_file && str.FilenameWithExtension(config_file) != runtime_status.config_file) {
+        if (config_file && str.FilenameWithExtension(config_file) != runtime_config_file) {
             this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
     }

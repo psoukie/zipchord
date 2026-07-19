@@ -178,8 +178,8 @@ Class clsLocale {
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
-        if (runtime_status.config_file && locale_name == STATIC_LOCALE_NAME) {
-            ini.SaveProperties(this, "Locale", runtime_status.config_file)
+        if (runtime_config_file && locale_name == STATIC_LOCALE_NAME) {
+            ini.SaveProperties(this, "Locale", runtime_config_file)
         } else {
             ini.SaveProperties(this, locale_name)
         }
@@ -188,8 +188,8 @@ Class clsLocale {
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
-        if (runtime_status.config_file && locale_name == STATIC_LOCALE_NAME) {
-            ini.LoadProperties(this, "Locale", runtime_status.config_file)
+        if (runtime_config_file && locale_name == STATIC_LOCALE_NAME) {
+            ini.LoadProperties(this, "Locale", runtime_config_file)
         } else {
             ini.LoadProperties(this, locale_name)
         }
@@ -253,13 +253,14 @@ Class clsLocale {
 
 Class clsLocaleInterface {
     current_key_map := new clsKeyMap
+    current_locale := ""
     UI := {}
     controls := { use_auto: { type: "Radio"
                             , text: "&Automatically switch with keyboard layout"
-                            , function: ObjBindMethod(this, "_LoadCurrentLocale")}
+                            , function: ObjBindMethod(this, "_SwitchLocaleMode")}
                 , use_static: { type: "Radio"
                               , text: "&Fixed across keyboard layout changes"
-                              , function: ObjBindMethod(this, "_LoadCurrentLocale")}
+                              , function: ObjBindMethod(this, "_SwitchLocaleMode")}
                 , kb_group: { type: "GroupBox"
                             , text: "Keyboard mapping"}
                 , punctuation_group: { type: "GroupBox"
@@ -282,62 +283,8 @@ Class clsLocaleInterface {
             , capitalizing_shift: { type: "Edit"}
             , other_shift:        { type: "Edit"}}
 
-    Init() {
-        this.EnsureSelectedLocaleExists()
-    }
+
     Build() {
-        this._Build()
-    }
-    EnsureLocaleExists(locale_name) {
-        if (!locale_name) {
-            return
-        }
-        temp := {}
-        if (ini.LoadProperties(temp, locale_name)) {
-            default_locale := new clsLocale
-            default_locale.Save(locale_name)
-        }
-    }
-    EnsureSelectedLocaleExists() {
-        global app_settings
-        if (runtime_status.config_file) {
-            return
-        }
-        if (app_settings.IsStaticMode()) {
-            this.EnsureLocaleExists(STATIC_LOCALE_NAME)
-            return
-        }
-        active_layout := kb.GetActiveLayoutName()
-        if (!active_layout) {
-            return
-        }
-        settings.locale := active_layout
-        this.EnsureLocaleExists(settings.locale)
-    }
-
-    SwitchToLayout(layout_name) {
-        if (!layout_name) {
-            return
-        }
-        this.EnsureLocaleExists(layout_name)
-        settings.locale := layout_name
-        if (!runtime_status.config_file) {
-            app_settings.Save()
-        }
-        this._ApplyLocaleToRuntime()
-        if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
-            this._LoadCurrentLocale()
-        }
-    }
-    _ApplyLocaleToRuntime() {
-        locale.Load(settings.locale)
-        locale.RefreshScanCodeMapping()
-        if (IsObject(main_UI)) {
-            main_UI.UpdateLocaleInMainUI()
-        }
-    }
-
-    _Build() {
         UI := new clsUI("Keyboard and language settings")
         handle := main_UI.UI._handle
         Gui, +Owner%handle%
@@ -391,44 +338,59 @@ Class clsLocaleInterface {
         global app_settings
         call := Func("OpenHelp").Bind("Locale")
         Hotkey, F1, % call, On
-        this.controls.use_auto.value := app_settings.IsStaticMode() ? 0 : 1
-        this.controls.use_static.value := app_settings.IsStaticMode() ? 1 : 0
-        this._LoadCurrentLocale()
+        this.current_locale := settings.locale
+        this.RefreshUI()
         this.UI.Show()
     }
-    _LoadCurrentLocale() {
-        locale_name := this.controls.use_static.value ? STATIC_LOCALE_NAME : kb.GetActiveLayoutName()
-        if (!locale_name) {
-            locale_name := settings.locale ? settings.locale : STATIC_LOCALE_NAME
+
+    LocaleProcessLayoutChange(new_locale) {
+        if (this.current_locale == STATIC_LOCALE_NAME) {
+            return
         }
-        this.EnsureLocaleExists(locale_name)
-        this._UpdateGroupTitles(locale_name)
-        this.controls.use_auto.value := (locale_name == STATIC_LOCALE_NAME) ? 0 : 1
-        this.controls.use_static.value := (locale_name == STATIC_LOCALE_NAME) ? 1 : 0
+        this.current_locale := new_locale 
+        this.RefreshUI()
+    }
+
+    _SwitchLocaleMode() {
+        if (this.controls.use_static.value) {
+            this.current_locale := STATIC_LOCALE_NAME
+        } else {
+            this.current_locale := kb.GetActiveLayoutName()
+        }
+        this.RefreshUI()
+    }
+
+    RefreshUI() {
+        is_locale_static := (this.current_locale == STATIC_LOCALE_NAME) 
         loc_obj := new clsLocale
-        loc_obj.Load(locale_name)
-        this._PopulateFieldsWith(loc_obj)
-    }
-    _PopulateFieldsWith(loc_object) {
+        loc_obj.Load(this.current_locale)
+
+        ; populate options fields
         For key, option in this.options {
-            option.value := loc_object[key]
+            option.value := loc_obj[key]
         }
-        this.current_key_map := loc_object.key_map
-        this._RenderKeyboard()
+        this.current_key_map := loc_obj.key_map
+        this.controls.use_auto.value := is_locale_static ? 0 : 1
+        this.controls.use_static.value := is_locale_static ? 1 : 0
+
+        this.UpdateGroupTitles(this.current_locale)
+        this.RenderKeyboard()
     }
-    _RenderKeyboard() {
+
+    RenderKeyboard() {
         key_map := this.current_key_map
         For _, key_name in key_map.Keys() {
             this.controls[key_name].value := key_map[key_name].symbol
         }
     }
 
-    _UpdateGroupTitles(locale_title) {
+    UpdateGroupTitles(locale_title) {
         this.controls.kb_group.value := "Keyboard mapping for " . locale_title
         this.controls.punctuation_group.value := "Punctuation settings for " . locale_title
     }
     _OK() {
         this._Save()
+        ApplyLocaleToRuntime()
         this.Close()
     }
     _OnKeyClick(name) {
@@ -461,7 +423,7 @@ Class clsLocaleInterface {
             new_loc[key] := option.value
         }
         new_loc.key_map := this.current_key_map
-        if (runtime_status.config_file) {
+        if (runtime_config_file) {
             new_loc.Save(false)
             locale := new_loc
             locale.RefreshScanCodeMapping()
@@ -474,8 +436,6 @@ Class clsLocaleInterface {
         new_loc.Save(target_locale)
         settings.locale := target_locale
         app_settings.Save()
-        this._ApplyLocaleToRuntime()
-        this._LoadCurrentLocale()
     }
     Close() {
         main_UI.UpdateLocaleInMainUI()
@@ -483,26 +443,65 @@ Class clsLocaleInterface {
         this.UI.Hide()
     }
 
-    ProcessLayoutChange(layout_name) {
-        global app_settings
-
-        if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
-            hint_UI.ShowOnOSD("Switching to", layout_name)
-        }
-        if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
-            this._UpdateGroupTitles(layout_name)
-        }
-        if (!app_settings.IsStaticMode()) {
-            this.SwitchToLayout(layout_name)
-        }
-    }
-
     _Detect() {
         this.current_key_map := new clsKeyMap
-        this._RenderKeyboard()
+        this.RenderKeyboard()
     }
 }
 
-; Instantiate locale objects after the clsLocale class is defined
 global locale := new clsLocale
 locale_UI := new clsLocaleInterface
+
+LocaleSwitchToLayout(layout_name) {
+    global locale_UI
+
+    if (!layout_name) {
+        return
+    }
+    EnsureLocaleExists(layout_name)
+    settings.locale := layout_name
+    if (!runtime_config_file) {
+        app_settings.Save()
+    }
+    ApplyLocaleToRuntime()
+    if (locale_UI.UI.IsShown()) {
+        locale_UI.RefreshUI()
+    }
+}
+
+EnsureLocaleExists(locale_name) {
+    if (!locale_name) {
+        return
+    }
+    temp := {}
+    if (ini.LoadProperties(temp, locale_name)) {
+        default_locale := new clsLocale
+        default_locale.Save(locale_name)
+    }
+}
+
+ApplyLocaleToRuntime() {
+    locale.Load(settings.locale)
+    locale.RefreshScanCodeMapping()
+}
+
+ProcessLayoutChange(layout_name) {
+    global app_settings
+    global locale_UI
+
+    if (app_settings.IsStaticMode()) {
+        return
+    }
+
+    if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
+        hint_UI.ShowOnOSD("Switching to", layout_name)
+    }
+    if (main_UI.UI.IsShown()) {
+        main_UI.UpdateLocaleInMainUI()
+    }
+    if (locale_UI.UI.IsShown()) {
+        locale_UI.LocaleProcessLayoutChange(layout_name)
+    } else if (!app_settings.IsStaticMode()) {
+        LocaleSwitchToLayout(layout_name)
+    }
+}

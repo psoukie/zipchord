@@ -103,8 +103,7 @@ if (A_Args[1] == "dev") {
     #Include *i testing.ahk
 }
 
-global runtime_status := { is_keyboard_wired: false
-                         , config_file      : false}
+global runtime_config_file := ""
 
 global main_UI := new clsMainUI
 central_watcher := new clsWatcher
@@ -130,10 +129,10 @@ Class clsSettings {
                 , input_overlap:    65
                 , output_delay:     3 }
     GetSettingsFile() {
-        return runtime_status.config_file ? runtime_status.config_file : this.settings_file
+        return runtime_config_file ? runtime_config_file : this.settings_file
     }
     GetSectionName() {
-        return runtime_status.config_file ? "Application" : "Default"
+        return runtime_config_file ? "Application" : "Default"
     }
     Register(setting_name, value := 0) {
         if (this.settings.HasKey(setting_name)) {
@@ -182,10 +181,19 @@ Initialize(zc_version) {
     settings.shorthand_file := upgraded_shorthand_file
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
-    locale_UI.EnsureSelectedLocaleExists()
+
+    if (app_settings.IsStaticMode()) {
+        EnsureLocaleExists(STATIC_LOCALE_NAME)
+    } else {
+        active_layout := kb.GetActiveLayoutName()
+        if (active_layout) {
+            settings.locale := active_layout
+            EnsureLocaleExists(settings.locale)
+        }
+    }
     app_settings.Save()
+    
     main_UI.Build()
-    locale_UI.Init()
     locale.Load(settings.locale)
     UI_Menu_Build()
     locale_UI.Build()
@@ -332,7 +340,7 @@ Class clsWatcher {
                 config.ProcessConfigChange(kb.current_layout_name)
             }
         } else if (layout_changed) {
-            locale_UI.ProcessLayoutChange(layout_changed)
+            ProcessLayoutChange(layout_changed)
         }
     }
 }
@@ -579,12 +587,12 @@ Class clsMainUI {
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
         this.UpdateLocaleInMainUI()
-        cts.btn_customize_locale.Enable(!runtime_status.config_file)
+        cts.btn_customize_locale.Enable(!runtime_config_file)
         main_UI.UpdateDictionaryUI()
         this.UI.Show()
         UI_SyncModeState()
-        if (runtime_status.config_file) {
-            this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_status.config_file))
+        if (runtime_config_file) {
+            this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_config_file))
         } else {
             this.UI.SetTitle("ZipChord")
         }
@@ -738,7 +746,7 @@ Class clsMainUI {
 
     _btnCustomizeLocale() {
         global locale_UI
-        if (runtime_status.config_file) {
+        if (runtime_config_file) {
             return
         }
         this.UI.Disable()
