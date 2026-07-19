@@ -466,6 +466,7 @@ Class clsAddShortcut {
     _ui_title := "Add or Edit Shortcut"
 
     Show(exp) {
+        kb.SetZipChordToHkl()
         call := Func("OpenHelp").Bind("AddShortcut")
         Hotkey, F1, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference

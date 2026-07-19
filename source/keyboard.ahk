@@ -69,13 +69,16 @@ Class clsOsKeyboard {
         return changed_layout_name
     }
 
-    SetZipChordToHkl(hkl) {
+    SetZipChordToHkl(hkl := -1) {
+        if (hkl == -1) {
+            hkl := this._current_hkl
+        }
         own_hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", 0, "Ptr")
         if (own_hkl == hkl) {
             return true
         }
         return DllCall("user32.dll\ActivateKeyboardLayout"
-            , "Ptr", hkl, "UInt", 0, "Ptr") != 0
+                , "Ptr", hkl, "UInt", 0, "Ptr") != 0
     }
 
     _GetForegroundHkl() {
@@ -86,7 +89,7 @@ Class clsOsKeyboard {
 
         process_id := 0
         thread_id := DllCall("user32.dll\GetWindowThreadProcessId"
-            , "Ptr", hwnd, "UInt*", process_id, "UInt")
+                , "Ptr", hwnd, "UInt*", process_id, "UInt")
         if (!thread_id) {
             return false
         }
@@ -116,9 +119,9 @@ Class clsOsKeyboard {
         klid := StrGet(&layout_id, 8, "UTF-16")
 
         RegRead, name
-            , % "HKLM"
-            , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . klid
-            , % "Layout Text"
+                , % "HKLM"
+                , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . klid
+                , % "Layout Text"
             
         if (!name) {
             name := klid

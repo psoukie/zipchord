@@ -317,22 +317,17 @@ Class clsWatcher {
     }
 
     RunChecks() {
-        Critical
         chords.CheckForDictModification()
         shorthands.CheckForDictModification()
-        switched_layout_name := kb.CheckForLayoutChange()
+        layout_changed := kb.CheckForLayoutChange()
         if (config.use_mapping) {
-            ; TK: The path when the configurations feature is used is not adapted / completed yet.
-            config.DetectAppSwitch()
-        } else {
-            if (switched_layout_name) {
-                if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
-                    hint_UI.ShowOnOSD("Switching to", switched_layout_name)
-                }
-                locale.ProcessLayoutChange(switched_layout_name)
+            window_changed := config.DetectAppSwitch()
+            if (layout_changed || window_changed) {
+                config.ProcessConfigChange(kb.current_layout_name)
             }
+        } else if (layout_changed) {
+            locale.ProcessLayoutChange(layout_changed)
         }
-        Critical Off
     }
 }
 
@@ -795,6 +790,7 @@ Class clsMainUI {
     }
 
     Show() {
+        kb.SetZipChordToHkl()
         cts := this.controls
         if (A_Args[1] == "dev" && cts.debugging.value) {
             FinishDebugging()
@@ -1076,6 +1072,7 @@ ShowMainUI() {
 ; App shortcut and double-Shift 'command menu'
 
 ShowKeyboardCommandMenu() {
+    kb.SetZipChordToHkl()
     UI_SyncModeState()
     hint_UI._GetCaret(caret_x, caret_y, caret_w, caret_h)
     if (caret_x != "" && caret_y != "") {
@@ -1083,10 +1080,8 @@ ShowKeyboardCommandMenu() {
         x := caret_x + Max(1.5 * caret_w, 20)
         y := caret_y + Max(1.5 * caret_h, 28)
         Menu, ZipChordCommand, Show, % x, % y
-        kb.CheckForLayoutChange()
     } else {
         Menu, ZipChordCommand, Show
-        kb.CheckForLayoutChange()
     }
 }
 
