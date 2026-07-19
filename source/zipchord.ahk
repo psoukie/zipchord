@@ -82,6 +82,8 @@ global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main di
 global UI_STR_PAUSE  := "&Pause ZipChord"
      , UI_STR_RESUME := "&Resume ZipChord"
 
+global STATIC_LOCALE_NAME := "a fixed layout"
+
 app_settings := New clsSettings()
 global settings := app_settings.settings
 
@@ -140,13 +142,15 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
-        global locale
         this.settings.locale := kb.GetActiveLayoutName()
         ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
         this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed
     }
     Save() {
         ini.SaveProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
+    }
+    IsStaticMode() {
+        return (settings.locale == STATIC_LOCALE_NAME)
     }
 }
 
@@ -155,7 +159,7 @@ Class clsSettings {
 
 Initialize(zc_version) {
     global app_settings
-    global locale
+    global locale_UI
     global updater
     global central_watcher
 
@@ -178,13 +182,13 @@ Initialize(zc_version) {
     settings.shorthand_file := upgraded_shorthand_file
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
-    locale.EnsureSelectedLocaleExists()
+    locale_UI.EnsureSelectedLocaleExists()
     app_settings.Save()
     main_UI.Build()
-    locale.Init()
-    keys.Load(settings.locale)
+    locale_UI.Init()
+    locale.Load(settings.locale)
     UI_Menu_Build()
-    locale.Build()
+    locale_UI.Build()
     hint_UI.Build()
     if (settings.preferences & PREF_SHOW_CONFIG) {
         main_UI.Show()
@@ -236,10 +240,8 @@ UpgradeTo26() {
 }
 
 UpgradeTo28() {
-    global locale
-
     selected_locale := settings.locale
-    if (!selected_locale || selected_locale == locale.STATIC_LOCALE_NAME) {
+    if (!selected_locale || selected_locale == STATIC_LOCALE_NAME) {
         return false
     }
     active_layout := kb.GetActiveLayoutName()
@@ -249,8 +251,8 @@ UpgradeTo28() {
     }
     static_locale := new clsLocale
     static_locale.Load(selected_locale)
-    static_locale.Save(locale.STATIC_LOCALE_NAME)
-    settings.locale := locale.STATIC_LOCALE_NAME
+    static_locale.Save(STATIC_LOCALE_NAME)
+    settings.locale := STATIC_LOCALE_NAME
     return true
 }
 
@@ -317,6 +319,7 @@ Class clsWatcher {
     }
 
     RunChecks() {
+        global locale_UI
         chords.CheckForDictModification()
         shorthands.CheckForDictModification()
         layout_changed := kb.CheckForLayoutChange()
@@ -329,7 +332,7 @@ Class clsWatcher {
                 config.ProcessConfigChange(kb.current_layout_name)
             }
         } else if (layout_changed) {
-            locale.ProcessLayoutChange(layout_changed)
+            locale_UI.ProcessLayoutChange(layout_changed)
         }
     }
 }
@@ -651,7 +654,7 @@ Class clsMainUI {
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
-        keys.Load(settings.locale)
+        locale.Load(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
                 hint_UI.ShowOnOSD("ZipChord Keyboard", "On")
@@ -734,12 +737,12 @@ Class clsMainUI {
     }
 
     _btnCustomizeLocale() {
-        global locale
+        global locale_UI
         if (runtime_status.config_file) {
             return
         }
         this.UI.Disable()
-        locale.Show()
+        locale_UI.Show()
     }
 
     _btnSelectDictionary(type_string) {
@@ -1128,8 +1131,7 @@ ProcessCommandLine(option_string) {
 }
 
 CloseAllWindows() {
-    global locale
-    window_names := ["locale", "add_shortcut", "main_UI"]
+    window_names := ["locale_UI", "add_shortcut", "main_UI"]
 
     For _, window in window_names {
         if (WinExist("ahk_id " . %window%.UI._handle)) {

@@ -62,7 +62,7 @@ Class TestingClass {
                 For key, value in settings
                     this.Write(key . ": " value)
                 this.Write("`nKeyboard and Language settings:")
-                For key, value in keys
+                For key, value in locale
                     this.Write(key . ": " value)
             Case "save":
                 if (! this._CheckFilename(filename, "ini"))
@@ -201,7 +201,7 @@ Class TestingClass {
     }
     Log(raw_event, is_input := false) {
         stripped_raw := StrReplace(StrReplace(raw_event, "{"), "}")
-        converted_event := keys.SCHotkeyToSymbolHotkey(stripped_raw)
+        converted_event := locale.SCHotkeyToSymbolHotkey(stripped_raw)
         event := converted_event == stripped_raw ? raw_event : "~" . converted_event
         if (this._input && is_input) {
             if (!this._starting_tick)

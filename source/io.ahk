@@ -93,14 +93,14 @@ KeyDown() {
     global io
     Critical
     tick := A_TickCount
-    key := keys.SCHotkeyToSymbolHotkey(A_ThisHotkey)
+    key := locale.SCHotkeyToSymbolHotkey(A_ThisHotkey)
     if (key == "") {
         Critical Off
         Return
     }
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
-            key := keys.SCHotkeyToSymbolHotkey(test_key)
+            key := locale.SCHotkeyToSymbolHotkey(test_key)
             tick := test_timestamp
         }
         if (test.mode > TEST_STANDBY) {
@@ -131,7 +131,7 @@ KeyUp() {
     global io
     Critical
     tick_up := A_TickCount
-    key := keys.SCHotkeyToSymbolHotkey(A_ThisHotkey)
+    key := locale.SCHotkeyToSymbolHotkey(A_ThisHotkey)
     if (key == "") {
         Critical Off
         Return
@@ -139,7 +139,7 @@ KeyUp() {
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             tick_up := test_timestamp
-            key := keys.SCHotkeyToSymbolHotkey(test_key)
+            key := locale.SCHotkeyToSymbolHotkey(test_key)
         }
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
@@ -315,8 +315,8 @@ Class clsIOrepresentation {
             token.output := entry
         }
     
-        if ( !key.with_shift && InStr(keys.punctuation_plain, entry) )
-                || ( key.with_shift && InStr(keys.punctuation_shift, entry) ) {
+        if ( !key.with_shift && InStr(locale.punctuation_plain, entry) )
+                || ( key.with_shift && InStr(locale.punctuation_shift, entry) ) {
             token.type := TokenType.PUNCTUATION
         }
         if (entry == " ") {
@@ -764,9 +764,9 @@ Class clsIOrepresentation {
         ; for punctuation that removes spaces
         if (type == TokenType.PUNCTUATION) {
             if ( (!(attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.remove_space_plain, token.input))
+                && InStr(locale.remove_space_plain, token.input))
                 || ((attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.remove_space_shift, token.input)) ) {
+                && InStr(locale.remove_space_shift, token.input)) ) {
                 io_tokens.RemoveAt(PreviousLiveTokenId())   ; not tombstoning because we've just added it
                 return true
             }
@@ -803,8 +803,8 @@ Class clsIOrepresentation {
                 || PreviousLiveToken().type == TokenType.INTERRUPT ) {
             return
         }
-        if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.space_after_plain, token.input) )
-                || (attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.space_after_shift, token.input) ) {
+        if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_plain, token.input) )
+                || (attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_shift, token.input) ) {
             this._AddSmartSpace()
         }
     }
@@ -891,11 +891,11 @@ Class clsIOrepresentation {
         
         ; if the last output was punctuation that does not ask for a space
         if ( ( !(prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.punctuation_plain, prev_token.input)
-                && !InStr(keys.space_after_plain, prev_token.input) )
+                && InStr(locale.punctuation_plain, prev_token.input)
+                && !InStr(locale.space_after_plain, prev_token.input) )
                 || (prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.punctuation_shift, prev_token.input)
-                && !InStr(keys.space_after_shift, prev_token.input) )  {
+                && InStr(locale.punctuation_shift, prev_token.input)
+                && !InStr(locale.space_after_shift, prev_token.input) )  {
             add_leading_space := false
         }
         
@@ -1058,8 +1058,8 @@ Class clsIOrepresentation {
             prev_input := previous_token.input
             with_shift := previous_token.attribs & TokenAttribs.WITH_SHIFT
             if (StrLen(prev_input) == 1
-                && (!with_shift && InStr(keys.capitalizing_plain, prev_input))
-                || (with_shift && InStr(keys.capitalizing_shift, prev_input)) ) {
+                && (!with_shift && InStr(locale.capitalizing_plain, prev_input))
+                || (with_shift && InStr(locale.capitalizing_shift, prev_input)) ) {
                 return true
             }
         }
@@ -1075,8 +1075,8 @@ Class clsIOrepresentation {
             before_prev_input := before_previous_token.input
             with_shift := before_previous_token.attribs & TokenAttribs.WITH_SHIFT
             if ( StrLen(before_prev_input) == 1
-                && (!with_shift && InStr(keys.capitalizing_plain, before_prev_input))
-                || (with_shift && InStr(keys.capitalizing_shift, before_prev_input)) ) {
+                && (!with_shift && InStr(locale.capitalizing_plain, before_prev_input))
+                || (with_shift && InStr(locale.capitalizing_shift, before_prev_input)) ) {
                 return true
             }
         }

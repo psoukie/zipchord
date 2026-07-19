@@ -25,18 +25,17 @@ Class Configuration {
 
     Save(config_file) {
         global app_settings
-        global locale
 
         if !(config_file) {
             MsgBox, , % "ZipChord", % "You need to specify the setting file."
             return
         }
-        save_locale_override := locale.IsStaticMode()
+        save_locale_override := app_settings.IsStaticMode()
         was_open := CloseAllWindows()
         runtime_status.config_file := config_file
         app_settings.Save()
         if (save_locale_override) {
-            keys.Save(settings.locale)
+            locale.Save(settings.locale)
         } else {
             ini.DeleteSection("Locale", config_file)
         }
@@ -64,7 +63,7 @@ Class Configuration {
 
     Load(config_file) {
         global app_settings
-        global locale
+        global locale_UI
 
         runtime_status.config_file := config_file
         WireHotkeys("Off")
@@ -79,21 +78,20 @@ Class Configuration {
         }
         app_settings.Load()
         this._UpgradeLegacyLocaleSetting()
-        if (locale.IsStaticMode()) {
-            keys.Load(settings.locale)
+        if (app_settings.IsStaticMode()) {
+            locale.Load(settings.locale)
         } else {
             layout_name := kb.GetActiveLayoutName()
-            locale.SwitchToLayout(layout_name)
+            locale_UI.SwitchToLayout(layout_name)
         }
         WireHotkeys("On")
     }
 
     _UpgradeLegacyLocaleSetting() {
         global app_settings
-        global locale
 
         if (settings.locale = "0") {
-            settings.locale := locale.STATIC_LOCALE_NAME
+            settings.locale := STATIC_LOCALE_NAME
             app_settings.Save()
         }
     }
@@ -135,7 +133,7 @@ Class Configuration {
     }
  
     FindMatchingConfig(layout_name) {
-        window_names := ["locale", "add_shortcut", "main_UI"]
+        window_names := ["locale_UI", "add_shortcut", "main_UI"]
         WinGetActiveTitle, window_title
         if (window_title == "Task Switching") {
             return false

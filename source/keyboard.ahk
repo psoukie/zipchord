@@ -12,7 +12,7 @@ WireHotkeys(state) {
     global SC_to_symbol_map
     interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
 
-    keys.RefreshScanCodeMapping()
+    locale.RefreshScanCodeMapping()
 
     For sc_hex, symbol in SC_to_symbol_map {
         SC := str.SCHexToString(sc_hex)
