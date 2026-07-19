@@ -184,7 +184,7 @@ Class TestingClass {
     }
     _Ready() {
         this._starting_tick := 0
-        GoSub Interrupt
+        Interrupt()
     }
     Stop(from_interactive := false) {
         if (from_interactive) {
@@ -201,7 +201,7 @@ Class TestingClass {
     }
     Log(raw_event, is_input := false) {
         stripped_raw := StrReplace(StrReplace(raw_event, "{"), "}")
-        converted_event := SCHotkeyToSymbolHotkey(stripped_raw)
+        converted_event := keys.SCHotkeyToSymbolHotkey(stripped_raw)
         event := converted_event == stripped_raw ? raw_event : "~" . converted_event
         if (this._input && is_input) {
             if (!this._starting_tick)
@@ -243,18 +243,18 @@ Class TestingClass {
                 Case "*Hint*":
                     Continue
                 Case "*Interrupt*":
-                    GoSub Interrupt
+                    Interrupt()
                 Case "*Shift*":
-                    GoSub Simulate_Shift
+                    Simulate_Shift()
                 Case "~Enter":
-                    GoSub Enter_key
+                    Enter_key()
                 Case "~Backspace":
-                    GoSub Backspace_key
+                    Backspace_key()
                 Default:
                     if (SubStr(test_key, -2)==" Up")
-                        GoSub KeyUp
+                        KeyUp()
                     else
-                        GoSub KeyDown
+                        KeyDown()
             }
         }
         this.Stop()

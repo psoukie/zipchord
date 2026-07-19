@@ -64,6 +64,164 @@ global io_chord := new clsChordCandidate
 io_new_tokens := []
 io_prev_tokens := []
 
+Shift_key() {
+    global io
+    Critical
+    if (A_PriorHotkey != "~Shift") {
+        return
+    }
+    key := "*Shift*"
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+        }
+    }
+    if (visualizer.IsOn()) {
+        visualizer.Pressed("+", false)
+        visualizer.Lifted("+", false)
+    }
+    io.PreShift()
+    Critical Off
+}
+
+Simulate_Shift() {
+    global io
+    io.PreShift()
+}
+
+KeyDown() {
+    global io
+    Critical
+    tick := A_TickCount
+    key := keys.SCHotkeyToSymbolHotkey(A_ThisHotkey)
+    if (key == "") {
+        Critical Off
+        Return
+    }
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            key := keys.SCHotkeyToSymbolHotkey(test_key)
+            tick := test_timestamp
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
+    }
+    if (visualizer.IsOn()) {
+        modified_key := StrReplace(key, "Space", " ")
+        if (SubStr(modified_key, 1, 1) == "~")
+            modified_key := SubStr(modified_key, 2)
+        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
+        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
+            shifted := true
+            modified_key := SubStr(modified_key, 2)
+        } else {
+            shifted := false
+        }
+        visualizer.Pressed(modified_key, shifted)
+    }
+    ; QPC()
+    io.ProcessKey(key, tick)
+    ; QPC()
+    Critical Off
+}
+
+KeyUp() {
+    global io
+    Critical
+    tick_up := A_TickCount
+    key := keys.SCHotkeyToSymbolHotkey(A_ThisHotkey)
+    if (key == "") {
+        Critical Off
+        Return
+    }
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            tick_up := test_timestamp
+            key := keys.SCHotkeyToSymbolHotkey(test_key)
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+        }
+    }
+    if (visualizer.IsOn()) {
+        modified_key := StrReplace(key, "Space", " ")
+        if (SubStr(modified_key, 1, 1) == "~")
+            modified_key := SubStr(modified_key, 2)
+        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
+            shifted := true
+            modified_key := SubStr(modified_key, 2)
+        } else {
+            shifted := false
+        }
+        visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
+    }
+    ; QPC()
+    if (io.ProcessKey(key, tick_up)) {
+        edits := io.ProcessTokens() 
+        if (edits.Count() > 0) {
+            io.ProcessEdits(edits)
+        }
+    }
+    ; QPC()
+    Critical Off
+}
+
+Interrupt() {
+    global io
+    io.ClearTokens("*Interrupt*")
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log("*Interrupt*", true)
+            test.Log("*Interrupt*")
+        }
+    }
+}
+
+Enter_key() {
+    global io
+    io.ClearTokens("~Enter")
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log("~Enter", true)
+            test.Log("~Enter")
+        }
+        if (visualizer.IsOn())
+            visualizer.NewLine()
+    }
+}
+
+Backspace_key() {
+    HandleBackspace()
+}
+
+Ctrl_Backspace_key() {
+    HandleBackspace(true)
+}
+
+HandleBackspace(with_ctrl := false) {
+    global io
+    Critical
+    key  := with_ctrl ? "~^Backspace" : "~Backspace"
+
+    if (A_Args[1] = "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
+    }
+
+    if (visualizer.IsOn()) {
+        sym := Chr(0x232B)
+        visualizer.Pressed(sym, false)
+        visualizer.Lifted(sym, false)
+    }
+
+    io.Backspace(with_ctrl)
+    Critical Off
+}
+
 io := new clsIOrepresentation
 
 Class clsIOrepresentation {

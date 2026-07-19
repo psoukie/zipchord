@@ -200,6 +200,61 @@ Class clsLocale {
             ini.LoadProperties(this, locale_name)
         }
     }
+
+    RefreshScanCodeMapping() {
+        global SC_to_symbol_map
+        global symbol_to_SC_map
+        global ahk_numpad_to_symbol_map
+
+        SC_to_symbol_map := {}
+        symbol_to_SC_map := {}
+
+        For _, key_name in this.key_map.Keys() {
+            if (this.key_map[key_name].symbol == "") {
+                continue
+            }
+            SC := this.key_map[key_name].SC
+            symbol := this.key_map[key_name].symbol
+            SC_to_symbol_map[SC] := symbol 
+            symbol_to_SC_map[symbol] := SC
+        }
+
+        For num_SC, num_reps in this.key_map.NUMPAD_MAPPING {
+            SC_to_symbol_map[num_SC] := num_reps.symbol
+            symbol_to_SC_map[num_reps.symbol] := num_SC
+            ahk_numpad_to_symbol_map[num_reps.ahk] := num_reps.symbol
+        }
+    }
+
+    ; Replace mapped scan code and named-key tokens inside a hotkey string
+    SCHotkeyToSymbolHotkey(key) {
+        global SC_to_symbol_map
+        global ahk_numpad_to_symbol_map
+
+        pos := 1
+        if (pos := InStr(key, "SC", true)) {
+            candidate := "0x" . SubStr(key, pos+2, 3)   ; "SC" + 3 chars
+            SC := candidate + 0
+            if (SC_to_symbol_map.HasKey(SC)) {
+                repl := SC_to_symbol_map[SC]
+                return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
+            }
+        }
+
+        if (pos := InStr(key, "Numpad", true)) {
+            if (up_pos := InStr(key, " ", true, pos)) {
+                candidate := SubStr(key, pos, up_pos - pos)
+                suffix := SubStr(key, up_pos)
+            } else {
+                candidate := SubStr(key, pos)
+                suffix := ""
+            }
+            repl := ahk_numpad_to_symbol_map[candidate]
+            return SubStr(key, 1, pos-1) . repl . suffix
+        }
+    
+        return key
+    }
 }
 
 Class clsLocaleInterface {
@@ -285,7 +340,7 @@ Class clsLocaleInterface {
     }
     _ApplyLocaleToRuntime() {
         keys.Load(settings.locale)
-        RefreshScanCodeMapping()
+        keys.RefreshScanCodeMapping()
         if (IsObject(main_UI)) {
             main_UI.UpdateLocaleInMainUI()
         }
@@ -417,7 +472,7 @@ Class clsLocaleInterface {
         if (runtime_status.config_file) {
             new_loc.Save(false)
             keys := new_loc
-            RefreshScanCodeMapping()
+            keys.RefreshScanCodeMapping()
             return
         }
         target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : kb.GetActiveLayoutName()

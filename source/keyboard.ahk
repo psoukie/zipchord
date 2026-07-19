@@ -7,6 +7,38 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 ; OS-specific keyboard layout, input, and output handling
 
+; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
+WireHotkeys(state) {
+    global SC_to_symbol_map
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
+
+    keys.RefreshScanCodeMapping()
+
+    For sc_hex, symbol in SC_to_symbol_map {
+        SC := str.SCHexToString(sc_hex)
+        Hotkey, % "~" . SC, KeyDown, %state%
+        Hotkey, % "~+" . SC, KeyDown, %state%
+        Hotkey, % "~" . SC . " Up", KeyUp, %state%
+        Hotkey, % "~+" . SC . " Up", KeyUp, %state%
+    }
+
+    Hotkey, % "~Space", KeyDown, %state%
+    Hotkey, % "~+Space", KeyDown, %state%
+    Hotkey, % "~Space Up", KeyUp, %state%
+    Hotkey, % "~+Space Up", KeyUp, %state%
+    Hotkey, % "~Shift", Shift_key, %state%
+    Hotkey, % "~Shift Up", Shift_key, %state%
+    Hotkey, % "~Enter", Enter_key, %state%
+    Hotkey, % "~Backspace", Backspace_key, %state%
+    Hotkey, % "~^Backspace", Ctrl_Backspace_key, %state%
+    Loop Parse, % interrupts , |
+    {
+        Hotkey, % "~" A_LoopField, Interrupt, %state%
+        Hotkey, % "~^" A_LoopField, Interrupt, %state%
+    }
+    runtime_status.is_keyboard_wired := state
+}
+
 Class clsOsKeyboard {
     DEBOUNCE_MS := 500
 
