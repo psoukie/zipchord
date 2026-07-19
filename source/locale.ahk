@@ -206,8 +206,6 @@ Class clsLocaleInterface {
     STATIC_LOCALE_NAME := "a fixed layout"
     current_key_map := new clsKeyMap
     UI := {}
-    _layout_watch_fn := ObjBindMethod(this, "CheckForLayoutChange")
-    _last_detected_layout := ""
     controls := { use_auto: { type: "Radio"
                             , text: "&Automatically switch with keyboard layout"
                             , function: ObjBindMethod(this, "_LoadCurrentLocale")}
@@ -238,7 +236,6 @@ Class clsLocaleInterface {
 
     Init() {
         this.EnsureSelectedLocaleExists()
-         this._last_detected_layout := this.GetActiveLayoutName()
     }
     Build() {
         this._Build()
@@ -264,27 +261,20 @@ Class clsLocaleInterface {
             this.EnsureLocaleExists(this.STATIC_LOCALE_NAME)
             return
         }
-        active_layout := this.GetActiveLayoutName()
+        active_layout := kb.GetActiveLayoutName()
         if (!active_layout) {
             return
         }
         settings.locale := active_layout
         this.EnsureLocaleExists(settings.locale)
     }
-    SwitchToActiveLayout() {
-        if (this.IsStaticMode()) {
-            return
-        }
-        layout_name := this.GetActiveLayoutName()
-        this._SwitchToLayout(layout_name)
-    }
-    _SwitchToLayout(layout_name) {
+
+    SwitchToLayout(layout_name) {
         if (!layout_name) {
             return
         }
         this.EnsureLocaleExists(layout_name)
         settings.locale := layout_name
-        this._last_detected_layout := layout_name
         if (!runtime_status.config_file) {
             app_settings.Save()
         }
@@ -360,7 +350,7 @@ Class clsLocaleInterface {
         this.UI.Show()
     }
     _LoadCurrentLocale() {
-        locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        locale_name := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : kb.GetActiveLayoutName()
         if (!locale_name) {
             locale_name := settings.locale ? settings.locale : this.STATIC_LOCALE_NAME
         }
@@ -430,17 +420,13 @@ Class clsLocaleInterface {
             RefreshScanCodeMapping()
             return
         }
-        target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : this.GetActiveLayoutName()
+        target_locale := this.controls.use_static.value ? this.STATIC_LOCALE_NAME : kb.GetActiveLayoutName()
         if (!target_locale) {
             target_locale := settings.locale ? settings.locale : this.STATIC_LOCALE_NAME
         }
         new_loc.Save(target_locale)
         settings.locale := target_locale
         app_settings.Save()
-        active_layout := this.GetActiveLayoutName()
-        if (active_layout) {
-            this._last_detected_layout := active_layout
-        }
         this._ApplyLocaleToRuntime()
         this._LoadCurrentLocale()
     }
@@ -450,36 +436,15 @@ Class clsLocaleInterface {
         this.UI.Hide()
     }
 
-    _GetKeyboardLayoutText(layout_id) {
-        RegRead, layoutName
-            , % "HKLM"
-            , % "SYSTEM\CurrentControlSet\Control\Keyboard Layouts\" . layout_id
-            , % "Layout Text"
-        return layoutName
-    }
-
-    GetActiveLayoutName() {
-        VarSetCapacity(layout_id, 9*2, 0)  ; WCHAR[9] — layout name string like "00000409"
-        if (DllCall("user32.dll\GetKeyboardLayoutName", "Str", layout_id)) {
-            layout_name := this._GetKeyboardLayoutText(layout_id)
-            if (layout_name) {
-                return layout_name
-            }
+    ProcessLayoutChange(layout_name) {
+        if !(add_shortcut.UI.IsShown() || main_UI.UI.IsShown()) {
+            hint_UI.ShowOnOSD("Switching to", layout_name)
         }
-        return "Default"
-    }
-
-    CheckForLayoutChange() {
-        current_layout := this.GetActiveLayoutName()
-        if (current_layout == this._last_detected_layout) {
-            return
-        }
-        this._last_detected_layout := current_layout
         if (this.UI._handle && this.UI.IsShown() && !this.controls.use_static.value) {
-            this._UpdateGroupTitles(current_layout)
+            this._UpdateGroupTitles(layout_name)
         }
         if (!this.IsStaticMode()) {
-            this._SwitchToLayout(current_layout)
+            this.SwitchToLayout(layout_name)
         }
     }
 

@@ -27,10 +27,10 @@ Class clsDictionary {
     _file_modified := ""
     _file_size := ""
     _reload_due := 0
-    _watch_fn := ObjBindMethod(this, "CheckForDictModification")
     _entries := {}
     _reverse_entries := {}
     _dll_entries_count := 0
+    _is_watching := false
     _pause_loading := true
     
     entries {
@@ -119,12 +119,10 @@ Class clsDictionary {
     }
 
     _StartWatching() {
-        watch_fn := this._watch_fn
-        SetTimer, %watch_fn%, 350
+        this._is_watching := true
     }
     _StopWatching() {
-        watch_fn := this._watch_fn
-        SetTimer, %watch_fn%, Off
+        this._is_watching := false
         this._reload_due := 0
         this._file_modified := ""
         this._file_size := ""
@@ -146,11 +144,10 @@ Class clsDictionary {
     }
 
     CheckForDictModification() {
-        Critical
-        if (this._file == "") {
-            return
+        if (! this._is_watching || this._file == "") {
+             return
         }
-        if ! FileExist(this._file) {
+        if (! FileExist(this._file)) {
             this._StopWatching()
             return
         }
@@ -165,7 +162,6 @@ Class clsDictionary {
             return
         }
         if (this._reload_due && A_TickCount >= this._reload_due) {
-            Critical Off
             this.Load()
             main_UI.UpdateDictionaryUI()
         }
@@ -279,7 +275,7 @@ Class clsDictionary {
     _IsDuplicateChars(shortcut, word) {
         ; Detect duplicate characters: if length changes after removing duplicates, there are repeats
         if (StrLen(RegExReplace(shortcut,"(.)(?=.*\1)")) != StrLen(shortcut)) {
-            MsgBox ,, % "ZipChord", % Format("In entry for '{}', each key can be entered only once in the same chord.", word)
+            MsgBox ,, % "ZipChord", % Format("In the entry for '{}', each key can be entered only once in the same chord.", word)
             Return true
         }
         Return false
@@ -470,6 +466,7 @@ Class clsAddShortcut {
     _ui_title := "Add or Edit Shortcut"
 
     Show(exp) {
+        kb.SetZipChordToHkl()
         call := Func("OpenHelp").Bind("AddShortcut")
         Hotkey, F1, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference

@@ -94,6 +94,7 @@ ahk_numpad_to_symbol_map := {}
 #Include locale.ahk
 #Include dictionaries.ahk
 #Include io.ahk
+#Include keyboard.ahk
 
 if (A_Args[1] == "dev") {
     #Include *i visualizer.ahk
@@ -104,6 +105,7 @@ global runtime_status := { is_keyboard_wired: false
                          , config_file      : false}
 
 global main_UI := new clsMainUI
+central_watcher := new clsWatcher
 
 
 Initialize(zc_version)
@@ -139,7 +141,7 @@ Class clsSettings {
     }
     Load() {
         global locale
-        this.settings.locale := locale.GetActiveLayoutName()
+        this.settings.locale := kb.GetActiveLayoutName()
         ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
         this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed
     }
@@ -155,6 +157,7 @@ Initialize(zc_version) {
     global app_settings
     global locale
     global updater
+    global central_watcher
 
     ini.SaveLicense()
     app_settings.Load()
@@ -197,6 +200,7 @@ Initialize(zc_version) {
     main_UI.UI.Enable()
     WireCommandHotkeys("On")
     WireHotkeys("On")
+    central_watcher.Start()
 }
 
 UpgradeTo26() {
@@ -212,7 +216,7 @@ UpgradeTo26() {
             IniDelete, % config_file, % CONFIG_SECTION, % key
             settings.Delete(key)
         }
-        settings.locale := locale.GetActiveLayoutName()
+        settings.locale := kb.GetActiveLayoutName()
     }
     if (! FileExist(locale_file)) {
         return result
@@ -238,7 +242,7 @@ UpgradeTo28() {
     if (!selected_locale || selected_locale == locale.STATIC_LOCALE_NAME) {
         return false
     }
-    active_layout := locale.GetActiveLayoutName()
+    active_layout := kb.GetActiveLayoutName()
     if (selected_locale == active_layout) {
         settings.locale := active_layout
         return false
@@ -292,6 +296,40 @@ UpdateSettings(from_version) {
     if (updater.SemVerCompare("2.8.0", from_version) == 1) {
         if (UpgradeTo28()) {
             MsgBox, , % "ZipChord Upgrade Note", % "ZipChord now follows your active Windows keyboard layout automatically.`n`nYour existing keyboard and language settings did not match the currently active Windows layout, so they were preserved as a fixed layout."
+        }
+    }
+}
+
+Class clsWatcher {
+    POLL_INTERVAL := 250
+
+    _watch_fn := ObjBindMethod(this, "RunChecks")
+
+    Start() {
+        watch_fn := this._watch_fn
+        interval := this.POLL_INTERVAL
+        SetTimer, %watch_fn%, %interval%
+    }
+
+    Stop() {
+        watch_fn := this._watch_fn
+        SetTimer, %watch_fn%, Off
+    }
+
+    RunChecks() {
+        chords.CheckForDictModification()
+        shorthands.CheckForDictModification()
+        layout_changed := kb.CheckForLayoutChange()
+        if (config.use_mapping) {
+            window_changed := config.DetectAppSwitch()
+            if (window_changed) {
+                current_layout := kb.GetActiveLayoutName()
+                config.ProcessConfigChange(current_layout)
+            } else if (layout_changed) {
+                config.ProcessConfigChange(kb.current_layout_name)
+            }
+        } else if (layout_changed) {
+            locale.ProcessLayoutChange(layout_changed)
         }
     }
 }
@@ -753,6 +791,7 @@ Class clsMainUI {
     }
 
     Show() {
+        kb.SetZipChordToHkl()
         cts := this.controls
         if (A_Args[1] == "dev" && cts.debugging.value) {
             FinishDebugging()
@@ -791,8 +830,6 @@ Class clsMainUI {
         } else {
             this.UI.SetTitle("ZipChord")
         }
-        watch_fn := locale._layout_watch_fn
-        SetTimer, %watch_fn%, 250
     }
 
     _btnOK() {
@@ -931,8 +968,6 @@ Class clsMainUI {
 
     Close() {
         Hotkey, F1, Off
-        watch_fn := locale._layout_watch_fn
-        SetTimer, %watch_fn%, Off
         this.UI.Hide()
         if (settings.preferences & PREF_SHOW_CLOSING_TIP) {
             this.closing_tip := new clsClosingTip
@@ -1038,6 +1073,7 @@ ShowMainUI() {
 ; App shortcut and double-Shift 'command menu'
 
 ShowKeyboardCommandMenu() {
+    kb.SetZipChordToHkl()
     UI_SyncModeState()
     hint_UI._GetCaret(caret_x, caret_y, caret_w, caret_h)
     if (caret_x != "" && caret_y != "") {
@@ -1045,10 +1081,8 @@ ShowKeyboardCommandMenu() {
         x := caret_x + Max(1.5 * caret_w, 20)
         y := caret_y + Max(1.5 * caret_h, 28)
         Menu, ZipChordCommand, Show, % x, % y
-        locale.CheckForLayoutChange()
     } else {
         Menu, ZipChordCommand, Show
-        locale.CheckForLayoutChange()
     }
 }
 

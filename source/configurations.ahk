@@ -10,13 +10,14 @@ Class Configuration {
     mapping := []
     app_id := 0
     use_mapping := false
-    _loop_fn := ObjBindMethod(this, "DetectAppSwitchLoop")
 
     Class MappingEntry {
+        layout_mask := ""
         window_mask := ""
         config_file := ""
 
-        __New(window_mask, config_file) {
+        __New(layout_mask, window_mask, config_file) {
+            this.layout_mask := layout_mask
             this.window_mask := window_mask
             this.config_file := config_file
         }
@@ -81,7 +82,8 @@ Class Configuration {
         if (locale.IsStaticMode()) {
             keys.Load(settings.locale)
         } else {
-            locale.SwitchToActiveLayout()
+            layout_name := kb.GetActiveLayoutName()
+            locale.SwitchToLayout(layout_name)
         }
         WireHotkeys("On")
     }
@@ -103,33 +105,36 @@ Class Configuration {
         }
         Loop, Read, %filename%
         {
-            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
-            if ! (columns[1] && columns[2]) {
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 4)
+            if ! (columns[1] && columns[2] && columns[3]) {
                 continue
             }
-            new_entry := new this.MappingEntry(columns[1], columns[2])
+            new_entry := new this.MappingEntry(columns[1], columns[2], columns[3])
             this.mapping.Push(new_entry)
         }
         this.use_mapping := true
         hint_UI.ShowOnOSD("Activated automatic", "configuration switching")
-        this.DetectAppSwitchLoop()
     }
 
-    DetectAppSwitchLoop() {
-        this.app_id := WinExist("A")
-        WinWaitNotActive, % "ahk_id " . this.app_id
-        if ! (this.use_mapping) {
-            return
+    DetectAppSwitch() {
+        hwnd := DllCall("user32.dll\GetForegroundWindow", "Ptr")
+        if (!hwnd || hwnd == this.app_id) {
+            return false
         }
-        config_file := this.FindMatchingConfig()
+
+        this.app_id := hwnd
+        return true
+    }
+
+    ProcessConfigChange(layout_name) {
+        config_file := this.FindMatchingConfig(layout_name)
+
         if (config_file && str.FilenameWithExtension(config_file) != runtime_status.config_file) {
             this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
-        loop_fn := this._loop_fn
-        SetTimer, %loop_fn%, -250
     }
  
-    FindMatchingConfig() {
+    FindMatchingConfig(layout_name) {
         window_names := ["locale", "add_shortcut", "main_UI"]
         WinGetActiveTitle, window_title
         if (window_title == "Task Switching") {
@@ -144,9 +149,11 @@ Class Configuration {
         }
         for _, entry in this.mapping {
             ; Convert wildcard-style pattern to regex
-            regex_pattern := "^" . RegExReplace(entry.window_mask, "\*", ".*") . "$"
-            if RegExMatch(window_title, regex_pattern) {
-                return entry.config_file
+            window_regex_pattern := "^" . RegExReplace(entry.window_mask, "\*", ".*") . "$"
+            if (RegExMatch(window_title, window_regex_pattern)) {
+                if (entry.layout_mask == "*" || entry.layout_mask == layout_name) {
+                    return entry.config_file
+                }
             }
         }
         return false

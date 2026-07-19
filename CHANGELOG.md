@@ -6,12 +6,19 @@ Unreleased development changes since 2.8.x.
 
 **New Features**
 
-- Added a new chord-detection mode based on relative key overlap, in addition to the existing fixed duration mode.
+- Added a new chord-detection mode by relative overlap of keys under Detection, in addition to the existing fixed duration mode.
+
+**Improvements**
+
+- ZipChord now detects system keyboard layout changes when its own UI is not in focus. (#271)
 
 **Fixes**
 
 - Fixes incorrect output around smart spaces or auto-capitalization that happened when keys are mapped to different symbols than they normally produce. (#267)
-- A workaround was added because ZipChord cannot detect system keyboard layout changes when its own UI is not in focus. Now, when you open the command menu (by pressing both Shifts) or the main ZipChord window, ZipChord detects and switches its keyboard and language settings. (#271)
+
+**Breaking Changes**
+
+- The format of the mapping file for automatic configuration switching has been changed. It now has a mandatory additional first column for the keyboard layout name (can be `*` for any layout). See https://github.com/psoukie/zipchord/wiki/Configurations-and-automated-switching#mapping-file  
 
 ## ZipChord 2.8.2
 
