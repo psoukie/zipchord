@@ -105,7 +105,7 @@ Class Configuration {
         }
         Loop, Read, %filename%
         {
-            columns := StrSplit(A_LoopReadLine, A_Tab, , 3)
+            columns := StrSplit(A_LoopReadLine, A_Tab, , 4)
             if ! (columns[1] && columns[2] && columns[3]) {
                 continue
             }

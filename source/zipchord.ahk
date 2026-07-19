@@ -322,7 +322,10 @@ Class clsWatcher {
         layout_changed := kb.CheckForLayoutChange()
         if (config.use_mapping) {
             window_changed := config.DetectAppSwitch()
-            if (layout_changed || window_changed) {
+            if (window_changed) {
+                current_layout := kb.GetActiveLayoutName()
+                config.ProcessConfigChange(current_layout)
+            } else if (layout_changed) {
                 config.ProcessConfigChange(kb.current_layout_name)
             }
         } else if (layout_changed) {
@@ -330,8 +333,6 @@ Class clsWatcher {
         }
     }
 }
-
-
 
 RefreshScanCodeMapping() {
     global keys
