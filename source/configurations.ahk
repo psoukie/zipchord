@@ -35,6 +35,9 @@ Class Configuration {
         was_open := CloseAllWindows()
         runtime_config_file := config_file
         app_settings.Save()
+        ; A configuration saved by 2.9 no longer needs legacy dictionary ownership.
+        IniDelete, %config_file%, Application, chord_file
+        IniDelete, %config_file%, Application, shorthand_file
         if (save_locale_override) {
             locale.Save(settings.locale)
         } else {
@@ -68,19 +71,12 @@ Class Configuration {
 
         runtime_config_file := config_file
         WireHotkeys("Off")
-        new_settings := app_settings.settings.Clone()
-        ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
-        force_update := new_settings.dictionary_dir != settings.dictionary_dir
-        if (force_update || new_settings.chord_file != settings.chord_file) {
-            chords.Load(new_settings.chord_file)
-        }
-        if (force_update || new_settings.shorthand_file != settings.shorthand_file) {
-            shorthands.Load(new_settings.shorthand_file)
-        }
         app_settings.Load()
+        SetWorkingDir, % settings.dictionary_dir
         this._UpgradeLegacyLocaleSetting()
         if (app_settings.IsStaticMode()) {
-            locale.Load(settings.locale)
+            EnsureLocaleExists(settings.locale)
+            ApplyLocaleToRuntime()
         } else {
             layout_name := kb.GetActiveLayoutName()
             LocaleSwitchToLayout(layout_name)

@@ -77,14 +77,14 @@ Class clsDictionary {
     }
 
     Load(filename := "") {
-        this._StopWatching()
-        this._pause_loading := true
         if (filename == "") {
             filename := this._file
         }
+        this.Unload()
+        this._pause_loading := true
         if (filename == "") {
-            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
-            return
+            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file."
+            return false
         }
         filename := this._GetFullFileName(filename)
         if ! FileExist(filename) {
@@ -93,13 +93,22 @@ Class clsDictionary {
             return false
         }
         this._file := this._EnsureV2DictionaryFile(filename)
-        if (!this._file)
+        if (!this._file) {
             return false
+        }
         this._LoadShortcuts()
         this._UpdateTrackedFileState()
         this._StartWatching()
 
         return true
+    }
+
+    Unload() {
+        this._StopWatching()
+        this._file := ""
+        this._entries := {}
+        this._reverse_entries := {}
+        this._dll_entries_count := 0
     }
     _GetFullFileName(filename) {
         if (InStr(filename, "\")) {
@@ -113,6 +122,10 @@ Class clsDictionary {
         }
     }
     Add(shortcut, text) {
+        if (this._file == "") {
+            MsgBox, , % "ZipChord", % "Select a dictionary before adding a shortcut."
+            return false
+        }
         if( ! this._RegisterShortcut(shortcut, text, true) )
             return False
         return True
@@ -148,7 +161,8 @@ Class clsDictionary {
              return
         }
         if (! FileExist(this._file)) {
-            this._StopWatching()
+            this.Unload()
+            main_UI.UpdateDictionaryUI()
             return
         }
 

@@ -436,6 +436,14 @@ class clsIniFile {
         corrected_value := value == "ERROR" ? "" : value
         return corrected_value
     }
+    HasProperty(key, section, filename := "") {
+        if (!filename) {
+            filename := this.default_ini
+        }
+        sentinel := "__ZIPCHORD_MISSING_INI_KEY__"
+        IniRead value, %filename%, %section%, %key%, %sentinel%
+        return value != sentinel
+    }
     SaveProperties(object_to_save, ini_section := "Default", ini_filename := "") {
         if (!ini_filename) {
             ini_filename := this.default_ini

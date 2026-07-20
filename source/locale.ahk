@@ -153,6 +153,11 @@ Class clsKeyMap {
 }
 
 Class clsLocale {
+    chord_file := "en-qwerty.chords.txt"
+    shorthand_file := "english.shorthands.txt"
+    use_chords := true
+    use_shorthands := true
+
     remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
     remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
     space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
@@ -175,29 +180,19 @@ Class clsLocale {
     }
 
     Save(locale_name) {
-        global runtime_config_file
-
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
-        if (runtime_config_file && locale_name == STATIC_LOCALE_NAME) {
-            ini.SaveProperties(this, "Locale", runtime_config_file)
-        } else {
-            ini.SaveProperties(this, locale_name)
-        }
+        GetLocaleStorage(locale_name, section, filename)
+        ini.SaveProperties(this, section, filename)
     }
 
     Load(locale_name) {
-        global runtime_config_file
-
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
-        if (runtime_config_file && locale_name == STATIC_LOCALE_NAME) {
-            ini.LoadProperties(this, "Locale", runtime_config_file)
-        } else {
-            ini.LoadProperties(this, locale_name)
-        }
+        GetLocaleStorage(locale_name, section, filename)
+        ini.LoadProperties(this, section, filename)
     }
 
     RefreshScanCodeMapping() {
@@ -367,7 +362,8 @@ Class clsLocaleInterface {
     }
 
     RefreshUI() {
-        is_locale_static := (this.current_locale == STATIC_LOCALE_NAME) 
+        is_locale_static := (this.current_locale == STATIC_LOCALE_NAME)
+        EnsureLocaleExists(this.current_locale)
         loc_obj := new clsLocale
         loc_obj.Load(this.current_locale)
 
@@ -426,6 +422,7 @@ Class clsLocaleInterface {
         global runtime_config_file
 
         new_loc := new clsLocale
+        new_loc.Load(this.current_locale)
         For key, option in this.options {
             new_loc[key] := option.value
         }
@@ -448,7 +445,7 @@ Class clsLocaleInterface {
             ApplyLocaleToRuntime()
         }
         WireHotkeys("On")  ; resume processing key presses
-        main_UI.UpdateLocaleInMainUI()
+        main_UI.UpdateLocaleProfileInMainUI()
         main_UI.UI.Enable()
         this.UI.Hide()
     }
@@ -480,26 +477,93 @@ LocaleSwitchToLayout(layout_name) {
     }
 }
 
-EnsureLocaleExists(locale_name) {
-    if (!locale_name) {
-        return
-    }
-    temp := {}
-    if (ini.LoadProperties(temp, locale_name)) {
-        default_locale := new clsLocale
-        default_locale.Save(locale_name)
+GetLocaleStorage(locale_name, ByRef section, ByRef filename) {
+    global runtime_config_file
+
+    if (runtime_config_file && locale_name == STATIC_LOCALE_NAME) {
+        section := "Locale"
+        filename := runtime_config_file
+    } else {
+        section := locale_name
+        filename := ini.default_ini
     }
 }
 
+LocaleHasDictionarySettings(locale_name) {
+    if (!locale_name) {
+        return false
+    }
+    GetLocaleStorage(locale_name, section, filename)
+    return ini.LoadProperty("chord_file", section, filename) != ""
+}
+
+CopyDictionarySettingsFromLocale(profile) {
+    settings.chord_file := profile.chord_file
+    settings.shorthand_file := profile.shorthand_file
+    settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
+        | (profile.use_chords ? MODE_CHORDS_ENABLED : 0)
+        | (profile.use_shorthands ? MODE_SHORTHANDS_ENABLED : 0)
+}
+
+CopyDictionarySettingsToLocale(profile) {
+    profile.chord_file := settings.chord_file
+    profile.shorthand_file := settings.shorthand_file
+    profile.use_chords := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+    profile.use_shorthands := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+}
+
+EnsureLocaleExists(locale_name) {
+    if (!locale_name || LocaleHasDictionarySettings(locale_name)) {
+        return
+    }
+
+    target_locale := new clsLocale
+    target_locale.Load(locale_name)
+    CopyDictionarySettingsToLocale(target_locale)
+    target_locale.Save(locale_name)
+}
+
+SaveRuntimeDictionarySettingsToLocale() {
+    global locale
+
+    CopyDictionarySettingsToLocale(locale)
+    locale.Save(settings.locale)
+}
+
 ApplyLocaleToRuntime() {
+    io.ClearTokens("*Interrupt*")
     locale.Load(settings.locale)
+    CopyDictionarySettingsFromLocale(locale)
+
+    dictionary_paths_changed := false
+    if (settings.chord_file) {
+        if (chords.Load(settings.chord_file) && chords._file != settings.chord_file) {
+            settings.chord_file := chords._file
+            dictionary_paths_changed := true
+        }
+    } else {
+        chords.Unload()
+    }
+    if (settings.shorthand_file) {
+        if (shorthands.Load(settings.shorthand_file) && shorthands._file != settings.shorthand_file) {
+            settings.shorthand_file := shorthands._file
+            dictionary_paths_changed := true
+        }
+    } else {
+        shorthands.Unload()
+    }
+    if (dictionary_paths_changed) {
+        SaveRuntimeDictionarySettingsToLocale()
+    }
     locale.RefreshScanCodeMapping()
+    UI_SyncModeState()
 }
 
 ProcessLayoutChange(layout_name) {
     global app_settings
     global locale_UI
 
+    ; TK - stops detecting after e.g. Edit button on dictionary
     if (locale_UI.UI.IsShown()) {
         locale_UI.LocaleProcessLayoutChange(layout_name)
         return
@@ -509,10 +573,12 @@ ProcessLayoutChange(layout_name) {
         return
     }
 
+    WireHotkeys("Off")
     LocaleSwitchToLayout(layout_name)
+    WireHotkeys("On")
 
     if (main_UI.UI.IsShown()) {
-        main_UI.UpdateLocaleInMainUI()
+        main_UI.UpdateLocaleProfileInMainUI()
     } else {
         hint_UI.ShowOnOSD("Switching to", layout_name)
     }

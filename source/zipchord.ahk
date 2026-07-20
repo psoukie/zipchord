@@ -151,7 +151,11 @@ Class clsSettings {
         this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed
     }
     Save() {
-        ini.SaveProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
+        settings_to_save := this.settings.Clone()
+        settings_to_save.Delete("chord_file")
+        settings_to_save.Delete("shorthand_file")
+        settings_to_save.mode &= MODE_ZIPCHORD_ENABLED
+        ini.SaveProperties(settings_to_save, this.GetSectionName(), this.GetSettingsFile())
     }
     IsStaticMode() {
         return (settings.locale == STATIC_LOCALE_NAME)
@@ -169,40 +173,51 @@ Initialize(zc_version) {
 
     ini.SaveLicense()
     app_settings.Load()
+    SetWorkingDir, % settings.dictionary_dir
+    ; The last applied locale is the inheritance source if Windows starts with a new layout.
+    if (LocaleHasDictionarySettings(settings.locale)) {
+        inheritance_locale := new clsLocale
+        inheritance_locale.Load(settings.locale)
+        CopyDictionarySettingsFromLocale(inheritance_locale)
+    }
     ; check whether we need to upgrade existing settings file:
     if (updater.SemVerCompare(zc_version, settings.version) == 1) {
         UpdateSettings(settings.version)
     }
     updater.CheckForUpdates(zc_version)
-    SetWorkingDir, % settings.dictionary_dir
-    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
-    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-    upgraded_chord_file := chords._EnsureV2DictionaryFile(settings.chord_file)
-    upgraded_shorthand_file := shorthands._EnsureV2DictionaryFile(settings.shorthand_file)
-    if (!upgraded_chord_file || !upgraded_shorthand_file) {
-        return
-    }
-    settings.chord_file := upgraded_chord_file
-    settings.shorthand_file := upgraded_shorthand_file
-    settings.version := zc_version
-    settings.preferences &= ~PREF_FIRST_RUN
 
     if (app_settings.IsStaticMode()) {
-        EnsureLocaleExists(STATIC_LOCALE_NAME)
+        target_locale := STATIC_LOCALE_NAME
     } else {
-        active_layout := kb.GetActiveLayoutName()
-        if (active_layout) {
-            settings.locale := active_layout
-            EnsureLocaleExists(settings.locale)
+        target_locale := kb.GetActiveLayoutName()
+        if (target_locale) {
+            settings.locale := target_locale
         }
     }
+
+    ; Initialize a profile from the current runtime defaults when no locale owns them yet.
+    if (!LocaleHasDictionarySettings(target_locale)) {
+        settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+        settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+        upgraded_chord_file := chords._EnsureV2DictionaryFile(settings.chord_file)
+        upgraded_shorthand_file := shorthands._EnsureV2DictionaryFile(settings.shorthand_file)
+        if (!upgraded_chord_file || !upgraded_shorthand_file) {
+            return
+        }
+        settings.chord_file := upgraded_chord_file
+        settings.shorthand_file := upgraded_shorthand_file
+    }
+    EnsureLocaleExists(target_locale)
+
+    settings.version := zc_version
+    settings.preferences &= ~PREF_FIRST_RUN
     app_settings.Save()
-    
+
     main_UI.Build()
-    locale.Load(settings.locale)
     UI_Menu_Build()
     locale_UI.Build()
     hint_UI.Build()
+    ApplyLocaleToRuntime()
     if (settings.preferences & PREF_SHOW_CONFIG) {
         main_UI.Show()
     } else {
@@ -211,8 +226,6 @@ Initialize(zc_version) {
     if (A_Args[2] && (A_Args[1] == "load" || A_Args[1] == "follow")) {
         ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
     }
-    chords.Load(settings.chord_file)
-    shorthands.Load(settings.shorthand_file)
     main_UI.UpdateDictionaryUI()
     main_UI.UI.Enable()
     WireCommandHotkeys("On")
@@ -269,6 +282,26 @@ UpgradeTo28() {
     return true
 }
 
+UpgradeTo29() {
+    global app_settings
+
+    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    if (!settings.chord_file || !settings.shorthand_file) {
+        return
+    }
+
+    upgraded_locale := new clsLocale
+    upgraded_locale.Load(settings.locale)
+    CopyDictionarySettingsToLocale(upgraded_locale)
+    upgraded_locale.Save(settings.locale)
+
+    config_file := app_settings.GetSettingsFile()
+    section := app_settings.GetSectionName()
+    IniDelete, %config_file%, %section%, chord_file
+    IniDelete, %config_file%, %section%, shorthand_file
+}
+
 UpdateSettings(from_version) {
     global updater
     if (updater.SemVerCompare("2.3.0", from_version) == 1) {
@@ -312,6 +345,9 @@ UpdateSettings(from_version) {
         if (UpgradeTo28()) {
             MsgBox, , % "ZipChord Upgrade Note", % "ZipChord now follows your active Windows keyboard layout automatically.`n`nYour existing keyboard and language settings did not match the currently active Windows layout, so they were preserved as a fixed layout."
         }
+    }
+    if (updater.SemVerCompare("2.9.0", from_version) == 1) {
+        UpgradeTo29()
     }
 }
 
@@ -458,7 +494,7 @@ Class clsMainUI {
     controls.hint_offset_y := { type: "Edit" }
     controls.hint_size := { type: "Edit" }
     controls.hint_color := { type: "Edit" }
-    controls.tabs := { type: "Tab3", text: " Dictionaries | Detection | Display | Output | About "}
+    controls.tabs := { type: "Tab3", text: " Language | Detection | Display | Output | About "}
     controls.chord_by_duration := { type: "Radio"
                             , text: "By minimum held &duration"
                             , function: ObjBindMethod(this, "_SetChordModeUI", False)}
@@ -594,9 +630,8 @@ Class clsMainUI {
         this.ShowHintCustomization(false)
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
-        this.UpdateLocaleInMainUI()
+        this.UpdateLocaleProfileInMainUI()
         cts.btn_customize_locale.Enable(!runtime_config_file)
-        main_UI.UpdateDictionaryUI()
         this.UI.Show()
         UI_SyncModeState()
         if (runtime_config_file) {
@@ -666,7 +701,9 @@ Class clsMainUI {
         } else {
             settings.hint_color := temp
         }
-        ; ...and save them to config.ini
+        ; Locale-specific mode bits remain runtime values but are persisted with the locale.
+        SaveRuntimeDictionarySettingsToLocale()
+        ; ...and save application settings to config.ini
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
@@ -703,8 +740,11 @@ Class clsMainUI {
         Return true
     }
 
-    UpdateLocaleInMainUI() {
+    UpdateLocaleProfileInMainUI() {
         this.controls.selected_locale.value := RegExReplace(settings.locale, "^\w", "$U0")
+        this.controls.chord_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+        this.controls.shorthand_enabled.value := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+        this.UpdateDictionaryUI()
     }
 
     ; Update UI with dictionary details
@@ -775,7 +815,7 @@ Class clsMainUI {
         pluralized := type . "s"
         if (%pluralized%.Load(dict)) {
             settings[type . "_file"] := %pluralized%._file
-            app_settings.Save()
+            SaveRuntimeDictionarySettingsToLocale()
             this.UpdateDictionaryUI()
         }
     }
@@ -879,17 +919,16 @@ UI_SyncModeState() {
 }
 
 ToggleFeature(mode_flag, control_name) {
-    global app_settings
     disabling := settings.mode & mode_flag
     if (disabling) {
         settings.mode := settings.mode & ~mode_flag
     } else {
         settings.mode := settings.mode | mode_flag
     }
+    SaveRuntimeDictionarySettingsToLocale()
     if (main_UI.UI.IsShown()) {
         main_UI.controls[control_name].value := disabling ? 0 : 1
     }
-    app_settings.Save()
 
     control_UI_text := (control_name == "chord_enabled") ? "Chords" : "Shorthands"
     hint_UI.ShowOnOSD(control_UI_text, disabling ? "Off" : "On")
