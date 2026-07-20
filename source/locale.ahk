@@ -498,16 +498,16 @@ LocaleHasDictionarySettings(locale_name) {
 }
 
 CopyDictionarySettingsFromLocale(profile) {
-    settings.chord_file := profile.chord_file
-    settings.shorthand_file := profile.shorthand_file
+    settings.chord_file := chords.GetFullFileName(profile.chord_file)
+    settings.shorthand_file := shorthands.GetFullFileName(profile.shorthand_file)
     settings.mode := (settings.mode & MODE_ZIPCHORD_ENABLED)
         | (profile.use_chords ? MODE_CHORDS_ENABLED : 0)
         | (profile.use_shorthands ? MODE_SHORTHANDS_ENABLED : 0)
 }
 
 CopyDictionarySettingsToLocale(profile) {
-    profile.chord_file := settings.chord_file
-    profile.shorthand_file := settings.shorthand_file
+    profile.chord_file := chords.GetFullFileName(settings.chord_file)
+    profile.shorthand_file := shorthands.GetFullFileName(settings.shorthand_file)
     profile.use_chords := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
     profile.use_shorthands := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
 }
@@ -535,25 +535,15 @@ ApplyLocaleToRuntime() {
     locale.Load(settings.locale)
     CopyDictionarySettingsFromLocale(locale)
 
-    dictionary_paths_changed := false
-    if (settings.chord_file && chords._file != settings.chord_file) {
-        if (chords.Load(settings.chord_file)) {
-            settings.chord_file := chords._file
-            dictionary_paths_changed := true
-        } else {
+    if (!settings.chord_file) {
         chords.Unload()
-        }
+    } else if (chords._file != settings.chord_file) {
+        chords.Load(settings.chord_file)
     }
-    if (settings.shorthand_file && shorthands._file != settings.shorthand_file) {
-        if (shorthands.Load(settings.shorthand_file)) {
-            settings.shorthand_file := shorthands._file
-            dictionary_paths_changed := true
-        } else {
+    if (!settings.shorthand_file) {
         shorthands.Unload()
-        }
-    }
-    if (dictionary_paths_changed) {
-        SaveRuntimeDictionarySettingsToLocale()
+    } else if (shorthands._file != settings.shorthand_file) {
+        shorthands.Load(settings.shorthand_file)
     }
     locale.RefreshScanCodeMapping()
     UI_SyncModeState()
