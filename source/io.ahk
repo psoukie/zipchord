@@ -64,6 +64,164 @@ global io_chord := new clsChordCandidate
 io_new_tokens := []
 io_prev_tokens := []
 
+Shift_key() {
+    global io
+    Critical
+    if (A_PriorHotkey != "~Shift") {
+        return
+    }
+    key := "*Shift*"
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+        }
+    }
+    if (visualizer.IsOn()) {
+        visualizer.Pressed("+", false)
+        visualizer.Lifted("+", false)
+    }
+    io.PreShift()
+    Critical Off
+}
+
+Simulate_Shift() {
+    global io
+    io.PreShift()
+}
+
+KeyDown() {
+    global io
+    Critical
+    tick := A_TickCount
+    key := locale.SCHotkeyToSymbolHotkey(A_ThisHotkey)
+    if (key == "") {
+        Critical Off
+        Return
+    }
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            key := locale.SCHotkeyToSymbolHotkey(test_key)
+            tick := test_timestamp
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
+    }
+    if (visualizer.IsOn()) {
+        modified_key := StrReplace(key, "Space", " ")
+        if (SubStr(modified_key, 1, 1) == "~")
+            modified_key := SubStr(modified_key, 2)
+        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
+        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
+            shifted := true
+            modified_key := SubStr(modified_key, 2)
+        } else {
+            shifted := false
+        }
+        visualizer.Pressed(modified_key, shifted)
+    }
+    ; QPC()
+    io.ProcessKey(key, tick)
+    ; QPC()
+    Critical Off
+}
+
+KeyUp() {
+    global io
+    Critical
+    tick_up := A_TickCount
+    key := locale.SCHotkeyToSymbolHotkey(A_ThisHotkey)
+    if (key == "") {
+        Critical Off
+        Return
+    }
+    if (A_Args[1] == "dev") {
+        if (test.mode == TEST_RUNNING) {
+            tick_up := test_timestamp
+            key := locale.SCHotkeyToSymbolHotkey(test_key)
+        }
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+        }
+    }
+    if (visualizer.IsOn()) {
+        modified_key := StrReplace(key, "Space", " ")
+        if (SubStr(modified_key, 1, 1) == "~")
+            modified_key := SubStr(modified_key, 2)
+        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
+            shifted := true
+            modified_key := SubStr(modified_key, 2)
+        } else {
+            shifted := false
+        }
+        visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
+    }
+    ; QPC()
+    if (io.ProcessKey(key, tick_up)) {
+        edits := io.ProcessTokens() 
+        if (edits.Count() > 0) {
+            io.ProcessEdits(edits)
+        }
+    }
+    ; QPC()
+    Critical Off
+}
+
+Interrupt() {
+    global io
+    io.ClearTokens("*Interrupt*")
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log("*Interrupt*", true)
+            test.Log("*Interrupt*")
+        }
+    }
+}
+
+Enter_key() {
+    global io
+    io.ClearTokens("~Enter")
+    if (A_Args[1] == "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log("~Enter", true)
+            test.Log("~Enter")
+        }
+        if (visualizer.IsOn())
+            visualizer.NewLine()
+    }
+}
+
+Backspace_key() {
+    HandleBackspace()
+}
+
+Ctrl_Backspace_key() {
+    HandleBackspace(true)
+}
+
+HandleBackspace(with_ctrl := false) {
+    global io
+    Critical
+    key  := with_ctrl ? "~^Backspace" : "~Backspace"
+
+    if (A_Args[1] = "dev") {
+        if (test.mode > TEST_STANDBY) {
+            test.Log(key, true)
+            test.Log(key)
+        }
+    }
+
+    if (visualizer.IsOn()) {
+        sym := Chr(0x232B)
+        visualizer.Pressed(sym, false)
+        visualizer.Lifted(sym, false)
+    }
+
+    io.Backspace(with_ctrl)
+    Critical Off
+}
+
 io := new clsIOrepresentation
 
 Class clsIOrepresentation {
@@ -157,8 +315,8 @@ Class clsIOrepresentation {
             token.output := entry
         }
     
-        if ( !key.with_shift && InStr(keys.punctuation_plain, entry) )
-                || ( key.with_shift && InStr(keys.punctuation_shift, entry) ) {
+        if ( !key.with_shift && InStr(locale.punctuation_plain, entry) )
+                || ( key.with_shift && InStr(locale.punctuation_shift, entry) ) {
             token.type := TokenType.PUNCTUATION
         }
         if (entry == " ") {
@@ -606,9 +764,9 @@ Class clsIOrepresentation {
         ; for punctuation that removes spaces
         if (type == TokenType.PUNCTUATION) {
             if ( (!(attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.remove_space_plain, token.input))
+                && InStr(locale.remove_space_plain, token.input))
                 || ((attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.remove_space_shift, token.input)) ) {
+                && InStr(locale.remove_space_shift, token.input)) ) {
                 io_tokens.RemoveAt(PreviousLiveTokenId())   ; not tombstoning because we've just added it
                 return true
             }
@@ -645,8 +803,8 @@ Class clsIOrepresentation {
                 || PreviousLiveToken().type == TokenType.INTERRUPT ) {
             return
         }
-        if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.space_after_plain, token.input) )
-                || (attribs & TokenAttribs.WITH_SHIFT) && InStr(keys.space_after_shift, token.input) ) {
+        if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_plain, token.input) )
+                || (attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_shift, token.input) ) {
             this._AddSmartSpace()
         }
     }
@@ -733,11 +891,11 @@ Class clsIOrepresentation {
         
         ; if the last output was punctuation that does not ask for a space
         if ( ( !(prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.punctuation_plain, prev_token.input)
-                && !InStr(keys.space_after_plain, prev_token.input) )
+                && InStr(locale.punctuation_plain, prev_token.input)
+                && !InStr(locale.space_after_plain, prev_token.input) )
                 || (prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(keys.punctuation_shift, prev_token.input)
-                && !InStr(keys.space_after_shift, prev_token.input) )  {
+                && InStr(locale.punctuation_shift, prev_token.input)
+                && !InStr(locale.space_after_shift, prev_token.input) )  {
             add_leading_space := false
         }
         
@@ -900,8 +1058,8 @@ Class clsIOrepresentation {
             prev_input := previous_token.input
             with_shift := previous_token.attribs & TokenAttribs.WITH_SHIFT
             if (StrLen(prev_input) == 1
-                && (!with_shift && InStr(keys.capitalizing_plain, prev_input))
-                || (with_shift && InStr(keys.capitalizing_shift, prev_input)) ) {
+                && (!with_shift && InStr(locale.capitalizing_plain, prev_input))
+                || (with_shift && InStr(locale.capitalizing_shift, prev_input)) ) {
                 return true
             }
         }
@@ -917,8 +1075,8 @@ Class clsIOrepresentation {
             before_prev_input := before_previous_token.input
             with_shift := before_previous_token.attribs & TokenAttribs.WITH_SHIFT
             if ( StrLen(before_prev_input) == 1
-                && (!with_shift && InStr(keys.capitalizing_plain, before_prev_input))
-                || (with_shift && InStr(keys.capitalizing_shift, before_prev_input)) ) {
+                && (!with_shift && InStr(locale.capitalizing_plain, before_prev_input))
+                || (with_shift && InStr(locale.capitalizing_shift, before_prev_input)) ) {
                 return true
             }
         }

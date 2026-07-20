@@ -7,6 +7,41 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 ; OS-specific keyboard layout, input, and output handling
 
+; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
+WireHotkeys(state) {
+    global SC_to_symbol_map
+    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
+
+    if (state == "On" && !(settings.mode & MODE_ZIPCHORD_ENABLED)) {
+        return
+    }
+
+    locale.RefreshScanCodeMapping()
+
+    For sc_hex, _ in SC_to_symbol_map {
+        SC := str.SCHexToString(sc_hex)
+        Hotkey, % "~" . SC, KeyDown, %state%
+        Hotkey, % "~+" . SC, KeyDown, %state%
+        Hotkey, % "~" . SC . " Up", KeyUp, %state%
+        Hotkey, % "~+" . SC . " Up", KeyUp, %state%
+    }
+
+    Hotkey, % "~Space", KeyDown, %state%
+    Hotkey, % "~+Space", KeyDown, %state%
+    Hotkey, % "~Space Up", KeyUp, %state%
+    Hotkey, % "~+Space Up", KeyUp, %state%
+    Hotkey, % "~Shift", Shift_key, %state%
+    Hotkey, % "~Shift Up", Shift_key, %state%
+    Hotkey, % "~Enter", Enter_key, %state%
+    Hotkey, % "~Backspace", Backspace_key, %state%
+    Hotkey, % "~^Backspace", Ctrl_Backspace_key, %state%
+    Loop Parse, % interrupts , |
+    {
+        Hotkey, % "~" A_LoopField, Interrupt, %state%
+        Hotkey, % "~^" A_LoopField, Interrupt, %state%
+    }
+}
+
 Class clsOsKeyboard {
     DEBOUNCE_MS := 500
 
@@ -82,24 +117,39 @@ Class clsOsKeyboard {
     }
 
     _GetForegroundHkl() {
-        hwnd := DllCall("user32.dll\GetForegroundWindow", "Ptr")
-        if (!hwnd) {
+        foreground_hwnd := DllCall("user32.dll\GetForegroundWindow", "Ptr")
+        if (!foreground_hwnd) {
             return false
         }
 
-        process_id := 0
-        thread_id := DllCall("user32.dll\GetWindowThreadProcessId"
-                , "Ptr", hwnd, "UInt*", process_id, "UInt")
-        if (!thread_id) {
+        foreground_thread_id := DllCall("user32.dll\GetWindowThreadProcessId"
+                , "Ptr", foreground_hwnd, "UInt", 0, "UInt")
+        if (!foreground_thread_id) {
             return false
         }
 
-        hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", thread_id, "Ptr")
-        if (!hkl) {
-            return false
+        ; Query GetGUIThreadInfo for hwndFocus exists for apps like Notepad
+        ; where the editor has its own hwnd separate from the owning app.
+        gui_info_size := 8 + 6 * A_PtrSize + 16
+        VarSetCapacity(gui_info, gui_info_size, 0)
+        NumPut(gui_info_size, gui_info, 0, "UInt")
+        if (DllCall("user32.dll\GetGUIThreadInfo"
+                , "UInt", foreground_thread_id, "Ptr", &gui_info)) {
+            focus_hwnd := NumGet(gui_info, 8 + A_PtrSize, "Ptr")
+            if (focus_hwnd) {
+                focus_thread_id := DllCall("user32.dll\GetWindowThreadProcessId"
+                        , "Ptr", focus_hwnd, "UInt", 0, "UInt")
+                if (focus_thread_id) {
+                    focus_hkl := DllCall("user32.dll\GetKeyboardLayout"
+                            , "UInt", focus_thread_id, "Ptr")
+                    if (focus_hkl) {
+                        return focus_hkl
+                    }
+                }
+            }
         }
 
-        return hkl
+        return DllCall("user32.dll\GetKeyboardLayout", "UInt", foreground_thread_id, "Ptr")
     }
 
     _HklToName(hkl) {

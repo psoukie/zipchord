@@ -82,12 +82,16 @@ global PREF_SHOW_CLOSING_TIP := 2        ; show tip about re-opening the main di
 global UI_STR_PAUSE  := "&Pause ZipChord"
      , UI_STR_RESUME := "&Resume ZipChord"
 
+global STATIC_LOCALE_NAME := "a fixed layout"
+
 app_settings := New clsSettings()
 global settings := app_settings.settings
+runtime_config_file := ""
 
 SC_to_symbol_map := {} ; dynamically created scan-code number to key-symbol mapping
 symbol_to_SC_map := {} ; reverse map
 ahk_numpad_to_symbol_map := {} 
+
 
 #Include configurations.ahk
 #Include hints.ahk
@@ -100,9 +104,6 @@ if (A_Args[1] == "dev") {
     #Include *i visualizer.ahk
     #Include *i testing.ahk
 }
-
-global runtime_status := { is_keyboard_wired: false
-                         , config_file      : false}
 
 global main_UI := new clsMainUI
 central_watcher := new clsWatcher
@@ -127,12 +128,17 @@ Class clsSettings {
                 , input_delay:      70
                 , input_overlap:    65
                 , output_delay:     3 }
+
     GetSettingsFile() {
-        return runtime_status.config_file ? runtime_status.config_file : this.settings_file
+        global runtime_config_file
+        return runtime_config_file ? runtime_config_file : this.settings_file
     }
+
     GetSectionName() {
-        return runtime_status.config_file ? "Application" : "Default"
+        global runtime_config_file
+        return runtime_config_file ? "Application" : "Default"
     }
+
     Register(setting_name, value := 0) {
         if (this.settings.HasKey(setting_name)) {
             return false
@@ -140,13 +146,19 @@ Class clsSettings {
         this.settings[setting_name] := value
     }
     Load() {
-        global locale
         this.settings.locale := kb.GetActiveLayoutName()
         ini.LoadProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
         this.settings.mode |= MODE_ZIPCHORD_ENABLED ; settings are read at app startup, so we re-enable ZipChord if it was paused when closed
     }
     Save() {
-        ini.SaveProperties(this.settings, this.GetSectionName(), this.GetSettingsFile())
+        settings_to_save := this.settings.Clone()
+        settings_to_save.Delete("chord_file")
+        settings_to_save.Delete("shorthand_file")
+        settings_to_save.mode &= MODE_ZIPCHORD_ENABLED
+        ini.SaveProperties(settings_to_save, this.GetSectionName(), this.GetSettingsFile())
+    }
+    IsStaticMode() {
+        return (settings.locale == STATIC_LOCALE_NAME)
     }
 }
 
@@ -155,37 +167,57 @@ Class clsSettings {
 
 Initialize(zc_version) {
     global app_settings
-    global locale
+    global locale_UI
     global updater
     global central_watcher
 
     ini.SaveLicense()
     app_settings.Load()
+    SetWorkingDir, % settings.dictionary_dir
+    ; The last applied locale is the inheritance source if Windows starts with a new layout.
+    if (LocaleHasDictionarySettings(settings.locale)) {
+        inheritance_locale := new clsLocale
+        inheritance_locale.Load(settings.locale)
+        CopyDictionarySettingsFromLocale(inheritance_locale)
+    }
     ; check whether we need to upgrade existing settings file:
     if (updater.SemVerCompare(zc_version, settings.version) == 1) {
         UpdateSettings(settings.version)
     }
     updater.CheckForUpdates(zc_version)
-    SetWorkingDir, % settings.dictionary_dir
-    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
-    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
-    upgraded_chord_file := chords._EnsureV2DictionaryFile(settings.chord_file)
-    upgraded_shorthand_file := shorthands._EnsureV2DictionaryFile(settings.shorthand_file)
-    if (!upgraded_chord_file || !upgraded_shorthand_file) {
-        return
+
+    if (app_settings.IsStaticMode()) {
+        target_locale := STATIC_LOCALE_NAME
+    } else {
+        target_locale := kb.GetActiveLayoutName()
+        if (target_locale) {
+            settings.locale := target_locale
+        }
     }
-    settings.chord_file := upgraded_chord_file
-    settings.shorthand_file := upgraded_shorthand_file
+
+    ; Initialize a profile from the current runtime defaults when no locale owns them yet.
+    if (!LocaleHasDictionarySettings(target_locale)) {
+        settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+        settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+        upgraded_chord_file := chords._EnsureV2DictionaryFile(settings.chord_file)
+        upgraded_shorthand_file := shorthands._EnsureV2DictionaryFile(settings.shorthand_file)
+        if (!upgraded_chord_file || !upgraded_shorthand_file) {
+            return
+        }
+        settings.chord_file := upgraded_chord_file
+        settings.shorthand_file := upgraded_shorthand_file
+    }
+    EnsureLocaleExists(target_locale)
+
     settings.version := zc_version
     settings.preferences &= ~PREF_FIRST_RUN
-    locale.EnsureSelectedLocaleExists()
     app_settings.Save()
+
     main_UI.Build()
-    locale.Init()
-    keys.Load(settings.locale)
     UI_Menu_Build()
-    locale.Build()
+    locale_UI.Build()
     hint_UI.Build()
+    ApplyLocaleToRuntime()
     if (settings.preferences & PREF_SHOW_CONFIG) {
         main_UI.Show()
     } else {
@@ -194,8 +226,6 @@ Initialize(zc_version) {
     if (A_Args[2] && (A_Args[1] == "load" || A_Args[1] == "follow")) {
         ProcessCommandLine(A_Args[1] . "`n" . A_Args[2])
     }
-    chords.Load(settings.chord_file)
-    shorthands.Load(settings.shorthand_file)
     main_UI.UpdateDictionaryUI()
     main_UI.UI.Enable()
     WireCommandHotkeys("On")
@@ -236,10 +266,8 @@ UpgradeTo26() {
 }
 
 UpgradeTo28() {
-    global locale
-
     selected_locale := settings.locale
-    if (!selected_locale || selected_locale == locale.STATIC_LOCALE_NAME) {
+    if (!selected_locale || selected_locale == STATIC_LOCALE_NAME) {
         return false
     }
     active_layout := kb.GetActiveLayoutName()
@@ -249,9 +277,29 @@ UpgradeTo28() {
     }
     static_locale := new clsLocale
     static_locale.Load(selected_locale)
-    static_locale.Save(locale.STATIC_LOCALE_NAME)
-    settings.locale := locale.STATIC_LOCALE_NAME
+    static_locale.Save(STATIC_LOCALE_NAME)
+    settings.locale := STATIC_LOCALE_NAME
     return true
+}
+
+UpgradeTo29() {
+    global app_settings
+
+    settings.chord_file := CheckDictionaryFileExists(settings.chord_file, "chord")
+    settings.shorthand_file := CheckDictionaryFileExists(settings.shorthand_file, "shorthand")
+    if (!settings.chord_file || !settings.shorthand_file) {
+        return
+    }
+
+    upgraded_locale := new clsLocale
+    upgraded_locale.Load(settings.locale)
+    CopyDictionarySettingsToLocale(upgraded_locale)
+    upgraded_locale.Save(settings.locale)
+
+    config_file := app_settings.GetSettingsFile()
+    section := app_settings.GetSectionName()
+    IniDelete, %config_file%, %section%, chord_file
+    IniDelete, %config_file%, %section%, shorthand_file
 }
 
 UpdateSettings(from_version) {
@@ -298,6 +346,9 @@ UpdateSettings(from_version) {
             MsgBox, , % "ZipChord Upgrade Note", % "ZipChord now follows your active Windows keyboard layout automatically.`n`nYour existing keyboard and language settings did not match the currently active Windows layout, so they were preserved as a fixed layout."
         }
     }
+    if (updater.SemVerCompare("2.9.0", from_version) == 1) {
+        UpgradeTo29()
+    }
 }
 
 Class clsWatcher {
@@ -317,6 +368,8 @@ Class clsWatcher {
     }
 
     RunChecks() {
+        global locale_UI
+        
         chords.CheckForDictModification()
         shorthands.CheckForDictModification()
         layout_changed := kb.CheckForLayoutChange()
@@ -329,259 +382,14 @@ Class clsWatcher {
                 config.ProcessConfigChange(kb.current_layout_name)
             }
         } else if (layout_changed) {
-            locale.ProcessLayoutChange(layout_changed)
+            ProcessLayoutChange(layout_changed)
         }
     }
-}
-
-RefreshScanCodeMapping() {
-    global keys
-    global SC_to_symbol_map
-    global symbol_to_SC_map
-    global ahk_numpad_to_symbol_map
-
-    SC_to_symbol_map := {}
-    symbol_to_SC_map := {}
-
-    For _, key_name in keys.key_map.Keys() {
-        if (keys.key_map[key_name].symbol == "") {
-            continue
-        }
-        SC := keys.key_map[key_name].SC
-        symbol := keys.key_map[key_name].symbol
-        SC_to_symbol_map[SC] := symbol 
-        symbol_to_SC_map[symbol] := SC
-    }
-
-    For num_SC, num_reps in keys.key_map.NUMPAD_MAPPING {
-        SC_to_symbol_map[num_SC] := num_reps.symbol
-        symbol_to_SC_map[num_reps.symbol] := num_SC
-        ahk_numpad_to_symbol_map[num_reps.ahk] := num_reps.symbol
-    }
-}
-
-; WireHotKeys(["On"|"Off"]): Creates or releases hotkeys for tracking typing and chords
-WireHotkeys(state) {
-    global keys
-    global SC_to_symbol_map
-    interrupts := "Del|Ins|Home|End|PgUp|PgDn|Up|Down|Left|Right|LButton|RButton|Tab|NumpadEnd|NumpadDown|NumpadPgDn|NumpadLeft|NumpadRight|NumpadHome|NumpadUp|NumpadPgUp|NumpadDel" ; keys that interrupt the typing flow
-
-    RefreshScanCodeMapping()
-
-    For sc_hex, symbol in SC_to_symbol_map {
-        SC := str.SCHexToString(sc_hex)
-        Hotkey, % "~" . SC, KeyDown, %state%
-        Hotkey, % "~+" . SC, KeyDown, %state%
-        Hotkey, % "~" . SC . " Up", KeyUp, %state%
-        Hotkey, % "~+" . SC . " Up", KeyUp, %state%
-    }
-
-    Hotkey, % "~Space", KeyDown, %state%
-    Hotkey, % "~+Space", KeyDown, %state%
-    Hotkey, % "~Space Up", KeyUp, %state%
-    Hotkey, % "~+Space Up", KeyUp, %state%
-    Hotkey, % "~Shift", Shift_key, %state%
-    Hotkey, % "~Shift Up", Shift_key, %state%
-    Hotkey, % "~Enter", Enter_key, %state%
-    Hotkey, % "~Backspace", Backspace_key, %state%
-    Hotkey, % "~^Backspace", Ctrl_Backspace_key, %state%
-    Loop Parse, % interrupts , |
-    {
-        Hotkey, % "~" A_LoopField, Interrupt, %state%
-        Hotkey, % "~^" A_LoopField, Interrupt, %state%
-    }
-    runtime_status.is_keyboard_wired := state
 }
 
 CloseApp() {
     WireHotkeys("Off")
     ExitApp
-}
-
-;; Shortcuts
-; ---------------------
-
-Shift_key:
-    Critical
-    if (A_PriorHotkey != "~Shift") {
-        return
-    }
-    key := "*Shift*"
-    tick := A_TickCount
-    if (A_Args[1] == "dev") {
-        if (test.mode > TEST_STANDBY) {
-            test.Log(key, true)
-        }
-    }
-    if (visualizer.IsOn()) {
-        visualizer.Pressed("+", false)
-        visualizer.Lifted("+", false)
-    }
-    io.PreShift()
-    Critical Off
-Return
-
-Simulate_Shift:
-    io.PreShift()
-Return
-
-; Replace mapped scan code and named-key tokens inside a hotkey string
-SCHotkeyToSymbolHotkey(key) {
-    global SC_to_symbol_map
-    global ahk_numpad_to_symbol_map
-
-    pos := 1
-    if (pos := InStr(key, "SC", true)) {
-        candidate := "0x" . SubStr(key, pos+2, 3)   ; "SC" + 3 chars
-        SC := candidate + 0
-        if (SC_to_symbol_map.HasKey(SC)) {
-            repl := SC_to_symbol_map[SC]
-            return SubStr(key, 1, pos-1) . repl . SubStr(key, pos+5)
-        }
-    }
-
-    if (pos := InStr(key, "Numpad", true)) {
-        if (up_pos := InStr(key, " ", true, pos)) {
-            candidate := SubStr(key, pos, up_pos - pos)
-            suffix := SubStr(key, up_pos)
-        } else {
-            candidate := SubStr(key, pos)
-            suffix := ""
-        }
-        repl := ahk_numpad_to_symbol_map[candidate]
-        return SubStr(key, 1, pos-1) . repl . suffix
-    }
-    
-    return key
-}
-
-KeyDown:
-    Critical
-    tick := A_TickCount
-    key := SCHotkeyToSymbolHotkey(A_ThisHotkey)
-    if (key == "") {
-        Critical Off
-        Return
-    }
-    if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING) {
-            key := SCHotkeyToSymbolHotkey(test_key)
-            tick := test_timestamp
-        }
-        if (test.mode > TEST_STANDBY) {
-            test.Log(key, true)
-            test.Log(key)
-        }
-    }
-    if (visualizer.IsOn()) {
-        modified_key := StrReplace(key, "Space", " ")
-        if (SubStr(modified_key, 1, 1) == "~")
-            modified_key := SubStr(modified_key, 2)
-        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
-        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
-            shifted := true
-            modified_key := SubStr(modified_key, 2)
-        } else {
-            shifted := false
-        }
-        visualizer.Pressed(modified_key, shifted)
-    }
-    ; QPC()
-    io.ProcessKey(key, tick)
-    ; QPC()
-    Critical Off
-Return
-
-KeyUp:
-    Critical
-    tick_up := A_TickCount
-    key := SCHotkeyToSymbolHotkey(A_ThisHotkey)
-    if (key == "") {
-        Critical Off
-        Return
-    }
-    if (A_Args[1] == "dev") {
-        if (test.mode == TEST_RUNNING) {
-            tick_up := test_timestamp
-            key := SCHotkeyToSymbolHotkey(test_key)
-        }
-        if (test.mode > TEST_STANDBY) {
-            test.Log(key, true)
-        }
-    }
-    if (visualizer.IsOn()) {
-        modified_key := StrReplace(key, "Space", " ")
-        if (SubStr(modified_key, 1, 1) == "~")
-            modified_key := SubStr(modified_key, 2)
-        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
-            shifted := true
-            modified_key := SubStr(modified_key, 2)
-        } else {
-            shifted := false
-        }
-        visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
-    }
-    ; QPC()
-    if (io.ProcessKey(key, tick_up)) {
-        edits := io.ProcessTokens() 
-        if (edits.Count() > 0) {
-            io.ProcessEdits(edits)
-        }
-    }
-    ; QPC()
-    Critical Off
-Return
-
-Interrupt:
-    io.ClearTokens("*Interrupt*")
-    if (A_Args[1] == "dev") {
-        if (test.mode > TEST_STANDBY) {
-            test.Log("*Interrupt*", true)
-            test.Log("*Interrupt*")
-        }
-    }
-Return
-
-Enter_key:
-    io.ClearTokens("~Enter")
-    if (A_Args[1] == "dev") {
-        if (test.mode > TEST_STANDBY) {
-            test.Log("~Enter", true)
-            test.Log("~Enter")
-        }
-        if (visualizer.IsOn())
-            visualizer.NewLine()
-    }
-Return
-
-Backspace_key:
-    HandleBackspace()
-Return
-
-Ctrl_Backspace_key:
-    HandleBackspace(true)
-Return
-
-HandleBackspace(with_ctrl := false) {
-    global io
-    Critical
-    key  := with_ctrl ? "~^Backspace" : "~Backspace"
-
-    if (A_Args[1] = "dev") {
-        if (test.mode > TEST_STANDBY) {
-            test.Log(key, true)
-            test.Log(key)
-        }
-    }
-
-    if (visualizer.IsOn()) {
-        sym := Chr(0x232B)
-        visualizer.Pressed(sym, false)
-        visualizer.Lifted(sym, false)
-    }
-
-    io.Backspace(with_ctrl)
-    Critical Off
 }
 
 ;;  Adding shortcuts
@@ -686,7 +494,7 @@ Class clsMainUI {
     controls.hint_offset_y := { type: "Edit" }
     controls.hint_size := { type: "Edit" }
     controls.hint_color := { type: "Edit" }
-    controls.tabs := { type: "Tab3", text: " Dictionaries | Detection | Display | Output | About "}
+    controls.tabs := { type: "Tab3", text: " Language | Detection | Display | Output | About "}
     controls.chord_by_duration := { type: "Radio"
                             , text: "By minimum held &duration"
                             , function: ObjBindMethod(this, "_SetChordModeUI", False)}
@@ -791,6 +599,8 @@ Class clsMainUI {
     }
 
     Show() {
+        global runtime_config_file
+
         kb.SetZipChordToHkl()
         cts := this.controls
         if (A_Args[1] == "dev" && cts.debugging.value) {
@@ -820,13 +630,12 @@ Class clsMainUI {
         this.ShowHintCustomization(false)
         this.HintEnablement(true)
         cts.tabs.Choose(1) ; switch to first tab
-        this.UpdateLocaleInMainUI()
-        cts.btn_customize_locale.Enable(!runtime_status.config_file)
-        main_UI.UpdateDictionaryUI()
+        this.UpdateLocaleProfileInMainUI()
+        cts.btn_customize_locale.Enable(!runtime_config_file)
         this.UI.Show()
         UI_SyncModeState()
-        if (runtime_status.config_file) {
-            this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_status.config_file))
+        if (runtime_config_file) {
+            this.UI.SetTitle("ZipChord - " . str.BareFilename(runtime_config_file))
         } else {
             this.UI.SetTitle("ZipChord")
         }
@@ -892,11 +701,13 @@ Class clsMainUI {
         } else {
             settings.hint_color := temp
         }
-        ; ...and save them to config.ini
+        ; Locale-specific mode bits remain runtime values but are persisted with the locale.
+        SaveRuntimeDictionarySettingsToLocale()
+        ; ...and save application settings to config.ini
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
-        keys.Load(settings.locale)
+        locale.Load(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
                 hint_UI.ShowOnOSD("ZipChord Keyboard", "On")
@@ -929,8 +740,11 @@ Class clsMainUI {
         Return true
     }
 
-    UpdateLocaleInMainUI() {
+    UpdateLocaleProfileInMainUI() {
         this.controls.selected_locale.value := RegExReplace(settings.locale, "^\w", "$U0")
+        this.controls.chord_enabled.value := (settings.mode & MODE_CHORDS_ENABLED) ? 1 : 0
+        this.controls.shorthand_enabled.value := (settings.mode & MODE_SHORTHANDS_ENABLED) ? 1 : 0
+        this.UpdateDictionaryUI()
     }
 
     ; Update UI with dictionary details
@@ -979,12 +793,15 @@ Class clsMainUI {
     }
 
     _btnCustomizeLocale() {
-        global locale
-        if (runtime_status.config_file) {
+        global locale_UI
+        global runtime_config_file
+
+        if (runtime_config_file) {
             return
         }
+
         this.UI.Disable()
-        locale.Show()
+        locale_UI.Show()
     }
 
     _btnSelectDictionary(type_string) {
@@ -998,7 +815,7 @@ Class clsMainUI {
         pluralized := type . "s"
         if (%pluralized%.Load(dict)) {
             settings[type . "_file"] := %pluralized%._file
-            app_settings.Save()
+            SaveRuntimeDictionarySettingsToLocale()
             this.UpdateDictionaryUI()
         }
     }
@@ -1102,17 +919,16 @@ UI_SyncModeState() {
 }
 
 ToggleFeature(mode_flag, control_name) {
-    global app_settings
     disabling := settings.mode & mode_flag
     if (disabling) {
         settings.mode := settings.mode & ~mode_flag
     } else {
         settings.mode := settings.mode | mode_flag
     }
+    SaveRuntimeDictionarySettingsToLocale()
     if (main_UI.UI.IsShown()) {
         main_UI.controls[control_name].value := disabling ? 0 : 1
     }
-    app_settings.Save()
 
     control_UI_text := (control_name == "chord_enabled") ? "Chords" : "Shorthands"
     hint_UI.ShowOnOSD(control_UI_text, disabling ? "Off" : "On")
@@ -1176,11 +992,6 @@ Update_Menus() {
         Menu, ZipChordCommand, Disable, 4&
         Menu, ZipChordCommand, Disable, 5&
     }
-}
-
-UI_CommandMenu_Update() {
-
-
 }
 
 PauseApp(from_button := false) {
@@ -1373,8 +1184,7 @@ ProcessCommandLine(option_string) {
 }
 
 CloseAllWindows() {
-    global locale
-    window_names := ["locale", "add_shortcut", "main_UI"]
+    window_names := ["locale_UI", "add_shortcut", "main_UI"]
 
     For _, window in window_names {
         if (WinExist("ahk_id " . %window%.UI._handle)) {

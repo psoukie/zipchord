@@ -77,42 +77,62 @@ Class clsDictionary {
     }
 
     Load(filename := "") {
-        this._StopWatching()
-        this._pause_loading := true
         if (filename == "") {
             filename := this._file
         }
+        this.Unload()
+        this._pause_loading := true
         if (filename == "") {
-            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file." 
-            return
+            MsgBox, , % "ZipChord", % "Error: Tried to open a dictionary without specifying the file."
+            return false
         }
-        filename := this._GetFullFileName(filename)
+        filename := this.GetFullFileName(filename)
         if ! FileExist(filename) {
             dictionary_type := this._chorded ? "chord" : "shorthand"
             MsgBox ,, % "ZipChord", % Format("The {} dictionary file '{}' could not be found.", dictionary_type, filename)
             return false
         }
         this._file := this._EnsureV2DictionaryFile(filename)
-        if (!this._file)
+        if (!this._file) {
             return false
+        }
         this._LoadShortcuts()
         this._UpdateTrackedFileState()
         this._StartWatching()
 
         return true
     }
-    _GetFullFileName(filename) {
-        if (InStr(filename, "\")) {
+
+    Unload() {
+        this._StopWatching()
+        this._file := ""
+        this._entries := {}
+        this._reverse_entries := {}
+        this._dll_entries_count := 0
+    }
+    GetFullFileName(filename) {
+        if (filename == "") {
+            return ""
+        }
+        if (DllCall("shlwapi.dll\PathIsRelativeW", "WStr", filename)) {
+            base_dir := settings.dictionary_dir ? settings.dictionary_dir : A_WorkingDir
+            filename := RTrim(base_dir, "\/") . "\" . filename
+        }
+
+        buffer_size := 32768
+        VarSetCapacity(full_path, buffer_size * 2, 0)
+        length := DllCall("kernel32.dll\GetFullPathNameW"
+                , "WStr", filename, "UInt", buffer_size, "Ptr", &full_path, "Ptr", 0, "UInt")
+        if (!length || length >= buffer_size) {
             return filename
         }
-        path := settings.dictionary_dir
-        if (SubStr(path, StrLen(path)) != "\") {
-            return path . "\" . filename
-        } else {
-            return path . filename
-        }
+        return StrGet(&full_path, length, "UTF-16")
     }
     Add(shortcut, text) {
+        if (this._file == "") {
+            MsgBox, , % "ZipChord", % "Select a dictionary before adding a shortcut."
+            return false
+        }
         if( ! this._RegisterShortcut(shortcut, text, true) )
             return False
         return True
@@ -148,7 +168,8 @@ Class clsDictionary {
              return
         }
         if (! FileExist(this._file)) {
-            this._StopWatching()
+            this.Unload()
+            main_UI.UpdateDictionaryUI()
             return
         }
 
@@ -383,24 +404,25 @@ Class clsDictionary {
 CheckDictionaryFileExists(dictionary_file, dictionary_type) {
     global app_settings
 
+    dictionary := dictionary_type == "chord" ? chords : shorthands
     if (! FileExist(dictionary_file) ) {
         ; On the first run only (if we cannot find the dictionary file), offer to download and store dictionaries under My Documents
         if (settings.preferences & PREF_FIRST_RUN) {
             dictionary_dir := A_MyDocuments . "\ZipChord"
             if (InStr(FileExist(dictionary_dir), "D")) {
                 _UpdateWorkingDir(dictionary_dir)
-                return CheckDictionaryFileExists(dictionary_file, dictionary_type)
-            }
-            MsgBox, 4, % "ZipChord", % Format("Would you like to download starting dictionary files and save them in the '{}' folder?", dictionary_dir)
-            IfMsgBox Yes
-            {
-                if ( ! InStr(FileExist(dictionary_dir), "D")) {
+            } else {
+                MsgBox, 4, % "ZipChord", % Format("Would you like to download starting dictionary files and save them in the '{}' folder?", dictionary_dir)
+                IfMsgBox Yes
+                {
                     FileCreateDir,  % dictionary_dir
+                    _UpdateWorkingDir(dictionary_dir)
+                    UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/en-qwerty.chords.txt, % dictionary_dir . "\en-qwerty.chords.txt"
+                    UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/english.shorthands.txt, % dictionary_dir . "\english.shorthands.txt"
                 }
-                _UpdateWorkingDir(dictionary_dir)
-                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/en-qwerty.chords.txt, % dictionary_dir . "\en-qwerty.chords.txt"
-                UrlDownloadToFile, https://raw.githubusercontent.com/psoukie/zipchord/main/dictionaries/english.shorthands.txt, % dictionary_dir . "\english.shorthands.txt"
-                return CheckDictionaryFileExists(dictionary_file, dictionary_type)
+            }
+            if (FileExist(dictionary_file)) {
+                return dictionary.GetFullFileName(dictionary_file)
             }
         }
         errmsg := Format("The {1} dictionary '{2}' could not be found.`n`n", dictionary_type, dictionary_file)
@@ -415,9 +437,9 @@ CheckDictionaryFileExists(dictionary_file, dictionary_type) {
             FileAppend % "This is a " dictionary_type " dictionary for ZipChord. Define " dictionary_type "s and corresponding expanded words in a tab-separated list (one entry per line).`nSee https://github.com/psoukie/zipchord/wiki/shortcut-dictionaries for details.`n`ndm`tdemo", %new_file%, UTF-8
         }
         MsgBox ,, ZipChord, %errmsg%
-        Return new_file
+        Return dictionary.GetFullFileName(new_file)
     }
-    Return dictionary_file
+    Return dictionary.GetFullFileName(dictionary_file)
 }
 
 _FindFirstDictionaryFile(pattern) {

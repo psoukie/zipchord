@@ -25,18 +25,21 @@ Class Configuration {
 
     Save(config_file) {
         global app_settings
-        global locale
+        global runtime_config_file
 
         if !(config_file) {
             MsgBox, , % "ZipChord", % "You need to specify the setting file."
             return
         }
-        save_locale_override := locale.IsStaticMode()
+        save_locale_override := app_settings.IsStaticMode()
         was_open := CloseAllWindows()
-        runtime_status.config_file := config_file
+        runtime_config_file := config_file
         app_settings.Save()
+        ; A configuration saved by 2.9 no longer needs legacy dictionary ownership.
+        IniDelete, %config_file%, Application, chord_file
+        IniDelete, %config_file%, Application, shorthand_file
         if (save_locale_override) {
-            keys.Save(settings.locale)
+            locale.Save(settings.locale)
         } else {
             ini.DeleteSection("Locale", config_file)
         }
@@ -64,36 +67,28 @@ Class Configuration {
 
     Load(config_file) {
         global app_settings
-        global locale
+        global runtime_config_file
 
-        runtime_status.config_file := config_file
+        runtime_config_file := config_file
         WireHotkeys("Off")
-        new_settings := app_settings.settings.Clone()
-        ini.LoadProperties(new_settings, app_settings.GetSectionName(), app_settings.GetSettingsFile())
-        force_update := new_settings.dictionary_dir != settings.dictionary_dir
-        if (force_update || new_settings.chord_file != settings.chord_file) {
-            chords.Load(new_settings.chord_file)
-        }
-        if (force_update || new_settings.shorthand_file != settings.shorthand_file) {
-            shorthands.Load(new_settings.shorthand_file)
-        }
         app_settings.Load()
+        SetWorkingDir, % settings.dictionary_dir
         this._UpgradeLegacyLocaleSetting()
-        if (locale.IsStaticMode()) {
-            keys.Load(settings.locale)
+        if (app_settings.IsStaticMode()) {
+            EnsureLocaleExists(settings.locale)
+            ApplyLocaleToRuntime()
         } else {
             layout_name := kb.GetActiveLayoutName()
-            locale.SwitchToLayout(layout_name)
+            LocaleSwitchToLayout(layout_name)
         }
         WireHotkeys("On")
     }
 
     _UpgradeLegacyLocaleSetting() {
         global app_settings
-        global locale
 
         if (settings.locale = "0") {
-            settings.locale := locale.STATIC_LOCALE_NAME
+            settings.locale := STATIC_LOCALE_NAME
             app_settings.Save()
         }
     }
@@ -103,13 +98,23 @@ Class Configuration {
             MsgBox, , % "ZipChord", % "The specified mapping file could not be found."
             return false
         }
+        Loop, Files, %filename%, F
+        {
+            filename := A_LoopFileFullPath
+            break
+        }
+        SplitPath, filename, , mapping_dir
         Loop, Read, %filename%
         {
             columns := StrSplit(A_LoopReadLine, A_Tab, , 4)
             if ! (columns[1] && columns[2] && columns[3]) {
                 continue
             }
-            new_entry := new this.MappingEntry(columns[1], columns[2], columns[3])
+            config_file := columns[3]
+            if (DllCall("shlwapi.dll\PathIsRelativeW", "WStr", config_file)) {
+                config_file := mapping_dir . "\" . config_file
+            }
+            new_entry := new this.MappingEntry(columns[1], columns[2], config_file)
             this.mapping.Push(new_entry)
         }
         this.use_mapping := true
@@ -129,13 +134,13 @@ Class Configuration {
     ProcessConfigChange(layout_name) {
         config_file := this.FindMatchingConfig(layout_name)
 
-        if (config_file && str.FilenameWithExtension(config_file) != runtime_status.config_file) {
+        if (config_file && str.FilenameWithExtension(config_file) != runtime_config_file) {
             this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
     }
  
     FindMatchingConfig(layout_name) {
-        window_names := ["locale", "add_shortcut", "main_UI"]
+        window_names := ["locale_UI", "add_shortcut", "main_UI"]
         WinGetActiveTitle, window_title
         if (window_title == "Task Switching") {
             return false
