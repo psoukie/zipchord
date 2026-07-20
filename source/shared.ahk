@@ -702,6 +702,6 @@ QPC() {
 
 ; Simple debug helper
 Debug(s) {
-    FormatTime, timestamp,, HH:mm:ss    
+    FormatTime, timestamp,, HH:mm:ss
     OutputDebug, % "`n" . timestamp . "." . A_MSec . ":  " . s
 }
