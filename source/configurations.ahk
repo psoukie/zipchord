@@ -98,13 +98,23 @@ Class Configuration {
             MsgBox, , % "ZipChord", % "The specified mapping file could not be found."
             return false
         }
+        Loop, Files, %filename%, F
+        {
+            filename := A_LoopFileFullPath
+            break
+        }
+        SplitPath, filename, , mapping_dir
         Loop, Read, %filename%
         {
             columns := StrSplit(A_LoopReadLine, A_Tab, , 4)
             if ! (columns[1] && columns[2] && columns[3]) {
                 continue
             }
-            new_entry := new this.MappingEntry(columns[1], columns[2], columns[3])
+            config_file := columns[3]
+            if (DllCall("shlwapi.dll\PathIsRelativeW", "WStr", config_file)) {
+                config_file := mapping_dir . "\" . config_file
+            }
+            new_entry := new this.MappingEntry(columns[1], columns[2], config_file)
             this.mapping.Push(new_entry)
         }
         this.use_mapping := true
