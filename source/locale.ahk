@@ -536,21 +536,21 @@ ApplyLocaleToRuntime() {
     CopyDictionarySettingsFromLocale(locale)
 
     dictionary_paths_changed := false
-    if (settings.chord_file) {
-        if (chords.Load(settings.chord_file) && chords._file != settings.chord_file) {
+    if (settings.chord_file && chords._file != settings.chord_file) {
+        if (chords.Load(settings.chord_file)) {
             settings.chord_file := chords._file
             dictionary_paths_changed := true
-        }
-    } else {
+        } else {
         chords.Unload()
+        }
     }
-    if (settings.shorthand_file) {
-        if (shorthands.Load(settings.shorthand_file) && shorthands._file != settings.shorthand_file) {
+    if (settings.shorthand_file && shorthands._file != settings.shorthand_file) {
+        if (shorthands.Load(settings.shorthand_file)) {
             settings.shorthand_file := shorthands._file
             dictionary_paths_changed := true
-        }
-    } else {
+        } else {
         shorthands.Unload()
+        }
     }
     if (dictionary_paths_changed) {
         SaveRuntimeDictionarySettingsToLocale()
@@ -563,7 +563,6 @@ ProcessLayoutChange(layout_name) {
     global app_settings
     global locale_UI
 
-    ; TK - stops detecting after e.g. Edit button on dictionary
     if (locale_UI.UI.IsShown()) {
         locale_UI.LocaleProcessLayoutChange(layout_name)
         return
