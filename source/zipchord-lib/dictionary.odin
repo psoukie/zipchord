@@ -248,8 +248,19 @@ dict_data_load_file :: proc(
 	filepath: string,
 	dict: ^Dict_Data,
 	as_chords: bool,
-	shortcuts_loaded: ^i32,
+	shortcuts_loaded_ptr: ^i32,
 ) -> (err: Dict_Error) {
+	// re-initialize the dictionary
+	shortcuts_loaded_ptr^ = 0
+	
+	dict_data_destroy(dict)
+	dict_data_init(dict) or_return
+
+	// Treat an empty path as clearing the dictionary
+	if filepath == "" {
+		return .None
+	}
+
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
 	if file_err != nil {
 		return .File_Read_Fail
@@ -273,11 +284,11 @@ dict_data_load_file :: proc(
 			string_buf.len = 0
 			copy_string_to_buffer(shortcut, &string_buf.bytes, len(string_buf.bytes)) or_return
 			string_buf.len = len(shortcut)
-			shortcuts_loaded^ = i32(len(dict.shortcut_to_expansion))
+			shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
 			return result		
 		}
 	}
-	shortcuts_loaded^ = i32(len(dict.shortcut_to_expansion))
+	shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
 	return  .None
 }
 
@@ -312,28 +323,6 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 	expansion = strings.split_iterator(&line, "\t") or_return
 	return shortcut, expansion, true
 } 
-
-// main :: proc() {
-// 	context.logger = log.create_console_logger()
-// 	chord_dict: Chord_Dict
-// 	dict_data_load_file("../zipchord-lib-tests/english.shorthands.txt", &chord_dict, false)	
-// }
-
-// main :: proc() {
-// 	context.logger = log.create_console_logger()
-//     dict: Chord_Dict
-//     dict_data_init(&dict.dict_data)
-//     defer dict_data_destroy(&dict.dict_data)
-// 	dict_data_load_file("../zipchord-lib-tests/en-dvorak.chords.txt", &dict, true)
-// 	expansion, err := dict_lookup(&dict, "ht")
-// 	log.debugf("Expands to: {}", expansion)
-// 	empty_chord := Normalized_Chord{}
-// 	normalized := normalize_chord("řžťcab") or_else empty_chord
-	// log.debugf("Normalized to: {}", chord_to_string(&normalized)) // abcřťž
-// 	normalized = normalize_chord("ts") or_else empty_chord
-// 	log.debugf("Normalized to: {}", chord_to_string(&normalized)) // st
-// }
-
 
 remove_bom :: proc(text: string) -> string {
     // The UTF-8 BOM is represented by the rune '\ufeff' (3 bytes)

@@ -77,6 +77,7 @@ Class clsDictionary {
     }
 
     Load(filename := "") {
+        Debug("Loading dictionary: " . this._chorded)
         if (filename == "") {
             filename := this._file
         }
@@ -108,7 +109,11 @@ Class clsDictionary {
         this._file := ""
         this._entries := {}
         this._reverse_entries := {}
-        this._dll_entries_count := 0
+        shortcuts_loaded := 0
+        if (dll.available) {
+            dll.LoadDictionary("", this._chorded, shortcuts_loaded)
+            this._dll_entries_count := shortcuts_loaded
+        }
     }
     GetFullFileName(filename) {
         if (filename == "") {
@@ -133,9 +138,10 @@ Class clsDictionary {
             MsgBox, , % "ZipChord", % "Select a dictionary before adding a shortcut."
             return false
         }
-        if( ! this._RegisterShortcut(shortcut, text, true) )
-            return False
-        return True
+        if(! this._RegisterShortcut(shortcut, text, true)) {
+            return false
+        }
+        return true
     }
 
     _StartWatching() {
@@ -357,6 +363,7 @@ Class clsDictionary {
             if !(this._Dll_RegisterShortcut(raw_shortcut, expansion)) {
                 return false
             }
+            this._dll_entries_count += 1
         } else {
             if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion)) {
                 return false
@@ -365,12 +372,11 @@ Class clsDictionary {
         if (write_to_file) {
             this._StopWatching()
             FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
-            this._dll_entries_count += 1
             this._UpdateTrackedFileState()  ; skip auto-reload and update UI
             this._StartWatching()
             main_UI.UpdateDictionaryUI()
         }
-        Return true
+        return true
     }
 
     _IsShortcutOK(shortcut, word) {

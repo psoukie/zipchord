@@ -78,6 +78,7 @@ Class clsKeyMap {
 
     ; Load symbols from INI and override defaults
     Load(section, ini_filename) {
+        Debug("Loading keys")
         loop % this.KEY_LIST.Length() {
             i := A_Index
             name := this.KEY_LIST[i]
@@ -527,7 +528,10 @@ SaveRuntimeDictionarySettingsToLocale() {
     global locale
 
     CopyDictionarySettingsToLocale(locale)
-    locale.Save(settings.locale)
+    GetLocaleStorage(settings.locale, section, filename)
+    For _, key in ["chord_file", "shorthand_file", "use_chords", "use_shorthands"] {
+        ini.SaveProperty(locale[key], key, section, filename)
+    }
 }
 
 ApplyLocaleToRuntime() {

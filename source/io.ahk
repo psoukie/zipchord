@@ -1149,6 +1149,7 @@ Class clsIOrepresentation {
         global symbol_to_SC_map
         io_edits := []
 
+        DebugTokens()
         chars_to_del := this._GetPrevRemainingLength(start)
         if (chars_to_del > 0) {
             io_edits.Push("{Backspace " . chars_to_del . "}")
@@ -1218,16 +1219,6 @@ Class clsIOrepresentation {
             }
         }
     }
-    
-    DebugTokens() {
-        if (A_Args[2] != "test-vs") {
-            return
-        }
-        OutputDebug, % "`n`nTokens:"
-        For i, token in io_tokens {
-            OutputDebug, % "`n" . i . ": " token.input . " > " . token.output . " (" . token.attribs . ")"
-        }
-    }
 }
 
 
@@ -1263,4 +1254,14 @@ PreviousLiveToken(count := 1, start_id := -1) {
         return -1  ; does not exist
     }
     return io_tokens[token_id]
+}
+
+DebugTokens() {
+    if (A_Args[2] != "test-vs") {
+        return
+    }
+    OutputDebug, % "`n`nTokens:"
+    For i, token in io_tokens {
+        OutputDebug, % "`n" . i . ": " token.input . " > " . token.output . " (type: " . token.type . ", attribs: " . token.attribs . ")"
+    }
 }

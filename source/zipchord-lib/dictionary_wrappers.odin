@@ -33,20 +33,17 @@ zc_destroy :: proc "c" () -> Dict_Error {
 zc_load_dictionary :: proc "c" (
 	filepath: cstring,
 	is_chord: b32,
-	loaded_ptr: ^i32,
+	shortcuts_loaded_ptr: ^i32,
 ) -> Dict_Error {
 	context = runtime.default_context()
 
-	if filepath == nil || loaded_ptr == nil {
+	if filepath == nil || shortcuts_loaded_ptr == nil {
 		return .Bad_Argument
 	}
 
 	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
 
-	dict_data_destroy(target)
-	dict_data_init(target) or_return
-
-	return dict_data_load_file(string(filepath), target, bool(is_chord), loaded_ptr)
+	return dict_data_load_file(string(filepath), target, bool(is_chord), shortcuts_loaded_ptr)
 }
 
 @export

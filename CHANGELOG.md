@@ -4,16 +4,18 @@
 
 Unreleased development changes since 2.8.x.
 
+Note: This version has breaking changes in the command-line configuration mapping file format. See below.
+
 **New Features**
 
-- Added a new chord-detection mode to the Detection tab which identifies chords by a minimum relative overlap of keys (using a customizable percentage). This mode is an alternative to the existing minimum duration mode.
-- Added automatic switching of dictionaries based on keyboard layout. The chord and shorthand dictionaries selected on the main tab are saved and associated with the indicated active "Keyboard and language." (The "Use chords" and "Use shorthands" settings are also associated with the layout.) If you e.g. select a different dictionary for a specific layout, ZipChord wil remember this, and will switch the dictionaries automatically as you change keyboard layouts. (#213)
-- Added an OSD hint to make the keyboard layout changes explit when ZipChord's UI is not shown.
+- Added a new chord-detection mode which identifies chords by a minimum relative overlap of keys (using a customizable percentage). The Detection tab has been rearranged to allow selecting between the two modes.
+- Added automatic switching of dictionaries based on keyboard layout. The chord and shorthand dictionaries selected on the main tab are saved and associated with the indicated active "Keyboard and language." (The "Use chords" and "Use shorthands" settings are also remembered with the layout.) (#213)
 
 **Improvements**
 
 - ZipChord now detects system keyboard layout changes when its own UI is not in focus. (#271)
-- The relative overlap detection mode allows an overlap 
+- Added an OSD hint for keyboard layout changes when ZipChord's UI is not shown.
+- Under the hood improvements: The core input-output representation and engine were completely refactored to reduce technical debt in preparation for creating its "ZipChord 0" compiled library counterpart.
 
 **Fixes**
 
