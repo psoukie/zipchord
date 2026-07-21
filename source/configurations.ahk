@@ -132,11 +132,14 @@ Class Configuration {
     }
 
     ProcessConfigChange(layout_name) {
+        global runtime_config_file
+
         config_file := this.FindMatchingConfig(layout_name)
 
         if (config_file && str.FilenameWithExtension(config_file) != runtime_config_file) {
-            this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
+            return this.SwitchDuringRuntime(str.FilenameWithExtension(config_file))
         }
+        return false
     }
  
     FindMatchingConfig(layout_name) {
