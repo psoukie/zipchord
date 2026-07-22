@@ -103,7 +103,7 @@ Class clsDllBindings {
        bytes := StrPut(str, "UTF-8")  ; bytes needed, including terminating null
        capacity := VarSetCapacity(buf, bytes, 0)
         if (capacity < bytes) {
-            MsgBox , , ZipChord Error TK, Could not allocate
+            MsgBox , , % "ZipChord Error", "Could not allocate memory for a string to be passed to the compiled library."
             return        
         }
        StrPut(str, &buf, bytes, "UTF-8")
