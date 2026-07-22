@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #NoEnv
 #SingleInstance Off
+#Warn All, OutputDebug
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
 #KeyHistory 0

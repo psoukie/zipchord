@@ -420,6 +420,7 @@ Class clsLocaleInterface {
     }
 
     _Save() {
+        global app_settings
         global runtime_config_file
 
         new_loc := new clsLocale
@@ -440,6 +441,8 @@ Class clsLocaleInterface {
     }
 
     Close() {
+        global app_settings
+
         if (! app_settings.IsStaticMode()) {
             LocaleSwitchToLayout(kb.current_layout_name)
         } else {
@@ -461,6 +464,7 @@ global locale := new clsLocale
 locale_UI := new clsLocaleInterface
 
 LocaleSwitchToLayout(layout_name) {
+    global app_settings
     global locale_UI
     global runtime_config_file
 
@@ -535,6 +539,8 @@ SaveRuntimeDictionarySettingsToLocale() {
 }
 
 ApplyLocaleToRuntime() {
+    global io
+
     io.ClearTokens("*Interrupt*")
     locale.Load(settings.locale)
     CopyDictionarySettingsFromLocale(locale)
