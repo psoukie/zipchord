@@ -94,12 +94,12 @@ symbol_to_SC_map := {} ; reverse map
 ahk_numpad_to_symbol_map := {} 
 
 
+#Include keyboard.ahk
 #Include configurations.ahk
 #Include hints.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
 #Include io.ahk
-#Include keyboard.ahk
 
 if (A_Args[1] == "dev") {
     #Include *i visualizer.ahk

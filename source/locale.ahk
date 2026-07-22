@@ -89,28 +89,18 @@ Class clsKeyMap {
         }
     }
 
-    _GetActiveKeyboardLayoutHandle() {
-        WinGet, active_window, ID, A
-        thread_id := active_window ? DllCall("user32.dll\GetWindowThreadProcessId", "Ptr", active_window, "UInt", 0, "UInt") : 0
-        hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", thread_id, "Ptr")
-        if (!hkl) {
-            hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", 0, "Ptr")
-        }
-        return hkl
-    }
-
     ; Suggest symbols based on the currently active Windows keyboard layout.
     _SuggestSymbolsFromActiveLayout() {
-        ;@ahk-neko-ignore-fn 1 line;
         static MAPVK_VSC_TO_VK_EX := 3
-
         symbols_out := []
-        ;@ahk-neko-ignore-fn 1 line;
-        hkl := this._GetActiveKeyboardLayoutHandle()
-
         ; Reusable buffers
         VarSetCapacity(keyState, 256, 0)      ; BYTE[256]
         VarSetCapacity(outBuf,   32*2,  0)    ; WCHAR[32] (64 bytes on Unicode)
+
+        hkl := kb.GetForegroundHkl()
+        if (!hkl) {
+            hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", 0, "Ptr")
+        }
 
         for i, name in this.KEY_LIST
         {
@@ -123,7 +113,6 @@ Class clsKeyMap {
             }
 
             ; Map SC->VK once
-            ;@ahk-neko-ignore-fn 1 line;
             vk := DllCall("user32\MapVirtualKeyEx", "UInt", sc, "UInt", MAPVK_VSC_TO_VK_EX, "Ptr", hkl, "UInt")
 
             ; Reset keyboard state (no modifiers) for this key

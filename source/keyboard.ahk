@@ -52,7 +52,7 @@ Class clsOsKeyboard {
     _hkl_to_name_cache := {}
 
     GetActiveLayoutName() {
-        hkl := this._GetForegroundHkl()
+        hkl := this.GetForegroundHkl()
         if (! hkl) {
             return this.current_layout_name
         }
@@ -73,7 +73,7 @@ Class clsOsKeyboard {
 
     CheckForLayoutChange() {
         changed_layout_name := ""
-        hkl := this._GetForegroundHkl()
+        hkl := this.GetForegroundHkl()
         if (! hkl) {
             return false
         }
@@ -116,7 +116,7 @@ Class clsOsKeyboard {
                 , "Ptr", hkl, "UInt", 0, "Ptr") != 0
     }
 
-    _GetForegroundHkl() {
+    GetForegroundHkl() {
         foreground_hwnd := DllCall("user32.dll\GetForegroundWindow", "Ptr")
         if (!foreground_hwnd) {
             return false
