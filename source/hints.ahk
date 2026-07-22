@@ -78,6 +78,7 @@ Class clsHintUI {
         }
     }
     SetTransparentColor(source_color) {
+        new_color := ""
         Loop 3 {
             component := "0x" . SubStr(source_color, 2 * A_Index - 1, 2)
             component := component > 0x7f ? component - 1 : component + 1

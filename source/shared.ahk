@@ -1,10 +1,10 @@
 ﻿/*
 This file is part of ZipChord.
 Copyright (c) 2021-2026 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
-;;  Shared constants, functions and classes 
+;;  Shared constants, functions and classes
 ; ------------------------------------------
 
 global CONFIG_FILE := A_AppData . "\ZipChord\config.ini"
@@ -40,10 +40,10 @@ OpenHelp(topic) {
 
 /**
 * UI class -- custom, object-oriented methods for working with windows and controls
-* 
+*
 * Public properties:
 *   on_close      callback function to use when user closes the window or escapes from it
-*   controls      collection of controls in this window, see clsControl below 
+*   controls      collection of controls in this window, see clsControl below
 *
 * Public methods:
 *   new clsUI     Creates a new window object.
@@ -62,17 +62,17 @@ class clsUI {
     * UI Control class for defining and working with controls
     *
     * Properties:
-    *    type, text,          Can be used with Add as shorthand definition using object  
+    *    type, text,          Can be used with Add as shorthand definition using object
     *      function, state
-    *    value                Retrieves or sets the value of the control 
+    *    value                Retrieves or sets the value of the control
     *
     * Methods:
-    *    Enable([true|false]) Enables the control, unless called with Enable(false).             
+    *    Enable([true|false]) Enables the control, unless called with Enable(false).
     *    Disable              Disables the control.
     *    Choose
     *    Focus
     *    Hide
-    */    
+    */
     class clsControl {
         type := ""
         text := ""
@@ -113,7 +113,7 @@ class clsUI {
         Choose(option) {
             handle := this._handle
             if option is not integer
-                Controlget, option, FindString, % option, , ahk_id %handle%  ; to get exact match 
+                Controlget, option, FindString, % option, , ahk_id %handle%  ; to get exact match
             GuiControl, Choose, % handle, % option
         }
         MakeDefault() {
@@ -127,7 +127,7 @@ class clsUI {
     *    <obj> := new clsUI(<name>, [options])
     *
     *         <obj>          The returned new object
-    *         <name>         Title of the new window       
+    *         <name>         Title of the new window
     *         [options]      String with Gui options
     */
     __New(name:="", options:="") {
@@ -197,18 +197,18 @@ class clsUI {
     ; Called when user closes or escapes the window.
     ; Calls the on_close function, if defined, or hides the window.
     _Close() {
-        on_close_fn := this.on_close 
+        on_close_fn := this.on_close
         if (IsObject(on_close_fn))
             %on_close_fn%()
         else
             this.Hide()
     }
 
-    /** 
+    /**
     * Adds a new control to the window.
     *
     *   Add(<controlobject>, [options])
-    *   Add(<type>, [options], [text], [function], [state]) 
+    *   Add(<type>, [options], [text], [function], [state])
     *
     *      <controlobject>    a clsControl object
     *      <type>             A control type: Text, Button, Checkbox, Radio,
@@ -254,7 +254,7 @@ class clsUI {
     }
 }
 
-; We catch and process all the AHK-generated calls when a user closes or escapes _any_ UI. 
+; We catch and process all the AHK-generated calls when a user closes or escapes _any_ UI.
 
 GuiClose(handle) {
     clsUI._windows[handle]._Close()
@@ -354,7 +354,7 @@ Class clsStringFunctions {
     *        text         String to shorten.
     *        limit        Limit in pixel length.
     *        to_end       [true|false] add ellipsis to the end (or start), default is false (left).
-    *        font         Font to use for adjustment calculation. Default is Segoe UI.    
+    *        font         Font to use for adjustment calculation. Default is Segoe UI.
     *        size         Font size used for adjustment calculation. Default is 10.
     */
     Ellipsisize(text, limit, to_end:=false, font:="Segoe UI", size:=10) {
@@ -555,18 +555,17 @@ class clsUpdater {
     *   latestVersion  the latest version string (tag)
     *       url             URL to the releases page
     *      reason          empty if ok=1, otherwise error reason
-    */ 
+    */
     _CheckGitHubUpdate(currentVersion) {
         latest := this._GetLatestRelease()
         if !latest.ok
             return { ok:0, hasUpdate:0, latestVersion:"", url:"", reason:latest.reason }
 
         has_update := this.SemVerCompare(latest.tag, currentVersion)
-        return { ok:1
+        return { ok: 1
                , hasUpdate: has_update
                , latestVersion: latest.tag
-               , url: latest.url
-               , reason: (cmp < 0 ? "" : "up-to-date") }
+               , url: latest.url }
     }
 
     _GetLatestRelease(owner := "psoukie", repo := "zipchord") {
@@ -703,5 +702,5 @@ QPC() {
 ; Simple debug helper
 Debug(s) {
     FormatTime, timestamp,, HH:mm:ss
-    OutputDebug, % "`n" . timestamp . "." . A_MSec . ":  " . s
+    OutputDebug, % timestamp . "." . A_MSec . ":  " . s . "`n"
 }

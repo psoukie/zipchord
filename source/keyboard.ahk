@@ -104,16 +104,17 @@ Class clsOsKeyboard {
         return changed_layout_name
     }
 
-    SetZipChordToHkl(hkl := -1) {
-        if (hkl == -1) {
-            hkl := this._current_hkl
-        }
+    SetZipChordToHkl(hkl) {
         own_hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", 0, "Ptr")
         if (own_hkl == hkl) {
             return true
         }
         return DllCall("user32.dll\ActivateKeyboardLayout"
                 , "Ptr", hkl, "UInt", 0, "Ptr") != 0
+    }
+
+    SetZipChordToCurrentHkl() {
+        return this.SetZipChordToHkl(this._current_hkl)
     }
 
     GetForegroundHkl() {

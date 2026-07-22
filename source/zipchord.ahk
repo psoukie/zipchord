@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #NoEnv
 #SingleInstance Off
-#Warn All, OutputDebug
 #MaxThreadsPerHotkey 1
 #MaxThreadsBuffer On
 #KeyHistory 0
@@ -46,6 +45,9 @@ SetKeyDelay -1, -1
 CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
+
+; Warnings for development only
+; #Warn All, OutputDebug
 
 #Include version.ahk
 #Include library_bindings.ahk
@@ -94,17 +96,17 @@ symbol_to_SC_map := {} ; reverse map
 ahk_numpad_to_symbol_map := {} 
 
 
+if (A_Args[1] == "dev") {
+    #Include *i visualizer.ahk
+    #Include *i testing.ahk
+}
+
 #Include keyboard.ahk
 #Include configurations.ahk
 #Include hints.ahk
 #Include locale.ahk
 #Include dictionaries.ahk
 #Include io.ahk
-
-if (A_Args[1] == "dev") {
-    #Include *i visualizer.ahk
-    #Include *i testing.ahk
-}
 
 global main_UI := new clsMainUI
 central_watcher := new clsWatcher
@@ -609,7 +611,7 @@ Class clsMainUI {
     Show() {
         global runtime_config_file
 
-        kb.SetZipChordToHkl()
+        kb.SetZipChordToCurrentHkl()
         cts := this.controls
         if (A_Args[1] == "dev" && cts.debugging.value) {
             FinishDebugging()
@@ -898,7 +900,7 @@ ShowMainUI() {
 ; App shortcut and double-Shift 'command menu'
 
 ShowKeyboardCommandMenu() {
-    kb.SetZipChordToHkl()
+    kb.SetZipChordToCurrentHkl()
     UI_SyncModeState()
     hint_UI._GetCaret(caret_x, caret_y, caret_w, caret_h)
     if (caret_x != "" && caret_y != "") {

@@ -532,6 +532,7 @@ Class clsIOrepresentation {
         }
         count := end - start + 1
         Loop, %count%
+        representation := ""
         {
             index := A_Index + start - 1
             if (io_tokens[index].attribs & TokenAttribs.TOMBSTONED) {

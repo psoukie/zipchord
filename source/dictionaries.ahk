@@ -77,7 +77,6 @@ Class clsDictionary {
     }
 
     Load(filename := "") {
-        Debug("Loading dictionary: " . this._chorded)
         if (filename == "") {
             filename := this._file
         }
@@ -313,6 +312,7 @@ Class clsDictionary {
         if (this._chorded) {
             if (InStr(raw_shortcut, "|")) {
                 chunks := StrSplit(raw_shortcut, "|")
+                newch := ""
                 For _, chunk in chunks {
                     if (chunk == "") {
                         MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", expansion)
@@ -494,7 +494,7 @@ Class clsAddShortcut {
     _ui_title := "Add or Edit Shortcut"
 
     Show(exp) {
-        kb.SetZipChordToHkl()
+        kb.SetZipChordToCurrentHkl()
         call := Func("OpenHelp").Bind("AddShortcut")
         Hotkey, F1, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference

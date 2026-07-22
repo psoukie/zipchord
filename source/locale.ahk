@@ -78,7 +78,6 @@ Class clsKeyMap {
 
     ; Load symbols from INI and override defaults
     Load(section, ini_filename) {
-        Debug("Loading keys")
         loop % this.KEY_LIST.Length() {
             i := A_Index
             name := this.KEY_LIST[i]
