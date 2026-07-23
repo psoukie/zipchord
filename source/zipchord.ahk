@@ -305,9 +305,9 @@ UpgradeTo29() {
     IniDelete, %config_file%, %section%, shorthand_file
 
     MsgBox, , % "ZipChord Upgrade Note"
-            , %  "ZipChord now has a new chord-detection mode which identifies chords by relative overlap of keys. You can select it on the Detection tab."
+            , %  "ZipChord has a new chord-detection mode which identifies chords by relative overlap of keys. You can select it on the Detection tab."
             . "`n`nShortcut dictionary settings now follow the Windows keyboard layout. When you select a different dictionary or deactivate it on the main tab for the active layout, ZipChord will remember this and will change dictionaries automatically as you switch keyboard layouts."
-            . "`n`nThe command-line automatic configuration switchings version changes the format and behavior of the configuration mapping files"
+            . "`n`nThe command line configuration feature now expects keyboard layout as the first column in the mapping file. (See the ZipChord wiki for details.)"
 }
 
 UpdateSettings(from_version) {
