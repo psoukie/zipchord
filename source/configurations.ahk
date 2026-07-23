@@ -51,7 +51,7 @@ Class Configuration {
 
     SwitchDuringRuntime(config_file := false) {
         if (config_file && ! FileExist(config_file)) {
-            MsgBox, , % "ZipChord", % Format("The specified settings file '{}' could not be found.", str.BareFilename(config_file))
+            MsgBox, , % "ZipChord", % Format("The specified settings file '{}' could not be found.", config_file)
             return false
         }
         was_open := CloseAllWindows()
