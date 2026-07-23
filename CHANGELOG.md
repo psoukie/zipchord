@@ -14,9 +14,9 @@ Note: This version has breaking changes in the command-line configuration mappin
 **Improvements**
 
 - ZipChord now detects system keyboard layout changes when its own UI is not in focus. (#271)
-- Added an OSD hint for keyboard layout changes when ZipChord's UI is not shown.
-- By default, the "Open" file window is now filtered to corresponding chord and shorthand file names introduced in version 2.7. (Switch to "All files" when opening legacy dictionaries.)
-- Under the hood improvements: The core input-output representation and engine were completely refactored to reduce technical debt in preparation for creating its "ZipChord 0" compiled library counterpart.
+- Added an OSD hint for keyboard layout and dictionary changes when ZipChord's UI is not shown.
+- By default, the "Open" file window now filters to corresponding chord and shorthand file names introduced in version 2.7. (Switch to "All files" when opening legacy dictionaries.)
+- Under the hood improvements: The core input-output representation and engine were refactored in preparation for a "ZipChord 0" compiled library counterpart.
 
 **Fixes**
 

@@ -567,6 +567,14 @@ ProcessLayoutChange(layout_name) {
     if (main_UI.UI.IsShown()) {
         main_UI.UpdateLocaleProfileInMainUI()
     } else {
-        hint_UI.ShowOnOSD("Switching to", layout_name)
+        chord_file := settings.chord_file
+        shorthand_file := settings.shorthand_file
+        SplitPath, chord_file, , , , chord_name
+        SplitPath, shorthand_file, , , , shorthand_name
+        chord_name := SubStr(chord_name, 1, -7)
+        shorthand_name := SubStr(shorthand_name, 1, -11)
+        chord_status := settings.mode & MODE_CHORDS_ENABLED ? chord_name : "chords off"
+        shorthand_status := settings.mode & MODE_SHORTHANDS_ENABLED ? shorthand_name : "shorthands off"
+        hint_UI.ShowOnOSD(layout_name, chord_status, shorthand_status)
     }
 }
