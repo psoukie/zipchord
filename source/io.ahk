@@ -1150,7 +1150,6 @@ Class clsIOrepresentation {
         global symbol_to_SC_map
         io_edits := []
 
-        DebugTokens()
         chars_to_del := this._GetPrevRemainingLength(start)
         if (chars_to_del > 0) {
             io_edits.Push("{Backspace " . chars_to_del . "}")
