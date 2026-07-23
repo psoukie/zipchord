@@ -818,7 +818,8 @@ Class clsMainUI {
         type := type_string == "chord" ? "chord" : "shorthand"
         StringUpper, uppercased, type, T
         heading := "Open " . uppercased . " Dictionary"
-        FileSelectFile dict, , % settings.dictionary_dir, %heading%, Text files (*.txt)
+        file_type := uppercased . " dictionaries (*." . type . "s.txt)"
+        FileSelectFile dict, , % settings.dictionary_dir, %heading%, %file_type%
         if (dict == "") {
             return
         }
