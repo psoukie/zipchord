@@ -1,8 +1,6 @@
 # ZipChord Changelog
 
-## ZipChord 2.9.0-dev
-
-Unreleased development changes since 2.8.x.
+## ZipChord 2.9.0
 
 Note: This version has breaking changes in the command-line configuration mapping file format. See below.
 
@@ -11,20 +9,17 @@ Note: This version has breaking changes in the command-line configuration mappin
 - Added a new chord-detection mode which identifies chords by a minimum relative overlap of keys (using a customizable percentage). The Detection tab has been rearranged to allow selecting between the two modes.
 - Added automatic switching of dictionaries based on keyboard layout. The chord and shorthand dictionaries selected on the main tab are saved and associated with the indicated active "Keyboard and language." (The "Use chords" and "Use shorthands" settings are also remembered with the layout.) (#213)
 
-**Improvements**
+**Improvements and Fixes**
 
 - ZipChord now detects system keyboard layout changes when its own UI is not in focus. (#271)
 - Added an OSD hint for keyboard layout and dictionary changes when ZipChord's UI is not shown.
 - By default, the "Open" file window now filters to corresponding chord and shorthand file names introduced in version 2.7. (Switch to "All files" when opening legacy dictionaries.)
 - Under the hood improvements: The core input-output representation and engine were refactored in preparation for a "ZipChord 0" compiled library counterpart.
-
-**Fixes**
-
 - Fixes incorrect output around smart spaces or auto-capitalization that happened when keys are mapped to different symbols than they normally produce. (#267)
 
 **Breaking Changes**
 
-For users of the command-line automatic configuration switching, this version changes the format and behavior of the configuration mapping files:   
+Users of the command-line automatic configuration switching need to update for the new format and behavior of the configuration mapping files:   
 
 - The configuration mapping file now has a mandatory additional first column for the keyboard layout name (can be `*` for any layout).
 - This shifts the window title into column 2. (Unchanged behavior, can use wildcards as before.)
