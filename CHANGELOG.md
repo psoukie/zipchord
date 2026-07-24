@@ -6,7 +6,7 @@
 
 - ZipChord now pauses the detection of keyboard layout changes and of changes to dictionaries when the app is paused. (#279)
 - ZipChord now warns when a dictionary being loaded uses key symbols that do not exist in the active keyboard and and language mapping.
-- The OSD text has an improve readability (more opaque, bold, and with a shadow contrasting with the selected OSD text color). (#270) 
+- The OSD text has an improve readability (bold text, reduced transparency, and added a contrasting outline). (#270) 
 
 **Removed Feature**
 
