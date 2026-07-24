@@ -86,8 +86,8 @@ Class clsHintUI {
     }
     SetTransparentColor(source_color) {
         static luminance_weights := [0.2126, 0.7152, 0.0722]
-             , dark_shadow_scale := 0.15
-             , light_shadow_scale := 0.85
+             , dark_shadow_scale := 0.25
+             , light_shadow_scale := 0.75
         new_color := ""
         shadow_color := ""
         luminance := 0
