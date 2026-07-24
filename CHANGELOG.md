@@ -7,7 +7,7 @@ Note: This version has breaking changes in the command-line configuration mappin
 **New Features**
 
 - Added a new chord-detection mode which identifies chords by a minimum relative overlap of keys (using a customizable percentage). The Detection tab has been rearranged to allow selecting between the two modes.
-- Added automatic switching of dictionaries based on keyboard layout. The chord and shorthand dictionaries selected on the main tab are saved and associated with the indicated active "Keyboard and language." (The "Use chords" and "Use shorthands" settings are also remembered with the layout.) (#213)
+- Added automatic switching of dictionaries based on keyboard layout. The chord and shorthand dictionaries selected on the main Language tab are saved and associated with the indicated active "Keyboard and language." (The "Use chords" and "Use shorthands" settings are also remembered with the layout.) (#213)
 
 **Improvements and Fixes**
 
@@ -16,6 +16,7 @@ Note: This version has breaking changes in the command-line configuration mappin
 - By default, the "Open" file window now filters to corresponding chord and shorthand file names introduced in version 2.7. (Switch to "All files" when opening legacy dictionaries.)
 - Under the hood improvements: The core input-output representation and engine were refactored in preparation for a "ZipChord 0" compiled library counterpart.
 - Fixes incorrect output around smart spaces or auto-capitalization that happened when keys are mapped to different symbols than they normally produce. (#267)
+- The Test Automation Console now includes formatted text-output comparison and Shift-key visualization.
 
 **Breaking Changes**
 
@@ -23,7 +24,7 @@ Users of the command-line automatic configuration switching need to update for t
 
 - The configuration mapping file now has a mandatory additional first column for the keyboard layout name (can be `*` for any layout).
 - This shifts the window title into column 2. (Unchanged behavior, can use wildcards as before.)
-- The configuration files names (now in column 3) in the mapping file are now interpreted as relative to the directory of the mapping file.
+- The configuration file names (now in column 3) in the mapping file are now interpreted as relative to the directory of the mapping file.
 - See https://github.com/psoukie/zipchord/wiki/Configurations-and-automated-switching#mapping-file for details.
 
 ## ZipChord 2.8.2

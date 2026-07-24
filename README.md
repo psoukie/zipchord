@@ -21,7 +21,8 @@ Instead of learning full stenography, you can start with just a few shortcuts fo
 - Separate customizable dictionaries for chords and shorthands
 - Real-time hints in an on-screen display or tooltips
 - Smart spaces and automatic capitalization around shortcuts and punctuation
-- Automatic switching with the active Windows keyboard layout and custom key mapping
+- Two chord-detection modes: minimum held duration or relative overlap of keys
+- Automatic switching with the active Windows keyboard layout, with per-layout key mapping, dictionaries, and enabled shortcut states
 - Native UI and command menu for common actions
 
 ## Example
