@@ -1,16 +1,16 @@
 # ZipChord Changelog
 
-## ZipChord 2.9.1-dev
+## ZipChord 2.9.1
 
 **Improvements and Fixes**
 
-- ZipChord now pauses the detection of keyboard layout changes and of changes to dictionaries when the app is paused. (#279)
-- ZipChord now warns when a dictionary being loaded uses key symbols that do not exist in the active keyboard and and language mapping.
-- The OSD text has an improve readability (bold text, reduced transparency, and added a contrasting outline). (#270) 
+- ZipChord now pauses the detection of keyboard layout and dictionary changes when the app is paused. (#279)
+- Fixes a regression (and adds a test case for) expansions that include special keys in braces such as `{Left}`. (#280) 
+- The OSD text has an improved readability (bold text, reduced transparency, and added a contrasting outline). (#270) 
 
-**Removed Feature**
+**Planned deprecation**
 
-- Removed the "Allow Shift in chords" feature due to low usage, inconsistent behavior (requires at least two more keys in chords, cannot be the last key pressed, does not work in shorthands), and the overhead with edge cases. See issue #277 for rationale and workaround by remapping one of the Shift keys externally.
+- The "Allow Shift in chords" feature is going to be removed due to low usage and exceptional behavior (requires at least two other keys in chords, cannot be the last key pressed, and does not work in shorthands). See issue #277 for rationale and a suggested workaround.
 
 ## ZipChord 2.9.0
 
