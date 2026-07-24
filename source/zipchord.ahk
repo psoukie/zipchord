@@ -1006,9 +1006,12 @@ Update_Menus() {
 }
 
 PauseApp(from_button := false) {
+    global central_watcher
+
     if (settings.mode & MODE_ZIPCHORD_ENABLED) {
         settings.mode := settings.mode & ~MODE_ZIPCHORD_ENABLED
         mode := false
+        central_watcher.Stop()
     } else {
         settings.mode := settings.mode | MODE_ZIPCHORD_ENABLED
         mode := true
@@ -1019,6 +1022,9 @@ PauseApp(from_button := false) {
     }
     WireHotkeys(state)
     UI_SyncModeState()
+    if (mode) {
+        central_watcher.Start()
+    }
 }
 
 QuitApp() {

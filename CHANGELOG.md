@@ -1,5 +1,11 @@
 # ZipChord Changelog
 
+## ZipChord 2.9.1-dev
+
+**Fixes**
+
+- ZipChord now pauses the detection of keyboard layout changes and of changes to dictionaries when the app is paused. (#279)
+
 ## ZipChord 2.9.0
 
 Note: This version has breaking changes in the command-line configuration mapping file format. See below.
