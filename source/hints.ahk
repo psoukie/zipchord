@@ -61,14 +61,16 @@ Class clsHintUI {
                     , hint_offset_y:    0
                     , hint_size:        32
                     , hint_color:       "1CA6BF" }
-    DEFAULT_TRANSPARENCY := 150
+    DEFAULT_TRANSPARENCY := 220
     UI := {}
     lines := []
+    shadow_lines := []
     transparency := 0
     ; fallback coordinates if multimonitor detection fails
     pos_x := 0
     pos_y := 0
     _transparent_color := 0
+    _shadow_color := "000000"
     _hide_OSD_fn := ObjBindMethod(this, "_HideOSD")
     _hide_tooltip_fn := ObjBindMethod(this, "_HideTooltip")
 
@@ -77,14 +79,32 @@ Class clsHintUI {
             return this._transparent_color
         }
     }
+    shadow_color[] {
+        get {
+            return this._shadow_color
+        }
+    }
     SetTransparentColor(source_color) {
+        static luminance_weights := [0.2126, 0.7152, 0.0722]
         new_color := ""
+        luminance := 0
         Loop 3 {
             component := "0x" . SubStr(source_color, 2 * A_Index - 1, 2)
+            component_8bit := component
             component := component > 0x7f ? component - 1 : component + 1
             new_color .= Format("{:02x}", component)
+
+            channel := component_8bit / 255.0
+            if (channel <= 0.04045)
+                channel := channel / 12.92
+            else
+                channel := ((channel + 0.055) / 1.055) ** 2.4
+            luminance += luminance_weights[A_Index] * channel
         }
         this._transparent_color := new_color
+        contrast_with_black := (luminance + 0.05) / 0.05
+        contrast_with_white := 1.05 / (luminance + 0.05)
+        this._shadow_color := contrast_with_black > contrast_with_white ? "000000" : "ffffff"
     }
 
     __New(app_settings) {
@@ -98,10 +118,14 @@ Class clsHintUI {
         this.UI := new clsUI("", "+LastFound +AlwaysOnTop -Caption +ToolWindow") ; +ToolWindow avoids a taskbar button and an alt-tab menu item.
         this.UI.Margin( Round(settings.hint_size/3), Round(settings.hint_size/3))
         this.UI.Color(this.transparent_color)
-        this.UI.Font("s" . settings.hint_size . " c" . settings.hint_color, "Consolas")
         ; auto-size the window
         Loop 3 {
-            this.lines[A_Index] := this.UI.Add("Text", "Center", "WWWWWWWWWWWWWWWWWWWWWWWWWW")
+            this.UI.Font("w700 s" . settings.hint_size . " c" . this.shadow_color, "Consolas")
+            this.shadow_lines[A_Index] := this.UI.Add("Text"
+                                                   , A_Index == 1 ? "Center Section xp+2 y+2" : "Center xp+2 y+2"
+                                                   , "WWWWWWWWWWWWWWWWWWWWWWWWWW")
+            this.UI.Font("w700 s" . settings.hint_size . " c" . settings.hint_color, "Consolas")
+            this.lines[A_Index] := this.UI.Add("Text", "xp-2 yp-2 Center BackgroundTrans", "WWWWWWWWWWWWWWWWWWWWWWWWWW")
         }
         this.UI.Show("NoActivate Center")
         this.UI.SetTransparency(this.transparent_color, 1)
@@ -147,12 +171,17 @@ Class clsHintUI {
         this.fading := false
         this.transparency := this.DEFAULT_TRANSPARENCY
         if (smaller_second) {
+            this.UI.Font("s" . settings.hint_size // 3 . " c" . this.shadow_color, "Consolas")
+            GuiControl, Font, % hint_UI.shadow_lines[2]._handle
             this.UI.Font("s" . settings.hint_size // 3 . " c" . settings.hint_color, "Consolas")
         } else {
+            this.UI.Font("s" . settings.hint_size . " c" . this.shadow_color, "Consolas")
+            GuiControl, Font, % hint_UI.shadow_lines[2]._handle
             this.UI.Font("s" . settings.hint_size . " c" . settings.hint_color, "Consolas")
         }
         GuiControl, Font, % hint_UI.lines[2]._handle
         Loop, 3 {
+            this.shadow_lines[A_Index].value := line%A_Index%
             this.lines[A_Index].value := line%A_Index%
         }
         this.UI.Show("Hide NoActivate")
