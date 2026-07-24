@@ -1140,10 +1140,35 @@ Class clsIOrepresentation {
 
     _AddSmartSpace() {
         smart_space := new clsToken
-        smart_space.input := ""
+        smart_space.input := ""   ;  simulated input
         smart_space.output := " "
         smart_space.type := TokenType.SMART_SPACE
         io_tokens.Push(smart_space)
+    }
+
+    _AppendSpecialExpansions(edits, expansion) {
+        remainder := expansion
+        while (brace_open := InStr(remainder, "{")) {
+            if (brace_open == 1) {
+                brace_close := InStr(remainder, "}")
+                if (!brace_close) {  ; malformed, send rest as text
+                    edit := "{Text}" . remainder
+                    edits.Push(edit)
+                    return
+                } else {
+                    edit := SubStr(remainder, 1, brace_close)
+                    remainder := SubStr(remainder, brace_close + 1)
+                    edits.Push(edit)
+                }
+            } else {
+                normal_sequence := SubStr(remainder, 1, brace_open - 1) 
+                remainder := SubStr(remainder, brace_open)
+                edits.Push("{Text}" . normal_sequence)
+            }
+        }
+       if (remainder != "") {
+           edits.Push("{Text}" . remainder)
+       }
     }
 
     PrepareEdits(start) {
@@ -1180,8 +1205,16 @@ Class clsIOrepresentation {
                 continue
             }
 
-            if (token.type == TokenType.EXPANSION
-                    || token.attribs & TokenAttribs.WAS_CAPITALIZED) {
+            if (token.type == TokenType.EXPANSION) {
+                if (InStr(token.output, "{")) {
+                    this._AppendSpecialExpansions(io_edits, token.output)
+                } else {
+                    io_edits.Push("{Text}" . token.output)
+                }
+                continue
+            }
+
+            if (token.attribs & TokenAttribs.WAS_CAPITALIZED) {
                 io_edits.Push("{Text}" . token.output)
                 continue
             }

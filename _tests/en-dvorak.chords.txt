@@ -239,3 +239,6 @@ blp	~-bleeping-~
 ⑥s	six seven
 qj	"Mighty!"^
 qjk	Mighty-~^
+sp1	(){Left}~
+sp2	{s}cott
+sp3	{Backspace 2}ed

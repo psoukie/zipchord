@@ -4,7 +4,8 @@
 ~x
 ~Space
 {Backspace 4}
-{Text}Dear X,{Enter}
+{Text}Dear X,
+{Enter}
 {Space}
 ~Enter
 ~+h
@@ -17,6 +18,7 @@
 ~x
 ~,
 {Backspace 4}
-{Text}Dear X,{Enter}
+{Text}Dear X,
+{Enter}
 ~,
 {Space}

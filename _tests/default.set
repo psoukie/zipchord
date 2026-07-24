@@ -17,3 +17,4 @@ default__test.out
 default__punct-first-chord.out
 default__numpad.out
 default__capitalize_next.out
+default__special-expansions.out

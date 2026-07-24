@@ -1,0 +1,26 @@
+~t
+~s
+~t
+~Space
+~1
+~p
+~s
+{Backspace 3}
+{Text}()
+{Left}
+*Interrupt*
+~Enter
+~s
+~2
+~p
+{Backspace 3}
+{s}
+{Text}cott
+{Space}
+~p
+~s
+~3
+{Backspace 3}
+{Backspace 2}
+{Text}ed
+{Space}
