@@ -41,9 +41,11 @@ zc_load_dictionary :: proc "c" (
 		return .Bad_Argument
 	}
 
-	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
-
-	return dict_data_load_file(string(filepath), target, bool(is_chord), shortcuts_loaded_ptr)
+	if is_chord {
+		return dict_load_file(string(filepath), &chord_dict, shortcuts_loaded_ptr)
+	} else {
+		return dict_load_file(string(filepath), &shorthand_dict, shortcuts_loaded_ptr)
+	}
 }
 
 @export

@@ -156,9 +156,18 @@ dict_data_destroy :: proc(dict: ^Dict_Data) {
     dict^ = {}
 }
 
-dict_data_add :: proc (dict: ^Dict_Data, shortcut: string, expansion: string, ) -> (err: Dict_Error ) {
+dict_data_add :: proc (
+	dict: ^Dict_Data,
+	shortcut: string,
+	expansion: string,
+	raw_chord := "",
+) -> (err: Dict_Error ) {
+
 	alloc_err: runtime.Allocator_Error
-	own_shortcut, own_lcase_expansion, own_expansion: string
+	own_shortcut,
+	own_lcase_expansion,
+	own_expansion,
+	own_raw_chord: string
 	
 	alloc := virtual.arena_allocator(&dict.arena_memory)
 
@@ -183,9 +192,16 @@ dict_data_add :: proc (dict: ^Dict_Data, shortcut: string, expansion: string, ) 
 	} else {
 		dict.shortcut_to_expansion[own_shortcut] = own_lcase_expansion
 	}
-	
-	dict.expansion_to_shortcut[own_lcase_expansion] = own_shortcut
 
+	if raw_chord != "" && raw_chord != shortcut {
+		own_raw_chord, alloc_err = strings.clone(raw_chord, alloc)
+		if alloc_err != .None {
+			return .Allocation_Error
+		}
+		dict.expansion_to_shortcut[own_lcase_expansion] = own_raw_chord
+	} else {
+		dict.expansion_to_shortcut[own_lcase_expansion] = own_shortcut
+	}
 	return .None
 }
 
@@ -292,29 +308,52 @@ dict_data_load_file :: proc(
 	return  .None
 }
 
+dict_chord_load_file :: proc(
+	filepath: string,
+	dict: ^Chord_Dict,
+	shortcuts_loaded_ptr: ^i32,
+) -> (err: Dict_Error) {
+	return dict_data_load_file(filepath, &dict.dict_data, true, shortcuts_loaded_ptr)
+}
+
+dict_shorthand_load_file :: proc(
+	filepath: string,
+	dict: ^Shorthand_Dict,
+	shortcuts_loaded_ptr: ^i32,
+) -> (err: Dict_Error) {
+	return dict_data_load_file(filepath, &dict.dict_data, false, shortcuts_loaded_ptr)
+}
+
+dict_load_file :: proc {
+	dict_chord_load_file,
+	dict_shorthand_load_file,
+}
 
 register_shortcut :: proc (
 	dict_data: ^Dict_Data,
-	shortcut: string,
+	orig_shortcut: string,
 	expansion: string,
 	as_chords: bool,
 	chain_buffer: ^Chord_Chain_Buffer
 ) -> (err: Dict_Error) {
-	shortcut := shortcut
+	shortcut := orig_shortcut
+	raw_chord := ""
 
 	if len(shortcut) < 2 {  // TK: not foolproof for non-ASCII shortcuts
 		return .Fewer_Than_Two
 	}
 	
 	if as_chords {
-		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return 
+		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
+		raw_chord = orig_shortcut
 	}
 
 	existing, lookup_err := dict_data_lookup(dict_data, shortcut)
 	if lookup_err != .Not_Found {
 		return .Shortcut_Exists
 	}
-	return dict_data_add(dict_data, shortcut, expansion)
+
+	return dict_data_add(dict_data, shortcut, expansion, raw_chord)
 }
 
 _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: string, ok: bool) {
