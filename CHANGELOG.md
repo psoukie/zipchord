@@ -1,5 +1,11 @@
 # ZipChord Changelog
 
+## ZipChord 2.9.2 (Unreleased changes)
+
+**Improvements and Fixes**
+
+- Hints now show the chord shortcut with keys in the same order as in the dictionary when using the compiled library. (#284)
+
 ## ZipChord 2.9.1
 
 **Improvements and Fixes**
