@@ -314,16 +314,14 @@ Class clsIOrepresentation {
         } else {
             token.output := entry
         }
-    
+
         if ( !key.with_shift && InStr(locale.punctuation_plain, entry) )
                 || ( key.with_shift && InStr(locale.punctuation_shift, entry) ) {
             token.type := TokenType.PUNCTUATION
-        }
-        if (entry == " ") {
+        } else if (entry == " ") {
             token.type := TokenType.MANUAL_SPACE
-        }
-        ; TK - this check needs to be modified (0123... need to be locale definable)
-        if (!key.with_shift && InStr("0123456789⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+        } else if ( (!key.with_shift && (InStr(locale.numerals_plain, entry) || InStr("⓪①②③④⑤⑥⑦⑧⑨", entry)))  
+                || (key.with_shift && (InStr(locale.numerals_shift, entry))) ) {
             token.type := TokenType.NUMERAL
         }
         return token
@@ -1220,12 +1218,12 @@ Class clsIOrepresentation {
             }
         
             ; Should be a regular tracked key
-            if ! (symbol_to_SC_map.HasKey(token.output)) {
+            if ! (symbol_to_SC_map.HasKey(token.input)) {
                 MsgBox, % "ZipChord Error", % "Encountered unexpected error while processing the keys."
                 continue
             }
 
-            SC_key := str.SCHexToString(symbol_to_SC_map[token.output])
+            SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
             SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
             io_edits.Push(SC_prefix . "{" . SC_key . "}")
         }
