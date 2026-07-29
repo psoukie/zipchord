@@ -470,8 +470,9 @@ class clsIniFile {
             ini_filename := this.default_ini
         }
         IniRead, properties, %ini_filename%, %ini_section%
-        if (! properties)
+        if (! properties) {
             return true
+        }
         Loop, Parse, properties, `n
         {
             key := SubStr(A_LoopField, 1, InStr(A_LoopField, "=")-1)
@@ -480,19 +481,17 @@ class clsIniFile {
                 continue
             }
             value := SubStr(A_LoopField, InStr(A_LoopField, "=")+1)
-            if (value != "") {
-                if (value == "__OBJECT__") {
-                    ; If destination already has an object for this key, delegate loading to it (if it implements Load)
-                    if (IsObject(object_destination[key])) {
-                        try {
-                            object_destination[key].Load(ini_section, ini_filename)
-                        } catch {
-                            ; no Load method - ignore
-                        }
+            if (value == "__OBJECT__") {
+                ; If destination already has an object for this key, delegate loading to it (if it implements Load)
+                if (IsObject(object_destination[key])) {
+                    try {
+                        object_destination[key].Load(ini_section, ini_filename)
+                    } catch {
+                        ; no Load method - ignore
                     }
-                } else {
-                    object_destination[key] := value
                 }
+            } else {
+                object_destination[key] := value
             }
         }
     }
