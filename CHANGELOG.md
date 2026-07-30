@@ -1,11 +1,11 @@
 # ZipChord Changelog
 
-## ZipChord 2.9.2 (Unreleased changes)
+## ZipChord 2.9.2
 
 **Improvements and Fixes**
 
-- The "Keyboard and language settings" now have explicit user-definable Numerals fields for keys that produce numbers (which have been used for correct smart spacing, but assumed US English layout until now). (#272)
-- Hints now show the chord shortcut with keys in the same order as in the dictionary when using the compiled library. (#284)
+- The "Keyboard and language settings" now has user-definable Numerals fields to define keys that produce numbers. (This has been used for correct smart space handling, but assumed US English layout until now). (#272)
+- Hints now show the chord shortcut with key symbols in their original order (as listed in the dictionary) when using the compiled library. (#284)
 - Intentionally blank punctuation inputs in "Keyboard and language settings" are now correctly treated as blank rather than use their default values. (#286)    
 
 ## ZipChord 2.9.1
