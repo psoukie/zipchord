@@ -269,13 +269,13 @@ Class clsLocaleInterface {
     options := { remove_space_plain: { type: "Edit"}
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
-            , numerals_plain: { type: "Edit"}
             , other_plain:        { type: "Edit"}
+            , numerals_plain: { type: "Edit"}
             , remove_space_shift: { type: "Edit"}
             , space_after_shift:  { type: "Edit"}
             , capitalizing_shift: { type: "Edit"}
-            , numerals_shift: { type: "Edit"}
-            , other_shift:        { type: "Edit"}}
+            , other_shift:        { type: "Edit"}
+            , numerals_shift: { type: "Edit"}}
 
 
     Build() {
@@ -303,7 +303,7 @@ Class clsLocaleInterface {
         }
 
         UI.Font("s10", "Segoe UI")
-        UI.Add(this.controls.punctuation_group, "xs-50 y+40 h220 w490 Section")
+        UI.Add(this.controls.punctuation_group, "xs-50 y+40 h255 w490 Section")
         UI.Font("s10 w600", "Segoe UI")
         UI.Add("Text", "xs+160 yp+30", "Unmodified keys")
         UI.Add("Text", "xs+330 yp", "If Shift was pressed")
@@ -311,19 +311,19 @@ Class clsLocaleInterface {
         UI.Add("Text", "xs+15 yp+30 Section", "Remove space before")
         UI.Add("Text", "y+20", "Follow by a space")
         UI.Add("Text", "y+20", "Capitalize after")
-        UI.Add("Text", "y+20", "Numerals")
         UI.Add("Text", "y+20", "Other")
+        UI.Add("Text", "y+20", "Numerals")
         UI.Font("s10", "Consolas")
         UI.Add(this.options.remove_space_plain, "xs+140 ys Section w145 r1")
         UI.Add(this.options.space_after_plain, "xs w145 r1")
         UI.Add(this.options.capitalizing_plain, "xs w145 r1")
-        UI.Add(this.options.numerals_plain, "xs w145 r1")
         UI.Add(this.options.other_plain, "xs w145 r1")
+        UI.Add(this.options.numerals_plain, "xs w145 r1")
         UI.Add(this.options.remove_space_shift, "xs+170 ys Section w145 r1")
         UI.Add(this.options.space_after_shift, "xs w145 r1")
         UI.Add(this.options.capitalizing_shift, "xs w145 r1")
-        UI.Add(this.options.numerals_shift, "xs w145 r1")
         UI.Add(this.options.other_shift, "xs w145 r1")
+        UI.Add(this.options.numerals_shift, "xs w145 r1")
         UI.Font("s10", "Segoe UI")
         UI.Add(this.controls.btn_detect, "xs-320 y+40 w120 Section")
         UI.Add(this.controls.btn_apply, "x+170 w80")
