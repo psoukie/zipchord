@@ -14,7 +14,7 @@ if ( ! InStr(FileExist(build_dir), "D"))
     FileCreateDir, % build_dir
 
 build_artifacts := ["zipchord.exe", "zipchord-lib.dll", "uninstall.exe", "zipchord-install.exe", "result.txt"
-                  , "zipchord-exe-*.zip", "zipchord-install-*.zip"]
+                  , "zipchord-exe-*.zip", "zipchord-install-*.zip", "zipchord-library-*.zip"]
 For _, artifact in build_artifacts {
     FileDelete, % build_dir . "\\" . artifact
 }
@@ -34,6 +34,7 @@ RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out "%installer_exe%" /icon
 
 Zip(zipchord_exe, build_dir . "\zipchord-exe-" . zc_version . ".zip")
 Zip(installer_exe, build_dir . "\zipchord-install-" . zc_version . ".zip")
+Zip(zipchord_dll, build_dir . "\zipchord-library-" . zc_version . ".zip")
 
 FileRead, result, % result_file
 MsgBox, % result
