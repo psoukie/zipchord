@@ -1,3 +1,3 @@
 package zipchord_library
 
-ZC_VERSION :: "2.9.2"
+ZC_VERSION :: "2.10.0-dev"
