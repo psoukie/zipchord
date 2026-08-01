@@ -362,12 +362,6 @@ Class clsIOrepresentation {
             io_new_tokens.Push(token)
         }
              
-        ; If Shift is allowed as a separate key in chords, we add it as part of the sequence.
-        if (settings.chording & CHORD_ALLOW_SHIFT && io_chord.with_shift) {
-            accum_input := "+" . accum_input
-            io_chord.with_shift := false
-        }
-    
         ; Sort to allow matching against chord dictionaries        
         if (dll.available) {
             io_chord.candidate := dll.NormalizeChord(accum_input)
@@ -1198,7 +1192,7 @@ Class clsIOrepresentation {
             }
 
             if (token.type == TokenType.PUNCTUATION) {
-                ; exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
+                ; TK - 2.10 - exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
                 SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
                 SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
                 io_edits.Push(SC_prefix . "{" . SC_key . "}")
@@ -1226,6 +1220,7 @@ Class clsIOrepresentation {
             }
 
             SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
+            ; TK - 2.10
             SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
             io_edits.Push(SC_prefix . "{" . SC_key . "}")
         }
