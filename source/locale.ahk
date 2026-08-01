@@ -439,6 +439,7 @@ Class clsLocaleInterface {
     Close() {
         global app_settings
 
+        this.UI.Hide()
         if (! app_settings.IsStaticMode()) {
             LocaleSwitchToLayout(kb.current_layout_name)
         } else {
@@ -447,7 +448,6 @@ Class clsLocaleInterface {
         WireHotkeys("On")  ; resume processing key presses
         main_UI.UpdateLocaleProfileInMainUI()
         main_UI.UI.Enable()
-        this.UI.Hide()
     }
 
     _Detect() {
