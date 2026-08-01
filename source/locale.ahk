@@ -13,11 +13,15 @@ Class clsKeyMap {
         label := ""
         SC := 0
         symbol := ""
+        char_plain := ""
+        char_with_shift := ""
 
-        __New(label := "", SC := "", symbol := "") {
+        __New(label := "", SC := "", symbol := "", char_plain := "", char_with_shift := "") {
             this.label := label
             this.SC := SC
             this.symbol := symbol
+            this.char_plain := char_plain
+            this.char_with_shift := char_with_shift
         }
     }
 
@@ -57,7 +61,11 @@ Class clsKeyMap {
         loop % this.KEY_LIST.Length() {
             i := A_Index
             name := this.KEY_LIST[i]
-            km := new this.clsKeyMapping(name, this.SCAN_CODES[i], symbols[i])
+            suggestion := symbols[i]
+            km := new this.clsKeyMapping(name, this.SCAN_CODES[i]
+                    , suggestion.plain
+                    , suggestion.plain
+                    , suggestion.with_shift)
             this[name] := km
         }
     }
@@ -88,13 +96,9 @@ Class clsKeyMap {
         }
     }
 
-    ; Suggest symbols based on the currently active Windows keyboard layout.
+    ; Suggest plain and Shift-produced characters based on the active Windows keyboard layout.
     _SuggestSymbolsFromActiveLayout() {
-        static MAPVK_VSC_TO_VK_EX := 3
         symbols_out := []
-        ; Reusable buffers
-        VarSetCapacity(keyState, 256, 0)      ; BYTE[256]
-        VarSetCapacity(outBuf,   32*2,  0)    ; WCHAR[32] (64 bytes on Unicode)
 
         hkl := kb.GetForegroundHkl()
         if (!hkl) {
@@ -107,37 +111,65 @@ Class clsKeyMap {
             if (!sc)
                 sc := GetKeySC(name)
             if (!sc) {
-                symbols_out.Push("")
+                symbols_out.Push({plain: "", with_shift: ""})
                 continue
             }
 
-            ; Map SC->VK once
-            vk := DllCall("user32\MapVirtualKeyEx", "UInt", sc, "UInt", MAPVK_VSC_TO_VK_EX, "Ptr", hkl, "UInt")
-
-            ; Reset keyboard state (no modifiers) for this key
-            DllCall("RtlZeroMemory", "Ptr", &keyState, "Ptr", 256)
-
-            ; First translation
-            ret := DllCall("user32\ToUnicodeEx"
-                , "UInt", vk, "UInt", sc, "Ptr", &keyState
-                , "Str", outBuf, "Int", 32  ; cch (WCHAR)
-                , "UInt", 0, "Ptr", hkl, "Int")
-
-            if (ret == -1) {
-                ; Dead key: clear dead state and treat as no character
-                DllCall("user32\ToUnicodeEx"
-                    , "UInt", vk, "UInt", sc, "Ptr", &keyState
-                    , "Str", "", "Int", 0, "UInt", 0, "Ptr", hkl)
-                suggested := ""
-            } else if (ret > 0) {
-                suggested := SubStr(outBuf, 1, ret)
-            } else {
-                suggested := ""
-            }
-
-            symbols_out.Push(suggested)
+            symbols_out.Push({plain: this._TranslateScanCode(sc, hkl)
+                    , with_shift: this._TranslateScanCode(sc, hkl, true)})
         }
         return symbols_out
+    }
+
+    ; Return the character produced by a scan code with the specified Shift state.
+    _TranslateScanCode(sc, hkl, with_shift := false) {
+        MAPVK_VSC_TO_VK_EX := 3
+        VK_SHIFT := 0x10
+
+        vk := DllCall("user32\MapVirtualKeyEx"
+                , "UInt", sc, "UInt", MAPVK_VSC_TO_VK_EX, "Ptr", hkl
+                , "UInt")
+        if (!vk) {
+            return ""
+        }
+
+        VarSetCapacity(keyState, 256, 0)      ; BYTE[256]
+        if (with_shift) {
+            NumPut(0x80, keyState, VK_SHIFT, "UChar")
+        }
+        VarSetCapacity(outBuf, 32 * 2, 0)     ; WCHAR[32]
+
+        ret := DllCall("user32\ToUnicodeEx"
+                , "UInt", vk, "UInt", sc, "Ptr", &keyState, "Ptr", &outBuf
+                , "Int", 32, "UInt", 0, "Ptr", hkl
+                , "Int")
+
+        if (ret < 0) {
+            ; ToUnicodeEx stores dead-key state internally; clear it before translating another key.
+            this._ClearDeadKeyState(hkl)
+            return ""
+        }
+        return (ret > 0) ? StrGet(&outBuf, ret, "UTF-16") : ""
+    }
+
+    _ClearDeadKeyState(hkl) {
+        MAPVK_VK_TO_VSC_EX := 4
+        VK_SPACE := 0x20
+
+        space_sc := DllCall("user32\MapVirtualKeyEx"
+                , "UInt", VK_SPACE, "UInt", MAPVK_VK_TO_VSC_EX, "Ptr", hkl
+                , "UInt")
+        VarSetCapacity(keyState, 256, 0)
+        VarSetCapacity(outBuf, 32 * 2, 0)
+
+        ; Translating Space consumes the pending dead key.
+        ret := DllCall("user32\ToUnicodeEx"
+                , "UInt", VK_SPACE, "UInt", space_sc, "Ptr", &keyState
+                , "Ptr", &outBuf, "Int", 32, "UInt", 0, "Ptr", hkl
+                , "Int")
+        if (ret < 0) {
+            MsgBox, , % "ZipChord Error", % "Encountered an error while trying to clear a dead key."
+        }
     }
 }
 
