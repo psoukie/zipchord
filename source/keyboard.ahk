@@ -180,6 +180,73 @@ Class clsOsKeyboard {
         this._hkl_to_name_cache[hkl] := name
         return name
     }
+
+    ; Suggest plain and Shift-produced characters based on the active Windows keyboard layout.
+    SuggestSymbolsFromActiveLayout(scancodes) {
+        symbols_out := []
+
+        hkl := this.GetForegroundHkl()
+        if (!hkl) {
+            hkl := DllCall("user32.dll\GetKeyboardLayout", "UInt", 0, "Ptr")
+        }
+
+        for _, sc in scancodes {
+            symbols_out.Push({plain: this._TranslateScanCode(sc, hkl)
+                    , with_shift: this._TranslateScanCode(sc, hkl, true)})
+        }
+        return symbols_out
+    }
+
+    ; Return the character produced by a scan code with the specified Shift state.
+    _TranslateScanCode(sc, hkl, with_shift := false) {
+        MAPVK_VSC_TO_VK_EX := 3
+        VK_SHIFT := 0x10
+
+        vk := DllCall("user32\MapVirtualKeyEx"
+                , "UInt", sc, "UInt", MAPVK_VSC_TO_VK_EX, "Ptr", hkl
+                , "UInt")
+        if (!vk) {
+            return ""
+        }
+
+        VarSetCapacity(keyState, 256, 0)      ; BYTE[256]
+        if (with_shift) {
+            NumPut(0x80, keyState, VK_SHIFT, "UChar")
+        }
+        VarSetCapacity(outBuf, 32 * 2, 0)     ; WCHAR[32]
+
+        ret := DllCall("user32\ToUnicodeEx"
+                , "UInt", vk, "UInt", sc, "Ptr", &keyState, "Ptr", &outBuf
+                , "Int", 32, "UInt", 0, "Ptr", hkl
+                , "Int")
+
+        if (ret < 0) {
+            ; ToUnicodeEx stores dead-key state internally; clear it before translating another key.
+            this._ClearDeadKeyState(hkl)
+            return ""
+        }
+        return (ret > 0) ? StrGet(&outBuf, ret, "UTF-16") : ""
+    }
+
+    _ClearDeadKeyState(hkl) {
+        MAPVK_VK_TO_VSC_EX := 4
+        VK_SPACE := 0x20
+
+        space_sc := DllCall("user32\MapVirtualKeyEx"
+                , "UInt", VK_SPACE, "UInt", MAPVK_VK_TO_VSC_EX, "Ptr", hkl
+                , "UInt")
+        VarSetCapacity(keyState, 256, 0)
+        VarSetCapacity(outBuf, 32 * 2, 0)
+
+        ; Translating Space consumes the pending dead key.
+        ret := DllCall("user32\ToUnicodeEx"
+                , "UInt", VK_SPACE, "UInt", space_sc, "Ptr", &keyState
+                , "Ptr", &outBuf, "Int", 32, "UInt", 0, "Ptr", hkl
+                , "Int")
+        if (ret < 0) {
+            MsgBox, , % "ZipChord Error", % "Encountered an error while trying to clear a dead key."
+        }
+    }
 }
 
 global kb := new clsOsKeyboard
