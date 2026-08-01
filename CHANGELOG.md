@@ -1,5 +1,15 @@
 # ZipChord Changelog
 
+## ZipChord 2.10 - Unreleased Changes
+
+**Improvements and Fixes**
+
+- Small under-the hood optimizations (in updating and applying the keyboard and langauguge UI, and handling of typing with capitalization within words)
+
+**Breaking Change**
+
+- The deprecated "Allow Shift in chords" feature was removed. See <https://github.com/psoukie/zipchord/issues/277> for rationale and a suggested workaround.
+
 ## ZipChord 2.9.2
 
 **Improvements and Fixes**
