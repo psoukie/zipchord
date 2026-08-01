@@ -26,12 +26,12 @@ Class clsKeyMap {
     }
 
     ; Ordered list of physical keys
-    KEY_LIST := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
+    KEY_LABELS := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
         , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
         , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
         , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
 
-    SCAN_CODES := [0x29, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D
+    KEY_SCAN_CODES := [0x29, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D
           , 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x2B
           , 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
           , 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35]
@@ -55,14 +55,14 @@ Class clsKeyMap {
 
     __New() {
         ; Build default scan-code to symbols mapping
-        symbols := kb.SuggestSymbolsFromActiveLayout(this.SCAN_CODES)
+        symbols := kb.SuggestSymbolsFromActiveLayout(this.KEY_SCAN_CODES)
 
         ; populate entries keyed by name (this["Q"] := km)
-        loop % this.KEY_LIST.Length() {
+        loop % this.KEY_LABELS.Length() {
             i := A_Index
-            name := this.KEY_LIST[i]
+            name := this.KEY_LABELS[i]
             suggestion := symbols[i]
-            km := new this.clsKeyMapping(name, this.SCAN_CODES[i]
+            km := new this.clsKeyMapping(name, this.KEY_SCAN_CODES[i]
                     , suggestion.plain
                     , suggestion.plain
                     , suggestion.with_shift)
@@ -71,14 +71,14 @@ Class clsKeyMap {
     }
 
     Keys() {
-       return this.KEY_LIST
+       return this.KEY_LABELS
     }
 
     ; Save only symbols to INI (km_<name>)
     Save(section, ini_filename) {
-        loop % this.KEY_LIST.Length() {
+        loop % this.KEY_LABELS.Length() {
             i := A_Index
-            name := this.KEY_LIST[i]
+            name := this.KEY_LABELS[i]
             save_as := (name == "=") ? "eq" : name
             ini.SaveProperty(this[name].symbol, "_km_" . save_as, section, ini_filename)
         }
@@ -86,9 +86,9 @@ Class clsKeyMap {
 
     ; Load symbols from INI and override defaults
     Load(section, ini_filename) {
-        loop % this.KEY_LIST.Length() {
+        loop % this.KEY_LABELS.Length() {
             i := A_Index
-            name := this.KEY_LIST[i]
+            name := this.KEY_LABELS[i]
             load_as := (name == "=") ? "eq" : name
             sym := ini.LoadProperty("_km_" . load_as, section, ini_filename)
             if (IsObject(this[name]))
@@ -519,6 +519,8 @@ ProcessLayoutChange(layout_name) {
         locale_UI.LocaleProcessLayoutChange(layout_name)
         return
     }
+
+    kb.RefreshKeySymbols()
 
     if (app_settings.IsStaticMode()) {
         return
