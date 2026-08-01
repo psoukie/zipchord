@@ -960,6 +960,11 @@ Class clsIOrepresentation {
                 || (prev_type == TokenType.EXPANSION && !(prev_attribs & TokenAttribs.IS_PREFIX)) ) {
             return
         }
+
+        ; Ignore strings such as USD, or aptX
+        if ( this._DetectShiftWithin(first_token_id + 1, LastTokenId() + offset) ) {
+            return
+        }
         
         expanded := shorthands.LookUp(text)
         if (! expanded) {
@@ -977,10 +982,7 @@ Class clsIOrepresentation {
             expanded := RegExReplace(expanded, "(^.)", "$U1")
             io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
         }
-        ; Ignore strings such as USD, or aptX
-        if ( this._DetectShiftWithin(first_token_id + 1, LastTokenId() + offset) ) {
-            return
-        }
+
         affixes := this._DetectAffixes(expanded)
         capitalizes_next := this._DetectCapitalizesNext(expanded)
         expanded := this._RemoveCapitalizesNextSymbol(expanded)
