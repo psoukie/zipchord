@@ -5,7 +5,7 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 
-Class clsKey {
+Class clsEvent {
     key := 0
     with_shift := false
     start := 0
@@ -55,8 +55,8 @@ global TokenType := new clsTokenTypeEnum
 global TokenAttribs := new clsTokenAttribsBitSet
 global AffixPos := new clsAffixBitSet
 
-global io_keys := []         ; window of overlapping key events 
-global io_keys_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+global io_events := []         ; window of overlapping key events 
+global io_events_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 first_lift := 0              ; acts as a union of bool (0 - false), and int for first lifted key index 
 
 global io_tokens := []       ; window of tokenized input
@@ -230,16 +230,16 @@ Class clsIOrepresentation {
     expansion_in_last_get := false
 
 
-    IOKeysReset() {
+    IOEventsReset() {
         global first_lift
         
-        io_keys := []
-        io_keys_index := {}
+        io_events := []
+        io_events_index := {}
         first_lift := false
      }
 
     ProcessKey(hotkey, timestamp) {
-        ev := new clsKey
+        ev := new clsEvent
         is_key_down := true
         
         ; translate the hotkey string
@@ -266,41 +266,41 @@ Class clsIOrepresentation {
                 this.pre_shifted := false
             }
             ; ignore if the key is already registered
-            if (io_keys_index.HasKey(ev.key)) {
+            if (io_events_index.HasKey(ev.key)) {
                 return
             }
-            io_keys.Push(ev)
-            io_keys_index[ev.key] := io_keys.Length()
+            io_events.Push(ev)
+            io_events_index[ev.key] := io_events.Length()
         } else {
             ; Process a key up event: look up the event, record lift time, and classify
-            if !(io_keys_index.HasKey(ev.key)) {
+            if !(io_events_index.HasKey(ev.key)) {
                 return
             }
-            index := io_keys_index[ev.key]
-            io_keys_index.Delete(ev.key)
-            if (!index || index > io_keys.Length()) {
+            index := io_events_index[ev.key]
+            io_events_index.Delete(ev.key)
+            if (!index || index > io_events.Length()) {
                 return
             }
-            io_keys[index].end := timestamp
+            io_events[index].end := timestamp
             
             result := this._Classify(timestamp, index)
 
-            if (io_keys_index.Count() == 0 && io_keys.Length() != 0) {
-                this.IOKeysReset()
+            if (io_events_index.Count() == 0 && io_events.Length() != 0) {
+                this.IOEventsReset()
             }
             return result
         }
     }
     
-    _Shift_IO_Keys_Window(count) {
-        io_keys.RemoveAt(1, count)
+    _IOEventsWindowShift(count) {
+        io_events.RemoveAt(1, count)
         
-        for key, index in io_keys_index {
+        for key, index in io_events_index {
             if (index <= count) {
-                io_keys_index.Delete(key)
+                io_events_index.Delete(key)
                 continue
             }
-            io_keys_index[key] := index - count
+            io_events_index[key] := index - count
         }
     }
 
@@ -331,13 +331,13 @@ Class clsIOrepresentation {
         global io_new_tokens
         
         Loop % count {
-            token := this.KeyToToken(io_keys[A_Index])
+            token := this.KeyToToken(io_events[A_Index])
             io_new_tokens.Push(token)
         }
-        if (count == io_keys.Length()) {
-            this.IOKeysReset()
+        if (count == io_events.Length()) {
+            this.IOEventsReset()
         } else {
-            this._Shift_IO_Keys_Window(count)           
+            this._IOEventsWindowShift(count)           
         }
     }
 
@@ -346,11 +346,11 @@ Class clsIOrepresentation {
         global io_new_tokens
         accum_input := ""
 
-        io_length := io_keys.Length()
+        io_length := io_events.Length()
         io_chord.token_count := io_length
         Loop, % io_length
         {
-            key := io_keys[A_Index] 
+            key := io_events[A_Index] 
             accum_input .= key.key
             if (key.with_shift) {
                 io_chord.with_shift := true
@@ -369,16 +369,16 @@ Class clsIOrepresentation {
             io_chord.candidate := str.Arrange(accum_input)
         }
 
-        this.IOKeysReset()
+        this.IOEventsReset()
     }
 
     ; Detect rolling typing
     _IsRollingTyping() {
         global first_lift
-        first_lift_end := io_keys[first_lift].end
-        Loop, % io_keys.Length() - first_lift
+        first_lift_end := io_events[first_lift].end
+        Loop, % io_events.Length() - first_lift
         {
-            if (io_keys[first_lift + A_Index].start > first_lift_end) {
+            if (io_events[first_lift + A_Index].start > first_lift_end) {
                 return true
             }
         }
@@ -398,14 +398,14 @@ Class clsIOrepresentation {
         ; Determine the overlap of the first two keys
         overlap_end := end
         Loop 2 {
-            if (key_end := io_keys[A_Index].end) {
+            if (key_end := io_events[A_Index].end) {
                 overlap_end := Min(overlap_end, key_end)
             }
         }
         ; treat as keys if overlap is too short or we have rolling typing 
-        if (overlap_end - io_keys[2].start <= settings.input_delay
+        if (overlap_end - io_events[2].start <= settings.input_delay
                 || this._IsRollingTyping()) {
-            this.AddKeysToTokens(io_keys.Length())
+            this.AddKeysToTokens(io_events.Length())
         } else {
             this.AddChordToTokens()
         }
@@ -414,11 +414,11 @@ Class clsIOrepresentation {
 
     _ClassifyByPercentage(end, lifted_index) {
         ; test the full buffer then drop earlier keys
-        common_overlap := end - io_keys[io_keys.Length()].start
+        common_overlap := end - io_events[io_events.Length()].start
         
-        end_iter := Min(lifted_index, io_keys.Length() - 1)
+        end_iter := Min(lifted_index, io_events.Length() - 1)
         Loop % end_iter {
-            candidate_span := end - io_keys[A_Index].start
+            candidate_span := end - io_events[A_Index].start
             
             if (candidate_span <= 0) {
                 continue
@@ -431,7 +431,7 @@ Class clsIOrepresentation {
                 return
             }
         }
-        if (lifted_index == io_keys.Length()) {
+        if (lifted_index == io_events.Length()) {
             this.AddKeysToTokens(lifted_index)
         } else {
             this.AddKeysToTokens(end_iter)
@@ -439,8 +439,8 @@ Class clsIOrepresentation {
     }
 
     _Classify(end, lifted_index) {  ; -> bool if keys is empty and ready for token processing
-        if (io_keys.Length() == 1) {
-            ; process a lone key press in io_keys
+        if (io_events.Length() == 1) {
+            ; process a lone key press in io_events
             this.AddKeysToTokens(1)
             return true
         }
@@ -448,7 +448,7 @@ Class clsIOrepresentation {
         ; two or more keys were pressed as a potential chord
         if (settings.chording & CHORD_BY_OVERLAP) {
             this._ClassifyByPercentage(end, lifted_index)
-            return io_keys.Length() == 0
+            return io_events.Length() == 0
         } else {
             return this._ClassifyByDuration(end, lifted_index)
         }
@@ -466,7 +466,7 @@ Class clsIOrepresentation {
     }
 
     ClearTokens(type) {
-        this.IOKeysReset()
+        this.IOEventsReset()
         io_tokens := []
         new_token := new clsToken
 
