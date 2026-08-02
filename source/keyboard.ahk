@@ -183,7 +183,7 @@ Class clsOsKeyboard {
 
     ; Suggest plain and Shift-produced characters based on the active Windows keyboard layout.
     SuggestSymbolsFromActiveLayout(scancodes) {
-        symbols_out := []
+        sc_to_symbols := {}
 
         hkl := this.GetForegroundHkl()
         if (!hkl) {
@@ -191,10 +191,10 @@ Class clsOsKeyboard {
         }
 
         for _, sc in scancodes {
-            symbols_out.Push({plain: this._TranslateScanCode(sc, hkl)
-                    , with_shift: this._TranslateScanCode(sc, hkl, true)})
+            sc_to_symbols[sc] := {plain: this._TranslateScanCode(sc, hkl)
+                    , with_shift: this._TranslateScanCode(sc, hkl, true)}
         }
-        return symbols_out
+        return sc_to_symbols
     }
 
     ; Return the character produced by a scan code with the specified Shift state.

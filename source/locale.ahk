@@ -6,35 +6,26 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 ; Locale settings (keyboard and language settings)
 
-; Key map container class: acts like an associative object but also provides methods.
-Class clsKeyMap {
-    ; inner per-key class
-    Class clsKeyMapping {
-        label := ""
-        SC := 0
-        symbol := ""
-        char_plain := ""
-        char_with_shift := ""
+Class clsKeyProperties {
+    SC := 0
+    symbol := ""
+    char_plain := ""
+    char_with_shift := ""
+}
 
-        __New(label := "", SC := "", symbol := "", char_plain := "", char_with_shift := "") {
-            this.label := label
-            this.SC := SC
-            this.symbol := symbol
-            this.char_plain := char_plain
-            this.char_with_shift := char_with_shift
-        }
-    }
+Class clsKeyMap {
+    keys_by_name := {}
 
     ; Ordered list of physical keys
-    KEY_LABELS := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
-        , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
-        , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
-        , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
+    KEY_NAMES := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
+            , "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\"
+            , "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'"
+            , "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]
 
     KEY_SCAN_CODES := [0x29, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D
-          , 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x2B
-          , 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
-          , 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35]
+            , 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x2B
+            , 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
+            , 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35]
 
     NUMPAD_MAPPING := { 0x52: {symbol: "⓪", ahk: "Numpad0"}
             , 0x4F: {symbol: "①", ahk: "Numpad1"}
@@ -52,47 +43,48 @@ Class clsKeyMap {
             , 0x135: {symbol: "⊘", ahk: "NumpadDiv"}
             , 0x053:  {symbol: "⊙", ahk: "NumpadDot"} }
 
-
     __New() {
-        ; Build default scan-code to symbols mapping
+        ; populate keys_by_name with static properties
+        for i, name in this.KEY_NAMES {
+            key_prop := new clsKeyProperties
+            key_prop.SC := this.KEY_SCAN_CODES[i]
+            this.keys_by_name[name] := key_prop
+        }
+        ; add plain and shifted characters and default symbols
+        this.RefreshLayoutChars()
+        this.AssignDefaultSymbols()
+    }
+
+    RefreshLayoutChars() {
+        ; Build or update scan-code to symbols mapping for the current keyboard layout
         symbols := kb.SuggestSymbolsFromActiveLayout(this.KEY_SCAN_CODES)
 
-        ; populate entries keyed by name (this["Q"] := km)
-        loop % this.KEY_LABELS.Length() {
-            i := A_Index
-            name := this.KEY_LABELS[i]
-            suggestion := symbols[i]
-            km := new this.clsKeyMapping(name, this.KEY_SCAN_CODES[i]
-                    , suggestion.plain
-                    , suggestion.plain
-                    , suggestion.with_shift)
-            this[name] := km
+        for _, key_prop  in this.keys_by_name {
+            key_prop.char_plain := symbols[key_prop.SC].plain
+            key_prop.char_with_shift := symbols[key_prop.SC].with_shift
         }
     }
 
-    Keys() {
-       return this.KEY_LABELS
+    AssignDefaultSymbols() {
+        for _, key_prop  in this.keys_by_name {
+            key_prop.symbol := key_prop.char_plain
+        }
     }
 
     ; Save only symbols to INI (km_<name>)
     Save(section, ini_filename) {
-        loop % this.KEY_LABELS.Length() {
-            i := A_Index
-            name := this.KEY_LABELS[i]
+        for name, key_prop in this.keys_by_name {
             save_as := (name == "=") ? "eq" : name
-            ini.SaveProperty(this[name].symbol, "_km_" . save_as, section, ini_filename)
+            ini.SaveProperty(key_prop.symbol, "_km_" . save_as, section, ini_filename)
         }
     }
 
     ; Load symbols from INI and override defaults
     Load(section, ini_filename) {
-        loop % this.KEY_LABELS.Length() {
-            i := A_Index
-            name := this.KEY_LABELS[i]
+        for name, key_prop in this.keys_by_name {
             load_as := (name == "=") ? "eq" : name
-            sym := ini.LoadProperty("_km_" . load_as, section, ini_filename)
-            if (IsObject(this[name]))
-                this[name].symbol := sym
+            symbol := ini.LoadProperty("_km_" . load_as, section, ini_filename)
+            key_prop.symbol := symbol
         }
     }
 }
@@ -151,14 +143,12 @@ Class clsLocale {
         SC_to_symbol_map := {}
         symbol_to_SC_map := {}
 
-        For _, key_name in this.key_map.Keys() {
-            if (this.key_map[key_name].symbol == "") {
+        For _, key_prop in this.key_map.keys_by_name {
+            if (key_prop.symbol == "") {
                 continue
             }
-            SC := this.key_map[key_name].SC
-            symbol := this.key_map[key_name].symbol
-            SC_to_symbol_map[SC] := symbol 
-            symbol_to_SC_map[symbol] := SC
+            SC_to_symbol_map[key_prop.SC] := key_prop.symbol
+            symbol_to_SC_map[key_prop.symbol] := key_prop.SC
         }
 
         For num_SC, num_reps in this.key_map.NUMPAD_MAPPING {
@@ -244,7 +234,7 @@ Class clsLocaleInterface {
         UI.Add(this.controls.kb_group, "xs y+20 h160 w490 Section")
         UI.Font("s10", "Consolas")
 
-        for i, key_name in this.current_key_map.Keys() {
+        for i, key_name in this.current_key_map.KEY_NAMES {
             Switch i {
                 Case 1:
                     format := "xp+20 yp+30 w30 Section"
@@ -333,9 +323,8 @@ Class clsLocaleInterface {
     }
 
     RenderKeyboard() {
-        key_map := this.current_key_map
-        For _, key_name in key_map.Keys() {
-            this.controls[key_name].value := key_map[key_name].symbol
+        For key_name, key_prop in this.current_key_map.keys_by_name {
+            this.controls[key_name].value := key_prop.symbol
         }
     }
 
@@ -347,28 +336,24 @@ Class clsLocaleInterface {
         this._Save()
         this.Close()
     }
-    _OnKeyClick(name) {
-        key_map := this.current_key_map
-        Prompt := "Type a character to represent the key " . name
-        InputBox, mapped, % "Set mapping for " . name, %Prompt%, , 300, 120
-        if (ErrorLevel)
+    _OnKeyClick(def_name) {
+        Prompt := "Type a character to represent the key " . def_name
+        InputBox, mapped, % "Set mapping for " . def_name, %Prompt%, , 300, 120
+        if (ErrorLevel) {
             return
+        }
         mapped := Trim(mapped)
 
         ; Update key_map and remove duplicates
-        if (IsObject(key_map)) {
-            ; remove any other key that already uses this symbol
-            for _, k in key_map.Keys() {
-                if (k != name && IsObject(key_map[k]) && key_map[k].symbol == mapped) {
-                    key_map[k].symbol := ""
-                    this.controls[k].value := ""  ; update UI button label too
-                }
+        for name, key_prop in this.current_key_map.keys_by_name {
+            if (name != def_name && key_prop.symbol == mapped) {
+                key_prop.symbol := ""
+                this.controls[name].value := ""  ; update UI button name
             }
-            if (IsObject(key_map[name]))
-                key_map[name].symbol := mapped
         }
+        this.current_key_map.keys_by_name[def_name].symbol := mapped
         ; Update UI button label
-        this.controls[name].value := mapped
+        this.controls[def_name].value := mapped
     }
 
     _Save() {
@@ -508,6 +493,7 @@ ApplyLocaleToRuntime() {
         shorthands.Load(settings.shorthand_file)
     }
     locale.RefreshScanCodeMapping()
+    locale.key_map.RefreshLayoutChars()
     UI_SyncModeState()
 }
 
@@ -520,9 +506,8 @@ ProcessLayoutChange(layout_name) {
         return
     }
 
-    kb.RefreshKeySymbols()
-
     if (app_settings.IsStaticMode()) {
+        locale.key_map.RefreshLayoutChars()
         return
     }
 
