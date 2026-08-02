@@ -335,21 +335,22 @@ Class clsStringFunctions {
         }
     }
 
-    ; Convert to ASCII
+    ; Convert to ASCII -- TK - should be able to replace in 2.10
     ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
     ToAscii(Key, Modifiers := "") {
         VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
-        ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:50:51 AM ; var is assigned but never used.
         VK := GetKeyVK(Key)
-        ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:51:05 AM ; var is assigned but never used.
         SC := GetKeySC(Key)
         VarSetCapacity(ModStates, 256, 0)
-        For _, Modifier In Modifiers
-            If VK_MOD.HasKey(Modifier)
+        For _, Modifier In Modifiers {
+            If VK_MOD.HasKey(Modifier) {
                 NumPut(0x80, ModStates, VK_MOD[Modifier], "UChar")
+            }
+        }
         DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
         Return Chr(Ascii)
     }
+    
     /** Ellipsisize
     *        text         String to shorten.
     *        limit        Limit in pixel length.
