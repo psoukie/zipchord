@@ -350,7 +350,7 @@ Class clsStringFunctions {
         DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
         Return Chr(Ascii)
     }
-    
+
     /** Ellipsisize
     *        text         String to shorten.
     *        limit        Limit in pixel length.
@@ -689,18 +689,29 @@ class clsUpdater {
 QPC() {
 	static frequency
     static start
-    if (! frequency)
+
+    if (A_Args[2] != "test-vs") {
+        return
+    }
+
+    if (! frequency) {
         DllCall("kernel32\QueryPerformanceFrequency", Int64P, frequency)
+    }
 	DllCall("kernel32\QueryPerformanceCounter", Int64P, count)
     if (start) {
         OutputDebug, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
-        ; MsgBox, , QPC, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
         start := 0
-    } else start := count / frequency
+    } else {
+        start := count / frequency
+    }
 }
 
 ; Simple debug helper
 Debug(s) {
+    if (A_Args[2] != "test-vs") {
+        return
+    }
+
     FormatTime, timestamp,, HH:mm:ss
     OutputDebug, % timestamp . "." . A_MSec . ":  " . s . "`n"
 }

@@ -67,18 +67,21 @@ io_prev_tokens := []
 Shift_key() {
     global io
     Critical
+
     if (A_PriorHotkey != "~Shift") {
+        Critical Off
         return
     }
+
     key := "*Shift*"
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
         }
-    }
-    if (visualizer.IsOn()) {
-        visualizer.Pressed("+", false)
-        visualizer.Lifted("+", false)
+        if (visualizer.IsOn()) {
+            visualizer.Pressed("+", false)
+            visualizer.Lifted("+", false)
+        }
     }
     io.PreShift()
     Critical Off
@@ -96,8 +99,9 @@ KeyDown() {
     key := locale.SCHotkeyToSymbolHotkey(A_ThisHotkey)
     if (key == "") {
         Critical Off
-        Return
+        return
     }
+
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := locale.SCHotkeyToSymbolHotkey(test_key)
@@ -107,19 +111,20 @@ KeyDown() {
             test.Log(key, true)
             test.Log(key)
         }
-    }
-    if (visualizer.IsOn()) {
-        modified_key := StrReplace(key, "Space", " ")
-        if (SubStr(modified_key, 1, 1) == "~")
-            modified_key := SubStr(modified_key, 2)
-        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
-        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
-            shifted := true
-            modified_key := SubStr(modified_key, 2)
-        } else {
-            shifted := false
+        if (visualizer.IsOn()) {
+            modified_key := StrReplace(key, "Space", " ")
+            if (SubStr(modified_key, 1, 1) == "~") {
+                modified_key := SubStr(modified_key, 2)
+            }
+            ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
+            if (StrLen(modified_key) > 1 && SubStr(modified_key, 1, 1) == "+" ) {
+                shifted := true
+                modified_key := SubStr(modified_key, 2)
+            } else {
+                shifted := false
+            }
+            visualizer.Pressed(modified_key, shifted)
         }
-        visualizer.Pressed(modified_key, shifted)
     }
     ; QPC()
     io.ProcessKey(key, tick)
@@ -136,6 +141,7 @@ KeyUp() {
         Critical Off
         Return
     }
+
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             tick_up := test_timestamp
@@ -144,18 +150,19 @@ KeyUp() {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
         }
-    }
-    if (visualizer.IsOn()) {
-        modified_key := StrReplace(key, "Space", " ")
-        if (SubStr(modified_key, 1, 1) == "~")
-            modified_key := SubStr(modified_key, 2)
-        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
-            shifted := true
-            modified_key := SubStr(modified_key, 2)
-        } else {
-            shifted := false
+        if (visualizer.IsOn()) {
+            modified_key := StrReplace(key, "Space", " ")
+            if (SubStr(modified_key, 1, 1) == "~") {
+                modified_key := SubStr(modified_key, 2)
+            }
+            if (StrLen(modified_key) > 1 && SubStr(modified_key, 1, 1) == "+") {
+                shifted := true
+                modified_key := SubStr(modified_key, 2)
+            } else {
+                shifted := false
+            }
+            visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
         }
-        visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
     }
     ; QPC()
     if (io.ProcessKey(key, tick_up)) {
@@ -205,17 +212,17 @@ HandleBackspace(with_ctrl := false) {
     Critical
     key  := with_ctrl ? "~^Backspace" : "~Backspace"
 
-    if (A_Args[1] = "dev") {
+    if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
             test.Log(key)
         }
-    }
 
-    if (visualizer.IsOn()) {
-        sym := Chr(0x232B)
-        visualizer.Pressed(sym, false)
-        visualizer.Lifted(sym, false)
+        if (visualizer.IsOn()) {
+            sym := Chr(0x232B)
+            visualizer.Pressed(sym, false)
+            visualizer.Lifted(sym, false)
+        }
     }
 
     io.Backspace(with_ctrl)
@@ -475,7 +482,7 @@ Class clsIOrepresentation {
         } else {
             new_token.type := TokenType.INTERRUPT
         }
-        if (visualizer.IsOn()) {
+        if (A_Args[1] == "dev" && visualizer.IsOn()) {
             visualizer.NewLine()
         }
         io_tokens.Push(new_token)
@@ -1230,21 +1237,22 @@ Class clsIOrepresentation {
 
     _SendOutput(edit) {
         SendInput % edit
-        if (settings.output_delay && test.mode != TEST_RUNNING) {
+        if (settings.output_delay && (A_Args[1] != "dev" || test.mode != TEST_RUNNING)) {
             Sleep settings.output_delay
         }
     }
     
     ProcessEdits(edits) {
         for _, edit in edits {
-            if (A_Args[1] != "dev") {
-                this._SendOutput(edit)
-            } else {
+            if (A_Args[1] == "dev") {
                 test.Log(edit)
                 if (test.mode != TEST_RUNNING) {
                     this._SendOutput(edit)
                 }
+                continue
             }
+
+            this._SendOutput(edit)
         }
     }
 }

@@ -46,7 +46,7 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
 
-; Warnings for development only
+; Warnings are enabled for development only
 ; #Warn All, OutputDebug
 
 #Include version.ahk
@@ -96,10 +96,8 @@ symbol_to_SC_map := {} ; reverse map
 ahk_numpad_to_symbol_map := {} 
 
 
-if (A_Args[1] == "dev") {
-    #Include *i visualizer.ahk
-    #Include *i testing.ahk
-}
+#Include *i visualizer.ahk
+#Include *i testing.ahk
 
 #Include keyboard.ahk
 #Include configurations.ahk
