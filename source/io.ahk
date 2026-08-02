@@ -6,6 +6,7 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 
 Class clsEvent {
+    SC := 0
     key := 0
     with_shift := false
     start := 0
@@ -39,10 +40,11 @@ Class clsAffixBitSet {
 }
 
 Class clsToken {
-    type    := 0     ; of clsTokenType 
-    input   := ""
-    output  := ""
-    attribs := 0     ; of clsAttribs
+    type            := 0     ; of clsTokenType
+    typed_char      := ""
+    input           := ""
+    output          := ""
+    attribs         := 0     ; of clsAttribs
 }
 
 Class clsChordCandidate {
@@ -246,6 +248,7 @@ Class clsIOrepresentation {
      }
 
     ProcessKey(hotkey, timestamp) {
+        global symbol_to_SC_map
         ev := new clsEvent
         is_key_down := true
         
@@ -262,19 +265,22 @@ Class clsIOrepresentation {
             is_key_down := false
             ev.key := SubStr(ev.key, 1, StrLen(ev.key) - 3)
         }
-
+        if (symbol_to_SC_map.HasKey(ev.key)) {
+            ev.SC := symbol_to_SC_map[ev.key]
+        }
         ev.key := (StrLen(ev.key) > 1) ? "{" . ev.key . "}" : ev.key
 
         if (is_key_down) {
+            ; ignore if the key is already registered
+            if (io_events_index.HasKey(ev.key)) {
+                Debug("returning due to already registered key")
+                return
+            }
             ; Process a key down event
             ev.start := timestamp
             if (this.pre_shifted) {
                 ev.with_shift := true
                 this.pre_shifted := false
-            }
-            ; ignore if the key is already registered
-            if (io_events_index.HasKey(ev.key)) {
-                return
             }
             io_events.Push(ev)
             io_events_index[ev.key] := io_events.Length()
@@ -288,10 +294,9 @@ Class clsIOrepresentation {
             if (!index || index > io_events.Length()) {
                 return
             }
-            io_events[index].end := timestamp
-            
-            result := this._Classify(timestamp, index)
 
+            io_events[index].end := timestamp
+            result := this._Classify(timestamp, index)
             if (io_events_index.Count() == 0 && io_events.Length() != 0) {
                 this.IOEventsReset()
             }
@@ -315,6 +320,16 @@ Class clsIOrepresentation {
         token := new clsToken
         entry := "" . key.key
         token.input := entry
+
+        ; Process Space and NumPad
+        if (entry == " ") {
+            token.typed_char := entry
+        } else if (InStr("⓪①②③④⑤⑥⑦⑧⑨⊕⊖⊗⊘⊙", entry)) {
+            token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
+        } else {
+            key_prop := locale.key_map.keys_by_SC[key.SC]
+            token.typed_char := key.with_shift ? key_prop.char_with_shift : key_prop.char_plain
+        }
         if (key.with_shift) {
             token.attribs |= TokenAttribs.WITH_SHIFT
             token.output := str.ToAscii(entry, ["Shift"])
@@ -331,6 +346,7 @@ Class clsIOrepresentation {
                 || (key.with_shift && (InStr(locale.numerals_shift, entry))) ) {
             token.type := TokenType.NUMERAL
         }
+        Debug("Typed char: " . token.typed_char)
         return token
     }
 
@@ -732,7 +748,7 @@ Class clsIOrepresentation {
     }
 
     _CapitalizeTypingAsNeeded(token) {
-        character := token.input
+        character := token.typed_char
         if (StrLen(character) != 1) {
             return
         }

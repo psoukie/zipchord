@@ -4,7 +4,9 @@
 
 **Improvements and Fixes**
 
-- Small under-the hood optimizations (in updating and applying the keyboard and langauguge UI, and handling of typing with capitalization within words)
+- Modified the locale and input-output engine to include typed character information in preparation for semantic punctuation handling.
+- Under-the-hood optimizations in updating and applying the keyboard and langauguge UI, and handling of typing with capitalization within words.
+
 
 **Breaking Change**
 

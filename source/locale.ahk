@@ -8,13 +8,14 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 Class clsKeyProperties {
     SC := 0
+    NAME := ""
     symbol := ""
     char_plain := ""
     char_with_shift := ""
 }
 
 Class clsKeyMap {
-    keys_by_name := {}
+    keys_by_SC := {}
 
     ; Ordered list of physical keys
     KEY_NAMES := ["``", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="
@@ -27,28 +28,29 @@ Class clsKeyMap {
             , 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28
             , 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35]
 
-    NUMPAD_MAPPING := { 0x52: {symbol: "⓪", ahk: "Numpad0"}
-            , 0x4F: {symbol: "①", ahk: "Numpad1"}
-            , 0x50: {symbol: "②", ahk: "Numpad2"}
-            , 0x51: {symbol: "③", ahk: "Numpad3"}
-            , 0x4B: {symbol: "④", ahk: "Numpad4"}
-            , 0x4C: {symbol: "⑤", ahk: "Numpad5"}
-            , 0x4D: {symbol: "⑥", ahk: "Numpad6"}
-            , 0x47: {symbol: "⑦", ahk: "Numpad7"}
-            , 0x48: {symbol: "⑧", ahk: "Numpad8"}
-            , 0x49: {symbol: "⑨", ahk: "Numpad9"}
-            , 0x4E: {symbol: "⊕", ahk: "NumpadAdd"}
-            , 0x4A: {symbol: "⊖", ahk: "NumpadSub"}
-            , 0x37: {symbol: "⊗", ahk: "NumpadMult"}
-            , 0x135: {symbol: "⊘", ahk: "NumpadDiv"}
-            , 0x053:  {symbol: "⊙", ahk: "NumpadDot"} }
+    NUMPAD_MAPPING := { 0x52: {symbol: "⓪", ahk: "Numpad0", output: "0"}
+            , 0x4F: {symbol: "①", ahk: "Numpad1", output: "1"}
+            , 0x50: {symbol: "②", ahk: "Numpad2", output: "2"}
+            , 0x51: {symbol: "③", ahk: "Numpad3", output: "3"}
+            , 0x4B: {symbol: "④", ahk: "Numpad4", output: "4"}
+            , 0x4C: {symbol: "⑤", ahk: "Numpad5", output: "5"}
+            , 0x4D: {symbol: "⑥", ahk: "Numpad6", output: "6"}
+            , 0x47: {symbol: "⑦", ahk: "Numpad7", output: "7"}
+            , 0x48: {symbol: "⑧", ahk: "Numpad8", output: "8"}
+            , 0x49: {symbol: "⑨", ahk: "Numpad9", output: "9"}
+            , 0x4E: {symbol: "⊕", ahk: "NumpadAdd", output: "+"}
+            , 0x4A: {symbol: "⊖", ahk: "NumpadSub", output: "-"}
+            , 0x37: {symbol: "⊗", ahk: "NumpadMult", output: "*"}
+            , 0x135: {symbol: "⊘", ahk: "NumpadDiv", output: "/"}
+            , 0x053:  {symbol: "⊙", ahk: "NumpadDot", output: "."} }
 
     __New() {
-        ; populate keys_by_name with static properties
-        for i, name in this.KEY_NAMES {
+        ; populate keys_by_SC with static properties
+        for i, SC in this.KEY_SCAN_CODES {
             key_prop := new clsKeyProperties
-            key_prop.SC := this.KEY_SCAN_CODES[i]
-            this.keys_by_name[name] := key_prop
+            key_prop.SC := SC
+            key_prop.NAME := this.KEY_NAMES[i]
+            this.keys_by_SC[SC] := key_prop
         }
         ; add plain and shifted characters and default symbols
         this.RefreshLayoutChars()
@@ -59,30 +61,30 @@ Class clsKeyMap {
         ; Build or update scan-code to symbols mapping for the current keyboard layout
         symbols := kb.SuggestSymbolsFromActiveLayout(this.KEY_SCAN_CODES)
 
-        for _, key_prop  in this.keys_by_name {
-            key_prop.char_plain := symbols[key_prop.SC].plain
-            key_prop.char_with_shift := symbols[key_prop.SC].with_shift
+        for SC, key_prop  in this.keys_by_SC {
+            key_prop.char_plain := symbols[SC].plain
+            key_prop.char_with_shift := symbols[SC].with_shift
         }
     }
 
     AssignDefaultSymbols() {
-        for _, key_prop  in this.keys_by_name {
+        for _, key_prop  in this.keys_by_SC {
             key_prop.symbol := key_prop.char_plain
         }
     }
 
     ; Save only symbols to INI (km_<name>)
     Save(section, ini_filename) {
-        for name, key_prop in this.keys_by_name {
-            save_as := (name == "=") ? "eq" : name
+        for _, key_prop in this.keys_by_SC {
+            save_as := (key_prop.NAME == "=") ? "eq" : key_prop.NAME
             ini.SaveProperty(key_prop.symbol, "_km_" . save_as, section, ini_filename)
         }
     }
 
     ; Load symbols from INI and override defaults
     Load(section, ini_filename) {
-        for name, key_prop in this.keys_by_name {
-            load_as := (name == "=") ? "eq" : name
+        for _, key_prop in this.keys_by_SC {
+            load_as := (key_prop.NAME == "=") ? "eq" : key_prop.NAME
             symbol := ini.LoadProperty("_km_" . load_as, section, ini_filename)
             key_prop.symbol := symbol
         }
@@ -143,12 +145,12 @@ Class clsLocale {
         SC_to_symbol_map := {}
         symbol_to_SC_map := {}
 
-        For _, key_prop in this.key_map.keys_by_name {
+        For SC, key_prop in this.key_map.keys_by_SC {
             if (key_prop.symbol == "") {
                 continue
             }
-            SC_to_symbol_map[key_prop.SC] := key_prop.symbol
-            symbol_to_SC_map[key_prop.symbol] := key_prop.SC
+            SC_to_symbol_map[SC] := key_prop.symbol
+            symbol_to_SC_map[key_prop.symbol] := SC
         }
 
         For num_SC, num_reps in this.key_map.NUMPAD_MAPPING {
@@ -323,8 +325,8 @@ Class clsLocaleInterface {
     }
 
     RenderKeyboard() {
-        For key_name, key_prop in this.current_key_map.keys_by_name {
-            this.controls[key_name].value := key_prop.symbol
+        For _, key_prop in this.current_key_map.keys_by_SC {
+            this.controls[key_prop.NAME].value := key_prop.symbol
         }
     }
 
@@ -345,13 +347,14 @@ Class clsLocaleInterface {
         mapped := Trim(mapped)
 
         ; Update key_map and remove duplicates
-        for name, key_prop in this.current_key_map.keys_by_name {
-            if (name != def_name && key_prop.symbol == mapped) {
+        for _, key_prop in this.current_key_map.keys_by_SC {
+            if (key_prop.NAME == def_name) {
+                key_prop.symbol := mapped
+            } else if (key_prop.symbol == mapped) {
                 key_prop.symbol := ""
-                this.controls[name].value := ""  ; update UI button name
+                this.controls[key_prop.NAME].value := ""  ; update UI button name
             }
         }
-        this.current_key_map.keys_by_name[def_name].symbol := mapped
         ; Update UI button label
         this.controls[def_name].value := mapped
     }
