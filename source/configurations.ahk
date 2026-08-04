@@ -98,11 +98,7 @@ Class Configuration {
             MsgBox, , % "ZipChord", % "The specified mapping file could not be found."
             return false
         }
-        Loop, Files, %filename%, F
-        {
-            filename := A_LoopFileFullPath
-            break
-        }
+        filename := this._GetFullPathName(filename)
         SplitPath, filename, , mapping_dir
         Loop, Read, %filename%
         {
@@ -119,6 +115,17 @@ Class Configuration {
         }
         this.use_mapping := true
         hint_UI.ShowOnOSD("Activated automatic", "configuration switching")
+    }
+
+    _GetFullPathName(filename) {
+        buffer_size := 32768
+        VarSetCapacity(full_path, buffer_size * 2, 0)
+        length := DllCall("kernel32.dll\GetFullPathNameW"
+                , "WStr", filename, "UInt", buffer_size, "Ptr", &full_path, "Ptr", 0, "UInt")
+        if (!length || length >= buffer_size) {
+            return filename
+        }
+        return StrGet(&full_path, length, "UTF-16")
     }
 
     DetectAppSwitch() {
