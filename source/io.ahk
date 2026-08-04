@@ -273,7 +273,6 @@ Class clsIOrepresentation {
         if (is_key_down) {
             ; ignore if the key is already registered
             if (io_events_index.HasKey(ev.key)) {
-                Debug("returning due to already registered key")
                 return
             }
             ; Process a key down event
@@ -328,7 +327,7 @@ Class clsIOrepresentation {
             token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
         } else {
             key_prop := locale.key_map.keys_by_SC[key.SC]
-            token.typed_char := key.with_shift ? key_prop.char_with_shift : key_prop.char_plain
+            token.typed_char := key.with_shift ? key_prop.with_shift.char : key_prop.plain.char
         }
         if (key.with_shift) {
             token.attribs |= TokenAttribs.WITH_SHIFT
@@ -346,7 +345,6 @@ Class clsIOrepresentation {
                 || (key.with_shift && (InStr(locale.numerals_shift, entry))) ) {
             token.type := TokenType.NUMERAL
         }
-        Debug("Typed char: " . token.typed_char)
         return token
     }
 

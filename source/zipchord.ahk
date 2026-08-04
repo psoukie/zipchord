@@ -710,7 +710,7 @@ Class clsMainUI {
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
-        locale.Load(settings.locale)
+        locale.LoadForCurrentLayout(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
                 hint_UI.ShowOnOSD("ZipChord Keyboard", "On")

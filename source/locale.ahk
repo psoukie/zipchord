@@ -6,12 +6,21 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 
 ; Locale settings (keyboard and language settings)
 
+Class clsKeySemantics {
+    char := ""
+    is_punctuation := false
+    is_numeral := false
+    removes_space := false
+    adds_space := false
+    capitalizes := false
+}
+
 Class clsKeyProperties {
     SC := 0
     NAME := ""
     symbol := ""
-    char_plain := ""
-    char_with_shift := ""
+    plain := new clsKeySemantics
+    with_shift := new clsKeySemantics
 }
 
 Class clsKeyMap {
@@ -52,25 +61,6 @@ Class clsKeyMap {
             key_prop.NAME := this.KEY_NAMES[i]
             this.keys_by_SC[SC] := key_prop
         }
-        ; add plain and shifted characters and default symbols
-        this.RefreshLayoutChars()
-        this.AssignDefaultSymbols()
-    }
-
-    RefreshLayoutChars() {
-        ; Build or update scan-code to symbols mapping for the current keyboard layout
-        symbols := kb.SuggestSymbolsFromActiveLayout(this.KEY_SCAN_CODES)
-
-        for SC, key_prop  in this.keys_by_SC {
-            key_prop.char_plain := symbols[SC].plain
-            key_prop.char_with_shift := symbols[SC].with_shift
-        }
-    }
-
-    AssignDefaultSymbols() {
-        for _, key_prop  in this.keys_by_SC {
-            key_prop.symbol := key_prop.char_plain
-        }
     }
 
     ; Save only symbols to INI (km_<name>)
@@ -108,8 +98,20 @@ Class clsLocale {
     other_shift := "9,["  ; other punctuation keys when modified by Shift
     numerals_plain := "1234567890"
     numerals_shift := ""
+    semantic_remove_space := ".,;:!?'""])}>@#%^*+-=_/|\"
+    semantic_space_after := ".,;:!?"
+    semantic_capitalizing := ".!?"
+    semantic_other := "[({<"
+    semantic_numerals := "0123456789"
+
     key_map := new clsKeyMap() ; instantiate key_map object (see above)
 
+    __New() {
+        this.RefreshLayoutChars()
+        this.AssignDefaultSymbols()
+    }
+
+    ; TK - to be removed later
     punctuation_plain [] {
         get {
             return (this.remove_space_plain . this.space_after_plain . this.capitalizing_plain . this.other_plain)
@@ -119,6 +121,31 @@ Class clsLocale {
         get {
             return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
         }
+    }
+
+    UpgradeToSemanticPunctuation() {
+        this.semantic_remove_space := this._DeriveSemPunct(this.remove_space_plain)
+                . this._DeriveSemPunct(this.remove_space_shift, true)
+        this.semantic_space_after := this._DeriveSemPunct(this.space_after_plain)
+                . this._DeriveSemPunct(this.space_after_shift, true)
+        this.semantic_capitalizing := this._DeriveSemPunct(this.capitalizing_plain)
+                . this._DeriveSemPunct(this.capitalizing_shift, true)
+        this.semantic_other := this._DeriveSemPunct(this.other_plain)
+                . this._DeriveSemPunct(this.other_shift, true)
+    }
+
+    _DeriveSemPunct(keys, with_shift := false) {  ; -> semantic string
+        semantic := ""
+        Loop, Parse, keys
+        {
+            for _, key_prop in this.key_map.keys_by_SC {
+                if (key_prop.symbol == A_LoopField) {
+                    semantic .= with_shift ? key_prop.with_shift.char : key_prop.plain.char
+                    break
+                }
+            }
+        }
+        return semantic
     }
 
     Save(locale_name) {
@@ -135,6 +162,19 @@ Class clsLocale {
         }
         GetLocaleStorage(locale_name, section, filename)
         ini.LoadProperties(this, section, filename)
+        has_semantic_punct := ini.HasProperty("semantic_remove_space", section, filename)
+        return has_semantic_punct
+    }
+
+    LoadForCurrentLayout(locale_name) {
+        has_semantic_punct := this.Load(locale_name)
+        this.RefreshLayoutChars()
+
+        if (!has_semantic_punct) {
+            this.UpgradeToSemanticPunctuation()
+        }
+
+        this.CompileKeySemantics()
     }
 
     RefreshScanCodeMapping() {
@@ -158,6 +198,50 @@ Class clsLocale {
             symbol_to_SC_map[num_reps.symbol] := num_SC
             ahk_numpad_to_symbol_map[num_reps.ahk] := num_reps.symbol
         }
+    }
+
+    RefreshLayoutChars() {
+        ; Build or update scan-code to symbols mapping for the current keyboard layout
+        symbols := kb.SuggestSymbolsFromActiveLayout(this.key_map.KEY_SCAN_CODES)
+
+        for SC, key_prop  in this.key_map.keys_by_SC {
+            key_prop.plain.char := symbols[SC].plain
+            key_prop.with_shift.char := symbols[SC].with_shift
+        }
+    }
+
+    AssignDefaultSymbols() {
+        for _, key_prop  in this.key_map.keys_by_SC {
+            key_prop.symbol := key_prop.plain.char
+        }
+    }
+
+    CompileKeySemantics() {
+        for _, key_prop  in this.key_map.keys_by_SC {
+            this._CompileSemantics(key_prop.plain)
+            this._CompileSemantics(key_prop.with_shift)
+        }
+    }
+
+    _CompileSemantics(key_sem) {
+        if (key_sem.char == "") {
+            key_sem.is_numeral := false
+            key_sem.removes_space := false
+            key_sem.adds_space := false
+            key_sem.capitalizes := false
+            key_sem.is_punctuation := false
+            return
+        }
+
+        char := key_sem.char
+        key_sem.is_numeral := InStr(this.semantic_numerals, char) ? true : false
+        key_sem.removes_space := InStr(this.semantic_remove_space, char) ? true : false
+        key_sem.adds_space := InStr(this.semantic_space_after, char) ? true : false
+        key_sem.capitalizes := InStr(this.semantic_capitalizing, char) ? true : false
+        key_sem.is_punctuation := (key_sem.removes_space
+                || key_sem.adds_space
+                || key_sem.capitalizes
+                || InStr(this.semantic_other, char)) ? true : false
     }
 
     ; Replace mapped scan code and named-key tokens inside a hotkey string
@@ -192,7 +276,7 @@ Class clsLocale {
 }
 
 Class clsLocaleInterface {
-    current_key_map := new clsKeyMap
+    working_locale := new clsLocale
     current_locale := ""
     UI := {}
     controls := { use_auto: { type: "Radio"
@@ -218,13 +302,16 @@ Class clsLocaleInterface {
             , space_after_plain:  { type: "Edit"}
             , capitalizing_plain: { type: "Edit"}
             , other_plain:        { type: "Edit"}
-            , numerals_plain: { type: "Edit"}
+            , numerals_plain:     { type: "Edit"}
             , remove_space_shift: { type: "Edit"}
             , space_after_shift:  { type: "Edit"}
             , capitalizing_shift: { type: "Edit"}
             , other_shift:        { type: "Edit"}
-            , numerals_shift: { type: "Edit"}}
-
+            , numerals_shift:     { type: "Edit"}
+            , semantic_remove_space: {type: "Edit"}
+            , semantic_space_after:  {type: "Edit"}
+            , semantic_capitalizing: {type: "Edit"}
+            , semantic_other:        {type: "Edit"}}
 
     Build() {
         UI := new clsUI("Keyboard and language settings")
@@ -234,9 +321,7 @@ Class clsLocaleInterface {
         UI.Add(this.controls.use_auto, "Section w360")
         UI.Add(this.controls.use_static, "y+10 w360")
         UI.Add(this.controls.kb_group, "xs y+20 h160 w490 Section")
-        UI.Font("s10", "Consolas")
-
-        for i, key_name in this.current_key_map.KEY_NAMES {
+        for i, key_name in this.working_locale.key_map.KEY_NAMES {
             Switch i {
                 Case 1:
                     format := "xp+20 yp+30 w30 Section"
@@ -252,17 +337,17 @@ Class clsLocaleInterface {
 
         UI.Font("s10", "Segoe UI")
         UI.Add(this.controls.punctuation_group, "xs-50 y+40 h255 w490 Section")
-        UI.Font("s10 w600", "Segoe UI")
-        UI.Add("Text", "xs+160 yp+30", "Unmodified keys")
-        UI.Add("Text", "xs+330 yp", "If Shift was pressed")
-        UI.Font("w400")
         UI.Add("Text", "xs+15 yp+30 Section", "Remove space before")
         UI.Add("Text", "y+20", "Follow by a space")
         UI.Add("Text", "y+20", "Capitalize after")
         UI.Add("Text", "y+20", "Other")
         UI.Add("Text", "y+20", "Numerals")
         UI.Font("s10", "Consolas")
-        UI.Add(this.options.remove_space_plain, "xs+140 ys Section w145 r1")
+        UI.Add(this.options.semantic_remove_space, "xs+150 ys Section w220 r1")
+        UI.Add(this.options.semantic_space_after, "w220 r1")
+        UI.Add(this.options.semantic_capitalizing, "w220 r1")
+        UI.Add(this.options.semantic_other, "w220 r1")
+        UI.Add(this.options.remove_space_plain, "xs+240 ys Section w145 r1")
         UI.Add(this.options.space_after_plain, "xs w145 r1")
         UI.Add(this.options.capitalizing_plain, "xs w145 r1")
         UI.Add(this.options.other_plain, "xs w145 r1")
@@ -309,14 +394,11 @@ Class clsLocaleInterface {
     RefreshUI() {
         is_locale_static := (this.current_locale == STATIC_LOCALE_NAME)
         EnsureLocaleExists(this.current_locale)
-        loc_obj := new clsLocale
-        loc_obj.Load(this.current_locale)
-
+        this.working_locale.LoadForCurrentLayout(this.current_locale)
         ; populate options fields
         For key, option in this.options {
-            option.value := loc_obj[key]
+            option.value := this.working_locale[key]
         }
-        this.current_key_map := loc_obj.key_map
         this.controls.use_auto.value := is_locale_static ? 0 : 1
         this.controls.use_static.value := is_locale_static ? 1 : 0
 
@@ -325,7 +407,7 @@ Class clsLocaleInterface {
     }
 
     RenderKeyboard() {
-        For _, key_prop in this.current_key_map.keys_by_SC {
+        for _, key_prop in this.working_locale.key_map.keys_by_SC {
             this.controls[key_prop.NAME].value := key_prop.symbol
         }
     }
@@ -347,7 +429,7 @@ Class clsLocaleInterface {
         mapped := Trim(mapped)
 
         ; Update key_map and remove duplicates
-        for _, key_prop in this.current_key_map.keys_by_SC {
+        for _, key_prop in this.working_locale.key_map.keys_by_SC {
             if (key_prop.NAME == def_name) {
                 key_prop.symbol := mapped
             } else if (key_prop.symbol == mapped) {
@@ -363,19 +445,17 @@ Class clsLocaleInterface {
         global app_settings
         global runtime_config_file
 
-        new_loc := new clsLocale
-        new_loc.Load(this.current_locale)
-        For key, option in this.options {
-            new_loc[key] := option.value
+        for key, option in this.options {
+            this.working_locale[key] := option.value
         }
-        new_loc.key_map := this.current_key_map
+
         if (runtime_config_file) {
-            new_loc.Save(false)
-            locale := new_loc
-            locale.RefreshScanCodeMapping()
+            this.working_locale.Save(false)
+            ApplyLocaleToRuntime()
             return
         }
-        new_loc.Save(this.current_locale)
+
+        this.working_locale.Save(this.current_locale)
         settings.locale := this.current_locale
         app_settings.Save()
     }
@@ -395,7 +475,8 @@ Class clsLocaleInterface {
     }
 
     _Detect() {
-        this.current_key_map := new clsKeyMap
+        this.working_locale.RefreshLayoutChars()
+        this.working_locale.AssignDefaultSymbols()
         this.RenderKeyboard()
     }
 }
@@ -439,7 +520,7 @@ LocaleHasDictionarySettings(locale_name) {
         return false
     }
     GetLocaleStorage(locale_name, section, filename)
-    return ini.LoadProperty("chord_file", section, filename) != ""
+    return ini.HasProperty("chord_file", section, filename)
 }
 
 CopyDictionarySettingsFromLocale(profile) {
@@ -463,7 +544,7 @@ EnsureLocaleExists(locale_name) {
     }
 
     target_locale := new clsLocale
-    target_locale.Load(locale_name)
+    target_locale.LoadForCurrentLayout(locale_name)
     CopyDictionarySettingsToLocale(target_locale)
     target_locale.Save(locale_name)
 }
@@ -482,7 +563,7 @@ ApplyLocaleToRuntime() {
     global io
 
     io.ClearTokens("*Interrupt*")
-    locale.Load(settings.locale)
+    locale.LoadForCurrentLayout(settings.locale)
     CopyDictionarySettingsFromLocale(locale)
 
     if (!settings.chord_file) {
@@ -496,7 +577,6 @@ ApplyLocaleToRuntime() {
         shorthands.Load(settings.shorthand_file)
     }
     locale.RefreshScanCodeMapping()
-    locale.key_map.RefreshLayoutChars()
     UI_SyncModeState()
 }
 
@@ -510,7 +590,8 @@ ProcessLayoutChange(layout_name) {
     }
 
     if (app_settings.IsStaticMode()) {
-        locale.key_map.RefreshLayoutChars()
+        locale.RefreshLayoutChars()
+        locale.CompileKeySemantics()
         return
     }
 
