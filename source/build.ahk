@@ -9,6 +9,7 @@ uninstall_exe := build_dir . "\uninstall.exe"
 installer_exe := build_dir . "\zipchord-install.exe"
 result_file := build_dir . "\result.txt"
 odin_version_file := A_ScriptDir . "\zipchord-lib\version.odin"
+should_zip := (A_Args.Length() >= 1 && A_Args[1] = "zip")
 
 if ( ! InStr(FileExist(build_dir), "D"))
     FileCreateDir, % build_dir
@@ -32,9 +33,11 @@ if !FileExist(zipchord_dll) {
 RunWait %ComSpec% /c ""%ahk_exe%" /in uninstall.ahk /out "%uninstall_exe%" /icon shell32_271.ico >> "%result_file%""
 RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out "%installer_exe%" /icon zipchord.ico >> "%result_file%""
 
-Zip(zipchord_exe, build_dir . "\zipchord-exe-" . zc_version . ".zip")
-Zip(installer_exe, build_dir . "\zipchord-install-" . zc_version . ".zip")
-Zip(zipchord_dll, build_dir . "\zipchord-library-" . zc_version . ".zip")
+if (should_zip) {
+    Zip(zipchord_exe, build_dir . "\zipchord-exe-" . zc_version . ".zip")
+    Zip(installer_exe, build_dir . "\zipchord-install-" . zc_version . ".zip")
+    Zip(zipchord_dll, build_dir . "\zipchord-library-" . zc_version . ".zip")
+}
 
 FileRead, result, % result_file
 MsgBox, % result
