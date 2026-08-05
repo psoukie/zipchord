@@ -277,7 +277,7 @@ UpgradeTo28() {
         return false
     }
     static_locale := new clsLocale
-    static_locale.Load(selected_locale)
+    static_locale.LoadForCurrentLayout(selected_locale)
     static_locale.Save(STATIC_LOCALE_NAME)
     settings.locale := STATIC_LOCALE_NAME
     return true
@@ -295,8 +295,10 @@ UpgradeTo29() {
     upgraded_locale := new clsLocale
     upgraded_locale.Load(settings.locale)
     CopyDictionarySettingsToLocale(upgraded_locale)
-    upgraded_locale.Save(settings.locale)
-
+    GetLocaleStorage(settings.locale, section, filename)
+    for _, key in ["chord_file", "shorthand_file", "use_chords", "use_shorthands"] {
+        ini.SaveProperty(upgraded_locale[key], key, section, filename)
+    }
     config_file := app_settings.GetSettingsFile()
     section := app_settings.GetSectionName()
     IniDelete, %config_file%, %section%, chord_file

@@ -87,17 +87,6 @@ Class clsLocale {
     use_chords := true
     use_shorthands := true
 
-    ; default locale settings
-    remove_space_plain := ".,;'-/=\]"  ; unmodified keys that delete any smart space before them.
-    remove_space_shift := "1/;'-.2356780]=\"  ; keys combined with Shift that delete any smart space before them.
-    space_after_plain := ".,;"  ; unmodified keys that should be followed by smart space
-    space_after_shift := "1/;" ; keys that -- when modified by Shift -- should be followed by smart space
-    capitalizing_plain := "." ; unmodified keys that capitalize the text that folows them
-    capitalizing_shift := "1/"  ; keys that -- when modified by Shift --  capitalize the text that folows them
-    other_plain := "[" ; unmodified keys for other punctuation
-    other_shift := "9,["  ; other punctuation keys when modified by Shift
-    numerals_plain := "1234567890"
-    numerals_shift := ""
     semantic_remove_space := ".,;:!?'""])}>@#%^*+-=_/|\"
     semantic_space_after := ".,;:!?"
     semantic_capitalizing := ".!?"
@@ -111,18 +100,6 @@ Class clsLocale {
         this.AssignDefaultSymbols()
     }
 
-    ; TK - to be removed later
-    punctuation_plain [] {
-        get {
-            return (this.remove_space_plain . this.space_after_plain . this.capitalizing_plain . this.other_plain)
-        }
-    }
-    punctuation_shift [] {
-        get {
-            return (this.remove_space_shift . this.space_after_shift . this.capitalizing_shift . this.other_shift)
-        }
-    }
-
     UpgradeToSemanticPunctuation() {
         this.semantic_remove_space := this._DeriveSemPunct(this.remove_space_plain)
                 . this._DeriveSemPunct(this.remove_space_shift, true)
@@ -132,6 +109,18 @@ Class clsLocale {
                 . this._DeriveSemPunct(this.capitalizing_shift, true)
         this.semantic_other := this._DeriveSemPunct(this.other_plain)
                 . this._DeriveSemPunct(this.other_shift, true)
+    }
+
+    ; As part of an upgrade, remove the legacy key-based punctuation
+    _RemoveLegacyPunctuationProps(section, filename) {
+        legacy_props := ["remove_space_plain", "remove_space_shift"
+                , "space_after_plain", "space_after_shift"
+                , "capitalizing_plain", "capitalizing_shift"
+                , "other_plain", "other_shift"
+                , "numerals_plain", "numerals_shift"]
+        for _, legacy_prop in legacy_props {
+            IniDelete, %filename%, %section%, %legacy_prop%
+        }
     }
 
     _DeriveSemPunct(keys, with_shift := false) {  ; -> semantic string
@@ -154,23 +143,29 @@ Class clsLocale {
         }
         GetLocaleStorage(locale_name, section, filename)
         ini.SaveProperties(this, section, filename)
+        this._RemoveLegacyPunctuationProps(section, filename)
     }
 
-    Load(locale_name) {
+    Load(locale_name) {  ; -> bool needs_upgrade
         if (!locale_name) {
             locale_name := STATIC_LOCALE_NAME
         }
         GetLocaleStorage(locale_name, section, filename)
         ini.LoadProperties(this, section, filename)
-        has_semantic_punct := ini.HasProperty("semantic_remove_space", section, filename)
-        return has_semantic_punct
+
+        ; Logic used for upgrade path
+        if (ini.HasProperty("semantic_remove_space", section, filename)) {
+            return false
+        }
+        ; and we guard against empty locales
+        return ini.HasProperty("remove_space_plain", section, filename)
     }
 
     LoadForCurrentLayout(locale_name) {
-        has_semantic_punct := this.Load(locale_name)
+        needs_upgrade := this.Load(locale_name)
         this.RefreshLayoutChars()
 
-        if (!has_semantic_punct) {
+        if (needs_upgrade) {
             this.UpgradeToSemanticPunctuation()
         }
 
@@ -296,19 +291,9 @@ Class clsLocaleInterface {
                           , text: "&OK"
                           , function: ObjBindMethod(this, "_OK")}
                 , btn_detect: { type: "Button"
-                             , text: "&Auto-detect"
+                             , text: "&Auto-detect mapping"
                              , function: ObjBindMethod(this, "_Detect")}}
-    options := { remove_space_plain: { type: "Edit"}
-            , space_after_plain:  { type: "Edit"}
-            , capitalizing_plain: { type: "Edit"}
-            , other_plain:        { type: "Edit"}
-            , numerals_plain:     { type: "Edit"}
-            , remove_space_shift: { type: "Edit"}
-            , space_after_shift:  { type: "Edit"}
-            , capitalizing_shift: { type: "Edit"}
-            , other_shift:        { type: "Edit"}
-            , numerals_shift:     { type: "Edit"}
-            , semantic_remove_space: {type: "Edit"}
+    options := { semantic_remove_space: {type: "Edit"}
             , semantic_space_after:  {type: "Edit"}
             , semantic_capitalizing: {type: "Edit"}
             , semantic_other:        {type: "Edit"}}
@@ -318,9 +303,9 @@ Class clsLocaleInterface {
         handle := main_UI.UI._handle
         Gui, +Owner%handle%
         UI.on_close := ObjBindMethod(this, "Close")
-        UI.Add(this.controls.use_auto, "Section w360")
-        UI.Add(this.controls.use_static, "y+10 w360")
-        UI.Add(this.controls.kb_group, "xs y+20 h160 w490 Section")
+        UI.Add(this.controls.use_auto, "x+10 y+15 w360")
+        UI.Add(this.controls.use_static, "xp y+10 w360")
+        UI.Add(this.controls.kb_group, "xp-10 y+20 h170 w490 Section")
         for i, key_name in this.working_locale.key_map.KEY_NAMES {
             Switch i {
                 Case 1:
@@ -336,31 +321,20 @@ Class clsLocaleInterface {
         }
 
         UI.Font("s10", "Segoe UI")
-        UI.Add(this.controls.punctuation_group, "xs-50 y+40 h255 w490 Section")
-        UI.Add("Text", "xs+15 yp+30 Section", "Remove space before")
-        UI.Add("Text", "y+20", "Follow by a space")
+        UI.Add(this.controls.btn_detect, "xs-35 y+30 w160")
+        UI.Add(this.controls.punctuation_group, "xs-50 y+20 h180 w490 Section")
+        UI.Add("Text", "xs+15 yp+30 Section", "Remove smart spaces before")
+        UI.Add("Text", "y+20", "Add smart spaces after")
         UI.Add("Text", "y+20", "Capitalize after")
-        UI.Add("Text", "y+20", "Other")
-        UI.Add("Text", "y+20", "Numerals")
+        UI.Add("Text", "y+20", "Other punctuation")
         UI.Font("s10", "Consolas")
-        UI.Add(this.options.semantic_remove_space, "xs+150 ys Section w220 r1")
-        UI.Add(this.options.semantic_space_after, "w220 r1")
-        UI.Add(this.options.semantic_capitalizing, "w220 r1")
-        UI.Add(this.options.semantic_other, "w220 r1")
-        UI.Add(this.options.remove_space_plain, "xs+240 ys Section w145 r1")
-        UI.Add(this.options.space_after_plain, "xs w145 r1")
-        UI.Add(this.options.capitalizing_plain, "xs w145 r1")
-        UI.Add(this.options.other_plain, "xs w145 r1")
-        UI.Add(this.options.numerals_plain, "xs w145 r1")
-        UI.Add(this.options.remove_space_shift, "xs+170 ys Section w145 r1")
-        UI.Add(this.options.space_after_shift, "xs w145 r1")
-        UI.Add(this.options.capitalizing_shift, "xs w145 r1")
-        UI.Add(this.options.other_shift, "xs w145 r1")
-        UI.Add(this.options.numerals_shift, "xs w145 r1")
+        UI.Add(this.options.semantic_remove_space, "xs+190 ys Section w260 r1")
+        UI.Add(this.options.semantic_space_after, "w260 r1")
+        UI.Add(this.options.semantic_capitalizing, "w260 r1")
+        UI.Add(this.options.semantic_other, "w260 r1")
         UI.Font("s10", "Segoe UI")
-        UI.Add(this.controls.btn_detect, "xs-320 y+40 w120 Section")
-        UI.Add(this.controls.btn_apply, "x+170 w80")
-        UI.Add(this.controls.btn_ok, "x+10 w80 Default")
+        UI.Add(this.controls.btn_apply, "xs+80 y+20 w80")
+        UI.Add(this.controls.btn_ok, "x+20 w80 Default")
         this.UI := UI
     }
 
