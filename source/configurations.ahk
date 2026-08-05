@@ -35,7 +35,7 @@ Class Configuration {
         was_open := CloseAllWindows()
         runtime_config_file := config_file
         app_settings.Save()
-        ; A configuration saved by 2.9 no longer needs legacy dictionary ownership.
+        ; Upgrade functionality: A configuration saved by 2.9 no longer needs legacy dictionary ownership.
         IniDelete, %config_file%, Application, chord_file
         IniDelete, %config_file%, Application, shorthand_file
         if (save_locale_override) {
