@@ -30,9 +30,9 @@ Class clsTokenAttribsBitSet {
     IS_PREFIX        := 4
     CAPITALIZES_NEXT := 8
     FIRST_IN_CHORD   := 16
-    ; REMOVES_SM_SPACE := 32
-    ; SM_SPACE_AFTER   := 64
-    ; CAPITALIZING_KEY := 128
+    REMOVES_SM_SPACE := 32
+    SM_SPACE_AFTER   := 64
+    CAPITALIZING_KEY := 128
     TOMBSTONED       := 256
 }
 
@@ -338,11 +338,10 @@ Class clsIOrepresentation {
             token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
             if (InStr("⓪①②③④⑤⑥⑦⑧⑨", entry)) {
                 token.type := TokenType.NUMERAL
+            } else {
+                token.type := TokenType.PUNCTUATION
+                token.attribs |= TokenAttribs.REMOVES_SM_SPACE
             }
-            ;  else {
-            ;     token.type := TokenType.PUNCTUATION
-            ;     token.attribs |= TokenAttribs.REMOVES_SM_SPACE
-            ; }
         } else {
             key_prop := locale.key_map.keys_by_SC[key.SC]
             key_semantics := key.with_shift ? key_prop.with_shift : key_prop.plain
@@ -352,15 +351,15 @@ Class clsIOrepresentation {
             } else if (key_semantics.is_numeral) {
                 token.type := TokenType.NUMERAL
             }
-            ; if (key_semantics.removes_space) {
-            ;     token.attribs |= TokenAttribs.REMOVES_SM_SPACE
-            ; }
-            ; if (key_semantics.adds_space) {
-            ;     token.attribs |= TokenAttribs.SM_SPACE_AFTER
-            ; }
-            ; if (key_semantics.capitalizes) {
-            ;     token.attribs |= TokenAttribs.CAPITALIZING_KEY
-            ; }
+            if (key_semantics.removes_space) {
+                token.attribs |= TokenAttribs.REMOVES_SM_SPACE
+            }
+            if (key_semantics.adds_space) {
+                token.attribs |= TokenAttribs.SM_SPACE_AFTER
+            }
+            if (key_semantics.capitalizes) {
+                token.attribs |= TokenAttribs.CAPITALIZING_KEY
+            }
         }
         return token
     }
@@ -794,10 +793,7 @@ Class clsIOrepresentation {
         type := token.type
         ; for punctuation that removes spaces
         if (type == TokenType.PUNCTUATION) {
-            if ( (!(attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.remove_space_plain, token.input))
-                || ((attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.remove_space_shift, token.input)) ) {
+            if (attribs & TokenAttribs.REMOVES_SM_SPACE) {
                 io_tokens.RemoveAt(PreviousLiveTokenId())   ; not tombstoning because we've just added it
                 return true
             }
@@ -834,8 +830,7 @@ Class clsIOrepresentation {
                 || PreviousLiveToken().type == TokenType.INTERRUPT ) {
             return
         }
-        if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_plain, token.input) )
-                || (attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_shift, token.input) ) {
+        if (attribs & TokenAttribs.SM_SPACE_AFTER) {
             this._AddSmartSpace()
         }
     }
@@ -921,12 +916,8 @@ Class clsIOrepresentation {
         }
         
         ; if the last output was punctuation that does not ask for a space
-        if ( ( !(prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.punctuation_plain, prev_token.input)
-                && !InStr(locale.space_after_plain, prev_token.input) )
-                || (prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.punctuation_shift, prev_token.input)
-                && !InStr(locale.space_after_shift, prev_token.input) )  {
+        if (prev_token.type == TokenType.PUNCTUATION
+                && !(prev_token.attribs & TokenAttribs.SM_SPACE_AFTER)) {
             add_leading_space := false
         }
         
@@ -1088,11 +1079,8 @@ Class clsIOrepresentation {
 
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
         if (io_tokens[start].attribs & TokenAttribs.FIRST_IN_CHORD) {
-            prev_input := previous_token.input
-            with_shift := previous_token.attribs & TokenAttribs.WITH_SHIFT
-            if (StrLen(prev_input) == 1
-                && (!with_shift && InStr(locale.capitalizing_plain, prev_input))
-                || (with_shift && InStr(locale.capitalizing_shift, prev_input)) ) {
+            if (previous_token.type == TokenType.PUNCTUATION
+                    && (previous_token.attribs & TokenAttribs.CAPITALIZING_KEY)) {
                 return true
             }
         }
@@ -1105,11 +1093,8 @@ Class clsIOrepresentation {
             if (before_previous_token.attribs & TokenAttribs.CAPITALIZES_NEXT) {
                 return true
             }
-            before_prev_input := before_previous_token.input
-            with_shift := before_previous_token.attribs & TokenAttribs.WITH_SHIFT
-            if ( StrLen(before_prev_input) == 1
-                && (!with_shift && InStr(locale.capitalizing_plain, before_prev_input))
-                || (with_shift && InStr(locale.capitalizing_shift, before_prev_input)) ) {
+            if (before_previous_token.type == TokenType.PUNCTUATION
+                    && (before_previous_token.attribs & TokenAttribs.CAPITALIZING_KEY)) {
                 return true
             }
         }
