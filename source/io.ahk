@@ -30,7 +30,10 @@ Class clsTokenAttribsBitSet {
     IS_PREFIX        := 4
     CAPITALIZES_NEXT := 8
     FIRST_IN_CHORD   := 16
-    TOMBSTONED       := 32
+    ; REMOVES_SM_SPACE := 32
+    ; SM_SPACE_AFTER   := 64
+    ; CAPITALIZING_KEY := 128
+    TOMBSTONED       := 256
 }
 
 Class clsAffixBitSet {
@@ -320,15 +323,6 @@ Class clsIOrepresentation {
         entry := "" . key.key
         token.input := entry
 
-        ; Process Space and NumPad
-        if (entry == " ") {
-            token.typed_char := entry
-        } else if (InStr("⓪①②③④⑤⑥⑦⑧⑨⊕⊖⊗⊘⊙", entry)) {
-            token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
-        } else {
-            key_prop := locale.key_map.keys_by_SC[key.SC]
-            token.typed_char := key.with_shift ? key_prop.with_shift.char : key_prop.plain.char
-        }
         if (key.with_shift) {
             token.attribs |= TokenAttribs.WITH_SHIFT
             token.output := str.ToAscii(entry, ["Shift"])
@@ -336,14 +330,37 @@ Class clsIOrepresentation {
             token.output := entry
         }
 
-        if ( !key.with_shift && InStr(locale.punctuation_plain, entry) )
-                || ( key.with_shift && InStr(locale.punctuation_shift, entry) ) {
-            token.type := TokenType.PUNCTUATION
-        } else if (entry == " ") {
+        ; Process Space, NumPad, and then regular keys
+        if (entry == " ") {
             token.type := TokenType.MANUAL_SPACE
-        } else if ( (!key.with_shift && (InStr(locale.numerals_plain, entry) || InStr("⓪①②③④⑤⑥⑦⑧⑨", entry)))  
-                || (key.with_shift && (InStr(locale.numerals_shift, entry))) ) {
-            token.type := TokenType.NUMERAL
+            token.typed_char := " "
+        } else if (InStr("⓪①②③④⑤⑥⑦⑧⑨⊕⊖⊗⊘⊙", entry)) {
+            token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
+            if (InStr("⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+                token.type := TokenType.NUMERAL
+            }
+            ;  else {
+            ;     token.type := TokenType.PUNCTUATION
+            ;     token.attribs |= TokenAttribs.REMOVES_SM_SPACE
+            ; }
+        } else {
+            key_prop := locale.key_map.keys_by_SC[key.SC]
+            key_semantics := key.with_shift ? key_prop.with_shift : key_prop.plain
+            token.typed_char := key_semantics.char
+            if (key_semantics.is_punctuation) {
+                token.type := TokenType.PUNCTUATION
+            } else if (key_semantics.is_numeral) {
+                token.type := TokenType.NUMERAL
+            }
+            ; if (key_semantics.removes_space) {
+            ;     token.attribs |= TokenAttribs.REMOVES_SM_SPACE
+            ; }
+            ; if (key_semantics.adds_space) {
+            ;     token.attribs |= TokenAttribs.SM_SPACE_AFTER
+            ; }
+            ; if (key_semantics.capitalizes) {
+            ;     token.attribs |= TokenAttribs.CAPITALIZING_KEY
+            ; }
         }
         return token
     }
