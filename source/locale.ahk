@@ -497,6 +497,15 @@ LocaleHasDictionarySettings(locale_name) {
     return ini.HasProperty("chord_file", section, filename)
 }
 
+LocaleHasCompleteSettings(locale_name) {
+    if (!LocaleHasDictionarySettings(locale_name)) {
+        return false
+    }
+    GetLocaleStorage(locale_name, section, filename)
+    return ini.HasProperty("key_map", section, filename)
+            && ini.HasProperty("semantic_remove_space", section, filename)
+}
+
 CopyDictionarySettingsFromLocale(profile) {
     settings.chord_file := chords.GetFullFileName(profile.chord_file)
     settings.shorthand_file := shorthands.GetFullFileName(profile.shorthand_file)
@@ -513,13 +522,16 @@ CopyDictionarySettingsToLocale(profile) {
 }
 
 EnsureLocaleExists(locale_name) {
-    if (!locale_name || LocaleHasDictionarySettings(locale_name)) {
+    if (!locale_name || LocaleHasCompleteSettings(locale_name)) {
         return
     }
 
+    has_dictionary_settings := LocaleHasDictionarySettings(locale_name)
     target_locale := new clsLocale
     target_locale.LoadForCurrentLayout(locale_name)
-    CopyDictionarySettingsToLocale(target_locale)
+    if (!has_dictionary_settings) {
+        CopyDictionarySettingsToLocale(target_locale)
+    }
     target_locale.Save(locale_name)
 }
 
