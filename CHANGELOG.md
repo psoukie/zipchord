@@ -2,11 +2,15 @@
 
 ## ZipChord 2.10 - Unreleased Changes
 
-**Improvements and Fixes**
+**New Features**
 
-- Modified the locale and input-output engine to include typed character information in preparation for semantic punctuation handling.
-- Under-the-hood optimizations in updating and applying the keyboard and langauguge UI, and handling of typing with capitalization within words.
+- Keyboard and language settings now define punctuation behavior using the produced characters, rather than separate "Unmodified" and "If Shift was pressed" lists of physical keys. For example, "Capitalize after" now simply defines e.g. `.!?` regardless of which physical keys produce those characters. Existing punctuation settings are upgraded automatically.
+- ZipChord now detects Arabic numerals by their produced characters, including on layouts where they require Shift, so the Numerals fields were no longer needed and have been removed.
 
+**Improvements**
+
+- ZipChord can now show hints for shortcuts whose expansions contain layout-specific characters, such as "El Niño", provided those characters are typed directly rather than using dead keys.
+- Improved internal handling of keyboard layout settings and capitalization.
 
 **Breaking Change**
 
