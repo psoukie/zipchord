@@ -46,7 +46,7 @@ CoordMode ToolTip, Screen
 OnExit("CloseApp")
 FileEncoding, UTF-8
 
-; Warnings for development only
+; Warnings are enabled for development only
 ; #Warn All, OutputDebug
 
 #Include version.ahk
@@ -68,7 +68,7 @@ global CAP_OFF      := 1 ; no auto-capitalization,
      , SPACE_AFTER_CHORD  := 2
      , SPACE_PUNCTUATION  := 4
      , CHORD_DELETE_UNRECOGNIZED  := 1  ; Delete typing that triggers chords that are not in dictionary?
-     , CHORD_ALLOW_SHIFT          := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
+     ; deprecated and removed: CHORD_ALLOW_SHIFT := 2  ; Allow Shift in combination with at least two other keys to form unique chords?
      , CHORD_RESTRICT             := 4  ; Disallow chords (except for suffixes) if the chord isn't separated from typing by a space, interruption, or defined punctuation "opener"
      , CHORD_IMMEDIATE_SHORTHANDS := 8  ; Shorthands fire without waiting for space or punctuation
      , CHORD_BY_OVERLAP := 16  ; detect chords by percentage of overlap rather than duration
@@ -96,10 +96,8 @@ symbol_to_SC_map := {} ; reverse map
 ahk_numpad_to_symbol_map := {} 
 
 
-if (A_Args[1] == "dev") {
-    #Include *i visualizer.ahk
-    #Include *i testing.ahk
-}
+#Include *i visualizer.ahk
+#Include *i testing.ahk
 
 #Include keyboard.ahk
 #Include configurations.ahk
@@ -279,7 +277,7 @@ UpgradeTo28() {
         return false
     }
     static_locale := new clsLocale
-    static_locale.Load(selected_locale)
+    static_locale.LoadForCurrentLayout(selected_locale)
     static_locale.Save(STATIC_LOCALE_NAME)
     settings.locale := STATIC_LOCALE_NAME
     return true
@@ -297,8 +295,10 @@ UpgradeTo29() {
     upgraded_locale := new clsLocale
     upgraded_locale.Load(settings.locale)
     CopyDictionarySettingsToLocale(upgraded_locale)
-    upgraded_locale.Save(settings.locale)
-
+    GetLocaleStorage(settings.locale, section, filename)
+    for _, key in ["chord_file", "shorthand_file", "use_chords", "use_shorthands"] {
+        ini.SaveProperty(upgraded_locale[key], key, section, filename)
+    }
     config_file := app_settings.GetSettingsFile()
     section := app_settings.GetSectionName()
     IniDelete, %config_file%, %section%, chord_file
@@ -456,9 +456,6 @@ Class clsMainUI {
                 , restrict_chords:      { type: "Checkbox"
                                         , text: "&Restrict chords while typing"
                                         , setting: { parent: "chording", const: "CHORD_RESTRICT"}}
-                , allow_shift:          { type: "Checkbox"
-                                        , text: "Allow &Shift in chords"
-                                        , setting: { parent: "chording", const: "CHORD_ALLOW_SHIFT"}}
                 , delete_unrecognized:  { type: "Checkbox"
                                         , text: "Delete &mistyped chords"
                                         , setting: { parent: "chording", const: "CHORD_DELETE_UNRECOGNIZED"}}
@@ -544,7 +541,6 @@ Class clsMainUI {
         UI.Add(cts.input_overlap, "Right xp yp w40 Number")
         UI.Add("GroupBox", "xs-20 y+40 w310 h175", "Shortcut options")
         UI.Add(cts.restrict_chords, "xp+20 yp+30")
-        UI.Add(cts.allow_shift)
         UI.Add(cts.delete_unrecognized)
         UI.Add(cts.immediate_shorthands, "Section")
 
@@ -677,7 +673,6 @@ Class clsMainUI {
                             + cts.space_after.value * SPACE_AFTER_CHORD
                             + cts.space_punctuation.value * SPACE_PUNCTUATION
         settings.chording := cts.delete_unrecognized.value * CHORD_DELETE_UNRECOGNIZED
-                            + cts.allow_shift.value * CHORD_ALLOW_SHIFT
                             + cts.restrict_chords.value * CHORD_RESTRICT
                             + cts.immediate_shorthands.value * CHORD_IMMEDIATE_SHORTHANDS
                             + cts.chord_by_overlap.value * CHORD_BY_OVERLAP
@@ -717,7 +712,7 @@ Class clsMainUI {
         app_settings.Save()
         ; We always want to rewire hotkeys in case the keys have changed.
         WireHotkeys("Off")
-        locale.Load(settings.locale)
+        locale.LoadForCurrentLayout(settings.locale)
         if (settings.mode > MODE_ZIPCHORD_ENABLED) {
             if (previous_mode-1 < MODE_ZIPCHORD_ENABLED) {
                 hint_UI.ShowOnOSD("ZipChord Keyboard", "On")

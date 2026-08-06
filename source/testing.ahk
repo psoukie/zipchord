@@ -617,7 +617,7 @@ Class TestingClass {
                 if (ch = "~") {
                     i++
                     if (SubStr(line,i,1) = "+") {                   ; ~+x
-                        out .= str.ToAscii(SubStr(line,i+1,1), ["Shift"])
+                        out .= _GetShiftedChar(SubStr(line,i+1,1))
                         i += 2
                     } else {                                        ; ~Name or ~x
                         j := i
@@ -984,6 +984,20 @@ For more information on a specific command, type 'help <command>'.
 ObjFnName(fn) {
     StringLower, fn, % SubStr(fn, InStr(fn, ".")+1)
     return fn
+}
+
+_GetShiftedChar(symbol) {
+    global locale
+    global symbol_to_SC_map
+
+    SC := symbol_to_SC_map[symbol]
+    if (locale.key_map.keys_by_SC.HasKey(SC)) {
+        return locale.key_map.keys_by_SC[SC].with_shift.char
+    }
+
+    if (locale.key_map.NUMPAD_MAPPING.HasKey(SC)) {
+        return locale.key_map.NUMPAD_MAPPING[SC].output
+    }
 }
 
 global test := New TestingClass()

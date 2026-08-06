@@ -1,10 +1,11 @@
-_tests/temp.out
-_tests/*.txt
+.vscode/
 build/
 *.exe
 *.dll
 *.lib
 *.exp
 *.zip
+_tests/*.txt
+_tests/temp.out
 odin-env.bat
-.vscode/
+.ignore

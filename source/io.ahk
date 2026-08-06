@@ -5,7 +5,8 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 
-Class clsKey {
+Class clsEvent {
+    SC := 0
     key := 0
     with_shift := false
     start := 0
@@ -29,7 +30,10 @@ Class clsTokenAttribsBitSet {
     IS_PREFIX        := 4
     CAPITALIZES_NEXT := 8
     FIRST_IN_CHORD   := 16
-    TOMBSTONED       := 32
+    REMOVES_SM_SPACE := 32
+    SM_SPACE_AFTER   := 64
+    CAPITALIZING_KEY := 128
+    TOMBSTONED       := 256
 }
 
 Class clsAffixBitSet {
@@ -39,10 +43,11 @@ Class clsAffixBitSet {
 }
 
 Class clsToken {
-    type    := 0     ; of clsTokenType 
-    input   := ""
-    output  := ""
-    attribs := 0     ; of clsAttribs
+    type            := 0     ; of clsTokenType
+    typed_char      := ""
+    input           := ""
+    output          := ""
+    attribs         := 0     ; of clsAttribs
 }
 
 Class clsChordCandidate {
@@ -55,8 +60,8 @@ global TokenType := new clsTokenTypeEnum
 global TokenAttribs := new clsTokenAttribsBitSet
 global AffixPos := new clsAffixBitSet
 
-global io_keys := []         ; window of overlapping key events 
-global io_keys_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
+global io_events := []         ; window of overlapping key events 
+global io_events_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
 first_lift := 0              ; acts as a union of bool (0 - false), and int for first lifted key index 
 
 global io_tokens := []       ; window of tokenized input
@@ -67,18 +72,21 @@ io_prev_tokens := []
 Shift_key() {
     global io
     Critical
+
     if (A_PriorHotkey != "~Shift") {
+        Critical Off
         return
     }
+
     key := "*Shift*"
     if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
         }
-    }
-    if (visualizer.IsOn()) {
-        visualizer.Pressed("+", false)
-        visualizer.Lifted("+", false)
+        if (visualizer.IsOn()) {
+            visualizer.Pressed("+", false)
+            visualizer.Lifted("+", false)
+        }
     }
     io.PreShift()
     Critical Off
@@ -96,8 +104,9 @@ KeyDown() {
     key := locale.SCHotkeyToSymbolHotkey(A_ThisHotkey)
     if (key == "") {
         Critical Off
-        Return
+        return
     }
+
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             key := locale.SCHotkeyToSymbolHotkey(test_key)
@@ -107,19 +116,20 @@ KeyDown() {
             test.Log(key, true)
             test.Log(key)
         }
-    }
-    if (visualizer.IsOn()) {
-        modified_key := StrReplace(key, "Space", " ")
-        if (SubStr(modified_key, 1, 1) == "~")
-            modified_key := SubStr(modified_key, 2)
-        ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
-        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
-            shifted := true
-            modified_key := SubStr(modified_key, 2)
-        } else {
-            shifted := false
+        if (visualizer.IsOn()) {
+            modified_key := StrReplace(key, "Space", " ")
+            if (SubStr(modified_key, 1, 1) == "~") {
+                modified_key := SubStr(modified_key, 2)
+            }
+            ; First, we differentiate if the key was pressed while holding Shift, and store it under 'modified_key':
+            if (StrLen(modified_key) > 1 && SubStr(modified_key, 1, 1) == "+" ) {
+                shifted := true
+                modified_key := SubStr(modified_key, 2)
+            } else {
+                shifted := false
+            }
+            visualizer.Pressed(modified_key, shifted)
         }
-        visualizer.Pressed(modified_key, shifted)
     }
     ; QPC()
     io.ProcessKey(key, tick)
@@ -136,6 +146,7 @@ KeyUp() {
         Critical Off
         Return
     }
+
     if (A_Args[1] == "dev") {
         if (test.mode == TEST_RUNNING) {
             tick_up := test_timestamp
@@ -144,18 +155,19 @@ KeyUp() {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
         }
-    }
-    if (visualizer.IsOn()) {
-        modified_key := StrReplace(key, "Space", " ")
-        if (SubStr(modified_key, 1, 1) == "~")
-            modified_key := SubStr(modified_key, 2)
-        if ( StrLen(modified_key)>1 && SubStr(modified_key, 1, 1) == "+" ) {
-            shifted := true
-            modified_key := SubStr(modified_key, 2)
-        } else {
-            shifted := false
+        if (visualizer.IsOn()) {
+            modified_key := StrReplace(key, "Space", " ")
+            if (SubStr(modified_key, 1, 1) == "~") {
+                modified_key := SubStr(modified_key, 2)
+            }
+            if (StrLen(modified_key) > 1 && SubStr(modified_key, 1, 1) == "+") {
+                shifted := true
+                modified_key := SubStr(modified_key, 2)
+            } else {
+                shifted := false
+            }
+            visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
         }
-        visualizer.Lifted(SubStr(modified_key, 1, 1), shifted)
     }
     ; QPC()
     if (io.ProcessKey(key, tick_up)) {
@@ -205,17 +217,17 @@ HandleBackspace(with_ctrl := false) {
     Critical
     key  := with_ctrl ? "~^Backspace" : "~Backspace"
 
-    if (A_Args[1] = "dev") {
+    if (A_Args[1] == "dev") {
         if (test.mode > TEST_STANDBY) {
             test.Log(key, true)
             test.Log(key)
         }
-    }
 
-    if (visualizer.IsOn()) {
-        sym := Chr(0x232B)
-        visualizer.Pressed(sym, false)
-        visualizer.Lifted(sym, false)
+        if (visualizer.IsOn()) {
+            sym := Chr(0x232B)
+            visualizer.Pressed(sym, false)
+            visualizer.Lifted(sym, false)
+        }
     }
 
     io.Backspace(with_ctrl)
@@ -230,16 +242,17 @@ Class clsIOrepresentation {
     expansion_in_last_get := false
 
 
-    IOKeysReset() {
+    IOEventsReset() {
         global first_lift
         
-        io_keys := []
-        io_keys_index := {}
+        io_events := []
+        io_events_index := {}
         first_lift := false
      }
 
     ProcessKey(hotkey, timestamp) {
-        ev := new clsKey
+        global symbol_to_SC_map
+        ev := new clsEvent
         is_key_down := true
         
         ; translate the hotkey string
@@ -255,74 +268,97 @@ Class clsIOrepresentation {
             is_key_down := false
             ev.key := SubStr(ev.key, 1, StrLen(ev.key) - 3)
         }
-
+        if (symbol_to_SC_map.HasKey(ev.key)) {
+            ev.SC := symbol_to_SC_map[ev.key]
+        }
         ev.key := (StrLen(ev.key) > 1) ? "{" . ev.key . "}" : ev.key
 
         if (is_key_down) {
+            ; ignore if the key is already registered
+            if (io_events_index.HasKey(ev.key)) {
+                return
+            }
             ; Process a key down event
             ev.start := timestamp
             if (this.pre_shifted) {
                 ev.with_shift := true
                 this.pre_shifted := false
             }
-            ; ignore if the key is already registered
-            if (io_keys_index.HasKey(ev.key)) {
-                return
-            }
-            io_keys.Push(ev)
-            io_keys_index[ev.key] := io_keys.Length()
+            io_events.Push(ev)
+            io_events_index[ev.key] := io_events.Length()
         } else {
             ; Process a key up event: look up the event, record lift time, and classify
-            if !(io_keys_index.HasKey(ev.key)) {
+            if !(io_events_index.HasKey(ev.key)) {
                 return
             }
-            index := io_keys_index[ev.key]
-            io_keys_index.Delete(ev.key)
-            if (!index || index > io_keys.Length()) {
+            index := io_events_index[ev.key]
+            io_events_index.Delete(ev.key)
+            if (!index || index > io_events.Length()) {
                 return
             }
-            io_keys[index].end := timestamp
-            
-            result := this._Classify(timestamp, index)
 
-            if (io_keys_index.Count() == 0 && io_keys.Length() != 0) {
-                this.IOKeysReset()
+            io_events[index].end := timestamp
+            result := this._Classify(timestamp, index)
+            if (io_events_index.Count() == 0 && io_events.Length() != 0) {
+                this.IOEventsReset()
             }
             return result
         }
     }
     
-    _Shift_IO_Keys_Window(count) {
-        io_keys.RemoveAt(1, count)
+    _IOEventsWindowShift(count) {
+        io_events.RemoveAt(1, count)
         
-        for key, index in io_keys_index {
+        for key, index in io_events_index {
             if (index <= count) {
-                io_keys_index.Delete(key)
+                io_events_index.Delete(key)
                 continue
             }
-            io_keys_index[key] := index - count
+            io_events_index[key] := index - count
         }
     }
 
     KeyToToken(key) {
         token := new clsToken
-        entry := "" . key.key
-        token.input := entry
+        token.input := "" . key.key
+
         if (key.with_shift) {
             token.attribs |= TokenAttribs.WITH_SHIFT
-            token.output := str.ToAscii(entry, ["Shift"])
-        } else {
-            token.output := entry
         }
 
-        if ( !key.with_shift && InStr(locale.punctuation_plain, entry) )
-                || ( key.with_shift && InStr(locale.punctuation_shift, entry) ) {
-            token.type := TokenType.PUNCTUATION
-        } else if (entry == " ") {
+        ; Process Space, NumPad, and then regular keys
+        if (token.input == " ") {
             token.type := TokenType.MANUAL_SPACE
-        } else if ( (!key.with_shift && (InStr(locale.numerals_plain, entry) || InStr("⓪①②③④⑤⑥⑦⑧⑨", entry)))  
-                || (key.with_shift && (InStr(locale.numerals_shift, entry))) ) {
-            token.type := TokenType.NUMERAL
+            token.typed_char := " "
+            token.output := " "
+        } else if (InStr("⓪①②③④⑤⑥⑦⑧⑨⊕⊖⊗⊘⊙", token.input)) {
+            token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
+            token.output := token.input
+            if (InStr("⓪①②③④⑤⑥⑦⑧⑨", token.input)) {
+                token.type := TokenType.NUMERAL
+            } else {
+                token.type := TokenType.PUNCTUATION
+                token.attribs |= TokenAttribs.REMOVES_SM_SPACE
+            }
+        } else {
+            key_prop := locale.key_map.keys_by_SC[key.SC]
+            key_semantics := key.with_shift ? key_prop.with_shift : key_prop.plain
+            token.typed_char := key_semantics.char
+            token.output := token.typed_char
+            if (key_semantics.is_punctuation) {
+                token.type := TokenType.PUNCTUATION
+            } else if (key_semantics.is_numeral) {
+                token.type := TokenType.NUMERAL
+            }
+            if (key_semantics.removes_space) {
+                token.attribs |= TokenAttribs.REMOVES_SM_SPACE
+            }
+            if (key_semantics.adds_space) {
+                token.attribs |= TokenAttribs.SM_SPACE_AFTER
+            }
+            if (key_semantics.capitalizes) {
+                token.attribs |= TokenAttribs.CAPITALIZING_KEY
+            }
         }
         return token
     }
@@ -331,13 +367,13 @@ Class clsIOrepresentation {
         global io_new_tokens
         
         Loop % count {
-            token := this.KeyToToken(io_keys[A_Index])
+            token := this.KeyToToken(io_events[A_Index])
             io_new_tokens.Push(token)
         }
-        if (count == io_keys.Length()) {
-            this.IOKeysReset()
+        if (count == io_events.Length()) {
+            this.IOEventsReset()
         } else {
-            this._Shift_IO_Keys_Window(count)           
+            this._IOEventsWindowShift(count)           
         }
     }
 
@@ -346,11 +382,11 @@ Class clsIOrepresentation {
         global io_new_tokens
         accum_input := ""
 
-        io_length := io_keys.Length()
+        io_length := io_events.Length()
         io_chord.token_count := io_length
         Loop, % io_length
         {
-            key := io_keys[A_Index] 
+            key := io_events[A_Index] 
             accum_input .= key.key
             if (key.with_shift) {
                 io_chord.with_shift := true
@@ -362,12 +398,6 @@ Class clsIOrepresentation {
             io_new_tokens.Push(token)
         }
              
-        ; If Shift is allowed as a separate key in chords, we add it as part of the sequence.
-        if (settings.chording & CHORD_ALLOW_SHIFT && io_chord.with_shift) {
-            accum_input := "+" . accum_input
-            io_chord.with_shift := false
-        }
-    
         ; Sort to allow matching against chord dictionaries        
         if (dll.available) {
             io_chord.candidate := dll.NormalizeChord(accum_input)
@@ -375,16 +405,16 @@ Class clsIOrepresentation {
             io_chord.candidate := str.Arrange(accum_input)
         }
 
-        this.IOKeysReset()
+        this.IOEventsReset()
     }
 
     ; Detect rolling typing
     _IsRollingTyping() {
         global first_lift
-        first_lift_end := io_keys[first_lift].end
-        Loop, % io_keys.Length() - first_lift
+        first_lift_end := io_events[first_lift].end
+        Loop, % io_events.Length() - first_lift
         {
-            if (io_keys[first_lift + A_Index].start > first_lift_end) {
+            if (io_events[first_lift + A_Index].start > first_lift_end) {
                 return true
             }
         }
@@ -404,14 +434,14 @@ Class clsIOrepresentation {
         ; Determine the overlap of the first two keys
         overlap_end := end
         Loop 2 {
-            if (key_end := io_keys[A_Index].end) {
+            if (key_end := io_events[A_Index].end) {
                 overlap_end := Min(overlap_end, key_end)
             }
         }
         ; treat as keys if overlap is too short or we have rolling typing 
-        if (overlap_end - io_keys[2].start <= settings.input_delay
+        if (overlap_end - io_events[2].start <= settings.input_delay
                 || this._IsRollingTyping()) {
-            this.AddKeysToTokens(io_keys.Length())
+            this.AddKeysToTokens(io_events.Length())
         } else {
             this.AddChordToTokens()
         }
@@ -420,11 +450,11 @@ Class clsIOrepresentation {
 
     _ClassifyByPercentage(end, lifted_index) {
         ; test the full buffer then drop earlier keys
-        common_overlap := end - io_keys[io_keys.Length()].start
+        common_overlap := end - io_events[io_events.Length()].start
         
-        end_iter := Min(lifted_index, io_keys.Length() - 1)
+        end_iter := Min(lifted_index, io_events.Length() - 1)
         Loop % end_iter {
-            candidate_span := end - io_keys[A_Index].start
+            candidate_span := end - io_events[A_Index].start
             
             if (candidate_span <= 0) {
                 continue
@@ -437,7 +467,7 @@ Class clsIOrepresentation {
                 return
             }
         }
-        if (lifted_index == io_keys.Length()) {
+        if (lifted_index == io_events.Length()) {
             this.AddKeysToTokens(lifted_index)
         } else {
             this.AddKeysToTokens(end_iter)
@@ -445,8 +475,8 @@ Class clsIOrepresentation {
     }
 
     _Classify(end, lifted_index) {  ; -> bool if keys is empty and ready for token processing
-        if (io_keys.Length() == 1) {
-            ; process a lone key press in io_keys
+        if (io_events.Length() == 1) {
+            ; process a lone key press in io_events
             this.AddKeysToTokens(1)
             return true
         }
@@ -454,7 +484,7 @@ Class clsIOrepresentation {
         ; two or more keys were pressed as a potential chord
         if (settings.chording & CHORD_BY_OVERLAP) {
             this._ClassifyByPercentage(end, lifted_index)
-            return io_keys.Length() == 0
+            return io_events.Length() == 0
         } else {
             return this._ClassifyByDuration(end, lifted_index)
         }
@@ -472,7 +502,7 @@ Class clsIOrepresentation {
     }
 
     ClearTokens(type) {
-        this.IOKeysReset()
+        this.IOEventsReset()
         io_tokens := []
         new_token := new clsToken
 
@@ -481,7 +511,7 @@ Class clsIOrepresentation {
         } else {
             new_token.type := TokenType.INTERRUPT
         }
-        if (visualizer.IsOn()) {
+        if (A_Args[1] == "dev" && visualizer.IsOn()) {
             visualizer.NewLine()
         }
         io_tokens.Push(new_token)
@@ -731,14 +761,14 @@ Class clsIOrepresentation {
     }
 
     _CapitalizeTypingAsNeeded(token) {
-        character := token.input
+        character := token.typed_char
         if (StrLen(character) != 1) {
             return
         }
-        if ( settings.capitalization != CAP_ALL
+        if (settings.capitalization != CAP_ALL
                 || token.type == TokenType.PUNCTUATION
                 || token.type == TokenType.MANUAL_SPACE
-                || token.attribs & TokenAttribs.WITH_SHIFT ) {
+                || token.attribs & TokenAttribs.WITH_SHIFT) {
             return
         }
 
@@ -747,8 +777,8 @@ Class clsIOrepresentation {
             return
         }
 
-        if ( this._ShouldCapitalize() ) {
-            token.output := RegExReplace(character, "(^.)", "$U1")
+        if (this._ShouldCapitalize()) {
+            token.output := Format("{:U}", character)
             token.attribs |= TokenAttribs.WAS_CAPITALIZED
         }
     }
@@ -762,10 +792,7 @@ Class clsIOrepresentation {
         type := token.type
         ; for punctuation that removes spaces
         if (type == TokenType.PUNCTUATION) {
-            if ( (!(attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.remove_space_plain, token.input))
-                || ((attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.remove_space_shift, token.input)) ) {
+            if (attribs & TokenAttribs.REMOVES_SM_SPACE) {
                 io_tokens.RemoveAt(PreviousLiveTokenId())   ; not tombstoning because we've just added it
                 return true
             }
@@ -802,8 +829,7 @@ Class clsIOrepresentation {
                 || PreviousLiveToken().type == TokenType.INTERRUPT ) {
             return
         }
-        if (( !(attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_plain, token.input) )
-                || (attribs & TokenAttribs.WITH_SHIFT) && InStr(locale.space_after_shift, token.input) ) {
+        if (attribs & TokenAttribs.SM_SPACE_AFTER) {
             this._AddSmartSpace()
         }
     }
@@ -889,12 +915,8 @@ Class clsIOrepresentation {
         }
         
         ; if the last output was punctuation that does not ask for a space
-        if ( ( !(prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.punctuation_plain, prev_token.input)
-                && !InStr(locale.space_after_plain, prev_token.input) )
-                || (prev_token.attribs & TokenAttribs.WITH_SHIFT)
-                && InStr(locale.punctuation_shift, prev_token.input)
-                && !InStr(locale.space_after_shift, prev_token.input) )  {
+        if (prev_token.type == TokenType.PUNCTUATION
+                && !(prev_token.attribs & TokenAttribs.SM_SPACE_AFTER)) {
             add_leading_space := false
         }
         
@@ -960,6 +982,11 @@ Class clsIOrepresentation {
                 || (prev_type == TokenType.EXPANSION && !(prev_attribs & TokenAttribs.IS_PREFIX)) ) {
             return
         }
+
+        ; Ignore strings such as USD, or aptX
+        if ( this._DetectShiftWithin(first_token_id + 1, LastTokenId() + offset) ) {
+            return
+        }
         
         expanded := shorthands.LookUp(text)
         if (! expanded) {
@@ -977,10 +1004,7 @@ Class clsIOrepresentation {
             expanded := RegExReplace(expanded, "(^.)", "$U1")
             io_tokens[first_token_id].attribs |= TokenAttribs.WAS_CAPITALIZED
         }
-        ; Ignore strings such as USD, or aptX
-        if ( this._DetectShiftWithin(first_token_id + 1, LastTokenId() + offset) ) {
-            return
-        }
+
         affixes := this._DetectAffixes(expanded)
         capitalizes_next := this._DetectCapitalizesNext(expanded)
         expanded := this._RemoveCapitalizesNextSymbol(expanded)
@@ -1054,11 +1078,8 @@ Class clsIOrepresentation {
 
         ; Capitalize chords after sentence-ending punctuation should even a preceding space.
         if (io_tokens[start].attribs & TokenAttribs.FIRST_IN_CHORD) {
-            prev_input := previous_token.input
-            with_shift := previous_token.attribs & TokenAttribs.WITH_SHIFT
-            if (StrLen(prev_input) == 1
-                && (!with_shift && InStr(locale.capitalizing_plain, prev_input))
-                || (with_shift && InStr(locale.capitalizing_shift, prev_input)) ) {
+            if (previous_token.type == TokenType.PUNCTUATION
+                    && (previous_token.attribs & TokenAttribs.CAPITALIZING_KEY)) {
                 return true
             }
         }
@@ -1071,11 +1092,8 @@ Class clsIOrepresentation {
             if (before_previous_token.attribs & TokenAttribs.CAPITALIZES_NEXT) {
                 return true
             }
-            before_prev_input := before_previous_token.input
-            with_shift := before_previous_token.attribs & TokenAttribs.WITH_SHIFT
-            if ( StrLen(before_prev_input) == 1
-                && (!with_shift && InStr(locale.capitalizing_plain, before_prev_input))
-                || (with_shift && InStr(locale.capitalizing_shift, before_prev_input)) ) {
+            if (before_previous_token.type == TokenType.PUNCTUATION
+                    && (before_previous_token.attribs & TokenAttribs.CAPITALIZING_KEY)) {
                 return true
             }
         }
@@ -1196,7 +1214,7 @@ Class clsIOrepresentation {
             }
 
             if (token.type == TokenType.PUNCTUATION) {
-                ; exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
+                ; TK - 2.10 - exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
                 SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
                 SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
                 io_edits.Push(SC_prefix . "{" . SC_key . "}")
@@ -1224,6 +1242,7 @@ Class clsIOrepresentation {
             }
 
             SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
+            ; TK - 2.10
             SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
             io_edits.Push(SC_prefix . "{" . SC_key . "}")
         }
@@ -1233,21 +1252,22 @@ Class clsIOrepresentation {
 
     _SendOutput(edit) {
         SendInput % edit
-        if (settings.output_delay && test.mode != TEST_RUNNING) {
+        if (settings.output_delay && (A_Args[1] != "dev" || test.mode != TEST_RUNNING)) {
             Sleep settings.output_delay
         }
     }
     
     ProcessEdits(edits) {
         for _, edit in edits {
-            if (A_Args[1] != "dev") {
-                this._SendOutput(edit)
-            } else {
+            if (A_Args[1] == "dev") {
                 test.Log(edit)
                 if (test.mode != TEST_RUNNING) {
                     this._SendOutput(edit)
                 }
+                continue
             }
+
+            this._SendOutput(edit)
         }
     }
 }

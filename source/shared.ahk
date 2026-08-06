@@ -269,7 +269,6 @@ GuiEscape(handle) {
 *    HotkeyToText     Returns a human-readable hotkey text.
 *    Ellipsisize      Returns a shortened string (if it exceeds the limit) with ellipsis added.
 *    TextInPixels     Returns the length of text in pixels.
-*    ToAscii          Converts key and modifiers to ASCII
 *    JoinArray        Returns a string with array joined by a separator (defaults to ` `)
 *    BareFilename     Returns filename without the full path
 *    FilenameWithExtension
@@ -335,21 +334,6 @@ Class clsStringFunctions {
         }
     }
 
-    ; Convert to ASCII
-    ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
-    ToAscii(Key, Modifiers := "") {
-        VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
-        ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:50:51 AM ; var is assigned but never used.
-        VK := GetKeyVK(Key)
-        ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:51:05 AM ; var is assigned but never used.
-        SC := GetKeySC(Key)
-        VarSetCapacity(ModStates, 256, 0)
-        For _, Modifier In Modifiers
-            If VK_MOD.HasKey(Modifier)
-                NumPut(0x80, ModStates, VK_MOD[Modifier], "UChar")
-        DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
-        Return Chr(Ascii)
-    }
     /** Ellipsisize
     *        text         String to shorten.
     *        limit        Limit in pixel length.
@@ -688,18 +672,29 @@ class clsUpdater {
 QPC() {
 	static frequency
     static start
-    if (! frequency)
+
+    if (A_Args[2] != "test-vs") {
+        return
+    }
+
+    if (! frequency) {
         DllCall("kernel32\QueryPerformanceFrequency", Int64P, frequency)
+    }
 	DllCall("kernel32\QueryPerformanceCounter", Int64P, count)
     if (start) {
         OutputDebug, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
-        ; MsgBox, , QPC, % Format("`nElapsed time (ms): {:.2f}`n",  ((count / frequency) - start) * 1000)
         start := 0
-    } else start := count / frequency
+    } else {
+        start := count / frequency
+    }
 }
 
 ; Simple debug helper
 Debug(s) {
+    if (A_Args[2] != "test-vs") {
+        return
+    }
+
     FormatTime, timestamp,, HH:mm:ss
     OutputDebug, % timestamp . "." . A_MSec . ":  " . s . "`n"
 }
