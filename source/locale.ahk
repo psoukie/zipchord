@@ -551,16 +551,28 @@ ApplyLocaleToRuntime() {
     io.ClearTokens("*Interrupt*")
     locale.LoadForCurrentLayout(settings.locale)
     CopyDictionarySettingsFromLocale(locale)
+    dict_path_changed := false
 
     if (!settings.chord_file) {
         chords.Unload()
     } else if (chords._file != settings.chord_file) {
-        chords.Load(settings.chord_file)
+        if (chords.Load(settings.chord_file)
+                && settings.chord_file != chords._file) {
+            settings.chord_file := chords._file
+            dict_path_changed := true
+        }
     }
     if (!settings.shorthand_file) {
         shorthands.Unload()
     } else if (shorthands._file != settings.shorthand_file) {
-        shorthands.Load(settings.shorthand_file)
+        if (shorthands.Load(settings.shorthand_file)
+                && settings.shorthand_file != shorthands._file) {
+            settings.shorthand_file := shorthands._file
+            dict_path_changed := true
+        }
+    }
+    if (dict_path_changed) {
+        SaveRuntimeDictionarySettingsToLocale()
     }
     locale.RefreshScanCodeMapping()
     UI_SyncModeState()
