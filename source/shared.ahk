@@ -269,7 +269,6 @@ GuiEscape(handle) {
 *    HotkeyToText     Returns a human-readable hotkey text.
 *    Ellipsisize      Returns a shortened string (if it exceeds the limit) with ellipsis added.
 *    TextInPixels     Returns the length of text in pixels.
-*    ToAscii          Converts key and modifiers to ASCII
 *    JoinArray        Returns a string with array joined by a separator (defaults to ` `)
 *    BareFilename     Returns filename without the full path
 *    FilenameWithExtension
@@ -333,22 +332,6 @@ Class clsStringFunctions {
         } else {
             return locale.key_map.NUMPAD_MAPPING[hex].ahk
         }
-    }
-
-    ; Convert to ASCII -- TK - should be able to replace in 2.10
-    ; The following code is from "just me" in https://www.autohotkey.com/boards/viewtopic.php?t=1040
-    ToAscii(Key, Modifiers := "") {
-        VK_MOD := {Shift: 0x10, Ctrl: 0x11, Alt: 0x12}
-        VK := GetKeyVK(Key)
-        SC := GetKeySC(Key)
-        VarSetCapacity(ModStates, 256, 0)
-        For _, Modifier In Modifiers {
-            If VK_MOD.HasKey(Modifier) {
-                NumPut(0x80, ModStates, VK_MOD[Modifier], "UChar")
-            }
-        }
-        DllCall("USer32.dll\ToAscii", "UInt", VK, "UInt", SC, "Ptr", &ModStates, "UIntP", Ascii, "UInt", 0, "Int")
-        Return Chr(Ascii)
     }
 
     /** Ellipsisize

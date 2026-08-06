@@ -320,23 +320,21 @@ Class clsIOrepresentation {
 
     KeyToToken(key) {
         token := new clsToken
-        entry := "" . key.key
-        token.input := entry
+        token.input := "" . key.key
 
         if (key.with_shift) {
             token.attribs |= TokenAttribs.WITH_SHIFT
-            token.output := str.ToAscii(entry, ["Shift"])
-        } else {
-            token.output := entry
         }
 
         ; Process Space, NumPad, and then regular keys
-        if (entry == " ") {
+        if (token.input == " ") {
             token.type := TokenType.MANUAL_SPACE
             token.typed_char := " "
-        } else if (InStr("⓪①②③④⑤⑥⑦⑧⑨⊕⊖⊗⊘⊙", entry)) {
+            token.output := " "
+        } else if (InStr("⓪①②③④⑤⑥⑦⑧⑨⊕⊖⊗⊘⊙", token.input)) {
             token.typed_char := locale.key_map.NUMPAD_MAPPING[key.SC].output
-            if (InStr("⓪①②③④⑤⑥⑦⑧⑨", entry)) {
+            token.output := token.input
+            if (InStr("⓪①②③④⑤⑥⑦⑧⑨", token.input)) {
                 token.type := TokenType.NUMERAL
             } else {
                 token.type := TokenType.PUNCTUATION
@@ -346,6 +344,7 @@ Class clsIOrepresentation {
             key_prop := locale.key_map.keys_by_SC[key.SC]
             key_semantics := key.with_shift ? key_prop.with_shift : key_prop.plain
             token.typed_char := key_semantics.char
+            token.output := token.typed_char
             if (key_semantics.is_punctuation) {
                 token.type := TokenType.PUNCTUATION
             } else if (key_semantics.is_numeral) {
@@ -766,10 +765,10 @@ Class clsIOrepresentation {
         if (StrLen(character) != 1) {
             return
         }
-        if ( settings.capitalization != CAP_ALL
+        if (settings.capitalization != CAP_ALL
                 || token.type == TokenType.PUNCTUATION
                 || token.type == TokenType.MANUAL_SPACE
-                || token.attribs & TokenAttribs.WITH_SHIFT ) {
+                || token.attribs & TokenAttribs.WITH_SHIFT) {
             return
         }
 
@@ -778,8 +777,8 @@ Class clsIOrepresentation {
             return
         }
 
-        if ( this._ShouldCapitalize() ) {
-            token.output := RegExReplace(character, "(^.)", "$U1")
+        if (this._ShouldCapitalize()) {
+            token.output := Format("{:U}", character)
             token.attribs |= TokenAttribs.WAS_CAPITALIZED
         }
     }
