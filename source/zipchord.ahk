@@ -1023,6 +1023,11 @@ PauseApp(from_button := false) {
 }
 
 QuitApp() {
+    global central_watcher
+
+    central_watcher.Stop()
+    reset_hint_fn := main_UI._reset_hint_fn
+    SetTimer, %reset_hint_fn%, Off
     WireHotkeys("Off")
     hint_UI.ShowOnOSD("Closing ZipChord")
     if (dll.available) {
