@@ -539,7 +539,7 @@ Class clsMainUI {
         UI.Add(cts.chord_by_label, "w200")
         UI.Add(cts.input_delay, "Right xp+200 yp-2 w40 Number")
         UI.Add(cts.input_overlap, "Right xp yp w40 Number")
-        UI.Add("GroupBox", "xs-20 y+40 w310 h175", "Shortcut options")
+        UI.Add("GroupBox", "xs-20 y+40 w310 h140", "Shortcut options")
         UI.Add(cts.restrict_chords, "xp+20 yp+30")
         UI.Add(cts.delete_unrecognized)
         UI.Add(cts.immediate_shorthands, "Section")
