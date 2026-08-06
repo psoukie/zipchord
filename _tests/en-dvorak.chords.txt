@@ -244,4 +244,4 @@ sp2	{s}cott
 sp3	{Backspace 2}ed
 prg	Prague
 ls	El Salvador
-pst Prostějov
+pst	Prostějov
