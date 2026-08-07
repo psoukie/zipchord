@@ -1,6 +1,6 @@
 # ZipChord Changelog
 
-## ZipChord 2.10 - Unreleased Changes
+## ZipChord 2.10
 
 **New Features**
 
@@ -11,6 +11,11 @@
 
 - ZipChord can now show hints for shortcuts whose expansions contain layout-specific characters, such as "El Niño", provided those characters are typed directly rather than using dead keys.
 - Improved internal handling of keyboard layout settings and capitalization.
+
+**Fixes**
+
+- Fixed automatic detection for keyboard layout mapping which could previously produce incorrect results such as `´q` or `ä` when the layout includes dead keys.
+- Fixed an occasional bug related to on-screen display when quitting ZipChord.
 
 **Breaking Change**
 

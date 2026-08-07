@@ -497,6 +497,15 @@ LocaleHasDictionarySettings(locale_name) {
     return ini.HasProperty("chord_file", section, filename)
 }
 
+LocaleHasCompleteSettings(locale_name) {
+    if (!LocaleHasDictionarySettings(locale_name)) {
+        return false
+    }
+    GetLocaleStorage(locale_name, section, filename)
+    return ini.HasProperty("key_map", section, filename)
+            && ini.HasProperty("semantic_remove_space", section, filename)
+}
+
 CopyDictionarySettingsFromLocale(profile) {
     settings.chord_file := chords.GetFullFileName(profile.chord_file)
     settings.shorthand_file := shorthands.GetFullFileName(profile.shorthand_file)
@@ -513,13 +522,16 @@ CopyDictionarySettingsToLocale(profile) {
 }
 
 EnsureLocaleExists(locale_name) {
-    if (!locale_name || LocaleHasDictionarySettings(locale_name)) {
+    if (!locale_name || LocaleHasCompleteSettings(locale_name)) {
         return
     }
 
+    has_dictionary_settings := LocaleHasDictionarySettings(locale_name)
     target_locale := new clsLocale
     target_locale.LoadForCurrentLayout(locale_name)
-    CopyDictionarySettingsToLocale(target_locale)
+    if (!has_dictionary_settings) {
+        CopyDictionarySettingsToLocale(target_locale)
+    }
     target_locale.Save(locale_name)
 }
 
@@ -539,16 +551,28 @@ ApplyLocaleToRuntime() {
     io.ClearTokens("*Interrupt*")
     locale.LoadForCurrentLayout(settings.locale)
     CopyDictionarySettingsFromLocale(locale)
+    dict_path_changed := false
 
     if (!settings.chord_file) {
         chords.Unload()
     } else if (chords._file != settings.chord_file) {
-        chords.Load(settings.chord_file)
+        if (chords.Load(settings.chord_file)
+                && settings.chord_file != chords._file) {
+            settings.chord_file := chords._file
+            dict_path_changed := true
+        }
     }
     if (!settings.shorthand_file) {
         shorthands.Unload()
     } else if (shorthands._file != settings.shorthand_file) {
-        shorthands.Load(settings.shorthand_file)
+        if (shorthands.Load(settings.shorthand_file)
+                && settings.shorthand_file != shorthands._file) {
+            settings.shorthand_file := shorthands._file
+            dict_path_changed := true
+        }
+    }
+    if (dict_path_changed) {
+        SaveRuntimeDictionarySettingsToLocale()
     }
     locale.RefreshScanCodeMapping()
     UI_SyncModeState()

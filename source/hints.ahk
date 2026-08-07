@@ -161,9 +161,18 @@ Class clsHintUI {
 
     Reset() {
         global hint_delay
+
+        Critical
+        hide_osd_fn := this._hide_OSD_fn
+        hide_tooltip_fn := this._hide_tooltip_fn
+        SetTimer, %hide_osd_fn%, Off
+        SetTimer, %hide_tooltip_fn%, Off
+        Tooltip
+
         hint_delay.Reset()
         this.UI.Destroy()
         this.Build()
+        Critical Off
     }
 
     ShowHint(line1 := "", line2 := "", line3  := "") {

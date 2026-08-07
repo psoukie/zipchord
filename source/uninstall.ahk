@@ -103,6 +103,6 @@ class clsUninstall {
     }
     _ShowCompletionMessage() {
         remaining_path := A_ScriptFullPath
-        MsgBox, , % "Uninstall ZipChord", % "ZipChord has been uninstalled.`n`nThe uninstaller file was left in place:`n" . remaining_path . "`n`nYou can delete it manually if you no longer need it."
+        MsgBox, , % "Uninstall ZipChord", % "ZipChord has been uninstalled.`n`nThe uninstaller file was left in place:`n" . remaining_path . "`n`nYou can delete it manually."
     }
 }
