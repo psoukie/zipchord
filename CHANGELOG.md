@@ -1,6 +1,6 @@
 # ZipChord Changelog
 
-## ZipChord 2.10 - Unreleased Changes
+## ZipChord 2.10
 
 **New Features**
 
