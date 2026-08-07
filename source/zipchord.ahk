@@ -122,7 +122,7 @@ Class clsSettings {
                 , locale:           ""
                 , capitalization:   CAP_CHORDS
                 , spacing:          SPACE_BEFORE_CHORD | SPACE_AFTER_CHORD | SPACE_PUNCTUATION
-                , chording:         CHORD_RESTRICT ; Chord recognition options
+                , chording:         CHORD_BY_OVERLAP | CHORD_RESTRICT ; Chord recognition options
                 , chord_file:       "en-qwerty.chords.txt" ; file name for the chord dictionary
                 , shorthand_file:   "english.shorthands.txt" ; file name for the shorthand dictionary
                 , dictionary_dir:   A_ScriptDir
