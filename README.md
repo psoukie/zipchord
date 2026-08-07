@@ -54,6 +54,12 @@ Official [documentation](https://github.com/psoukie/zipchord/wiki) is available 
 
 ZipChord adheres to strict privacy and security principles. It does not send your typed content or configuration data anywhere. See more [privacy details](https://github.com/psoukie/zipchord/wiki/Privacy) in the Wiki.
 
+## Development
+
+The first version of ZipChord was released in 2021. It is primarily written in [AutoHotkey](https://www.autohotkey.com/), with components gradually being reimplemented in [Odin](https://odin-lang.org/) as part of ongoing work toward cross-platform support.
+
+Design and implementation are done by the maintainer, with generative AI used for code review, troubleshooting, technical recommendations, and documentation.
+
 ## Feedback
 
 If you have any questions, feedback, or suggestions, please write a note in the [Discussions](https://github.com/psoukie/zipchord/discussions). You can also report a bug if you run across anything that seems broken or create a feature suggestion under [Issues](https://github.com/psoukie/zipchord/issues).
