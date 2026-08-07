@@ -322,7 +322,7 @@ Class clsLocaleInterface {
 
         UI.Font("s10", "Segoe UI")
         UI.Add(this.controls.btn_detect, "xs-35 y+30 w160")
-        UI.Add(this.controls.punctuation_group, "xs-50 y+20 h180 w490 Section")
+        UI.Add(this.controls.punctuation_group, "xs-50 y+20 h185 w490 Section")
         UI.Add("Text", "xs+15 yp+30 Section", "Remove smart spaces before")
         UI.Add("Text", "y+20", "Add smart spaces after")
         UI.Add("Text", "y+20", "Capitalize after")
@@ -333,7 +333,7 @@ Class clsLocaleInterface {
         UI.Add(this.options.semantic_capitalizing, "w260 r1")
         UI.Add(this.options.semantic_other, "w260 r1")
         UI.Font("s10", "Segoe UI")
-        UI.Add(this.controls.btn_apply, "xs+80 y+20 w80")
+        UI.Add(this.controls.btn_apply, "xs+80 y+30 w80")
         UI.Add(this.controls.btn_ok, "x+20 w80 Default")
         this.UI := UI
     }
