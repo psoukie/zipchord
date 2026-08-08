@@ -474,13 +474,19 @@ _UpdateWorkingDir(new_dir) {
 */
 Class clsAddShortcut {
     UI := {}
+    saved_shortcuts := { chord: ""
+                       , shorthand: ""}
 
     controls := { expansion:       { type: "Edit"
                                    , function: ObjBindMethod(this, "_ExpansionChange")} 
                 , chord:           { type: "Edit"
-                                   , function: ObjBindMethod(this, "_FocusControl", "chord")}
+                                   , function: ObjBindMethod(this, "_UpdateSaveButton", "chord")}
                 , shorthand:       { type: "Edit"
-                                   , function: ObjBindMethod(this, "_FocusControl", "shorthand")}
+                                   , function: ObjBindMethod(this, "_UpdateSaveButton", "shorthand")}
+                , note_chord:      { type: "Text"
+                                   , text: "No defined chord -- TK only partially dynamic now."}
+                , note_shorthand:  { type: "Text"
+                                   , text: "No defined shorthand -- TK only partially dynamic now."}
                 , save_chord:      { type: "Button"
                                    , text: "&Save"
                                    , function: ObjBindMethod(this, "_SaveShortcut", "chord")}
@@ -489,7 +495,7 @@ Class clsAddShortcut {
                                    , function: ObjBindMethod(this, "_SaveShortcut", "shorthand")}}
 
     _backspace_fn := ObjBindMethod(this, "_Backspace")
-    _ui_title := "Add or Edit Shortcut"
+    _ui_title := "Assign Shortcuts"
 
     Show(exp) {
         kb.SetZipChordToCurrentHkl()
@@ -499,6 +505,8 @@ Class clsAddShortcut {
         backspace_fn := this._backspace_fn
         Hotkey, $^Backspace, %backspace_fn%, On
         this._Build()
+        this.saved_shortcuts := { chord: ""
+                           , shorthand: ""}
         if (exp=="") {
             this.controls.expansion.Focus()
         } else {
@@ -508,14 +516,18 @@ Class clsAddShortcut {
         this.UI.Show()
     }
     Reshow() {
+        this.saved_shortcuts := { chord: ""
+                           , shorthand: ""}
         this.UI.Show()
     }
     UpdateShortcuts() {
         for _, dict in ["chord", "shorthand"] {
             dict_obj := dict . "s"
-            if (chord := %dict_obj%.ReverseLookUp(this.controls.expansion.value)) {
-                this.controls[dict].value := chord
+            if (shortcut := %dict_obj%.ReverseLookUp(this.controls.expansion.value)) {
+                this.saved_shortcuts[dict] := shortcut
+                this.controls[dict].value := shortcut
             } else {
+                this.saved_shortcuts[dict] := ""
                 this.controls[dict].value := ""
             }
             this.controls["save_" . dict].Disable()
@@ -526,17 +538,17 @@ Class clsAddShortcut {
         this.UI.on_close := ObjBindMethod(this, "Close")
         this.UI.Add("Text", "Section x+20 y+15", "&Expanded text")
         this.UI.Add(this.controls.expansion, "y+10 w320")
-        this._BuildHelper("&Chord", "chord", "Individual keys that make up the chord, without pressing Shift or other modifier keys.", "xs-20 h120 w360")
-        this._BuildHelper("S&horthand", "shorthand", "Sequence of keys of the shorthand, without pressing Shift or other modifier keys.")
-        this.UI.Add("Button", "Default x265 y+30 w100", "Close", ObjBindMethod(this, "Close"))
+        this._BuildHelper("&Chord", "chord", "xs-20 h120 w360")
+        this._BuildHelper("S&horthand", "shorthand")
+        this.UI.Add("Button", "Default x265 yp+70 w100", "Close", ObjBindMethod(this, "Close"))
     }
-    _BuildHelper(heading, ctrl, text, opt:="xs-20 y+30 h120 w360") {
+    _BuildHelper(heading, ctrl, opt:="xs-20 yp+70 h120 w360") {
         this.UI.Add("GroupBox", opt, heading)
         this.UI.Font("s10", "Consolas")
         this.UI.Add(this.controls[ctrl], "xp+20 yp+30 Section w200")
         this.UI.Font("s10", "Segoe UI")
         this.UI.Add(this.controls["save_" . ctrl], "x+20 yp w100")
-        this.UI.Add("Text", "xs +Wrap w320", text)
+        this.UI.Add(this.controls["note_" . ctrl], "xs +Wrap w320")
     }
     Close() {
         Hotkey, F1, Off
@@ -545,17 +557,36 @@ Class clsAddShortcut {
         if (settings.mode > MODE_ZIPCHORD_ENABLED)
             WireHotkeys("On")  ; resume normal mode
     }
-    _SaveShortcut(dictionary) {
-        obj_name := dictionary . "s"
-        if (%obj_name%.Add(this.controls[dictionary].value, this.controls.expansion.value)) {
-            this.Close()
-            main_UI.UpdateDictionaryUI()
+    _SaveShortcut(dict) {
+        obj_name := dict . "s"
+        ; Delete a shortcut
+        if (this.controls[dict].value == "") {
+            ; asserts this.saved_shortcuts[dict] != "" because the Save button would have beeen disabled otherwise
+            ; TK - call a function to delete `this.saved_shortcuts[dict]` from the dictionary
+            this.controls["note_" . dict].value := "The " . dict . " was removed from dictionary."
+            return
+        }
+
+        ; Update a shortcut
+        if (this.saved_shortcuts[dict] != "") {
+            ; asserts this.saved_shortcuts[dict] != this.controls[dict] because the Save button would have beeen disabled otherwise
+            ; TK - call a function to update the `this.saved_shortcuts[dict]` in the dictionary
+            this.controls["note_" . dict].value := "The " . dict . " was updated in the dictionary."
+            return
+        }
+
+        ; otherwise, we're adding a new shortcut
+        if (%obj_name%.Add(this.controls[dict].value, this.controls.expansion.value)) {
+            this.controls["note_" . dict].value := "The " . dict . " was added to the dictionary."
         }
     }
-    _FocusControl(ctrl) {
-        if (this.controls[ctrl].is_enabled && this.controls[ctrl].value != "") {
-            this.controls["save_" . ctrl].Enable()  ; TK - enabled only when different from initial 
-            this.controls["save_" . ctrl].MakeDefault()
+    _UpdateSaveButton(ctrl) {
+        button := "save_" . ctrl
+        if (this.controls[ctrl].value != this.saved_shortcuts[ctrl]) {
+            this.controls[button].Enable()
+            this.controls[button].MakeDefault()
+        } else {
+            this.controls[button].Disable()
         }
     }
     _ExpansionChange() {
