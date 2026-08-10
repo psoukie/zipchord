@@ -476,8 +476,9 @@ Class clsAddShortcut {
     UI := {}
     saved_shortcuts := { chord: ""
                        , shorthand: ""}
+    short_exp := ""
     SHORTCUT_UNDEFINED := "No {1} is assigned to '{2}' in the dictionary. You can add one."
-    SHORTCUT_CURRENT := "This is the {1} currently assigned to '{2}'. You can change or remove it."
+    SHORTCUT_CURRENT := "The current {1} assigned to '{2}' is '{3}'. You can change or remove it."
     SHORTCUT_ADDED := "This {1} for '{2}' was added to the dictionary."
     SHORTCUT_CHANGED := "The {1} assigned to '{2}' was changed in the dictionary."
     SHORTCUT_DELETED := "The {1} assigned to '{2}' was removed from the dictionary."
@@ -557,20 +558,24 @@ Class clsAddShortcut {
 
     _ExpansionChange() {
         expansion := this.controls.expansion.value
+        this.short_exp := str.Ellipsisize(expansion, 100, true)
         for _, dict in ["chord", "shorthand"] {
             current_shortcut := ""
-            if (expansion == "") {
-                this.controls.expansion.Focus()  ; executed twice, but does no harm
-                this._ShortcutDisable(dict)
-            } else {
+            if (expansion != "") {
                 dict_obj := dict . "s"
                 this.controls[dict].Enable()
                 if (shortcut := %dict_obj%.ReverseLookUp(expansion)) {
                     current_shortcut := shortcut
                 }
             }
-            this.controls[dict].value := current_shortcut
             this.saved_shortcuts[dict] := current_shortcut
+            this.controls[dict].value := current_shortcut
+            if (expansion == "") {
+                this._ShortcutDisable(dict)
+            }
+        }
+        if (expansion == "") {
+            this.controls.expansion.Focus()
         }
     }
 
@@ -582,8 +587,6 @@ Class clsAddShortcut {
     }
 
     ShortcutChange(dict) {
-        Debug(Format("Processing call for {} with value {}.", dict, this.controls[dict].value))
-        dict_obj := dict . "s"
         save_button := this.controls["save_" . dict]
         delete_button := this.controls["delete_" . dict]
         control_value := this.controls[dict].value
@@ -592,58 +595,64 @@ Class clsAddShortcut {
         
         if (saved_value != "") {
             ; shortcut exists
+            note.value := Format(this.SHORTCUT_CURRENT, dict, this.short_exp, saved_value)
             delete_button.Enable()
-            note.value := Format(this.SHORTCUT_CURRENT, dict, "test")
             save_button.value := this.BTN_CHANGE[dict]
-            if (control_value == saved_value || control_value == "") {
-                save_button.Disable()
-            } else {
-                save_button.Enable()
-                save_button.MakeDefault()
-            }
         } else {
+            note.value := Format(this.SHORTCUT_UNDEFINED, dict, this.short_exp)
             delete_button.Disable()
             save_button.value := this.BTN_ADD[dict]
-            if (control_value == "") {
-                save_button.Disable()
-            } else {
-                save_button.Enable()
-            }
         }
-        ; short_exp := str.Ellipsisize(expansion, 100, true)
-        ;     this.controls["delete_" . dict].Enable()
-        ;     this.controls["note_" . dict].value := Format(this.SHORTCUT_CURRENT, dict, short_exp)
-        ; } else {
-        ;     this.saved_shortcuts[dict] := ""
-        ;     this.controls[dict].value := ""
-        ;     this.controls["delete_" . dict].Disable()
-        ;     this.controls["note_" . dict].value := Format(this.SHORTCUT_UNDEFINED, dict, short_exp)
-        ; }
-        ; this.controls["save_" . dict].Disable()
+        if (control_value == saved_value || control_value == "") {
+            save_button.Disable()
+        } else {
+            save_button.Enable()
+            save_button.MakeDefault()
+        }
     }
 
     _SaveShortcut(dict) {
         obj_name := dict . "s"
-        ; Delete a shortcut
-        if (this.controls[dict].value == "") {
-            ; asserts this.saved_shortcuts[dict] != "" because the Save button would have beeen disabled otherwise
-            ; TK - call a function to delete `this.saved_shortcuts[dict]` from the dictionary
-            this.controls["note_" . dict].value := "The " . dict . " was removed from dictionary."
-            return
-        }
+        new_shortcut := this.controls[dict].value
+        expansion := this.controls.expansion.value
+        message_template := ""
 
-        ; Update a shortcut
+        ; asserts this.saved_shortcuts[dict] != this.controls[dict]
         if (this.saved_shortcuts[dict] != "") {
-            ; asserts this.saved_shortcuts[dict] != this.controls[dict] because the Save button would have beeen disabled otherwise
+            message_template := this.SHORTCUT_CHANGED
             ; TK - call a function to update the `this.saved_shortcuts[dict]` in the dictionary
-            this.controls["note_" . dict].value := "The " . dict . " was updated in the dictionary."
-            return
+            if (false) {
+                ; failed
+                return
+            }
+
+        } else {
+            ; otherwise, we're adding a new shortcut
+            message_template := this.SHORTCUT_ADDED
+            if (! %obj_name%.Add(new_shortcut, expansion)) {
+                return
+            }
         }
 
-        ; otherwise, we're adding a new shortcut
-        if (%obj_name%.Add(this.controls[dict].value, this.controls.expansion.value)) {
-            this.controls["note_" . dict].value := "The " . dict . " was added to the dictionary."
+        this.CleanUpAfterModification(dict, new_shortcut, message_template)
+    }
+
+    _DeleteShortcut(dict) {
+        obj_name := dict . "s"
+        ; TK - call a function to delete `this.saved_shortcuts[dict]` from the dictionary
+        if (true) {
+            ; success
+            this.CleanUpAfterModification(dict, "", this.SHORTCUT_DELETED)
         }
+    }
+
+    CleanUpAfterModification(dict, new_shortcut, message_template) {
+        this.saved_shortcuts[dict] := new_shortcut
+        this.controls[dict].value := new_shortcut
+        this.ShortcutChange(dict)
+        message := Format(message_template, dict, this.short_exp)
+        Sleep -1
+        this.controls["note_" . dict].value := message
     }
 
     _Backspace() {
