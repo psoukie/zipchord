@@ -17,7 +17,7 @@ class DllError {
     static BAD_ARGUMENT     := -6
     static BUFFER_TOO_SMALL := -7
     static ALLOCATION_ERROR := -8
-    static FILE_READ_FAIL   := -9
+    static FILE_IO_ERROR    := -9
     static INTERNAL_ERROR   := -10
     static VERSION_MISMATCH := -11
 }
@@ -31,7 +31,7 @@ dll_error_text := {0: "No error"
     , -6: "bad argument"
     , -7: "buffer too small"
     , -8: "allocation"
-    , -9: "file read"
+    , -9: "file I/O"
     , -10: "internal"
     , -11: "version mismatch"}
 

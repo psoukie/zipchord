@@ -2,6 +2,7 @@ package tests
 
 import tst "core:testing"
 import zc "../zipchord-lib"
+import "core:os"
 
 @(test)
 utf8bom :: proc(t: ^tst.T) {
@@ -100,4 +101,17 @@ normalize_chords :: proc(t: ^tst.T) {
     noramalized, err = zc._normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Buffer_Too_Small)
 }
-	
+
+@(test)
+edit_dict_file :: proc(t: ^tst.T) {
+    dict_filepath :: `C:\Users\pavel\dev-projects\zipchord\_tests\library_test\dictionary.txt`
+    os.copy_file(dict_filepath, `C:\Users\pavel\dev-projects\zipchord\_tests\library_test\dict_edit_test.txt`)
+	zc.dict_file_edit(dict_filepath, "tbad") // delete the last line
+	zc.dict_file_edit(dict_filepath, "", "shct", "shortcut") // add a shortcut
+	zc.dict_file_edit(dict_filepath, "NEEDLE", "<first>") // replace the first line shortcut
+	zc.dict_file_edit(dict_filepath, "NEEDLE2", "<second>") // replace the second needle
+	zc.dict_file_edit(dict_filepath, "dl") // delete dl shortcut
+	file, open_err := os.open(dict_filepath)
+	size, size_err := os.file_size(file)
+    tst.expect_value(t, size, 164)
+}

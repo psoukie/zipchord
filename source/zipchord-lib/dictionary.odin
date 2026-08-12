@@ -1,6 +1,5 @@
 package zipchord_library
 
-import "base:intrinsics"
 /*
 This file is part of ZipChord.
 Copyright (c) 2021-2026 Pavel Soukenik
@@ -366,8 +365,9 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 
 dict_file_edit :: proc(
 	filepath: string,
-	old_shortcut: string,
+	old_shortcut:= "",
 	new_shortcut := "",
+	expansion := "",
 ) -> (err: Dict_Error) {
 	/* Calling convention based on which parameters are defined:
 	   - new_shortcut && expansion -- add a shortcut
@@ -378,13 +378,16 @@ dict_file_edit :: proc(
 	operation: enum {
 		Delete,
 		Change,
+		Add,
 	}
 	start_pos: int
 	end_pos: int
-	replacement: string
+	replacement := ""
 
 	// Determine the operation; we do not flag invalid combinations
 	switch {
+		case new_shortcut != "" && expansion != "":
+			operation = .Add
 		case new_shortcut != "" && old_shortcut != "":
 			operation = .Change
 		case old_shortcut != "":
@@ -400,13 +403,47 @@ dict_file_edit :: proc(
 	if file_err != nil do return .File_IO_Error
 	file_text := string(file_data)
 
+	if operation == .Add {
+		opening_new_line := "\r\n"
+		ending_new_line := "\r\n"
+
+		// Detect ending line break
+		if strings.has_suffix(file_text, "\r\n") {
+			opening_new_line = ""
+		} else if strings.has_suffix(file_text, "\n") {
+			opening_new_line = ""
+			ending_new_line = "\n"
+		} else {
+			// check what new lines are used; or keep defaults
+			if strings.index(file_text, "\r\n") == -1 &&
+			   strings.index(file_text, "\n") != -1 {
+				opening_new_line = "\n"
+				ending_new_line = "\n"
+			}
+		}
+
+		// Append to the file
+		file, append_err := os.open(filepath, {.Write, .Append})
+		if append_err != nil do return .File_IO_Error
+		defer os.close(file)
+		_, write_err := os.write_strings(file,
+				opening_new_line,
+				new_shortcut,
+				"\t",
+				expansion,
+				ending_new_line)
+		if write_err != nil do return .File_IO_Error
+
+		return .None
+	}
+
 	// Find the strating position
 	needle := strings.concatenate({"\n", old_shortcut, "\t"}, context.temp_allocator)
 	pos := strings.index(file_text, needle)
 	if pos != -1 {
-		start_pos = pos + 1 // after /n
+		start_pos = pos + 1 // after \n
 	} else {
-		// try start of file with BOM
+		// try looking at the start of file with BOM
 		needle = strings.concatenate({"\ufeff", old_shortcut, "\t"}, context.temp_allocator)
 		if strings.has_prefix(file_text, needle) {
 			start_pos = 3 //right after BOM
@@ -421,44 +458,43 @@ dict_file_edit :: proc(
 		}
 	}
 
-	// Find the ending position based on the operation
+	// Find the ending position and define replacement
 	if operation == .Delete {
-		pos = strings.index(file_text[start_pos:], "\n")
-		end_pos = len(file_text) if pos == -1 else start_pos + pos
 		replacement = ""
+		pos = strings.index(file_text[start_pos:], "\n")
+		 if pos == -1 {
+			end_pos = len(file_text)
+		} else {
+			end_pos = start_pos + pos + 1
+		}
 	} else {
-		end_pos = start_pos + len(new_shortcut)
 		replacement = new_shortcut
-	} 
+		end_pos = start_pos + len(old_shortcut)
+	}
 
 	// Create and write a new file
-	new_file, create_err := os.create("temp.txt")
+	temp_filepath := strings.concatenate({filepath, ".zipchord.tmp"},
+			context.temp_allocator)
+	temp_file, create_err := os.create(temp_filepath)
 	if create_err != nil do return .File_IO_Error
-	defer os.close(new_file)
-
-	_, write_err := os.write_strings(new_file,
+	defer {
+		if temp_file != nil do os.close(temp_file)
+		if os.exists(temp_filepath) {
+			os.remove(temp_filepath)
+		}
+	}
+	_, write_err := os.write_strings(temp_file,
 		file_text[:start_pos],
 		replacement,
 		file_text[end_pos:]
 	)
 	if write_err != nil do return .File_IO_Error
-	
-	return .None
-}
 
-dict_file_append :: proc(
-	filepath: string,
-	shortcut := "",
-	expansion:= "",
-) -> (err: Dict_Error) {
-	if filepath == "" do return .Bad_Argument
-
-	file, file_err := os.open(filepath, {.Write, .Append})
-	if file_err != nil do return .File_IO_Error
-	defer os.close(file)
-
-	_, write_err := os.write_strings(file, "\r\n", shortcut, "\t", expansion)
-	if write_err != nil do return .File_IO_Error
+	// Sync & close temp file and rename it to the original dictionary
+	if os.sync(temp_file) != nil do return .File_IO_Error
+	if os.close(temp_file) != nil do return .File_IO_Error
+	temp_file = nil
+	if os.rename(temp_filepath, filepath) != nil do return .File_IO_Error
 
 	return .None
 }
@@ -466,11 +502,4 @@ dict_file_append :: proc(
 remove_bom :: proc(text: string) -> string {
     // The UTF-8 BOM is represented by the rune '\ufeff' (3 bytes)
     return strings.trim_prefix(text, "\ufeff")
-}
-
-main :: proc() {
-	dict_file_append("test.txt", "shct", "shortcut")
-	dict_file_edit("test.txt", "tbad") // should delete the last line but it does not
-	dict_file_edit("test.txt", "NEEDLE", "<first>") // should replace the first line shortcut
-	dict_file_edit("test.txt", "NEEDLE2", "<second>") // should replace the second needle
 }
