@@ -1,6 +1,7 @@
 .vscode/
 build/
 *.exe
+*.pdb
 *.dll
 *.lib
 *.exp
