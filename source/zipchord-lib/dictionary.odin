@@ -1,5 +1,6 @@
 package zipchord_library
 
+import "base:intrinsics"
 /*
 This file is part of ZipChord.
 Copyright (c) 2021-2026 Pavel Soukenik
@@ -24,7 +25,7 @@ Dict_Error :: enum i32 {
     Bad_Argument     = -6,
     Buffer_Too_Small = -7,
     Allocation_Error = -8,
-	File_Read_Fail   = -9,
+	File_IO_Error    = -9,
     Internal_Error   = -10,
 	Version_Mismatch = -11,
 }
@@ -278,17 +279,17 @@ dict_data_load_file :: proc(
 	}
 
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
-	if file_err != nil {
-		return .File_Read_Fail
-	}
 	defer delete(file_data, context.allocator)
+	if file_err != nil {
+		return .File_IO_Error
+	}
 
-	it := string(file_data)
-	it = remove_bom(it)
+	file_text := string(file_data)
+	file_text = remove_bom(file_text)
 
 	i := 0
 	chain_buf: Chord_Chain_Buffer
-	for raw_line in strings.split_iterator(&it, "\n") {
+	for raw_line in strings.split_iterator(&file_text, "\n") {
 		i += 1
 		line := strings.trim_right(raw_line, "\r") 
 		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
@@ -334,7 +335,7 @@ register_shortcut :: proc (
 	orig_shortcut: string,
 	expansion: string,
 	as_chords: bool,
-	chain_buffer: ^Chord_Chain_Buffer
+	chain_buffer: ^Chord_Chain_Buffer,
 ) -> (err: Dict_Error) {
 	shortcut := orig_shortcut
 	raw_chord := ""
@@ -363,18 +364,113 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 	return shortcut, expansion, true
 } 
 
+dict_file_edit :: proc(
+	filepath: string,
+	old_shortcut: string,
+	new_shortcut := "",
+) -> (err: Dict_Error) {
+	/* Calling convention based on which parameters are defined:
+	   - new_shortcut && expansion -- add a shortcut
+       - new_shortcut && old_shortuct -- change the assigned shortcut
+       - old_shortcut only -- delete the shortcut
+    */
+	defer free_all(context.temp_allocator)
+	operation: enum {
+		Delete,
+		Change,
+	}
+	start_pos: int
+	end_pos: int
+	replacement: string
+
+	// Determine the operation; we do not flag invalid combinations
+	switch {
+		case new_shortcut != "" && old_shortcut != "":
+			operation = .Change
+		case old_shortcut != "":
+			operation = .Delete
+		case filepath == "":
+			return .Bad_Argument
+		case:
+			return .Bad_Argument
+	}
+
+	// Load the file as text
+	file_data, file_err := os.read_entire_file(filepath, context.temp_allocator)
+	if file_err != nil do return .File_IO_Error
+	file_text := string(file_data)
+
+	// Find the strating position
+	needle := strings.concatenate({"\n", old_shortcut, "\t"}, context.temp_allocator)
+	pos := strings.index(file_text, needle)
+	if pos != -1 {
+		start_pos = pos + 1 // after /n
+	} else {
+		// try start of file with BOM
+		needle = strings.concatenate({"\ufeff", old_shortcut, "\t"}, context.temp_allocator)
+		if strings.has_prefix(file_text, needle) {
+			start_pos = 3 //right after BOM
+		} else {
+			needle = strings.concatenate({old_shortcut, "\t"}, context.temp_allocator)
+			if strings.has_prefix(file_text, needle) {
+				start_pos = 0
+			} else {
+				fmt.println("Not found")
+				return .Not_Found
+			}
+		}
+	}
+
+	// Find the ending position based on the operation
+	if operation == .Delete {
+		pos = strings.index(file_text[start_pos:], "\n")
+		end_pos = len(file_text) if pos == -1 else start_pos + pos
+		replacement = ""
+	} else {
+		end_pos = start_pos + len(new_shortcut)
+		replacement = new_shortcut
+	} 
+
+	// Create and write a new file
+	new_file, create_err := os.create("temp.txt")
+	if create_err != nil do return .File_IO_Error
+	defer os.close(new_file)
+
+	_, write_err := os.write_strings(new_file,
+		file_text[:start_pos],
+		replacement,
+		file_text[end_pos:]
+	)
+	if write_err != nil do return .File_IO_Error
+	
+	return .None
+}
+
+dict_file_append :: proc(
+	filepath: string,
+	shortcut := "",
+	expansion:= "",
+) -> (err: Dict_Error) {
+	if filepath == "" do return .Bad_Argument
+
+	file, file_err := os.open(filepath, {.Write, .Append})
+	if file_err != nil do return .File_IO_Error
+	defer os.close(file)
+
+	_, write_err := os.write_strings(file, "\r\n", shortcut, "\t", expansion)
+	if write_err != nil do return .File_IO_Error
+
+	return .None
+}
+
 remove_bom :: proc(text: string) -> string {
     // The UTF-8 BOM is represented by the rune '\ufeff' (3 bytes)
-    if strings.has_prefix(text, "\ufeff") {
-        return text[3:]
-    }
-    return text
+    return strings.trim_prefix(text, "\ufeff")
 }
 
-dump_bytes :: proc(s: string) {
-   for b, i in s {
-       fmt.printf("%d: 0x%02X\n", i, b)
-   }
+main :: proc() {
+	dict_file_append("test.txt", "shct", "shortcut")
+	dict_file_edit("test.txt", "tbad") // should delete the last line but it does not
+	dict_file_edit("test.txt", "NEEDLE", "<first>") // should replace the first line shortcut
+	dict_file_edit("test.txt", "NEEDLE2", "<second>") // should replace the second needle
 }
-
-
