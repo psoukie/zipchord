@@ -383,17 +383,18 @@ dict_file_edit :: proc(
 	start_pos: int
 	end_pos: int
 	replacement := ""
+	write_err: os.Error
 
 	// Determine the operation; we do not flag invalid combinations
 	switch {
+		case filepath == "":
+			return .Bad_Argument
 		case new_shortcut != "" && expansion != "":
 			operation = .Add
 		case new_shortcut != "" && old_shortcut != "":
 			operation = .Change
 		case old_shortcut != "":
 			operation = .Delete
-		case filepath == "":
-			return .Bad_Argument
 		case:
 			return .Bad_Argument
 	}
@@ -403,6 +404,19 @@ dict_file_edit :: proc(
 	if file_err != nil do return .File_IO_Error
 	file_text := string(file_data)
 
+	// Create a new file
+	temp_filepath := strings.concatenate({filepath, ".tmp"},
+			context.temp_allocator)
+	temp_file, create_err := os.create(temp_filepath)
+	if create_err != nil do return .File_IO_Error
+	defer {
+		if temp_file != nil do os.close(temp_file)
+		if os.exists(temp_filepath) {
+			os.remove(temp_filepath)
+		}
+	}
+
+	// Handle .Add and other operations separately
 	if operation == .Add {
 		opening_new_line := "\r\n"
 		ending_new_line := "\r\n"
@@ -422,78 +436,67 @@ dict_file_edit :: proc(
 			}
 		}
 
-		// Append to the file
-		file, append_err := os.open(filepath, {.Write, .Append})
-		if append_err != nil do return .File_IO_Error
-		defer os.close(file)
-		_, write_err := os.write_strings(file,
-				opening_new_line,
-				new_shortcut,
-				"\t",
-				expansion,
-				ending_new_line)
-		if write_err != nil do return .File_IO_Error
+		replacement = strings.concatenate({
+					opening_new_line,
+					new_shortcut,
+					"\t",
+					expansion,
+					ending_new_line,
+				}, context.temp_allocator)
 
-		return .None
-	}
-
-	// Find the strating position
-	needle := strings.concatenate({"\n", old_shortcut, "\t"}, context.temp_allocator)
-	pos := strings.index(file_text, needle)
-	if pos != -1 {
-		start_pos = pos + 1 // after \n
+		// Write into the file
+		_, write_err = os.write_strings(temp_file,
+					file_text,
+					replacement)
 	} else {
-		// try looking at the start of file with BOM
-		needle = strings.concatenate({"\ufeff", old_shortcut, "\t"}, context.temp_allocator)
-		if strings.has_prefix(file_text, needle) {
-			start_pos = 3 //right after BOM
+		// For non-adding edits, find the strating position
+		needle := strings.concatenate({"\n", old_shortcut, "\t"}, context.temp_allocator)
+		pos := strings.index(file_text, needle)
+		if pos != -1 {
+			start_pos = pos + 1 // after \n
 		} else {
-			needle = strings.concatenate({old_shortcut, "\t"}, context.temp_allocator)
+			// try looking at the start of file with BOM
+			needle = strings.concatenate({"\ufeff", old_shortcut, "\t"}, context.temp_allocator)
 			if strings.has_prefix(file_text, needle) {
-				start_pos = 0
+				start_pos = 3 //right after BOM
 			} else {
-				fmt.println("Not found")
-				return .Not_Found
+				needle = strings.concatenate({old_shortcut, "\t"}, context.temp_allocator)
+				if strings.has_prefix(file_text, needle) {
+					start_pos = 0
+				} else {
+					fmt.println("Not found")
+					return .Not_Found
+				}
 			}
 		}
-	}
 
-	// Find the ending position and define replacement
-	if operation == .Delete {
-		replacement = ""
-		pos = strings.index(file_text[start_pos:], "\n")
-		 if pos == -1 {
-			end_pos = len(file_text)
+		// Find the ending position and define replacement
+		if operation == .Delete {
+			replacement = ""
+			pos = strings.index(file_text[start_pos:], "\n")
+			 if pos == -1 {
+				end_pos = len(file_text)
+			} else {
+				end_pos = start_pos + pos + 1
+			}
 		} else {
-			end_pos = start_pos + pos + 1
+			replacement = new_shortcut
+			end_pos = start_pos + len(old_shortcut)
 		}
-	} else {
-		replacement = new_shortcut
-		end_pos = start_pos + len(old_shortcut)
-	}
 
-	// Create and write a new file
-	temp_filepath := strings.concatenate({filepath, ".zipchord.tmp"},
-			context.temp_allocator)
-	temp_file, create_err := os.create(temp_filepath)
-	if create_err != nil do return .File_IO_Error
-	defer {
-		if temp_file != nil do os.close(temp_file)
-		if os.exists(temp_filepath) {
-			os.remove(temp_filepath)
-		}
+		// Write into the file
+		_, write_err = os.write_strings(temp_file,
+					file_text[:start_pos],
+					replacement,
+					file_text[end_pos:])
 	}
-	_, write_err := os.write_strings(temp_file,
-		file_text[:start_pos],
-		replacement,
-		file_text[end_pos:]
-	)
 	if write_err != nil do return .File_IO_Error
 
 	// Sync & close temp file and rename it to the original dictionary
 	if os.sync(temp_file) != nil do return .File_IO_Error
-	if os.close(temp_file) != nil do return .File_IO_Error
+	close_err := os.close(temp_file)
 	temp_file = nil
+	if close_err != nil do return .File_IO_Error
 	if os.rename(temp_filepath, filepath) != nil do return .File_IO_Error
 
 	return .None
