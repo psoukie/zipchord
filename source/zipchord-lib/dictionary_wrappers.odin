@@ -153,3 +153,20 @@ zc_normalize_chord :: proc "c" (
 
 	return err
 }
+
+@export
+zc_dict_edit :: proc "c" (
+	filepath: cstring,
+	old_shortcut: cstring,
+	new_shortcut: cstring,
+	expansion: cstring,
+) -> Dict_Error {
+	context = runtime.default_context()
+
+	return dict_file_edit(
+		string(filepath),
+		string(old_shortcut),
+		string(new_shortcut),
+		string(expansion)
+	)
+}

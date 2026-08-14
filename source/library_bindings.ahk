@@ -77,6 +77,12 @@ Class clsDllBindings {
         this.available := true
     }
 
+    GetErrorDetails(code) {
+        global dll_error_text
+        err_detail := dll_error_text.HasKey(code) ? dll_error_text[code] : "an unknown (" . code . ")"
+        return err_detail
+    }
+
     _Cache_Pointers(dllPath) {  ; Returns true for 'okay'
         ; Load DLL once and keep it loaded.
         hZC := DllCall("LoadLibrary", "Str", dllPath, "Ptr")
@@ -92,8 +98,9 @@ Class clsDllBindings {
         this._register_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_register_shortcut", "Ptr")
         this._get_saved_string_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_get_saved_string", "Ptr")
         this._normalize_chord_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_normalize_chord", "Ptr")
+        this._edit_dict_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_dict_edit", "Ptr")
         
-        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn && this._get_saved_string_fn && this._normalize_chord_fn) {
+        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn && this._get_saved_string_fn && this._normalize_chord_fn && this._edit_dict_fn) {
             return true
         }
         return false
@@ -180,7 +187,6 @@ Class clsDllBindings {
 
     NormalizeChord(chord) {
         global dll_buffer
-        global dll_error_text
         pChord := this._StringToPtr(chord, chordBuf)
         result := DllCall(this._normalize_chord_fn
                 , "Ptr", pChord
@@ -193,8 +199,28 @@ Class clsDllBindings {
         if (result == DllError.REPEATED_KEY) {
             return false
         } 
-        err := dll_error_text.HasKey(result) ? dll_error_text[result] : "an unknown (" . result . ")"
-        MsgBox , , % "ZipChord", % "Encountered " . err . " error while normalizing a chord."
+        err_details := this.GetErrorDetails(result)
+        MsgBox , , % "ZipChord", % Format("ZipChord encountered {} error while normalizing a chord.", err_details)
+        return false
+    }
+
+    EditDictionary(filepath, old_shortcut := "", new_shortcut := "", expansion := "") {
+        pPath := this._StringToPtr(filepath, fileBuf)
+        pOld := this._StringToPtr(old_shortcut, oldBuf)
+        pNew := this._StringToPtr(new_shortcut, newBuf)
+        pExp := this._StringToPtr(expansion, expBuf)
+
+        result := DllCall(this._edit_dict_fn
+                , "Ptr", pPath
+                , "Ptr", pOld
+                , "Ptr", pNew
+                , "Ptr", pExp
+                , "Cdecl Int")
+        if (result == 0) {
+            return true
+        }
+        err_details := this.GetErrorDetails(result)
+        MsgBox , , % "ZipChord", % Format("ZipChord encountered {} error while editing the dictionary.", err_details)
         return false
     }
 }

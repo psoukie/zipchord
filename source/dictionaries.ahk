@@ -98,13 +98,13 @@ Class clsDictionary {
         }
         this._LoadShortcuts()
         this._UpdateTrackedFileState()
-        this._StartWatching()
+        this.StartWatching()
 
         return true
     }
 
     Unload() {
-        this._StopWatching()
+        this.StopWatching()
         this._file := ""
         this._entries := {}
         this._reverse_entries := {}
@@ -132,7 +132,8 @@ Class clsDictionary {
         }
         return StrGet(&full_path, length, "UTF-16")
     }
-    Add(shortcut, text) {
+
+    AddShortcut(shortcut, text) {
         if (this._file == "") {
             MsgBox, , % "ZipChord", % "Select a dictionary before adding a shortcut."
             return false
@@ -143,10 +144,70 @@ Class clsDictionary {
         return true
     }
 
-    _StartWatching() {
+    ChangeShortcut(old_shortcut, new_shortcut) {
+        if (this._file == "") {
+            MsgBox, , % "ZipChord", % "Select a dictionary before changing a shortcut."
+            return false
+        }
+        ; Make sure the new shortcut is legal and available
+        if(! this._RegisterShortcut(new_shortcut, "_CURRENT_SHORTCUT_")) {
+            return false
+        }
+
+        edit_ok := false
+        this.StopWatching()
+        if (dll.available) {
+            ; TK - check (and adapt other code if needed) to make sure this._file is always full path
+            edit_ok := dll.EditDictionary(this._file, old_shortcut, new_shortcut)
+        } else {
+            edit_ok := this._Ahk_EditDictionary(old_shortcut, new_shortcut)
+        }
+
+        if (! edit_ok) {
+            return false
+        }
+
+        this.Load()
+        main_UI.UpdateDictionaryUI()
+        return edit_ok
+    }
+
+    DeleteShortcut(old_shortcut) {
+        if (this._file == "") {
+            MsgBox, , % "ZipChord", % "Select a dictionary before deleting a shortcut."
+            return false
+        }
+        this.StopWatching()
+        delete_ok := false
+        if (dll.available) {
+            ; TK - check (and adapt other code if needed) to make sure this._file is always full path
+            delete_ok := dll.EditDictionary(this._file, old_shortcut)
+        } else {
+            delete_ok := this._Ahk_DeleteFromDictionary(old_shortcut)
+        }
+        if (! delete_ok) {
+            return false
+        }
+
+        this.Load()
+        main_UI.UpdateDictionaryUI()
+        return delete_ok
+    }    
+
+    _Ahk_EditDictionary(old_shortcut, new_shortcut) {
+        ; TK - adapt from Odin code
+        return
+    }
+
+    _Ahk_DeleteFromDictionary(old_shortcut) {
+        ; TK - adapt from Odin code
+        return
+    }
+
+    StartWatching() {
         this._is_watching := true
     }
-    _StopWatching() {
+    StopWatching() {
         this._is_watching := false
         this._reload_due := 0
         this._file_modified := ""
@@ -341,8 +402,11 @@ Class clsDictionary {
     }
 
     _Dll_RegisterShortcut(raw_shortcut, expansion) {
+
         result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded)
         Switch result {
+            Case DllError.NONE:
+                return true
             Case DllError.SHORTCUT_EXISTS:
                 dest := this._chorded ? "chord" : "shorthand"
                 shortcut := this._chorded ? dll.NormalizeChord(raw_shortcut) : raw_shortcut
@@ -350,10 +414,9 @@ Class clsDictionary {
                 MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, raw_shortcut, occupied, expansion)
             Case DllError.FEWER_THAN_TWO:
                 MsgBox ,, % "ZipChord", % "The shortcut must be at least two characters."
-            Case DllError.NONE:
-                return true
             Default:
-                MsgBox, , % "ZipChord", % Format("ZipChord encountered error code {}.", result)
+                err_details := dll.GetErrorDetails(result)
+                MsgBox , , % "ZipChord", % Format("ZipChord encountered {} error while adding the shortcut.", err_details)
         }    
         return false
     }
@@ -369,13 +432,31 @@ Class clsDictionary {
                 return false
             }
         }
-        if (write_to_file) {
-            this._StopWatching()
-            FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8  ; saving unsorted for easier human readability of the dictionary
-            this._UpdateTrackedFileState()  ; skip auto-reload and update UI
-            this._StartWatching()
-            main_UI.UpdateDictionaryUI()
+        
+        if (! write_to_file) {
+            return true
         }
+        
+        edit_ok := false
+        this.StopWatching()
+        if (dll.available) {
+            edit_ok := dll.EditDictionary(this._file, "", raw_shortcut, expansion)
+            this.StartWatching()
+            return edit_ok
+        } else {
+            try {
+                FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8
+            } catch {
+                MsgBox , , % "ZipChord", % "ZipChord encountered an error while editing the dictionary file."
+            }
+            edit_ok := true
+        }
+        if (! edit_ok) {
+            return false
+        }
+
+        this.Load()
+        main_UI.UpdateDictionaryUI()
         return true
     }
 
@@ -506,7 +587,10 @@ Class clsAddShortcut {
                                    , function: ObjBindMethod(this, "_DeleteShortcut", "chord")}
                 , delete_shorthand:  { type: "Button"
                                    , text: "Re&move"
-                                   , function: ObjBindMethod(this, "_DeleteShortcut", "shorthand")}}
+                                   , function: ObjBindMethod(this, "_DeleteShortcut", "shorthand")}
+                , close_button:     { type: "Button"
+                                    , text: "Close"
+                                    , function: ObjBindMethod(this, "Close")}}
 
     _backspace_fn := ObjBindMethod(this, "_Backspace")
     _ui_title := "Assign Shortcuts"
@@ -533,11 +617,11 @@ Class clsAddShortcut {
         this.UI.Add(this.controls.expansion, "y+10 w320")
         this._BuildHelper("&Chord", "chord", "xs-20 h120 w360")
         this._BuildHelper("S&horthand", "shorthand")
-        this.UI.Add("Button", "Default x265 yp+70 w100", "Close", ObjBindMethod(this, "Close"))
+        this.UI.Add(this.controls.close_button, "Default x265 yp+70 w100")
         DllCall("User32.dll\SendMessageW"
                 , "Ptr", this.controls.expansion._handle
                 , "UInt", 0x1500+1, "UPtr", true
-                , "WStr", "Type text to show its assigned shortcuts", "Ptr")
+                , "WStr", "Type text to add, show, or change its shortcuts", "Ptr")
     }
     _BuildHelper(heading, ctrl, opt:="xs-20 yp+70 h120 w360") {
         this.UI.Add("GroupBox", opt, heading)
@@ -614,22 +698,21 @@ Class clsAddShortcut {
     _SaveShortcut(dict) {
         obj_name := dict . "s"
         new_shortcut := this.controls[dict].value
-        expansion := this.controls.expansion.value
         message_template := ""
 
         ; asserts this.saved_shortcuts[dict] != this.controls[dict]
         if (this.saved_shortcuts[dict] != "") {
             message_template := this.SHORTCUT_CHANGED
-            ; TK - call a function to update the `this.saved_shortcuts[dict]` in the dictionary
-            if (false) {
-                ; failed
+            result := %obj_name%.ChangeShortcut(this.saved_shortcuts[dict], new_shortcut)
+            if (! result) {
                 return
             }
 
         } else {
             ; otherwise, we're adding a new shortcut
             message_template := this.SHORTCUT_ADDED
-            if (! %obj_name%.Add(new_shortcut, expansion)) {
+            expansion := this.controls.expansion.value
+            if (! %obj_name%.AddShortcut(new_shortcut, expansion)) {
                 return
             }
         }
@@ -640,8 +723,8 @@ Class clsAddShortcut {
     _DeleteShortcut(dict) {
         obj_name := dict . "s"
         ; TK - call a function to delete `this.saved_shortcuts[dict]` from the dictionary
-        if (true) {
-            ; success
+        result := %obj_name%.DeleteShortcut(this.saved_shortcuts[dict])
+        if (result) {
             this.CleanUpAfterModification(dict, "", this.SHORTCUT_DELETED)
         }
     }
@@ -653,6 +736,7 @@ Class clsAddShortcut {
         message := Format(message_template, dict, this.short_exp)
         Sleep -1
         this.controls["note_" . dict].value := message
+        this.controls.close_button.MakeDefault()
     }
 
     _Backspace() {
