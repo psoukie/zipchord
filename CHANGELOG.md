@@ -1,5 +1,16 @@
 # ZipChord Changelog
 
+## ZipChord 2.11.0-dev (Unreleased)
+
+This release makes it easier to manage the shortcuts assigned to any output text in a redesigned "Add or Edit Shortcut" window, now called "Assign Shortcuts."
+
+**New Features**
+
+- Chords and shorthands can now be added, changed, or removed in the Assign Shortcut window without editing the dictionary file manually.
+- Entering or changing the output text now displays its currently assigned chord and shorthand.
+- Contextual messages and buttons indicate the status of the shortcuts as you view and modify them.
+- Dictionary updates preserve the ordering of the shortcuts, additional columns, and other comments in the dictionary file.
+
 ## ZipChord 2.10
 
 **New Features**
@@ -27,15 +38,15 @@
 
 - The "Keyboard and language settings" now has user-definable Numerals fields to define keys that produce numbers. (This has been used for correct smart space handling, but assumed US English layout until now). (#272)
 - Hints now show the chord shortcut with key symbols in their original order (as listed in the dictionary) when using the compiled library. (#284)
-- Intentionally blank punctuation inputs in "Keyboard and language settings" are now correctly treated as blank rather than use their default values. (#286)    
+- Intentionally blank punctuation inputs in "Keyboard and language settings" are now correctly treated as blank rather than use their default values. (#286)
 
 ## ZipChord 2.9.1
 
 **Improvements and Fixes**
 
 - ZipChord now pauses the detection of keyboard layout and dictionary changes when the app is paused. (#279)
-- Fixes a regression (and adds a test case for) expansions that include special keys in braces such as `{Left}`. (#280) 
-- The OSD text has an improved readability (bold text, reduced transparency, and added a contrasting outline). (#270) 
+- Fixes a regression (and adds a test case for) expansions that include special keys in braces such as `{Left}`. (#280)
+- The OSD text has an improved readability (bold text, reduced transparency, and added a contrasting outline). (#270)
 
 **Planned deprecation**
 
@@ -61,7 +72,7 @@ Note: This version has breaking changes in the command-line configuration mappin
 
 **Breaking Changes**
 
-Users of the command-line automatic configuration switching need to update for the new format and behavior of the configuration mapping files:   
+Users of the command-line automatic configuration switching need to update for the new format and behavior of the configuration mapping files:
 
 - The configuration mapping file now has a mandatory additional first column for the keyboard layout name (can be `*` for any layout).
 - This shifts the window title into column 2. (Unchanged behavior, can use wildcards as before.)
@@ -74,7 +85,7 @@ Users of the command-line automatic configuration switching need to update for t
 
 - Locale key-mapping changes now take effect immediately after clicking Apply or OK in the Keyboard and language settings window.
 - Fixes a bug where repeated key down events without a key up resulted in error messages.
-- Adds additional human readable error messages for compiled library errors.  
+- Adds additional human readable error messages for compiled library errors.
 - Fixes how test console saves key symbols and handles errors.
 
 ## ZipChord 2.8.1
@@ -100,7 +111,7 @@ Version 2.7 improves the dictionary format and handling:
 
 - ZipChord now automatically reloads dictionaries on the fly when the dictionary file is saved. (#124) This allows for real-time feedback for key conflicts whenever you save the file. (The Reload buttons were removed from the UI.)
 - The delimiter for separating chained chords in chord dictionaries was changed to `|` (pipe) character. This removes the ambiguity where space was used to represent a chained chord separator or a literal Space key based on special rules.
-- Chord and shorthand dictionaries now support using the `^` (caret) symbol at the end of an expansion definition to auto-capitalize the text that follows while respecting the auto-capitalization setting. (#249) 
+- Chord and shorthand dictionaries now support using the `^` (caret) symbol at the end of an expansion definition to auto-capitalize the text that follows while respecting the auto-capitalization setting. (#249)
 - ZipChord now supports loading dictionary files saved in UTF-8 format without BOM. (#150)
 
 Notes:
@@ -165,8 +176,8 @@ Note that the Output Delay setting (which is useful for apps or editors where re
 
 **Fixes**
 
-This release focuses on mainly cosmetic issues that could sometimes trigger warnings or errors: 
- 
+This release focuses on mainly cosmetic issues that could sometimes trigger warnings or errors:
+
 - Repeated (or longer) press of the keyboard hotkey for adding a ZipChord shortcut no longer leads to error but re-focuses the Add Shortcut window instead (#214)
 - Starting ZipChord after exiting it in a paused mode correctly indicates its status as active (#204)
 - Removed the spurious warning message about X number of hotkeys received within an interval (#216)
@@ -192,7 +203,7 @@ See [Configuration and Automated Switching](https://github.com/psoukie/zipchord/
 
 This version implements several command line options for storing, loading, and automatically switching configurations based on the active window, as suggested by @lmendez5.
 
-- Implements saving and restoring settings and locales into configuration files from command line (#45) 
+- Implements saving and restoring settings and locales into configuration files from command line (#45)
 - Allows automatic switching between configurations based on window titles (#31)
 - Provides command line access to pausing and resuming ZipChord and for reverting to normal operation
 
@@ -364,7 +375,7 @@ These additional features are included in the "zipchord-dev" version of ZipChord
 
 - Key Visualizer window (the same that was used for this [screen recording](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord))
 - ZipChord Test Automation Console - use 'help' in the console to see available commands or 'help command' to learn more
-- "Log this session (debugging)" option on the About tab of main ZipChord window to create a local debugging file. 
+- "Log this session (debugging)" option on the About tab of main ZipChord window to create a local debugging file.
 
 ### Privacy Note
 

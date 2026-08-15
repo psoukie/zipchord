@@ -2,6 +2,7 @@ package tests
 
 import tst "core:testing"
 import zc "../zipchord-lib"
+import "core:os"
 
 @(test)
 utf8bom :: proc(t: ^tst.T) {
@@ -100,4 +101,32 @@ normalize_chords :: proc(t: ^tst.T) {
     noramalized, err = zc._normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Buffer_Too_Small)
 }
-	
+
+@(test)
+edit_dict_file :: proc(t: ^tst.T) {
+   SOURCE :: "\uFEFFNEEDLE\twas correct first.\r\n" +
+             "This is my false NEEDLE file.\r\n" +
+             "dl\tdelete this\tnote\r\n" +
+             "NEEDLE is better but still false.\r\n" +
+             "NEEDLE2\tis different despite the tab.\twith a note\r\n" +
+             "tbad\tdelete this"
+   EXPECTED :: "\uFEFF<first>\twas correct first.\r\n" +
+               "This is my false NEEDLE file.\r\n" +
+               "NEEDLE is better but still false.\r\n" +
+               "<second>\tis different despite the tab.\twith a note\r\n" +
+               "shct\tshortcut\r\n"
+    dict_file :: "_test_dictionary.txt"
+    err := os.write_entire_file_from_string(dict_file, SOURCE)
+    tst.expect(t, err == nil, "Error writing dictionary file")
+	zc.dict_file_edit(dict_file, "tbad") // delete the last line
+	zc.dict_file_edit(dict_file, "", "shct", "shortcut") // add a shortcut
+	zc.dict_file_edit(dict_file, "NEEDLE", "<first>") // replace the first line shortcut
+	result := zc.dict_file_edit(dict_file, "na", "<first>") // not found
+	tst.expect_value(t, result, zc.Dict_Error.Not_Found)
+	zc.dict_file_edit(dict_file, "NEEDLE2", "<second>") // replace the second needle
+	zc.dict_file_edit(dict_file, "dl") // delete dl shortcut
+	file_data, file_err := os.read_entire_file(dict_file, context.temp_allocator)
+	tst.expect(t, file_err == nil, "Could not read edited dictionary")
+    os.remove(dict_file)
+    tst.expect(t, string(file_data) == EXPECTED, "The dictionary edits do not match the correct result.")
+}

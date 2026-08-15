@@ -24,7 +24,7 @@ Dict_Error :: enum i32 {
     Bad_Argument     = -6,
     Buffer_Too_Small = -7,
     Allocation_Error = -8,
-	File_Read_Fail   = -9,
+	File_IO_Error    = -9,
     Internal_Error   = -10,
 	Version_Mismatch = -11,
 }
@@ -56,7 +56,7 @@ copy_string_to_buffer :: proc(str: string, buf_ptr: rawptr, buf_capacity: i32) -
 
 _normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
 	chord_buf.len = 0
-	
+
 	rune_buf: [MAX_CHORD_RUNES]rune
 	rune_count := 0
 
@@ -81,7 +81,7 @@ _normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normal
 
 	for r, i in runes {
 		if i > 0 && r == runes[i-1] {
-			return "", .Repeated_Key  
+			return "", .Repeated_Key
 		}
 		encoded, n := utf8.encode_rune(r)
 		copy(chord_buf.bytes[chord_buf.len:chord_buf.len+n], encoded[:n])
@@ -94,17 +94,17 @@ _normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normal
 normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
 	chain_buf.len = 0
 	raw_shortcut := raw_shortcut
-	
+
 	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
 		return "", .Buffer_Too_Small
 	}
 
 	chord_buf: Chord_Buffer
-	
+
 	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
 		n := len(raw_chord)
 		if n == 0 {
-			return "", .Empty_Chord	
+			return "", .Empty_Chord
 		}
 		if chain_buf.len > 0 {
 			chain_buf.bytes[chain_buf.len] = u8('|')
@@ -168,7 +168,7 @@ dict_data_add :: proc (
 	own_lcase_expansion,
 	own_expansion,
 	own_raw_chord: string
-	
+
 	alloc := virtual.arena_allocator(&dict.arena_memory)
 
 	// uses an arena allocator for 'owned' strings
@@ -176,7 +176,7 @@ dict_data_add :: proc (
 	if alloc_err != .None {
 		return .Allocation_Error
 	}
-	
+
 	own_lcase_expansion, alloc_err = strings.to_lower(expansion, alloc)
 	if alloc_err != .None {
 		return .Allocation_Error
@@ -221,7 +221,7 @@ dict_add :: proc{
 dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: string, err: Dict_Error ) {
 	ok: bool
 	if expansion, ok = dict.shortcut_to_expansion[shortcut]; !ok {
-		return "", .Not_Found 
+		return "", .Not_Found
 	}
 	return expansion, .None
 }
@@ -242,7 +242,7 @@ dict_lookup :: proc{
 dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortcut: string, err: Dict_Error ) {
 	ok: bool
 	if shortcut, ok = dict.expansion_to_shortcut[expansion]; !ok {
-		return "", .Not_Found 
+		return "", .Not_Found
 	}
 	return shortcut, .None
 }
@@ -268,7 +268,7 @@ dict_data_load_file :: proc(
 ) -> (err: Dict_Error) {
 	// re-initialize the dictionary
 	shortcuts_loaded_ptr^ = 0
-	
+
 	dict_data_destroy(dict)
 	dict_data_init(dict) or_return
 
@@ -278,19 +278,19 @@ dict_data_load_file :: proc(
 	}
 
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
-	if file_err != nil {
-		return .File_Read_Fail
-	}
 	defer delete(file_data, context.allocator)
+	if file_err != nil {
+		return .File_IO_Error
+	}
 
-	it := string(file_data)
-	it = remove_bom(it)
+	file_text := string(file_data)
+	file_text = remove_bom(file_text)
 
 	i := 0
 	chain_buf: Chord_Chain_Buffer
-	for raw_line in strings.split_iterator(&it, "\n") {
+	for raw_line in strings.split_iterator(&file_text, "\n") {
 		i += 1
-		line := strings.trim_right(raw_line, "\r") 
+		line := strings.trim_right(raw_line, "\r")
 		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
 		if shortcut == "" {
 			continue
@@ -301,7 +301,7 @@ dict_data_load_file :: proc(
 			copy_string_to_buffer(shortcut, &string_buf.bytes, len(string_buf.bytes)) or_return
 			string_buf.len = len(shortcut)
 			shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
-			return result		
+			return result
 		}
 	}
 	shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
@@ -331,10 +331,10 @@ dict_load_file :: proc {
 
 register_shortcut :: proc (
 	dict_data: ^Dict_Data,
-	orig_shortcut: string,
-	expansion: string,
+	orig_shortcut, expansion: string,
 	as_chords: bool,
-	chain_buffer: ^Chord_Chain_Buffer
+	chain_buffer: ^Chord_Chain_Buffer,
+	validate_only := false
 ) -> (err: Dict_Error) {
 	shortcut := orig_shortcut
 	raw_chord := ""
@@ -342,16 +342,18 @@ register_shortcut :: proc (
 	if len(shortcut) < 2 {  // TK: not foolproof for non-ASCII shortcuts
 		return .Fewer_Than_Two
 	}
-	
+
 	if as_chords {
 		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
 		raw_chord = orig_shortcut
 	}
 
-	existing, lookup_err := dict_data_lookup(dict_data, shortcut)
+	_, lookup_err := dict_data_lookup(dict_data, shortcut)
 	if lookup_err != .Not_Found {
 		return .Shortcut_Exists
 	}
+
+	if validate_only do return .None
 
 	return dict_data_add(dict_data, shortcut, expansion, raw_chord)
 }
@@ -361,20 +363,148 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 	shortcut = strings.split_iterator(&line, "\t") or_return
 	expansion = strings.split_iterator(&line, "\t") or_return
 	return shortcut, expansion, true
-} 
+}
+
+dict_file_edit :: proc(
+	filepath: string,
+	old_shortcut:= "",
+	new_shortcut := "",
+	expansion := "",
+) -> (err: Dict_Error) {
+	/* Calling convention based on which parameters are defined:
+	   - new_shortcut && expansion -- add a shortcut
+       - new_shortcut && old_shortuct -- change the assigned shortcut
+       - old_shortcut only -- delete the shortcut
+    */
+	defer free_all(context.temp_allocator)
+	operation: enum {
+		Delete,
+		Change,
+		Add,
+	}
+	start_pos: int
+	end_pos: int
+	replacement := ""
+	write_err: os.Error
+
+	// Determine the operation; we do not flag invalid combinations
+	switch {
+		case filepath == "":
+			return .Bad_Argument
+		case new_shortcut != "" && expansion != "":
+			operation = .Add
+		case new_shortcut != "" && old_shortcut != "":
+			operation = .Change
+		case old_shortcut != "":
+			operation = .Delete
+		case:
+			return .Bad_Argument
+	}
+
+	// Load the file as text
+	file_data, file_err := os.read_entire_file(filepath, context.temp_allocator)
+	if file_err != nil do return .File_IO_Error
+	file_text := string(file_data)
+
+	// Create a new file
+	temp_filepath := strings.concatenate({filepath, ".tmp"},
+			context.temp_allocator)
+	temp_file, create_err := os.create(temp_filepath)
+	if create_err != nil do return .File_IO_Error
+	defer {
+		if temp_file != nil do os.close(temp_file)
+		if os.exists(temp_filepath) {
+			os.remove(temp_filepath)
+		}
+	}
+
+	// Handle .Add and other operations separately
+	if operation == .Add {
+		opening_new_line := "\r\n"
+		ending_new_line := "\r\n"
+
+		// Detect ending line break
+		if strings.has_suffix(file_text, "\r\n") {
+			opening_new_line = ""
+		} else if strings.has_suffix(file_text, "\n") {
+			opening_new_line = ""
+			ending_new_line = "\n"
+		} else {
+			// check what new lines are used; or keep defaults
+			if strings.index(file_text, "\r\n") == -1 &&
+			   strings.index(file_text, "\n") != -1 {
+				opening_new_line = "\n"
+				ending_new_line = "\n"
+			}
+		}
+
+		replacement = strings.concatenate({
+					opening_new_line,
+					new_shortcut,
+					"\t",
+					expansion,
+					ending_new_line,
+				}, context.temp_allocator)
+
+		// Write into the file
+		_, write_err = os.write_strings(temp_file,
+					file_text,
+					replacement)
+	} else {
+		// For non-adding edits, find the strating position
+		needle := strings.concatenate({"\n", old_shortcut, "\t"}, context.temp_allocator)
+		pos := strings.index(file_text, needle)
+		if pos != -1 {
+			start_pos = pos + 1 // after \n
+		} else {
+			// try looking at the start of file with BOM
+			needle = strings.concatenate({"\ufeff", old_shortcut, "\t"}, context.temp_allocator)
+			if strings.has_prefix(file_text, needle) {
+				start_pos = 3 //right after BOM
+			} else {
+				needle = strings.concatenate({old_shortcut, "\t"}, context.temp_allocator)
+				if strings.has_prefix(file_text, needle) {
+					start_pos = 0
+				} else {
+					fmt.println("Not found")
+					return .Not_Found
+				}
+			}
+		}
+
+		// Find the ending position and define replacement
+		if operation == .Delete {
+			replacement = ""
+			pos = strings.index(file_text[start_pos:], "\n")
+			 if pos == -1 {
+				end_pos = len(file_text)
+			} else {
+				end_pos = start_pos + pos + 1
+			}
+		} else {
+			replacement = new_shortcut
+			end_pos = start_pos + len(old_shortcut)
+		}
+
+		// Write into the file
+		_, write_err = os.write_strings(temp_file,
+					file_text[:start_pos],
+					replacement,
+					file_text[end_pos:])
+	}
+	if write_err != nil do return .File_IO_Error
+
+	// Sync & close temp file and rename it to the original dictionary
+	if os.sync(temp_file) != nil do return .File_IO_Error
+	close_err := os.close(temp_file)
+	temp_file = nil
+	if close_err != nil do return .File_IO_Error
+	if os.rename(temp_filepath, filepath) != nil do return .File_IO_Error
+
+	return .None
+}
 
 remove_bom :: proc(text: string) -> string {
     // The UTF-8 BOM is represented by the rune '\ufeff' (3 bytes)
-    if strings.has_prefix(text, "\ufeff") {
-        return text[3:]
-    }
-    return text
+    return strings.trim_prefix(text, "\ufeff")
 }
-
-dump_bytes :: proc(s: string) {
-   for b, i in s {
-       fmt.printf("%d: 0x%02X\n", i, b)
-   }
-}
-
-
