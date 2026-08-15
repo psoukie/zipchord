@@ -173,7 +173,8 @@ Class clsDictionary {
             return true
         }
 
-        return this._RegisterShortcut(raw_shortcut, expansion)
+        ; Check the shortcut does not exist
+        return this._RegisterShortcut(raw_shortcut, expansion, true)
     }
 
     TryExecutingDictEdit(dll_fn, ahk_fn) {
@@ -382,7 +383,7 @@ Class clsDictionary {
     }
 
     ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _Ahk_RegisterShortcut(raw_shortcut, expansion) {
+    _Ahk_RegisterShortcut(raw_shortcut, expansion, validate_only) {
         if (this._chorded) {
             if (InStr(raw_shortcut, "|")) {
                 chunks := StrSplit(raw_shortcut, "|")
@@ -390,33 +391,38 @@ Class clsDictionary {
                 For _, chunk in chunks {
                     if (chunk == "") {
                         MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", expansion)
-                        Return false
+                        return false
                     }
                     newch .= "|" . str.Arrange(chunk)
                     if (this._IsDuplicateChars(chunk, expansion)) {
-                        Return false
+                        return false
                     }
                 }
                 newch := SubStr(newch, 2)
             } else {
                 newch := str.Arrange(raw_shortcut)
                 if (this._IsDuplicateChars(newch, expansion)) {
-                    Return false
+                    return false
                 }
             }
         } else {
             newch := raw_shortcut
         }
-        if (! this._IsShortcutOK(newch, expansion))
-            Return false
+        if (! this._IsShortcutOK(newch, expansion)) {
+            return false
+        }
+
+        if (validate_only) {
+            return true
+        }
+
         ObjRawSet(this._entries, newch, expansion)
         ObjRawSet(this._reverse_entries, expansion, raw_shortcut)
-        Return true
+        return true
     }
 
-    _Dll_RegisterShortcut(raw_shortcut, expansion) {
-
-        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded)
+    _Dll_RegisterShortcut(raw_shortcut, expansion, validate_only) {
+        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded, validate_only)
         Switch result {
             Case DllError.NONE:
                 return true
@@ -434,14 +440,16 @@ Class clsDictionary {
         return false
     }
 
-    _RegisterShortcut(raw_shortcut, expansion) {
+    _RegisterShortcut(raw_shortcut, expansion, validate_only := false) {
         if (dll.available) {
-            if !(this._Dll_RegisterShortcut(raw_shortcut, expansion)) {
+            if !(this._Dll_RegisterShortcut(raw_shortcut, expansion, validate_only)) {
                 return false
             }
-            this._dll_entries_count += 1
+            if (! validate_only) {
+                this._dll_entries_count += 1
+            }
         } else {
-            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion)) {
+            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion, validate_only)) {
                 return false
             }
         }

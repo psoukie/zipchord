@@ -56,7 +56,7 @@ copy_string_to_buffer :: proc(str: string, buf_ptr: rawptr, buf_capacity: i32) -
 
 _normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
 	chord_buf.len = 0
-	
+
 	rune_buf: [MAX_CHORD_RUNES]rune
 	rune_count := 0
 
@@ -81,7 +81,7 @@ _normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normal
 
 	for r, i in runes {
 		if i > 0 && r == runes[i-1] {
-			return "", .Repeated_Key  
+			return "", .Repeated_Key
 		}
 		encoded, n := utf8.encode_rune(r)
 		copy(chord_buf.bytes[chord_buf.len:chord_buf.len+n], encoded[:n])
@@ -94,17 +94,17 @@ _normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normal
 normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
 	chain_buf.len = 0
 	raw_shortcut := raw_shortcut
-	
+
 	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
 		return "", .Buffer_Too_Small
 	}
 
 	chord_buf: Chord_Buffer
-	
+
 	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
 		n := len(raw_chord)
 		if n == 0 {
-			return "", .Empty_Chord	
+			return "", .Empty_Chord
 		}
 		if chain_buf.len > 0 {
 			chain_buf.bytes[chain_buf.len] = u8('|')
@@ -168,7 +168,7 @@ dict_data_add :: proc (
 	own_lcase_expansion,
 	own_expansion,
 	own_raw_chord: string
-	
+
 	alloc := virtual.arena_allocator(&dict.arena_memory)
 
 	// uses an arena allocator for 'owned' strings
@@ -176,7 +176,7 @@ dict_data_add :: proc (
 	if alloc_err != .None {
 		return .Allocation_Error
 	}
-	
+
 	own_lcase_expansion, alloc_err = strings.to_lower(expansion, alloc)
 	if alloc_err != .None {
 		return .Allocation_Error
@@ -221,7 +221,7 @@ dict_add :: proc{
 dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: string, err: Dict_Error ) {
 	ok: bool
 	if expansion, ok = dict.shortcut_to_expansion[shortcut]; !ok {
-		return "", .Not_Found 
+		return "", .Not_Found
 	}
 	return expansion, .None
 }
@@ -242,7 +242,7 @@ dict_lookup :: proc{
 dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortcut: string, err: Dict_Error ) {
 	ok: bool
 	if shortcut, ok = dict.expansion_to_shortcut[expansion]; !ok {
-		return "", .Not_Found 
+		return "", .Not_Found
 	}
 	return shortcut, .None
 }
@@ -268,7 +268,7 @@ dict_data_load_file :: proc(
 ) -> (err: Dict_Error) {
 	// re-initialize the dictionary
 	shortcuts_loaded_ptr^ = 0
-	
+
 	dict_data_destroy(dict)
 	dict_data_init(dict) or_return
 
@@ -290,7 +290,7 @@ dict_data_load_file :: proc(
 	chain_buf: Chord_Chain_Buffer
 	for raw_line in strings.split_iterator(&file_text, "\n") {
 		i += 1
-		line := strings.trim_right(raw_line, "\r") 
+		line := strings.trim_right(raw_line, "\r")
 		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
 		if shortcut == "" {
 			continue
@@ -301,7 +301,7 @@ dict_data_load_file :: proc(
 			copy_string_to_buffer(shortcut, &string_buf.bytes, len(string_buf.bytes)) or_return
 			string_buf.len = len(shortcut)
 			shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
-			return result		
+			return result
 		}
 	}
 	shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
@@ -331,10 +331,10 @@ dict_load_file :: proc {
 
 register_shortcut :: proc (
 	dict_data: ^Dict_Data,
-	orig_shortcut: string,
-	expansion: string,
+	orig_shortcut, expansion: string,
 	as_chords: bool,
 	chain_buffer: ^Chord_Chain_Buffer,
+	validate_only := false
 ) -> (err: Dict_Error) {
 	shortcut := orig_shortcut
 	raw_chord := ""
@@ -342,16 +342,18 @@ register_shortcut :: proc (
 	if len(shortcut) < 2 {  // TK: not foolproof for non-ASCII shortcuts
 		return .Fewer_Than_Two
 	}
-	
+
 	if as_chords {
 		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
 		raw_chord = orig_shortcut
 	}
 
-	existing, lookup_err := dict_data_lookup(dict_data, shortcut)
+	_, lookup_err := dict_data_lookup(dict_data, shortcut)
 	if lookup_err != .Not_Found {
 		return .Shortcut_Exists
 	}
+
+	if validate_only do return .None
 
 	return dict_data_add(dict_data, shortcut, expansion, raw_chord)
 }
@@ -361,7 +363,7 @@ _extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: st
 	shortcut = strings.split_iterator(&line, "\t") or_return
 	expansion = strings.split_iterator(&line, "\t") or_return
 	return shortcut, expansion, true
-} 
+}
 
 dict_file_edit :: proc(
 	filepath: string,
