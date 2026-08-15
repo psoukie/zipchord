@@ -138,9 +138,8 @@ Class clsDictionary {
             return false
         }
 
-        dll_fn := ObjBindMethod(dll, "EditDictionary", this._file, "", raw_shortcut, expansion)
-        ahk_fn := ObjBindMethod(this, "_Ahk_AddShortcutToDict", raw_shortcut, expansion)
-        return this.TryExecutingDictEdit(dll_fn, ahk_fn)
+        fn := dll.available ? ObjBindMethod(dll, "EditDictionary", this._file, "", raw_shortcut, expansion) :ObjBindMethod(this, "_Ahk_AddShortcutToDict", raw_shortcut, expansion)
+        return this.TryExecutingDictEdit(fn)
     }
 
     ChangeShortcut(old_shortcut, new_shortcut) {
@@ -148,9 +147,8 @@ Class clsDictionary {
             return false
         }
 
-        dll_fn := ObjBindMethod(dll, "EditDictionary", this._file, old_shortcut, new_shortcut)
-        ahk_fn := ObjBindMethod(this, "_Ahk_EditDictionary", old_shortcut, new_shortcut)
-        return this.TryExecutingDictEdit(dll_fn, ahk_fn)
+        fn := dll.available ? ObjBindMethod(dll, "EditDictionary", this._file, old_shortcut, new_shortcut) : ObjBindMethod(this, "_Ahk_EditDictionary", old_shortcut, new_shortcut)
+        return this.TryExecutingDictEdit(fn)
     }
 
     DeleteShortcut(old_shortcut) {
@@ -158,9 +156,8 @@ Class clsDictionary {
             return false
         }
 
-        dll_fn := ObjBindMethod(dll, "EditDictionary", this._file, old_shortcut)
-        ahk_fn := ObjBindMethod(this, "_Ahk_DeleteFromDictionary", old_shortcut)
-        return this.TryExecutingDictEdit(dll_fn, ahk_fn)
+        fn := dll.available ? ObjBindMethod(dll, "EditDictionary", this._file, old_shortcut) : ObjBindMethod(this, "_Ahk_DeleteFromDictionary", old_shortcut)
+        return this.TryExecutingDictEdit(fn)
     }
 
     ValidateDictEdit(raw_shortcut := "", expansion := "") {
@@ -177,15 +174,9 @@ Class clsDictionary {
         return this._RegisterShortcut(raw_shortcut, expansion, true)
     }
 
-    TryExecutingDictEdit(dll_fn, ahk_fn) {
-        edit_ok := false
+    TryExecutingDictEdit(fn) {
         this.PauseWatching()
-        if (dll.available) {
-            edit_ok := dll_fn.Call()
-        } else {
-            edit_ok := ahk_fn.Call()
-        }
-        if (! edit_ok) {
+        if (! fn.Call()) {
             this.StartWatching()
             return false
         }
@@ -196,23 +187,111 @@ Class clsDictionary {
     }
 
     _Ahk_AddShortcutToDict(raw_shortcut, expansion) {
-        try {
-            FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8
-            return true
-        } catch {
-            MsgBox , , % "ZipChord", % "ZipChord encountered an error while editing the dictionary file."
-            return false
-        }
+        return this._Ahk_EditDictionaryFile("", raw_shortcut, expansion)
     }
 
     _Ahk_EditDictionary(old_shortcut, new_shortcut) {
-        ; TK - adapt from Odin code
-        return
+        return this._Ahk_EditDictionaryFile(old_shortcut, new_shortcut)
     }
 
     _Ahk_DeleteFromDictionary(old_shortcut) {
-        ; TK - adapt from Odin code
-        return
+        return this._Ahk_EditDictionaryFile(old_shortcut)
+    }
+
+    _Ahk_EditDictionaryFile(old_shortcut := "", new_shortcut := "", expansion := "") {
+        if (new_shortcut != "" && expansion != "") {
+            operation := "Add"
+        } else if (new_shortcut != "" && old_shortcut != "") {
+            operation := "Change"
+        } else if (old_shortcut != "") {
+            operation := "Delete"
+        } else {
+            MsgBox , , % "ZipChord", % "ZipChord encountered a bad argument while editing the dictionary file."
+            return false
+        }
+
+        file := FileOpen(this._file, "r", "UTF-8-RAW")
+        if (! IsObject(file)) {
+            MsgBox , , % "ZipChord", % "ZipChord encountered an error while reading the dictionary file."
+            return false
+        }
+        file_text := file.Read()
+        file.Close()
+        file := ""
+
+        if (operation == "Add") {
+            opening_new_line := "`r`n"
+            ending_new_line := "`r`n"
+            if (SubStr(file_text, StrLen(file_text), 1) == "`n") {
+                if (StrLen(file_text) >= 2 && SubStr(file_text, StrLen(file_text) - 1) == "`r`n") {
+                    opening_new_line := ""
+                } else {
+                    opening_new_line := ""
+                    ending_new_line := "`n"
+                }
+            } else if (! InStr(file_text, "`r`n", true) && InStr(file_text, "`n", true)) {
+                opening_new_line := "`n"
+                ending_new_line := "`n"
+            }
+            start_pos := StrLen(file_text) + 1
+            end_pos := StrLen(file_text)
+            replacement := opening_new_line . new_shortcut . "`t" . expansion . ending_new_line
+        } else {
+            needle := "`n" . old_shortcut . "`t"
+            pos := InStr(file_text, needle, true)
+            if (pos) {
+                start_pos := pos + 1
+            } else if (SubStr(file_text, 1, StrLen(Chr(0xFEFF) . old_shortcut . "`t")) == Chr(0xFEFF) . old_shortcut . "`t") {
+                start_pos := 2
+            } else if (SubStr(file_text, 1, StrLen(old_shortcut . "`t")) == old_shortcut . "`t") {
+                start_pos := 1
+            } else {
+                MsgBox , , % "ZipChord", % Format("ZipChord could not find the shortcut '{}' in the dictionary file.", old_shortcut)
+                return false
+            }
+
+            if (operation == "Delete") {
+                replacement := ""
+                pos := InStr(SubStr(file_text, start_pos), "`n", true)
+                if (! pos) {
+                    end_pos := StrLen(file_text)
+                } else {
+                    end_pos := start_pos + pos - 1
+                }
+            } else {
+                replacement := new_shortcut
+                end_pos := start_pos + StrLen(old_shortcut) - 1
+            }
+        }
+
+        new_text := SubStr(file_text, 1, start_pos - 1) . replacement . SubStr(file_text, end_pos + 1)
+        temp_file := this._file . ".tmp"
+        try {
+            if (FileExist(temp_file)) {
+                FileDelete, % temp_file
+            }
+            file := FileOpen(temp_file, "w", "UTF-8-RAW")
+            if (! IsObject(file)) {
+                throw 1
+            }
+            file.Write(new_text)
+            file.Close()
+            file := ""
+            FileMove, % temp_file, % this._file, 1
+            if (ErrorLevel) {
+                throw 1
+            }
+            return true
+        } catch {
+            if (IsObject(file)) {
+                file.Close()
+            }
+            if (FileExist(temp_file)) {
+                FileDelete, % temp_file
+            }
+            MsgBox , , % "ZipChord", % "ZipChord encountered an error while editing the dictionary file."
+            return false
+        }
     }
 
     StartWatching() {
