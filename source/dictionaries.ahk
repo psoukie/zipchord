@@ -1,7 +1,7 @@
 ﻿/*
 This file is part of ZipChord.
 Copyright (c) 2021-2026 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 global chords := New clsDictionary(true)
@@ -32,16 +32,16 @@ Class clsDictionary {
     _dll_entries_count := 0
     _is_watching := false
     _pause_loading := true
-    
+
     entries {
-        get { 
+        get {
             if (dll.available) {
                 return this._dll_entries_count
             }
-            return this._entries.Count() 
+            return this._entries.Count()
         }
     }
-    
+
     __New(chorded_keys := false) {
         this._chorded := chorded_keys
     }
@@ -58,7 +58,7 @@ Class clsDictionary {
         ; else use AHK path
         if ( this._entries.HasKey(shortcut) ) {
             return this._entries[shortcut]
-        } 
+        }
         return false
 
     }
@@ -133,66 +133,76 @@ Class clsDictionary {
         return StrGet(&full_path, length, "UTF-16")
     }
 
-    AddShortcut(shortcut, text) {
-        if (this._file == "") {
-            MsgBox, , % "ZipChord", % "Select a dictionary before adding a shortcut."
+    AddShortcut(raw_shortcut, expansion) {
+        if (! this.ValidateDictEdit(raw_shortcut, expansion)) {
             return false
         }
-        if(! this._RegisterShortcut(shortcut, text, true)) {
-            return false
-        }
-        return true
+
+        dll_fn := ObjBindMethod(dll, "EditDictionary", this._file, "", raw_shortcut, expansion)
+        ahk_fn := ObjBindMethod(this, "_Ahk_AddShortcutToDict", raw_shortcut, expansion)
+        return this.TryExecutingDictEdit(dll_fn, ahk_fn)
     }
 
     ChangeShortcut(old_shortcut, new_shortcut) {
-        if (this._file == "") {
-            MsgBox, , % "ZipChord", % "Select a dictionary before changing a shortcut."
-            return false
-        }
-        ; Make sure the new shortcut is legal and available
-        if(! this._RegisterShortcut(new_shortcut, "_CURRENT_SHORTCUT_")) {
+        if (! this.ValidateDictEdit(new_shortcut, "_CURRENT_SHORTCUT_")) {
             return false
         }
 
-        edit_ok := false
-        this.StopWatching()
-        if (dll.available) {
-            ; TK - check (and adapt other code if needed) to make sure this._file is always full path
-            edit_ok := dll.EditDictionary(this._file, old_shortcut, new_shortcut)
-        } else {
-            edit_ok := this._Ahk_EditDictionary(old_shortcut, new_shortcut)
-        }
-
-        if (! edit_ok) {
-            return false
-        }
-
-        this.Load()
-        main_UI.UpdateDictionaryUI()
-        return edit_ok
+        dll_fn := ObjBindMethod(dll, "EditDictionary", this._file, old_shortcut, new_shortcut)
+        ahk_fn := ObjBindMethod(this, "_Ahk_EditDictionary", old_shortcut, new_shortcut)
+        return this.TryExecutingDictEdit(dll_fn, ahk_fn)
     }
 
     DeleteShortcut(old_shortcut) {
-        if (this._file == "") {
-            MsgBox, , % "ZipChord", % "Select a dictionary before deleting a shortcut."
-            return false
-        }
-        this.StopWatching()
-        delete_ok := false
-        if (dll.available) {
-            ; TK - check (and adapt other code if needed) to make sure this._file is always full path
-            delete_ok := dll.EditDictionary(this._file, old_shortcut)
-        } else {
-            delete_ok := this._Ahk_DeleteFromDictionary(old_shortcut)
-        }
-        if (! delete_ok) {
+        if (! this.ValidateDictEdit()) {
             return false
         }
 
-        this.Load()
+        dll_fn := ObjBindMethod(dll, "EditDictionary", this._file, old_shortcut)
+        ahk_fn := ObjBindMethod(this, "_Ahk_DeleteFromDictionary", old_shortcut)
+        return this.TryExecutingDictEdit(dll_fn, ahk_fn)
+    }
+
+    ValidateDictEdit(raw_shortcut := "", expansion := "") {
+        if (this._file == "") {
+            MsgBox, , % "ZipChord", % "First, select a dictionary."
+            return false
+        }
+
+        if (raw_shortcut == "") {
+            return true
+        }
+
+        return this._RegisterShortcut(raw_shortcut, expansion)
+    }
+
+    TryExecutingDictEdit(dll_fn, ahk_fn) {
+        edit_ok := false
+        this.PauseWatching()
+        if (dll.available) {
+            edit_ok := dll_fn.Call()
+        } else {
+            edit_ok := ahk_fn.Call()
+        }
+        if (! edit_ok) {
+            this.StartWatching()
+            return false
+        }
+
+        this.Load()  ; Provides its own error messages; we throw away the error on purpose here.
         main_UI.UpdateDictionaryUI()
-        return delete_ok
-    }    
+        return true
+    }
+
+    _Ahk_AddShortcutToDict(raw_shortcut, expansion) {
+        try {
+            FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8
+            return true
+        } catch {
+            MsgBox , , % "ZipChord", % "ZipChord encountered an error while editing the dictionary file."
+            return false
+        }
+    }
 
     _Ahk_EditDictionary(old_shortcut, new_shortcut) {
         ; TK - adapt from Odin code
@@ -212,6 +222,9 @@ Class clsDictionary {
         this._reload_due := 0
         this._file_modified := ""
         this._file_size := ""
+    }
+    PauseWatching() {
+        this._is_watching := false
     }
     _GetDictModifiedTime() {
         filename := this._file
@@ -317,10 +330,10 @@ Class clsDictionary {
         SplitPath, filename, _, file_dir, _, file_no_ext
         prefix := this._chorded ? "chords-" : "shorthands-"
         filename_start := SubStr(file_no_ext, 1, StrLen(prefix))
-        StringLower lowercase_prefix, filename_start 
+        StringLower lowercase_prefix, filename_start
         if (lowercase_prefix == prefix) {
             file_no_ext := SubStr(file_no_ext, StrLen(prefix) + 1)
-        } 
+        }
         return (file_dir ? file_dir . "\" : "") . file_no_ext . (this._chorded ? ".chords.txt" : ".shorthands.txt")
     }
     _EnsureV2DictionaryFile(filename) {
@@ -417,11 +430,11 @@ Class clsDictionary {
             Default:
                 err_details := dll.GetErrorDetails(result)
                 MsgBox , , % "ZipChord", % Format("ZipChord encountered {} error while adding the shortcut.", err_details)
-        }    
+        }
         return false
     }
 
-    _RegisterShortcut(raw_shortcut, expansion, write_to_file:=false) {
+    _RegisterShortcut(raw_shortcut, expansion) {
         if (dll.available) {
             if !(this._Dll_RegisterShortcut(raw_shortcut, expansion)) {
                 return false
@@ -432,31 +445,6 @@ Class clsDictionary {
                 return false
             }
         }
-        
-        if (! write_to_file) {
-            return true
-        }
-        
-        edit_ok := false
-        this.StopWatching()
-        if (dll.available) {
-            edit_ok := dll.EditDictionary(this._file, "", raw_shortcut, expansion)
-            this.StartWatching()
-            return edit_ok
-        } else {
-            try {
-                FileAppend % "`r`n" raw_shortcut "`t" expansion, % this._file, UTF-8
-            } catch {
-                MsgBox , , % "ZipChord", % "ZipChord encountered an error while editing the dictionary file."
-            }
-            edit_ok := true
-        }
-        if (! edit_ok) {
-            return false
-        }
-
-        this.Load()
-        main_UI.UpdateDictionaryUI()
         return true
     }
 
@@ -567,7 +555,7 @@ Class clsAddShortcut {
     BTN_CHANGE := {chord: "&Change", shorthand: "Ch&ange"}
 
     controls := { expansion:       { type: "Edit"
-                                   , function: ObjBindMethod(this, "_ExpansionChange")} 
+                                   , function: ObjBindMethod(this, "_ExpansionChange")}
                 , chord:           { type: "Edit"
                                    , function: ObjBindMethod(this, "ShortcutChange", "chord")}
                 , shorthand:       { type: "Edit"
@@ -676,7 +664,7 @@ Class clsAddShortcut {
         control_value := this.controls[dict].value
         saved_value := this.saved_shortcuts[dict]
         note := this.controls["note_" . dict]
-        
+
         if (saved_value != "") {
             ; shortcut exists
             note.value := Format(this.SHORTCUT_CURRENT, dict, this.short_exp, saved_value)
