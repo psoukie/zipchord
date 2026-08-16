@@ -823,6 +823,8 @@ Class clsAssignShortcuts {
                 note.value := "The shortcut must be at least two keys."
             Case DllError.EMPTY_CHORD:
                 note.value := "A chained chord cannot contain an empty chord."
+            Case DllError.CHAIN_ENDS_IN_SINGLE_KEY:
+                note.value := "A chained chord must end with a chord."
             Default:
                 err_details := dll.GetErrorDetails(err)
                 note.value := Format("Encountered {} error while checking the shortcut.", err_details)

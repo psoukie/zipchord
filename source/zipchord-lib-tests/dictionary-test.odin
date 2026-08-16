@@ -17,6 +17,36 @@ utf8bom :: proc(t: ^tst.T) {
 }
 
 @(test)
+validate_shortcuts :: proc(t: ^tst.T) {
+    dict_data: zc.Dict_Data
+    buf: zc.Chord_Chain_Buffer
+    shortcut: string
+    err: zc.Dict_Error
+
+    shortcut, err = zc.validate_shortcut(&dict_data, "ba|cd", true, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.None)
+    tst.expect_value(t, shortcut, "ab|cd")
+    shortcut, err = zc.validate_shortcut(&dict_data, "bac", false, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.None)
+    tst.expect_value(t, shortcut, "bac")
+    shortcut, err = zc.validate_shortcut(&dict_data, "b", false, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.Fewer_Than_Two)
+    shortcut, err = zc.validate_shortcut(&dict_data, "ž", false, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.Fewer_Than_Two)
+    shortcut, err = zc.validate_shortcut(&dict_data, "ab|ž", true, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.Chain_Ends_In_Single_Key)
+    shortcut, err = zc.validate_shortcut(&dict_data, "xa|b|cd", true, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.None)
+    tst.expect_value(t, shortcut, "ax|b|cd")
+    shortcut, err = zc.validate_shortcut(&dict_data, "xa|cd|b", true, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.Chain_Ends_In_Single_Key)
+    shortcut, err = zc.validate_shortcut(&dict_data, "a|xax", true, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.Repeated_Key)
+    shortcut, err = zc.validate_shortcut(&dict_data, "a||b", true, &buf)
+    tst.expect_value(t, err, zc.Dict_Error.Empty_Chord)
+}
+
+@(test)
 dict_clones_keys_and_survives_reload :: proc(t: ^tst.T) {
     dict: zc.Chord_Dict
     err := zc.dict_data_init(&dict.dict_data)
@@ -89,7 +119,7 @@ normalize_chords :: proc(t: ^tst.T) {
     	tst.expect_value(t, err, zc.Dict_Error.None)
     	tst.expect_value(t, normalized, sorted)
 	}
-	
+
     normalize(t, "cabťžř", "abcřťž")
     normalize(t, "ts", "st")
     normalize(t, "a !", " !a")
@@ -97,7 +127,7 @@ normalize_chords :: proc(t: ^tst.T) {
     ch_buf: zc.Chord_Buffer
     noramalized, err := zc._normalize_chord("mem", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Repeated_Key)
-    
+
     noramalized, err = zc._normalize_chord("ťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťťť", &ch_buf)
     tst.expect_value(t, err, zc.Dict_Error.Buffer_Too_Small)
 }
