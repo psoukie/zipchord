@@ -364,7 +364,6 @@ Class clsDictionary {
     }
     _Dll_LoadShortcuts() {
         global dll_buffer
-        global dll_error_text
         shortcuts_loaded := 0
         result := dll.LoadDictionary(this._file, this._chorded, shortcuts_loaded)
         if (result < 0) {
@@ -381,7 +380,7 @@ Class clsDictionary {
                 Case DllError.FEWER_THAN_TWO:
                     reason := "a shortcut with less than two characters"
                 Default:
-                    reason := dll_error_text.HasKey(result) ? dll_error_text[result] : "an unknown error (" . result . ")"
+                    reason := dll.GetErrorDetails(result)
             }
             MsgBox, , % "ZipChord", % Format("ZipChord encountered {} while processing the {} '{}'.", reason, type, raw_shortcut)
             this._dll_entries_count := shortcuts_loaded
@@ -789,7 +788,7 @@ Class clsAddShortcut {
     ShortcutChange(dict) {
         save_button := this.controls["save_" . dict]
         delete_button := this.controls["delete_" . dict]
-        control_value := this.controls[dict].value
+        raw_shortcut := this.controls[dict].value
         saved_value := this.saved_shortcuts[dict]
         note := this.controls["note_" . dict]
 
@@ -803,11 +802,33 @@ Class clsAddShortcut {
             delete_button.Disable()
             save_button.value := this.BTN_ADD[dict]
         }
-        if (control_value == saved_value || control_value == "") {
-            save_button.Disable()
-        } else {
-            save_button.Enable()
-            save_button.MakeDefault()
+
+        save_button.Disable()
+        if (raw_shortcut == saved_value || raw_shortcut == "") {
+            return
+        }
+
+        chorded := dict == "chord" ? true : false
+        obj_name := dict . "s"
+        ; Live validation is DLL-only.
+        err := dll.available ? dll.ValidateShortcut(raw_shortcut, chorded) : DllError.NONE
+        Switch err {
+            Case DllError.NONE:
+                save_button.Enable()
+                save_button.MakeDefault()
+            Case DllError.REPEATED_KEY:
+                note.value := "Each key can be entered only once in the same chord."
+            Case DllError.SHORTCUT_EXISTS:
+                shortcut := chorded ? dll.NormalizeChord(raw_shortcut) : raw_shortcut
+                occupied := %obj_name%.LookUp(shortcut)
+                note.value := Format("The {1} '{2}' is already in use for '{3}'.`nUse a different {1} for {4}.", dict, raw_shortcut, occupied, this.short_exp)
+            Case DllError.FEWER_THAN_TWO:
+                note.value := "The shortcut must be at least two keys."
+            Case DllError.EMPTY_CHORD:
+                note.value := "A chained chord cannot contain an empty chord."
+            Default:
+                err_details := dll.GetErrorDetails(err)
+                note.value := Format("Encountered {} error while checking the shortcut.", err_details)
         }
     }
 

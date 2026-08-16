@@ -1,14 +1,14 @@
 # ZipChord Changelog
 
-## ZipChord 2.11.0-dev (Unreleased)
+## ZipChord 2.11.0-dev (Unreleased, work in progress)
 
 This release makes it easier to manage the shortcuts assigned to any output text in a redesigned "Add or Edit Shortcut" window, now called "Assign Shortcuts."
 
 **New Features**
 
-- Chords and shorthands can now be added, changed, or removed in the Assign Shortcut window without editing the dictionary file manually.
+- Chords and shorthands can now be added, changed, or removed in the Assign Shortcuts window without editing the dictionary file manually.
 - Entering or changing the output text now displays its currently assigned chord and shorthand.
-- Contextual messages and buttons indicate the status of the shortcuts as you view and modify them.
+- When ZipChord's compiled library is available, shortcut conflicts or other problems are shown as you type. Otherwise, shortcuts are checked when you select Add or Change.
 - Dictionary updates preserve the ordering of the shortcuts, additional columns, and other comments in the dictionary file.
 
 ## ZipChord 2.10
