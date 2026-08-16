@@ -290,11 +290,12 @@ dict_data_load_file :: proc(
 	chain_buf: Chord_Chain_Buffer
 	for raw_line in strings.split_iterator(&file_text, "\n") {
 		i += 1
+		// Extract a tabbed pair if available
 		line := strings.trim_right(raw_line, "\r")
-		shortcut, expansion := _extract_a_tabbed_pair(line) or_continue
-		if shortcut == "" {
-			continue
-		}
+		shortcut := strings.split_iterator(&line, "\t") or_continue
+		if shortcut == "" do continue
+		expansion := strings.split_iterator(&line, "\t") or_continue
+
 		result := register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf)
 		if result != .None {
 			string_buf.len = 0
@@ -356,13 +357,6 @@ register_shortcut :: proc (
 	if validate_only do return .None
 
 	return dict_data_add(dict_data, shortcut, expansion, raw_chord)
-}
-
-_extract_a_tabbed_pair :: proc(line: string) -> (shortcut: string, expansion: string, ok: bool) {
-	line := line
-	shortcut = strings.split_iterator(&line, "\t") or_return
-	expansion = strings.split_iterator(&line, "\t") or_return
-	return shortcut, expansion, true
 }
 
 dict_file_edit :: proc(
