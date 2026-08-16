@@ -452,50 +452,63 @@ Class clsDictionary {
         Return true
     }
     ; Private helper: check for duplicate letters in a shortcut and show warning if found
-    _IsDuplicateChars(shortcut, word) {
+    _IsDuplicateChars(shortcut, expansion := "") {
         ; Detect duplicate characters: if length changes after removing duplicates, there are repeats
         if (StrLen(RegExReplace(shortcut,"(.)(?=.*\1)")) != StrLen(shortcut)) {
-            MsgBox ,, % "ZipChord", % Format("In the entry for '{}', each key can be entered only once in the same chord.", word)
+            if (expansion == "") {
+                MsgBox ,, % "ZipChord", % "Each key can be entered only once in the same chord."
+            } else {
+                MsgBox ,, % "ZipChord", % Format("In the entry for '{}', each key can be entered only once in the same chord.", expansion)
+            }
             Return true
         }
         Return false
     }
 
-    ; Adds a new pair of chord and its expanded text directly to 'this._entries'
-    _Ahk_RegisterShortcut(raw_shortcut, expansion, validate_only) {
+    _Ahk_ValidateShortcut(raw_shortcut, ByRef shortcut, expansion := "") {
         if (this._chorded) {
             if (InStr(raw_shortcut, "|")) {
                 chunks := StrSplit(raw_shortcut, "|")
-                newch := ""
+                shortcut := ""
                 For _, chunk in chunks {
                     if (chunk == "") {
-                        MsgBox ,, % "ZipChord", % Format("The chained chord for '{}' includes an empty chord.", expansion)
+                        if (expansion == "") {
+                            message := "The chained chord includes an empty chord."
+                        } else {
+                            message := Format("The chained chord for '{}' includes an empty chord.", expansion)
+                        }
+                        MsgBox ,, % "ZipChord", % message
                         return false
                     }
-                    newch .= "|" . str.Arrange(chunk)
+                    shortcut .= "|" . str.Arrange(chunk)
                     if (this._IsDuplicateChars(chunk, expansion)) {
                         return false
                     }
                 }
-                newch := SubStr(newch, 2)
+                shortcut := SubStr(shortcut, 2)
             } else {
-                newch := str.Arrange(raw_shortcut)
-                if (this._IsDuplicateChars(newch, expansion)) {
+                shortcut := str.Arrange(raw_shortcut)
+                if (this._IsDuplicateChars(shortcut, expansion)) {
                     return false
                 }
             }
         } else {
-            newch := raw_shortcut
+            shortcut := raw_shortcut
         }
-        if (! this._IsShortcutOK(newch, expansion)) {
+        return this._IsShortcutOK(shortcut, expansion)
+    }
+
+    ; Adds a new pair of chord and its expanded text directly to 'this._entries'
+    _Ahk_RegisterShortcut(raw_shortcut, expansion) {
+        if (! this._Ahk_ValidateShortcut(raw_shortcut, shortcut, expansion)) {
+            return false
+        }
+        if (expansion == "") {
+            MsgBox ,, % "ZipChord", % "There is no expansion being provided for the shortcut."
             return false
         }
 
-        if (validate_only) {
-            return true
-        }
-
-        ObjRawSet(this._entries, newch, expansion)
+        ObjRawSet(this._entries, shortcut, expansion)
         ObjRawSet(this._reverse_entries, expansion, raw_shortcut)
         return true
     }
@@ -539,8 +552,10 @@ Class clsDictionary {
     }
 
     _ValidateShortcut(raw_shortcut) {
-        validation := dll.available ? this._Dll_ValidateShortcut(raw_shortcut) : this._Ahk_RegisterShortcut(raw_shortcut, "_NEW_SHORTCUT_", true)
-        return validation
+        if (dll.available) {
+            return this._Dll_ValidateShortcut(raw_shortcut)
+        }
+        return this._Ahk_ValidateShortcut(raw_shortcut, shortcut)
     }
 
     _RegisterShortcut(raw_shortcut, expansion) {
@@ -550,25 +565,29 @@ Class clsDictionary {
             }
             this._dll_entries_count += 1
         } else {
-            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion, false)) {
+            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion)) {
                 return false
             }
         }
         return true
     }
 
-    _IsShortcutOK(shortcut, word) {
+    _IsShortcutOK(shortcut, expansion := "") {
         dest := this._chorded ? "chord" : "shorthand"
         if (occupied := this.LookUp(shortcut)) {
-            MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, shortcut, occupied, word)
+            if (expansion == "") {
+                MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1}.", dest, shortcut, occupied)
+            } else {
+                MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1} for '{4}'.", dest, shortcut, occupied, expansion)
+            }
             Return false
         }
         if (StrLen(shortcut)<2) {
-            MsgBox ,, % "ZipChord", % Format("The {1} for '{2}' needs to be at least two characters.", dest, word)
-            Return false
-        }
-        if (word=="") {
-            MsgBox ,, % "ZipChord", % "There is no expansion being provided for the shortcut."
+            if (expansion == "") {
+                MsgBox ,, % "ZipChord", % "The shortcut must be at least two characters."
+            } else {
+                MsgBox ,, % "ZipChord", % Format("The {1} for '{2}' needs to be at least two characters.", dest, expansion)
+            }
             Return false
         }
         Return True
