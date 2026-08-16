@@ -484,6 +484,16 @@ Class clsDictionary {
                         return false
                     }
                 }
+                last_chunk := chunks[chunks.Length()]
+                if (StrLen(last_chunk) < 2) {
+                    if (expansion == "") {
+                        message := "A chained chord must end with a chord."
+                    } else {
+                        message := Format("The chained chord for '{}' must end with a chord.", expansion)
+                    }
+                    MsgBox ,, % "ZipChord", % message
+                    return false
+                }
                 shortcut := SubStr(shortcut, 2)
             } else {
                 shortcut := str.Arrange(raw_shortcut)
