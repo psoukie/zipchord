@@ -45,6 +45,7 @@ Class clsDllBindings {
     _reverse_lookup_fn := 0
     _add_chord_fn := 0
     _register_shortcut_fn := 0
+    _validate_shortcut_fn := 0
 
     __New() {
         global dll_buffer
@@ -96,11 +97,14 @@ Class clsDllBindings {
         this._lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_lookup", "Ptr")
         this._reverse_lookup_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_reverse_lookup", "Ptr")
         this._register_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_register_shortcut", "Ptr")
+        this._validate_shortcut_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_validate_shortcut", "Ptr")
         this._get_saved_string_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_get_saved_string", "Ptr")
         this._normalize_chord_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_normalize_chord", "Ptr")
         this._edit_dict_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_dict_edit", "Ptr")
 
-        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn && this._register_shortcut_fn && this._get_saved_string_fn && this._normalize_chord_fn && this._edit_dict_fn) {
+        if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn
+                && this._register_shortcut_fn && this._validate_shortcut_fn && this._get_saved_string_fn
+                && this._normalize_chord_fn && this._edit_dict_fn) {
             return true
         }
         return false
@@ -131,14 +135,21 @@ Class clsDllBindings {
                 , "Cdecl Int")
     }
 
-    RegisterShortcut(raw_shortcut, expansion, chorded, validate_only) {
+    ValidateShortcut(raw_shortcut, chorded) {
+        pShortcut := this._StringToPtr(raw_shortcut, shortcutBuf)
+        return DllCall(this._validate_shortcut_fn
+                , "Ptr", pShortcut
+                , "Int", chorded
+                , "Cdecl Int")
+    }
+
+    RegisterShortcut(raw_shortcut, expansion, chorded) {
         pShortcut := this._StringToPtr(raw_shortcut, shortcutBuf)
         pExpansion := this._StringToPtr(expansion, expansionBuf)
         return DllCall(this._register_shortcut_fn
                 , "Ptr", pShortcut
                 , "Ptr", pExpansion
                 , "Int", chorded
-                , "Int", validate_only
                 , "Cdecl Int")
     }
 

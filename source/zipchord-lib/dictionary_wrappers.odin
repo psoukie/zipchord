@@ -49,11 +49,24 @@ zc_load_dictionary :: proc "c" (
 }
 
 @export
+zc_validate_shortcut :: proc "c" (
+	shortcut: cstring,
+	is_chord: b32,
+) -> Dict_Error {
+	context = runtime.default_context()
+	if shortcut == nil do return .Bad_Argument
+
+	buf: Chord_Chain_Buffer
+	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
+	_, err := validate_shortcut(target, string(shortcut), bool(is_chord), &buf)
+	return err
+}
+
+@export
 zc_register_shortcut :: proc "c" (
 	shortcut: cstring,
 	expansion: cstring,
 	is_chord: b32,
-	validate_only: b32,
 ) -> Dict_Error {
 	context = runtime.default_context()
 
@@ -63,7 +76,7 @@ zc_register_shortcut :: proc "c" (
 
 	buf: Chord_Chain_Buffer
 	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
-	return register_shortcut(target, string(shortcut), string(expansion), bool(is_chord), &buf, bool(validate_only))
+	return register_shortcut(target, string(shortcut), string(expansion), bool(is_chord), &buf)
 }
 
 @export

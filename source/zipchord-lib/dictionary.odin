@@ -182,7 +182,7 @@ dict_data_add :: proc (
 		return .Allocation_Error
 	}
 
-	// if the lowercase it different, store also the original version
+	// if the lowercase is different, store also the original version
 	if expansion != own_lcase_expansion {
 		own_expansion, alloc_err = strings.clone(expansion, alloc)
 		if alloc_err != .None {
@@ -286,10 +286,8 @@ dict_data_load_file :: proc(
 	file_text := string(file_data)
 	file_text = remove_bom(file_text)
 
-	i := 0
 	chain_buf: Chord_Chain_Buffer
 	for raw_line in strings.split_iterator(&file_text, "\n") {
-		i += 1
 		// Extract a tabbed pair if available
 		line := strings.trim_right(raw_line, "\r")
 		shortcut := strings.split_iterator(&line, "\t") or_continue
@@ -330,32 +328,34 @@ dict_load_file :: proc {
 	dict_shorthand_load_file,
 }
 
+validate_shortcut :: proc (
+	dict_data: ^Dict_Data,
+	orig_shortcut: string,
+	as_chords: bool,
+	chain_buffer: ^Chord_Chain_Buffer,
+) -> (shortcut: string, err: Dict_Error) {
+	shortcut = orig_shortcut
+
+	if utf8.rune_count_in_string(shortcut) < 2 do return "", .Fewer_Than_Two
+
+	if as_chords {
+		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
+	}
+
+	_, lookup_err := dict_data_lookup(dict_data, shortcut)
+	if lookup_err == .None do return "", .Shortcut_Exists
+	if lookup_err == .Not_Found do return shortcut, .None  // Available
+	return "", lookup_err  // Unexpected error
+}
+
 register_shortcut :: proc (
 	dict_data: ^Dict_Data,
 	orig_shortcut, expansion: string,
 	as_chords: bool,
 	chain_buffer: ^Chord_Chain_Buffer,
-	validate_only := false
-) -> (err: Dict_Error) {
-	shortcut := orig_shortcut
-	raw_chord := ""
-
-	if len(shortcut) < 2 {  // TK: not foolproof for non-ASCII shortcuts
-		return .Fewer_Than_Two
-	}
-
-	if as_chords {
-		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
-		raw_chord = orig_shortcut
-	}
-
-	_, lookup_err := dict_data_lookup(dict_data, shortcut)
-	if lookup_err != .Not_Found {
-		return .Shortcut_Exists
-	}
-
-	if validate_only do return .None
-
+) -> Dict_Error {
+	shortcut := validate_shortcut(dict_data, orig_shortcut, as_chords, chain_buffer) or_return
+	raw_chord := orig_shortcut if as_chords else ""
 	return dict_data_add(dict_data, shortcut, expansion, raw_chord)
 }
 

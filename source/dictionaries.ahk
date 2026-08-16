@@ -134,7 +134,7 @@ Class clsDictionary {
     }
 
     AddShortcut(raw_shortcut, expansion) {
-        if (! this.ValidateDictEdit(raw_shortcut, expansion)) {
+        if (! this.ValidateDictEdit(raw_shortcut)) {
             return false
         }
 
@@ -143,7 +143,7 @@ Class clsDictionary {
     }
 
     ChangeShortcut(old_shortcut, new_shortcut) {
-        if (! this.ValidateDictEdit(new_shortcut, "_CURRENT_SHORTCUT_")) {
+        if (! this.ValidateDictEdit(new_shortcut)) {
             return false
         }
 
@@ -160,7 +160,7 @@ Class clsDictionary {
         return this.TryExecutingDictEdit(fn)
     }
 
-    ValidateDictEdit(raw_shortcut := "", expansion := "") {
+    ValidateDictEdit(raw_shortcut := "") {
         if (this._file == "") {
             MsgBox, , % "ZipChord", % "First, select a dictionary."
             return false
@@ -171,7 +171,7 @@ Class clsDictionary {
         }
 
         ; Check the shortcut does not exist
-        return this._RegisterShortcut(raw_shortcut, expansion, true)
+        return this._ValidateShortcut(raw_shortcut)
     }
 
     TryExecutingDictEdit(fn) {
@@ -500,8 +500,27 @@ Class clsDictionary {
         return true
     }
 
-    _Dll_RegisterShortcut(raw_shortcut, expansion, validate_only) {
-        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded, validate_only)
+    _Dll_ValidateShortcut(raw_shortcut) {
+        result := dll.ValidateShortcut(raw_shortcut, this._chorded)
+        Switch result {
+            Case DllError.NONE:
+                return true
+            Case DllError.SHORTCUT_EXISTS:
+                dest := this._chorded ? "chord" : "shorthand"
+                shortcut := this._chorded ? dll.NormalizeChord(raw_shortcut) : raw_shortcut
+                occupied := this.LookUp(shortcut)
+                MsgBox ,, % "ZipChord", % Format("The {1} '{2}' is already in use for '{3}'.`nPlease use a different {1}.", dest, raw_shortcut, occupied)
+            Case DllError.FEWER_THAN_TWO:
+                MsgBox ,, % "ZipChord", % "The shortcut must be at least two characters."
+            Default:
+                err_details := dll.GetErrorDetails(result)
+                MsgBox , , % "ZipChord", % Format("ZipChord encountered {} error while adding the shortcut.", err_details)
+        }
+        return false
+    }
+
+    _Dll_RegisterShortcut(raw_shortcut, expansion) {
+        result := dll.RegisterShortcut(raw_shortcut, expansion, this._chorded)
         Switch result {
             Case DllError.NONE:
                 return true
@@ -519,16 +538,19 @@ Class clsDictionary {
         return false
     }
 
-    _RegisterShortcut(raw_shortcut, expansion, validate_only := false) {
+    _ValidateShortcut(raw_shortcut) {
+        validation := dll.available ? this._Dll_ValidateShortcut(raw_shortcut) : this._Ahk_RegisterShortcut(raw_shortcut, "_NEW_SHORTCUT_", true)
+        return validation
+    }
+
+    _RegisterShortcut(raw_shortcut, expansion) {
         if (dll.available) {
-            if !(this._Dll_RegisterShortcut(raw_shortcut, expansion, validate_only)) {
+            if !(this._Dll_RegisterShortcut(raw_shortcut, expansion)) {
                 return false
             }
-            if (! validate_only) {
-                this._dll_entries_count += 1
-            }
+            this._dll_entries_count += 1
         } else {
-            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion, validate_only)) {
+            if !(this._Ahk_RegisterShortcut(raw_shortcut, expansion, false)) {
                 return false
             }
         }
