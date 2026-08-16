@@ -1,8 +1,8 @@
 # ZipChord
 
-<img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-demo-border.gif" width="500" alt="ZipChord demo" />
+<img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-demo-border.gif" width="400" alt="ZipChord demo" />
 
-ZipChord is a Windows app for **hybrid typing**: it lets you mix **normal typing**, **simultaneous chords**, and **typed shorthands** in the same flow.
+ZipChord is a Windows app for hybrid typing: it lets you mix normal typing, simultaneous chords, and typed shorthands in the same flow.
 
 Instead of learning full stenography, you can start with just a few shortcuts for the most common words and phrases. ZipChord is built around the idea that a small number of high-frequency shortcuts can speed up a large share of everyday typing.
 
@@ -22,8 +22,8 @@ Instead of learning full stenography, you can start with just a few shortcuts fo
 - Real-time hints in an on-screen display or tooltips
 - Smart spaces and automatic capitalization around shortcuts and punctuation
 - Two chord-detection modes: minimum held duration or relative overlap of keys
-- Automatic switching with the active Windows keyboard layout, with per-layout key mapping, dictionaries, and enabled shortcut states
-- Native UI and command menu for common actions
+- Automatic switching with the active Windows keyboard layout, with per-layout key mapping and dictionaries
+- Native UI and command menu for common actions and assigning shortcuts
 
 ## Example
 
@@ -40,11 +40,11 @@ Instead of learning full stenography, you can start with just a few shortcuts fo
 
 ## Installation
 
-Download **zipchord-install-_version_.zip** or the stand-alone **zipchord-exe-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases).
+Download **zipchord-install-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases), extract it, and run the included installer.
 
-If you prefer not to use the installer or compiled executable, download the release source archive, extract it anywhere on Windows, install AutoHotkey v1.1, switch the working directory to `source`, and run `zipchord.ahk`.
+For other installation options that do not use the installer, see the [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation).
 
-ZipChord currently works on **Windows only**. A cross-platform version is under development.
+ZipChord currently works on Windows only. A cross-platform version is under development.
 
 ## Documentation
 
