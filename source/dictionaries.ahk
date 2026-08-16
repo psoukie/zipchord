@@ -7,7 +7,7 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 global chords := New clsDictionary(true)
 global shorthands := New clsDictionary
 
-global add_shortcut := new clsAddShortcut
+global assign_shortcut := new clsAssignShortcuts
 
 /**
 * Class for dictionaries.
@@ -663,12 +663,9 @@ _UpdateWorkingDir(new_dir) {
 
 
 /**
-* Class for Adding Shortcuts.
-*
-* Public Methods:
-*    Show
+*  Assigning Shortcuts
 */
-Class clsAddShortcut {
+Class clsAssignShortcuts {
     UI := {}
     saved_shortcuts := { chord: ""
                        , shorthand: ""}
@@ -712,7 +709,7 @@ Class clsAddShortcut {
 
     Show(exp := "") {
         kb.SetZipChordToCurrentHkl()
-        call := Func("OpenHelp").Bind("AddShortcut")
+        call := Func("OpenHelp").Bind("AssignShortcuts")
         Hotkey, F1, % call, On
         WireHotkeys("Off")  ; so the user can edit values without interference
         backspace_fn := this._backspace_fn

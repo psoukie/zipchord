@@ -93,7 +93,7 @@ runtime_config_file := ""
 
 SC_to_symbol_map := {} ; dynamically created scan-code number to key-symbol mapping
 symbol_to_SC_map := {} ; reverse map
-ahk_numpad_to_symbol_map := {} 
+ahk_numpad_to_symbol_map := {}
 
 
 #Include *i visualizer.ahk
@@ -377,7 +377,7 @@ Class clsWatcher {
 
     RunChecks() {
         global locale_UI
-        
+
         chords.CheckForDictModification()
         shorthands.CheckForDictModification()
         layout_changed := kb.CheckForLayoutChange()
@@ -402,13 +402,12 @@ CloseApp() {
     ExitApp
 }
 
-;;  Adding shortcuts
+; Assigning shortcuts
 ; -------------------
 
-; Define a new shortcut for the selected text (or check what it is for existing)
-AddShortcut() {
-    if (add_shortcut.UI.IsShown()) {
-        add_shortcut.UI.Reshow()
+AssignShortcuts() {
+    if (assign_shortcut.UI.IsShown()) {
+        assign_shortcut.UI.Reshow()
         Return
     }
     ; we try to copy any currently selected text into the Windows clipboard (while backing up and restoring its content)
@@ -419,7 +418,7 @@ AddShortcut() {
     copied_text := Trim(Clipboard)
     Clipboard := clipboard_backup
     clipboard_backup := ""
-    add_shortcut.Show(copied_text)
+    assign_shortcut.Show(copied_text)
 }
 
 /**
@@ -492,7 +491,7 @@ Class clsMainUI {
                                         , setting: {parent: "preferences", const: "PREF_CHECK_UPDATES"}}
                 , debugging:            { type: "Checkbox"
                                         , text: "&Log this session (debugging)"}}
-                                        
+
     ; Broken off separately from above due to AHK expression length limits
     controls.btn_pause := { type: "Button"
                             , function: Func("PauseApp").Bind(true)
@@ -770,7 +769,7 @@ Class clsMainUI {
 
     _SetChordModeUI(by_overlap := -1) {  ; -1 means autodetection; otherwise a boolean
         if (by_overlap == -1) {
-            by_overlap := this.controls.chord_by_overlap.value    
+            by_overlap := this.controls.chord_by_overlap.value
         }
         if (by_overlap) {
             this.controls.chord_by_overlap.value := true
@@ -840,10 +839,10 @@ Class clsMainUI {
         if (mode == "integer") {
             return sanitized
         }
-    
+
         if (mode == "percentage") {
             if (sanitized < 0 || sanitized > 100) {
-                return "ERROR"        
+                return "ERROR"
             }
             return sanitized
         }
@@ -860,7 +859,7 @@ Class clsMainUI {
 
             return sanitized
         }
-    
+
         MsgBox , , "ZipChord", "Error: Incorrect internal call to _SanitizeNumber"
     }
 
@@ -953,7 +952,7 @@ ToggleShorthands() {
 UI_Menu_Build() {
     Menu, Tray, NoStandard
     Add_Menu_Item("Open settings`t(O)", "ShowMainUI")
-    Add_Menu_Item("&Add or edit shortcut`t(A)", "AddShortcut")
+    Add_Menu_Item("&Assign shortcuts`t(A)", "AssignShortcuts")
     Add_Menu_Item("&Pause ZipChord`t(P)", "PauseApp")
     Add_Menu_Item("Disable &chords`t(C)", "ToggleChords", true)
     Add_Menu_Item("Disable &shorthands`t(S)", "ToggleShorthands", true)
@@ -1201,7 +1200,7 @@ ProcessCommandLine(option_string) {
 }
 
 CloseAllWindows() {
-    window_names := ["locale_UI", "add_shortcut", "main_UI"]
+    window_names := ["locale_UI", "assign_shortcut", "main_UI"]
 
     For _, window in window_names {
         if (WinExist("ahk_id " . %window%.UI._handle)) {

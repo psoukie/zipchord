@@ -21,7 +21,7 @@ OpenHelp(topic) {
             Run https://github.com/psoukie/zipchord/wiki/Installation#setup-options
         Case "AppShortcuts":
             Run https://github.com/psoukie/zipchord/wiki/Application-Keyboard-Shortcuts-window
-        Case "AddShortcut":
+        Case "AssignShortcuts":
             Run https://github.com/psoukie/zipchord/wiki/Add-or-Edit-Shortcut-window
         Case "Main-Dictionaries":
             Run https://github.com/psoukie/zipchord/wiki/Main-Window#dictionaries

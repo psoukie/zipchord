@@ -150,7 +150,7 @@ Class Configuration {
     }
  
     FindMatchingConfig(layout_name) {
-        window_names := ["locale_UI", "add_shortcut", "main_UI"]
+        window_names := ["locale_UI", "assign_shortcut", "main_UI"]
         WinGetActiveTitle, window_title
         if (window_title == "Task Switching") {
             return false
