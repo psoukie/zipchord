@@ -229,8 +229,6 @@ These exceptions are used to help with specific output when using smart spaces a
 
  .	~.~	Space+. forces a full stop without smart spaces
  ,	~,~	Space+, forces a comma without smart spaces
-e|.|g|.	e.g.
-i . e . i.e.
 
 Newly added
 -----------

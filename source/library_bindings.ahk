@@ -20,20 +20,22 @@ class DllError {
     static FILE_IO_ERROR    := -9
     static INTERNAL_ERROR   := -10
     static VERSION_MISMATCH := -11
+	static CHAIN_ENDS_IN_SINGLE_KEY := -12
 }
 
-dll_error_text := {0: "No error"
-    , -1: "shortcut not found"
-    , -2: "shortcut exists"
-    , -3: "repeated key"
-    , -4: "empty chord"
-    , -5: "needs at least two characters in a chord"
-    , -6: "bad argument"
-    , -7: "buffer too small"
-    , -8: "allocation"
-    , -9: "file I/O"
-    , -10: "internal"
-    , -11: "version mismatch"}
+dll_error_text := {0: "no error"
+    , -1: "a shortcut not found"
+    , -2: "a shortcut already exists"
+    , -3: "a repeated key"
+    , -4: "an empty chord"
+    , -5: "a shortcut shorter than two keys"
+    , -6: "a bad argument"
+    , -7: "a buffer too small"
+    , -8: "a memory allocation"
+    , -9: "a file read or write"
+    , -10: "an internal"
+    , -11: "a version mismatch"
+    , -12: "a chained chord not ending with a chord"}
 
 Class clsDllBindings {
     available := false
@@ -236,4 +238,3 @@ Class clsDllBindings {
         return false
     }
 }
-

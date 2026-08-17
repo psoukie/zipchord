@@ -1,6 +1,6 @@
 # ZipChord Changelog
 
-## ZipChord 2.11.0-dev (Unreleased, work in progress)
+## ZipChord 2.11
 
 This release makes it easier to manage the shortcuts assigned to any output text in a redesigned "Add or Edit Shortcut" window, now called "Assign Shortcuts."
 
@@ -10,6 +10,11 @@ This release makes it easier to manage the shortcuts assigned to any output text
 - Entering or changing the output text now displays its currently assigned chord and shorthand.
 - When ZipChord's compiled library is available, shortcut conflicts or other problems are shown as you type. Otherwise, shortcuts are checked when you select Add or Change.
 - Dictionary updates preserve the ordering of the shortcuts, additional columns, and other comments in the dictionary file.
+
+**Dictionary Changes**
+
+- Since chained chords must end in a chord to be detected, chained chords ending in a single key are now reported as dictionary errors.
+- During upgrade, ZipChord removes two incorrect entries included in older default chord dictionaries from the current chord dictionary (if they are still present).
 
 ## ZipChord 2.10
 

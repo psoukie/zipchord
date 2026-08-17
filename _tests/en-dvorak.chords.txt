@@ -221,15 +221,12 @@ Infixes
 -------
 .c	~.com~
 .o	~.org~
- .	~.~	Space+. forces a full stop without smart spaces
- ,	~,~	Space+. forces a full stop without smart spaces
 
 Punctuation Exceptions
 ----------------------
 These exceptions are used to correct the output when using smart spaces after punctuation.
-
-e|.|g|.	e.g.
-i . e . i.e.
+ .	~.~	Space+. forces a full stop without smart spaces
+ ,	~,~	Space+. forces a full stop without smart spaces
 
 Newly added
 -----------

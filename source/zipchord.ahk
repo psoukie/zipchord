@@ -310,6 +310,60 @@ UpgradeTo29() {
             . "`n`nThe command line configuration feature now expects keyboard layout as the first column in the mapping file. (See the ZipChord wiki for details.)"
 }
 
+UpgradeTo211() {
+    file := FileOpen(settings.chord_file, "r", "UTF-8-RAW")
+    if (! IsObject(file)) {
+        return false
+    }
+    file_text := file.Read()
+    file.Close()
+    file := ""
+
+    line_end := "`r`n"
+    needle := line_end . "e|.|g|.`te.g." . line_end . "i . e . i.e." . line_end
+    start_pos := InStr(file_text, needle, true)
+    if (start_pos < 1) {
+        line_end := "`n"
+        needle := line_end . "e|.|g|.`te.g." . line_end . "i . e . i.e." . line_end
+        start_pos := InStr(file_text, needle, true)
+    }
+    if (start_pos < 1) {
+        return false
+    }
+
+    end_pos := start_pos + StrLen(needle) - 1
+    new_text := SubStr(file_text, 1, start_pos - 1)
+            . line_end
+            . SubStr(file_text, end_pos + 1)
+
+    temp_file := settings.chord_file . ".tmp"
+    try {
+        if (FileExist(temp_file)) {
+            FileDelete, % temp_file
+        }
+        file := FileOpen(temp_file, "w", "UTF-8-RAW")
+        if (! IsObject(file)) {
+            throw 1
+        }
+        file.Write(new_text)
+        file.Close()
+        file := ""
+        FileMove, % temp_file, % settings.chord_file, 1
+        if (ErrorLevel) {
+            throw 1
+        }
+        return true
+    } catch {
+        if (IsObject(file)) {
+            file.Close()
+        }
+        if (FileExist(temp_file)) {
+            FileDelete, % temp_file
+        }
+        return false
+    }
+}
+
 UpdateSettings(from_version) {
     global updater
     if (updater.SemVerCompare("2.3.0", from_version) == 1) {
@@ -356,6 +410,15 @@ UpdateSettings(from_version) {
     }
     if (updater.SemVerCompare("2.9.0", from_version) == 1) {
         UpgradeTo29()
+    }
+    if (updater.SemVerCompare("2.11.0", from_version) == 1) {
+        patched := ""
+        if (UpgradeTo211()) {
+            patched := "`n`nYour current chord dictionary was patched to remove two incorrect entries that were included in ZipChord's default dictionary."
+        }
+        MsgBox, , % "ZipChord Upgrade Note"
+            , %  "ZipChord 2.11 now treats chained chords that end with a single key instead of a chord as dictionary errors."
+            . patched . "`n`nIf you see an error when loading dictionaries after this upgrade, edit your chord dictionary to change or remove chained chords, as indicated in the error messages."
     }
 }
 

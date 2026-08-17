@@ -6,7 +6,6 @@ Copyright (c) 2021-2026 Pavel Soukenik
 Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
-import "core:fmt"
 import "base:runtime"
 import "core:os"
 import "core:strings"
@@ -27,6 +26,7 @@ Dict_Error :: enum i32 {
 	File_IO_Error    = -9,
     Internal_Error   = -10,
 	Version_Mismatch = -11,
+	Chain_Ends_In_Single_Key = -12,
 }
 
 MAX_CHORD_RUNES :: 40
@@ -101,11 +101,13 @@ normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_B
 
 	chord_buf: Chord_Buffer
 
+	rune_count: int
+	segments := 0
 	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
+		segments += 1
 		n := len(raw_chord)
-		if n == 0 {
-			return "", .Empty_Chord
-		}
+		if n == 0 do return "", .Empty_Chord
+
 		if chain_buf.len > 0 {
 			chain_buf.bytes[chain_buf.len] = u8('|')
 			chain_buf.len += 1
@@ -113,7 +115,10 @@ normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_B
 		normalized := _normalize_chord(raw_chord, &chord_buf) or_return
 		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
 		chain_buf.len += n
+		rune_count = utf8.rune_count(raw_chord)
 	}
+
+	if segments > 1 && rune_count < 2 do return "", .Chain_Ends_In_Single_Key
 
 	return string(chain_buf.bytes[:chain_buf.len]), .None
 }
@@ -336,7 +341,7 @@ validate_shortcut :: proc (
 ) -> (shortcut: string, err: Dict_Error) {
 	shortcut = orig_shortcut
 
-	if utf8.rune_count_in_string(shortcut) < 2 do return "", .Fewer_Than_Two
+	if utf8.rune_count(shortcut) < 2 do return "", .Fewer_Than_Two
 
 	if as_chords {
 		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
@@ -460,7 +465,6 @@ dict_file_edit :: proc(
 				if strings.has_prefix(file_text, needle) {
 					start_pos = 0
 				} else {
-					fmt.println("Not found")
 					return .Not_Found
 				}
 			}
