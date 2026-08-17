@@ -1,7 +1,7 @@
 ﻿/*
 This file is part of ZipChord.
 Copyright (c) 2021-2024 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 ; Hints preferences and object
@@ -59,8 +59,8 @@ Class clsHintUI {
     hint_settings := { hints:           HINT_NORMAL | HINT_OSD | HINT_SCORE
                     , hint_offset_x:    0
                     , hint_offset_y:    0
-                    , hint_size:        32
-                    , hint_color:       "1CA6BF" }
+                    , hint_size:        28
+                    , hint_color:       "20B6CF" }
     DEFAULT_TRANSPARENCY := 220
     UI := {}
     lines := []
@@ -295,13 +295,13 @@ Class clsHintUI {
         OSD_handle := this.UI._handle
         VarSetCapacity(monitor_info, 40), NumPut(40, monitor_info)
         ;@ahk-neko-ignore-fn 1 line; at 4/22/2024, 9:51:25 AM ; var is assigned but never used.
-        if ((monitorHandle := DllCall("MonitorFromWindow", "Ptr", window_Handle, "UInt", 1)) 
+        if ((monitorHandle := DllCall("MonitorFromWindow", "Ptr", window_Handle, "UInt", 1))
             && DllCall("GetMonitorInfo", "Ptr", monitorHandle, "Ptr", &monitor_info)) {
             monitor_left   := NumGet(monitor_info,  4, "Int")
             monitor_top    := NumGet(monitor_info,  8, "Int")
             monitor_right  := NumGet(monitor_info, 12, "Int")
             monitor_bottom := NumGet(monitor_info, 16, "Int")
-            ; From code for multiple monitors by DigiDon from https://www.autohotkey.com/boards/viewtopic.php?t=31716 
+            ; From code for multiple monitors by DigiDon from https://www.autohotkey.com/boards/viewtopic.php?t=31716
             VarSetCapacity(rc, 16)
             DllCall("GetClientRect", "uint", OSD_handle, "uint", &rc)
             window_width := NumGet(rc, 8, "int")
@@ -335,7 +335,7 @@ Class clsGamification {
         }
     }
 
-    /** 
+    /**
     * Tracks the type of completed typing in the _buffer.
     *
     *   used_shortcut   one of ENTRY_  constants
@@ -349,7 +349,7 @@ Class clsGamification {
         if ( settings.hints & HINT_OFF || ! (settings.hints & HINT_SCORE) ) {
             return
         }
-        count_chords := settings.mode & MODE_CHORDS_ENABLED 
+        count_chords := settings.mode & MODE_CHORDS_ENABLED
         count_shorthands := settings.mode & MODE_SHORTHANDS_ENABLED
 
         if ( ! count_chords && ! count_shorthands ) {
@@ -374,7 +374,7 @@ Class clsGamification {
         }
         results := this._GetScores(count_chords, count_shorthands)
         this._buffer[total].percentage := results.chord + results.shorthand
-        is_maximum := results.chord + results.shorthand > results.maximum ? true : false 
+        is_maximum := results.chord + results.shorthand > results.maximum ? true : false
 
         if ( results && (settings.hints & HINT_ALWAYS || is_maximum || this.score_gap > gap_frequency) ) {
             this.score_gap := 0
