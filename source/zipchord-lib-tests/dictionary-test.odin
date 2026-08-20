@@ -160,3 +160,41 @@ edit_dict_file :: proc(t: ^tst.T) {
     os.remove(dict_file)
     tst.expect(t, string(file_data) == EXPECTED, "The dictionary edits do not match the correct result.")
 }
+
+@(test)
+prefix_chained_chords :: proc(t: ^tst.T) {
+    dict: zc.Chord_Dict
+    prefixes: zc.Dict_Data
+    err := zc.dict_data_init(&dict.dict_data)
+    tst.expect(t, err == .None, "dict init failed")
+    err = zc.dict_data_init(&prefixes)
+    tst.expect(t, err == .None, "prefix dict init failed")
+    defer zc.dict_data_destroy(&dict.dict_data)
+    defer zc.dict_data_destroy(&prefixes)
+
+    err = zc.dict_add(&dict.dict_data, "ab|cd|ef", "alphabet")
+    tst.expect(t, err == .None, "dict_add failed")
+    err = zc.dict_add(&dict.dict_data, "pq|rs|tu", "next")
+    err = zc.dict_add(&dict.dict_data, "pq", "prefix for next")
+
+    err = zc.dict_prefix_build(&dict.dict_data, &prefixes)
+    tst.expect(t, err == .None, "Adding artificial chained prefixes failed")
+
+    exp, err2 := zc.dict_lookup(&dict.dict_data, "ab|cd|ef")
+    tst.expect(t, err2 == .None, "Could not find the chained chord")
+    tst.expect(t, exp == "alphabet", "The chord was not added or could not be looked up.")
+    exp, err2 = zc.dict_lookup(&dict.dict_data, "ab|cd")
+    tst.expect(t, err2 == zc.Dict_Error.Not_Found, "Found a chord that should not exist")
+    exp, err2 = zc.dict_lookup(&prefixes, "ab")
+    tst.expect(t, err2 == zc.Dict_Error.None, "Lookup of chained prefix failed")
+    tst.expectf(t, exp == "-", "Artificial prefix of chained is incorrectly: '%v'", exp)
+    exp, err2 = zc.dict_lookup(&prefixes, "ab|cd")
+    tst.expect(t, err2 == zc.Dict_Error.None, "Lookup of chained prefix failed")
+    tst.expectf(t, exp == "-", "Artificial prefix of chained is incorrectly: '%v'", exp)
+    exp, err2 = zc.dict_lookup(&prefixes, "ab|cd|ef")
+    tst.expect(t, err2 == zc.Dict_Error.Not_Found, "Saved incorrectly a full chained chord as prefix")
+    exp, err2 = zc.dict_lookup(&prefixes, "pq")
+    tst.expect(t, err2 == zc.Dict_Error.Not_Found, "Saved standalone chord incorrectly as a prefix")
+    exp, err2 = zc.dict_lookup(&prefixes, "pq|rs")
+    tst.expect_value(t, exp, "-")
+}

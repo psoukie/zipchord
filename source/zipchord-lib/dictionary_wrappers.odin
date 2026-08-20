@@ -18,6 +18,7 @@ zc_init :: proc "c" (version: cstring) -> Dict_Error {
 		return .Version_Mismatch
 	}
 	dict_data_init(&chord_dict.dict_data) or_return
+	dict_data_init(&dicts.prefix) or_return
 	return dict_data_init(&shorthand_dict.dict_data)
 }
 
@@ -26,6 +27,7 @@ zc_destroy :: proc "c" () -> Dict_Error {
 	context = runtime.default_context()
 	dict_data_destroy(&chord_dict.dict_data)
 	dict_data_destroy(&shorthand_dict.dict_data)
+	dict_data_destroy(&dicts.prefix)
 	return .None
 }
 

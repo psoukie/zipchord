@@ -130,6 +130,7 @@ Dict_Data :: struct {
     expansion_to_shortcut: map[string]string,
 }
 
+// TK: The following two structs will be removed
 Chord_Dict :: struct {
 	using dict_data: Dict_Data
 }
@@ -137,7 +138,15 @@ Shorthand_Dict :: struct {
 	using dict_data: Dict_Data
 }
 
-// TK - encapsulate in an 'engine' struct
+// global variable for dictionaries
+dicts: struct {
+	// chord:      Dict_Data,    // unused for now, but will replace chord_dict
+	// shorthand:  Dict_Data,    // same for shorthand_dict
+	prefix:     Dict_Data,    // Chord chain prefixes without standalone chord entries
+}
+
+// TK: Alternatively, the above could be handled as an enumerated array.
+
 chord_dict:     Chord_Dict
 shorthand_dict: Shorthand_Dict
 string_buf:     Fixed_Buffer(STRING_BUFFER_BYTES)
@@ -221,6 +230,7 @@ shorthand_dict_add :: proc(dict: ^Shorthand_Dict, shortcut, expansion: string) -
 dict_add :: proc{
 	chord_dict_add,
 	shorthand_dict_add,
+	dict_data_add,
 }
 
 dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: string, err: Dict_Error ) {
@@ -234,7 +244,6 @@ dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: stri
 chord_dict_lookup :: proc(dict: ^Chord_Dict, chord: string) -> (expansion: string, err: Dict_Error ) {
 	return dict_data_lookup(&dict.dict_data, chord)
 }
-
 shorthand_dict_lookup :: proc(dict: ^Shorthand_Dict, shortcut: string) -> (expansion: string, err: Dict_Error ) {
 	return dict_data_lookup(&dict.dict_data, shortcut)
 }
@@ -242,6 +251,7 @@ shorthand_dict_lookup :: proc(dict: ^Shorthand_Dict, shortcut: string) -> (expan
 dict_lookup :: proc{
 	chord_dict_lookup,
 	shorthand_dict_lookup,
+	dict_data_lookup
 }
 
 dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortcut: string, err: Dict_Error ) {
@@ -331,6 +341,27 @@ dict_shorthand_load_file :: proc(
 dict_load_file :: proc {
 	dict_chord_load_file,
 	dict_shorthand_load_file,
+}
+
+// inconsistent name on purpose -- should converge on convention with context_subject_operation proc naming
+dict_prefix_build :: proc(chords, prefixes: ^Dict_Data) -> Dict_Error {
+	dict_data_destroy(prefixes)
+	dict_data_init(prefixes) or_return
+	for chained_chord, _ in chords.shortcut_to_expansion {
+		current_pos := 0
+		for {
+			delimiter_pos := strings.index(chained_chord[current_pos:], "|")
+			if delimiter_pos == -1 do break
+
+			current_pos += delimiter_pos
+			_, result := dict_lookup(chords, chained_chord[:current_pos])
+			if result == .Not_Found {
+				dict_add(prefixes, chained_chord[:current_pos], "-") or_return
+			}
+			current_pos += 1
+		}
+	}
+	return .None
 }
 
 validate_shortcut :: proc (
