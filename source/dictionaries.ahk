@@ -76,6 +76,14 @@ Class clsDictionary {
         return false
     }
 
+    IsChainPrefix(chord_candidate) {
+        if (dll.available) {
+            return dll.PrefixHas(chord_candidate)
+        }
+        ; TK: add AHK path; for now just:
+        return false
+    }
+
     Load(filename := "") {
         if (filename == "") {
             filename := this._file

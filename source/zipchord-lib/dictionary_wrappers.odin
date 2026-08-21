@@ -44,7 +44,10 @@ zc_load_dictionary :: proc "c" (
 	}
 
 	if is_chord {
-		return dict_load_file(string(filepath), &chord_dict, shortcuts_loaded_ptr)
+		load_err := dict_load_file(string(filepath), &chord_dict, shortcuts_loaded_ptr)
+		prefix_err := dict_prefix_build(&chord_dict.dict_data, &dicts.prefix)
+		return_err := prefix_err if load_err == .None else load_err
+		return return_err
 	} else {
 		return dict_load_file(string(filepath), &shorthand_dict, shortcuts_loaded_ptr)
 	}
@@ -147,6 +150,18 @@ zc_reverse_lookup :: proc "c" (
 
 	copy_string_to_buffer(shortcut, out_buf, buf_len) or_return
 
+	return err
+}
+
+@export
+zc_dict_prefix_has :: proc "c" (
+	chord_candidate: cstring,
+) -> Dict_Error {
+	context = runtime.default_context()
+
+	if chord_candidate == nil do return .Bad_Argument
+
+	_, err := dict_lookup(&dicts.prefix, string(chord_candidate))
 	return err
 }
 
