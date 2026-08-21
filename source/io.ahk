@@ -850,9 +850,13 @@ Class clsIOrepresentation {
         }
         Loop % LastTokenId()
         {
-            if (io_tokens[A_Index].type == TokenType.INTERRUPT || io_tokens[A_Index].type == TokenType.ENTER) {
+            token := io_tokens[A_Index]
+            if (token.attribs & TokenAttribs.TOMBSTONED
+                    || token.type == TokenType.INTERRUPT
+                    || token.type == TokenType.ENTER) {
                 continue
             }
+
             candidate := this.GetInput(A_Index)
             if (StrLen(candidate) < 2) {
                 return false
