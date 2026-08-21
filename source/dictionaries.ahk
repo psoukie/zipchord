@@ -18,6 +18,7 @@ global assign_shortcut := new clsAssignShortcuts
 * Methods:
 *    LookUp(shortcut)     - returns expanded text or false if not found
 *    ReverseLookUp(text)  - returns corresponding shortcut or false if not found
+*    IsChainPrefix(chord) - returns whether a chord candidate is a proper chained-chord prefix
 *    Load([file])         - Reloads the dictionary entries from the current dictionary file or from the specified file
 *    Add(shortcut, text)  - Adds the entry into the dictionary
 */
@@ -29,6 +30,7 @@ Class clsDictionary {
     _reload_due := 0
     _entries := {}
     _reverse_entries := {}
+    _chain_prefixes := {}
     _dll_entries_count := 0
     _is_watching := false
     _pause_loading := true
@@ -83,8 +85,7 @@ Class clsDictionary {
         if (dll.available) {
             return dll.PrefixHas(chord_candidate)
         }
-        ; TK: add AHK path; for now just:
-        return false
+        return this._chain_prefixes.HasKey(chord_candidate)
     }
 
     Load(filename := "") {
@@ -119,6 +120,7 @@ Class clsDictionary {
         this._file := ""
         this._entries := {}
         this._reverse_entries := {}
+        this._chain_prefixes := {}
         shortcuts_loaded := 0
         if (dll.available) {
             dll.LoadDictionary("", this._chorded, shortcuts_loaded)
@@ -370,6 +372,22 @@ Class clsDictionary {
                     if this._AskWhetherToStop()
                         Break
                 }
+            }
+        }
+        if (this._chorded) {
+            this._Ahk_BuildChainPrefixes()
+        }
+    }
+    _Ahk_BuildChainPrefixes() {
+        this._chain_prefixes := {}
+        for chained_chord, _ in this._entries {
+            delimiter_pos := 1
+            while (delimiter_pos := InStr(chained_chord, "|", true, delimiter_pos)) {
+                prefix := SubStr(chained_chord, 1, delimiter_pos - 1)
+                if (! this._entries.HasKey(prefix)) {
+                    ObjRawSet(this._chain_prefixes, prefix, true)
+                }
+                delimiter_pos += 1
             }
         }
     }
