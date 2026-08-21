@@ -77,6 +77,9 @@ Class clsDictionary {
     }
 
     IsChainPrefix(chord_candidate) {
+        if (!this._chorded) {
+            return false
+        }
         if (dll.available) {
             return dll.PrefixHas(chord_candidate)
         }
