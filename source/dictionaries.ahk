@@ -897,7 +897,6 @@ Class clsAssignShortcuts {
 
     _DeleteShortcut(dict) {
         obj_name := dict . "s"
-        ; TK - call a function to delete `this.saved_shortcuts[dict]` from the dictionary
         result := %obj_name%.DeleteShortcut(this.saved_shortcuts[dict])
         if (result) {
             this.CleanUpAfterModification(dict, "", this.SHORTCUT_DELETED)
