@@ -683,7 +683,6 @@ Class clsIOrepresentation {
         tokens_to_ignore := 0
         this._CopyTokensIntoPrev()
 
-        ; TK - 'SPACE + W' does not work as chord
         while (io_new_tokens.Length() > 0) {
             if (tokens_to_ignore > 0) {
                 io_new_tokens.RemoveAt(1)
@@ -1257,14 +1256,6 @@ Class clsIOrepresentation {
                 continue
             }
 
-            if (token.type == TokenType.PUNCTUATION) {
-                ; TK - 2.10 - exception -- I take token.input to send as original key press, while .output stores potentially the 'shifted' char.
-                SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
-                SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
-                io_edits.Push(SC_prefix . "{" . SC_key . "}")
-                continue
-            }
-
             if (token.type == TokenType.EXPANSION) {
                 if (InStr(token.output, "{")) {
                     this._AppendSpecialExpansions(io_edits, token.output)
@@ -1279,14 +1270,14 @@ Class clsIOrepresentation {
                 continue
             }
 
-            ; Should be a regular tracked key
+            ; Should be a regular tracked key or punctuation
             if ! (symbol_to_SC_map.HasKey(token.input)) {
                 MsgBox, % "ZipChord Error", % "Encountered unexpected error while processing the keys."
                 continue
             }
 
+            ; Replay using the original physical key and Shift state
             SC_key := str.SCHexToString(symbol_to_SC_map[token.input])
-            ; TK - 2.10
             SC_prefix := token.attribs & TokenAttribs.WITH_SHIFT ? "+" : ""
             io_edits.Push(SC_prefix . "{" . SC_key . "}")
         }
