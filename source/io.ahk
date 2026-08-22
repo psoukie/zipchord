@@ -611,7 +611,22 @@ Class clsIOrepresentation {
         return io_prev_tokens.Length() + 1  ; extra new tokens
     }
 
-    _GetPrevRemainingLength(start) {
+    _GetEscapedLength(output) {
+        position := 1
+        length := StrLen(output)
+        while (position := InStr(output, "{", true, position)) {
+            ; check for pattern  `{.}`
+            if (SubStr(output, position + 2, 1) == "}") {
+                 length -= 2
+                 position +=3
+            } else {
+                position += 1
+            }
+        }
+        return length
+    }
+
+    _GetLengthToDelete(start) {
         global io_prev_tokens
 
         length := 0
@@ -620,10 +635,17 @@ Class clsIOrepresentation {
         loop % count
         {
             index := A_Index + start - 1
-            if (io_prev_tokens[index].attribs & TokenAttribs.TOMBSTONED) {
+            token := io_prev_tokens[index]
+            if (token.attribs & TokenAttribs.TOMBSTONED) {
                 continue
             }
-            length += StrLen(io_prev_tokens[index].output)
+
+            if (token.type == TokenType.EXPANSION
+                    && InStr(token.output, "{")) {
+                length += this._GetEscapedLength(token.output)
+            } else {
+                length += StrLen(token.output)
+            }
         }
         return length
     }
@@ -1182,16 +1204,22 @@ Class clsIOrepresentation {
         remainder := expansion
         while (brace_open := InStr(remainder, "{")) {
             if (brace_open == 1) {
+                if (SubStr(remainder, 1, 3) == "{}}") {
+                    edits.Push("{}}")
+                    remainder := SubStr(remainder, 4)
+                    continue
+                }
+
                 brace_close := InStr(remainder, "}")
                 if (!brace_close) {  ; malformed, send rest as text
                     edit := "{Text}" . remainder
                     edits.Push(edit)
                     return
-                } else {
-                    edit := SubStr(remainder, 1, brace_close)
-                    remainder := SubStr(remainder, brace_close + 1)
-                    edits.Push(edit)
                 }
+
+                edit := SubStr(remainder, 1, brace_close)
+                remainder := SubStr(remainder, brace_close + 1)
+                edits.Push(edit)
             } else {
                 normal_sequence := SubStr(remainder, 1, brace_open - 1)
                 remainder := SubStr(remainder, brace_open)
@@ -1207,7 +1235,7 @@ Class clsIOrepresentation {
         global symbol_to_SC_map
         io_edits := []
 
-        chars_to_del := this._GetPrevRemainingLength(start)
+        chars_to_del := this._GetLengthToDelete(start)
         if (chars_to_del > 0) {
             io_edits.Push("{Backspace " . chars_to_del . "}")
         }
