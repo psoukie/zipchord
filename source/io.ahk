@@ -1342,12 +1342,50 @@ PreviousLiveToken(count := 1, start_id := -1) {
     return io_tokens[token_id]
 }
 
+DebugEnumName(enum, target) {
+    for name, value in enum {
+        if (IsObject(value) || !(value ~= "^-?\d+$")) {
+            continue
+        }
+        if (value == target) {
+            return name
+        }
+    }
+    return "UNKNOWN(" . target . ")"
+}
+
+DebugBitSetNames(bitset, target) {
+    names := ""
+    remaining := target
+
+    for name, value in bitset {
+        if (IsObject(value) || !(value ~= "^-?\d+$")) {
+            continue
+        }
+        if (value && (target & value) == value) {
+            names .= (names == "" ? "" : " | ") . name
+            remaining &= ~value
+        }
+    }
+
+    if (remaining) {
+        names .= (names == "" ? "" : " | ") . "UNKNOWN(" . remaining . ")"
+    }
+    return names == "" ? "NONE" : names
+}
+
 DebugTokens() {
     if (A_Args[2] != "test-vs") {
         return
     }
+
     OutputDebug, % "`n`nTokens:"
-    For i, token in io_tokens {
-        OutputDebug, % "`n" . i . ": " token.input . " > " . token.output . " (type: " . token.type . ", attribs: " . token.attribs . ")"
+    for i, token in io_tokens {
+        type := DebugEnumName(TokenType, token.type)
+        attribs := DebugBitSetNames(TokenAttribs, token.attribs)
+
+        OutputDebug, % "`n" . i . ": "
+                . token.input . " > " . token.output
+                . " (" . type . ", attribs: " . attribs . ")"
     }
 }
