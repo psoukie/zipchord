@@ -18,7 +18,7 @@ utf8bom :: proc(t: ^tst.T) {
 
 @(test)
 validate_shortcuts :: proc(t: ^tst.T) {
-    dict_data: zc.Dict_Data
+    dict_data: zc.Dictionary
     buf: zc.Chord_Chain_Buffer
     shortcut: string
     err: zc.Dict_Error
@@ -48,9 +48,9 @@ validate_shortcuts :: proc(t: ^tst.T) {
 
 @(test)
 dict_clones_keys_and_survives_reload :: proc(t: ^tst.T) {
-    dict: zc.Chord_Dict
-    err := zc.dict_data_init(&dict.dict_data)
-    defer zc.dict_data_destroy(&dict.dict_data)
+    dict: zc.Dictionary
+    err := zc.dict_init(&dict)
+    defer zc.dict_destroy(&dict)
     tst.expect(t, err == .None, "dict_init failed")
 
     key_bytes := make([]u8, 2, context.allocator)
@@ -69,10 +69,10 @@ dict_clones_keys_and_survives_reload :: proc(t: ^tst.T) {
     tst.expect(t, lookup_err == .None, "lookup for cloned key failed")
     tst.expect(t, expansion == "the", "dict did not retain cloned key/value bytes")
 
-    zc.dict_data_destroy(&dict.dict_data)
+    zc.dict_destroy(&dict)
     tst.expect(t, len(dict.shortcut_to_expansion) == 0, "dict_destroy should clear the map")
 
-    err = zc.dict_data_init(&dict.dict_data)
+    err = zc.dict_init(&dict)
     tst.expect(t, err == .None, "dict re-init failed")
 
     err = zc.dict_add(&dict, "nw", "new")
@@ -81,19 +81,22 @@ dict_clones_keys_and_survives_reload :: proc(t: ^tst.T) {
     expansion, lookup_err = zc.dict_lookup(&dict, "nw")
     tst.expect(t, lookup_err == .None, "lookup after re-init failed")
     tst.expect(t, expansion == "new", "dict returned the wrong value after re-init")
-    zc.dict_data_destroy(&dict.dict_data)
+    zc.dict_destroy(&dict)
 }
 
 @(test)
 load_dict :: proc(t: ^tst.T) {
-    dict: zc.Chord_Dict
+    dict: zc.Dictionary
     loaded: i32
-    zc.dict_data_init(&dict.dict_data)
-    defer zc.dict_data_destroy(&dict.dict_data)
-	zc.dict_data_load_file("../../_tests/en-dvorak.chords.txt", &dict.dict_data, true, &loaded)
+    zc.dict_init(&dict)
+    defer zc.dict_destroy(&dict)
+	zc.dict_load_file("../../_tests/en-dvorak.chords.txt", &dict, true, &loaded)
 	tst.expect(t, loaded >  0, "dict load did not load any chords")
 	expansion, lookup_err := zc.dict_lookup(&dict, "ms")
 	tst.expect(t, expansion == "some", "dict after load did not find a chord")
+    load_return := zc.dict_load_file("", &dict, true, &loaded)
+    tst.expect_value(t, load_return, zc.Dict_Error.None)
+	tst.expect(t, loaded == 0, "Did not unload chord dictionary.")
 }
 
 @(test)
@@ -104,11 +107,19 @@ load_dict_with_wrapper :: proc(t: ^tst.T) {
     defer free(buf)
     loaded: i32
     load_return := zc.zc_load_dictionary("../../_tests/en-dvorak.chords.txt", true, &loaded)
+    tst.expect_value(t, load_return, zc.Dict_Error.None)
 	tst.expect(t, loaded > 0, "Did not load chord dictionary.")
     load_return = zc.zc_load_dictionary("../../_tests/english.shorthands.txt", false, &loaded)
-	tst.expect(t, loaded > 0, "Did not load chord dictionary.")
-    expansion, lookup_err := zc.dict_lookup(&zc.shorthand_dict, "tst")
+    tst.expect_value(t, load_return, zc.Dict_Error.None)
+	tst.expect(t, loaded > 0, "Did not load shorthand dictionary.")
+    expansion, lookup_err := zc.dict_lookup(&zc.dicts.shorthand, "tst")
 	tst.expect(t, expansion == "test", "dict after load did not find a shorthand")
+    load_return = zc.zc_load_dictionary("", true, &loaded)
+    tst.expect_value(t, load_return, zc.Dict_Error.None)
+	tst.expect(t, loaded == 0, "Did not unload chord dictionary.")
+    load_return = zc.zc_load_dictionary("", false, &loaded)
+    tst.expect_value(t, load_return, zc.Dict_Error.None)
+	tst.expect(t, loaded == 0, "Did not unload shorthand dictionary.")
 }
 
 @(test)
@@ -163,27 +174,27 @@ edit_dict_file :: proc(t: ^tst.T) {
 
 @(test)
 prefix_chained_chords :: proc(t: ^tst.T) {
-    dict: zc.Chord_Dict
-    prefixes: zc.Dict_Data
-    err := zc.dict_data_init(&dict.dict_data)
+    dict: zc.Dictionary
+    prefixes: zc.Dictionary
+    err := zc.dict_init(&dict)
     tst.expect(t, err == .None, "dict init failed")
-    err = zc.dict_data_init(&prefixes)
+    err = zc.dict_init(&prefixes)
     tst.expect(t, err == .None, "prefix dict init failed")
-    defer zc.dict_data_destroy(&dict.dict_data)
-    defer zc.dict_data_destroy(&prefixes)
+    defer zc.dict_destroy(&dict)
+    defer zc.dict_destroy(&prefixes)
 
-    err = zc.dict_add(&dict.dict_data, "ab|cd|ef", "alphabet")
+    err = zc.dict_add(&dict, "ab|cd|ef", "alphabet")
     tst.expect(t, err == .None, "dict_add failed")
-    err = zc.dict_add(&dict.dict_data, "pq|rs|tu", "next")
-    err = zc.dict_add(&dict.dict_data, "pq", "prefix for next")
+    err = zc.dict_add(&dict, "pq|rs|tu", "next")
+    err = zc.dict_add(&dict, "pq", "prefix for next")
 
-    err = zc.dict_prefix_build(&dict.dict_data, &prefixes)
+    err = zc.dict_prefix_build(&dict, &prefixes)
     tst.expect(t, err == .None, "Adding artificial chained prefixes failed")
 
-    exp, err2 := zc.dict_lookup(&dict.dict_data, "ab|cd|ef")
+    exp, err2 := zc.dict_lookup(&dict, "ab|cd|ef")
     tst.expect(t, err2 == .None, "Could not find the chained chord")
     tst.expect(t, exp == "alphabet", "The chord was not added or could not be looked up.")
-    exp, err2 = zc.dict_lookup(&dict.dict_data, "ab|cd")
+    exp, err2 = zc.dict_lookup(&dict, "ab|cd")
     tst.expect(t, err2 == zc.Dict_Error.Not_Found, "Found a chord that should not exist")
     exp, err2 = zc.dict_lookup(&prefixes, "ab")
     tst.expect(t, err2 == zc.Dict_Error.None, "Lookup of chained prefix failed")

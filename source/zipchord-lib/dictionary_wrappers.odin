@@ -14,20 +14,22 @@ zc_init :: proc "c" (version: cstring) -> Dict_Error {
 	if version == nil {
 		return .Bad_Argument
 	}
+
 	if (string(version) != ZC_VERSION) {
 		return .Version_Mismatch
 	}
-	dict_data_init(&chord_dict.dict_data) or_return
-	dict_data_init(&dicts.prefix) or_return
-	return dict_data_init(&shorthand_dict.dict_data)
+
+	dict_init(&dicts.chord) or_return
+	dict_init(&dicts.prefix) or_return
+	return dict_init(&dicts.shorthand)
 }
 
 @export
 zc_destroy :: proc "c" () -> Dict_Error {
 	context = runtime.default_context()
-	dict_data_destroy(&chord_dict.dict_data)
-	dict_data_destroy(&shorthand_dict.dict_data)
-	dict_data_destroy(&dicts.prefix)
+	dict_destroy(&dicts.chord)
+	dict_destroy(&dicts.shorthand)
+	dict_destroy(&dicts.prefix)
 	return .None
 }
 
@@ -44,13 +46,23 @@ zc_load_dictionary :: proc "c" (
 	}
 
 	if is_chord {
-		load_err := dict_load_file(string(filepath), &chord_dict, shortcuts_loaded_ptr)
-		prefix_err := dict_prefix_build(&chord_dict.dict_data, &dicts.prefix)
+		load_err := dict_load_file(
+			string(filepath),
+			&dicts.chord,
+			true,
+			shortcuts_loaded_ptr,
+		)
+		prefix_err := dict_prefix_build(&dicts.chord, &dicts.prefix)
 		return_err := prefix_err if load_err == .None else load_err
 		return return_err
-	} else {
-		return dict_load_file(string(filepath), &shorthand_dict, shortcuts_loaded_ptr)
 	}
+
+	return dict_load_file(
+		string(filepath),
+		&dicts.shorthand,
+		false,
+		shortcuts_loaded_ptr,
+	)
 }
 
 @export
@@ -59,12 +71,18 @@ zc_validate_shortcut :: proc "c" (
 	is_chord: b32,
 ) -> Dict_Error {
 	context = runtime.default_context()
+
 	if shortcut == nil do return .Bad_Argument
 
 	buf: Chord_Chain_Buffer
-	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
-	_, err := validate_shortcut(target, string(shortcut), bool(is_chord), &buf)
-	return err
+	target := &dicts.chord if is_chord else &dicts.shorthand
+	_, e := validate_shortcut(
+		target,
+		string(shortcut),
+		bool(is_chord),
+		&buf
+	)
+	return e
 }
 
 @export
@@ -80,8 +98,14 @@ zc_register_shortcut :: proc "c" (
 	}
 
 	buf: Chord_Chain_Buffer
-	target := &chord_dict.dict_data if is_chord else &shorthand_dict.dict_data
-	return register_shortcut(target, string(shortcut), string(expansion), bool(is_chord), &buf)
+	target := &dicts.chord if is_chord else &dicts.shorthand
+	return register_shortcut(
+		target,
+		string(shortcut),
+		string(expansion),
+		bool(is_chord),
+		&buf
+	)
 }
 
 @export
@@ -115,12 +139,8 @@ zc_lookup :: proc "c" (
 	exp: string
 	err: Dict_Error
 
-	if is_chord {
-		exp, err = dict_lookup(&chord_dict, string(shortcut))
-	} else {
-		exp, err = dict_lookup(&shorthand_dict, string(shortcut))
-	}
-
+	target := &dicts.chord if is_chord else &dicts.shorthand
+	exp, err = dict_lookup(target, string(shortcut))
 	copy_string_to_buffer(exp, out_buf, buf_len) or_return
 
 	return err
@@ -142,12 +162,8 @@ zc_reverse_lookup :: proc "c" (
 	shortcut: string
 	err: Dict_Error
 
-	if is_chord {
-		shortcut, err = dict_reverse_lookup(&chord_dict, string(expansion))
-	} else {
-		shortcut, err = dict_reverse_lookup(&shorthand_dict, string(expansion))
-	}
-
+	target := &dicts.chord if is_chord else &dicts.shorthand
+	shortcut, err = dict_reverse_lookup(target, string(expansion))
 	copy_string_to_buffer(shortcut, out_buf, buf_len) or_return
 
 	return err
@@ -161,8 +177,8 @@ zc_dict_prefix_has :: proc "c" (
 
 	if chord_candidate == nil do return .Bad_Argument
 
-	_, err := dict_lookup(&dicts.prefix, string(chord_candidate))
-	return err
+	_, e := dict_lookup(&dicts.prefix, string(chord_candidate))
+	return e
 }
 
 @export

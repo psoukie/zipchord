@@ -123,35 +123,23 @@ normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_B
 	return string(chain_buf.bytes[:chain_buf.len]), .None
 }
 
-Dict_Data :: struct {
+Dictionary :: struct {
     arena_memory:          virtual.Arena,      // owns cloned key/value string bytes
 	// map internals allocated with context.allocator
 	shortcut_to_expansion: map[string]string,
     expansion_to_shortcut: map[string]string,
 }
 
-// TK: The following two structs will be removed
-Chord_Dict :: struct {
-	using dict_data: Dict_Data
-}
-Shorthand_Dict :: struct {
-	using dict_data: Dict_Data
-}
-
 // global variable for dictionaries
 dicts: struct {
-	// chord:      Dict_Data,    // unused for now, but will replace chord_dict
-	// shorthand:  Dict_Data,    // same for shorthand_dict
-	prefix:     Dict_Data,    // Chord chain prefixes without standalone chord entries
+	chord:      Dictionary,
+	shorthand:  Dictionary,
+	prefix:     Dictionary,  // Chord chain prefixes without standalone chord entries
 }
 
-// TK: Alternatively, the above could be handled as an enumerated array.
-
-chord_dict:     Chord_Dict
-shorthand_dict: Shorthand_Dict
 string_buf:     Fixed_Buffer(STRING_BUFFER_BYTES)
 
-dict_data_init :: proc(dict: ^Dict_Data) -> (err: Dict_Error ) {
+dict_init :: proc(dict: ^Dictionary) -> (err: Dict_Error ) {
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
     if alloc_err != .None {
     	return .Allocation_Error
@@ -163,15 +151,15 @@ dict_data_init :: proc(dict: ^Dict_Data) -> (err: Dict_Error ) {
     return .None
 }
 
-dict_data_destroy :: proc(dict: ^Dict_Data) {
+dict_destroy :: proc(dict: ^Dictionary) {
     delete(dict.shortcut_to_expansion)          // free map internals
     delete(dict.expansion_to_shortcut)
     virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
     dict^ = {}
 }
 
-dict_data_add :: proc (
-	dict: ^Dict_Data,
+dict_add :: proc (
+	dict: ^Dictionary,
 	shortcut: string,
 	expansion: string,
 	raw_chord := "",
@@ -219,21 +207,7 @@ dict_data_add :: proc (
 	return .None
 }
 
-chord_dict_add :: proc(dict: ^Chord_Dict, chord, expansion: string) -> (err: Dict_Error ) {
-	return dict_data_add(&dict.dict_data, chord, expansion)
-}
-
-shorthand_dict_add :: proc(dict: ^Shorthand_Dict, shortcut, expansion: string) -> (err: Dict_Error ) {
-	return dict_data_add(&dict.dict_data, shortcut, expansion)
-}
-
-dict_add :: proc{
-	chord_dict_add,
-	shorthand_dict_add,
-	dict_data_add,
-}
-
-dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: string, err: Dict_Error ) {
+dict_lookup :: proc(dict: ^Dictionary, shortcut: string) -> (expansion: string, err: Dict_Error ) {
 	ok: bool
 	if expansion, ok = dict.shortcut_to_expansion[shortcut]; !ok {
 		return "", .Not_Found
@@ -241,20 +215,7 @@ dict_data_lookup :: proc(dict: ^Dict_Data, shortcut: string) -> (expansion: stri
 	return expansion, .None
 }
 
-chord_dict_lookup :: proc(dict: ^Chord_Dict, chord: string) -> (expansion: string, err: Dict_Error ) {
-	return dict_data_lookup(&dict.dict_data, chord)
-}
-shorthand_dict_lookup :: proc(dict: ^Shorthand_Dict, shortcut: string) -> (expansion: string, err: Dict_Error ) {
-	return dict_data_lookup(&dict.dict_data, shortcut)
-}
-
-dict_lookup :: proc{
-	chord_dict_lookup,
-	shorthand_dict_lookup,
-	dict_data_lookup
-}
-
-dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortcut: string, err: Dict_Error ) {
+dict_reverse_lookup :: proc(dict: ^Dictionary, expansion: string) -> (shortcut: string, err: Dict_Error ) {
 	ok: bool
 	if shortcut, ok = dict.expansion_to_shortcut[expansion]; !ok {
 		return "", .Not_Found
@@ -262,30 +223,17 @@ dict_data_reverse_lookup :: proc(dict: ^Dict_Data, expansion: string) -> (shortc
 	return shortcut, .None
 }
 
-chord_dict_reverse_lookup :: proc(dict: ^Chord_Dict, expansion: string) -> (shortcut: string, err: Dict_Error ) {
-	return dict_data_reverse_lookup(&dict.dict_data, expansion)
-}
-
-shorthand_dict_reverse_lookup :: proc(dict: ^Shorthand_Dict, expansion: string) -> (shortcut: string, err: Dict_Error ) {
-	return dict_data_reverse_lookup(&dict.dict_data, expansion)
-}
-
-dict_reverse_lookup :: proc{
-	chord_dict_reverse_lookup,
-	shorthand_dict_reverse_lookup,
-}
-
-dict_data_load_file :: proc(
+dict_load_file :: proc(
 	filepath: string,
-	dict: ^Dict_Data,
+	dict: ^Dictionary,
 	as_chords: bool,
 	shortcuts_loaded_ptr: ^i32,
 ) -> (err: Dict_Error) {
 	// re-initialize the dictionary
 	shortcuts_loaded_ptr^ = 0
 
-	dict_data_destroy(dict)
-	dict_data_init(dict) or_return
+	dict_destroy(dict)
+	dict_init(dict) or_return
 
 	// Treat an empty path as clearing the dictionary
 	if filepath == "" {
@@ -322,31 +270,10 @@ dict_data_load_file :: proc(
 	return  .None
 }
 
-dict_chord_load_file :: proc(
-	filepath: string,
-	dict: ^Chord_Dict,
-	shortcuts_loaded_ptr: ^i32,
-) -> (err: Dict_Error) {
-	return dict_data_load_file(filepath, &dict.dict_data, true, shortcuts_loaded_ptr)
-}
-
-dict_shorthand_load_file :: proc(
-	filepath: string,
-	dict: ^Shorthand_Dict,
-	shortcuts_loaded_ptr: ^i32,
-) -> (err: Dict_Error) {
-	return dict_data_load_file(filepath, &dict.dict_data, false, shortcuts_loaded_ptr)
-}
-
-dict_load_file :: proc {
-	dict_chord_load_file,
-	dict_shorthand_load_file,
-}
-
 // inconsistent name on purpose -- should converge on convention with context_subject_operation proc naming
-dict_prefix_build :: proc(chords, prefixes: ^Dict_Data) -> Dict_Error {
-	dict_data_destroy(prefixes)
-	dict_data_init(prefixes) or_return
+dict_prefix_build :: proc(chords, prefixes: ^Dictionary) -> Dict_Error {
+	dict_destroy(prefixes)
+	dict_init(prefixes) or_return
 	for chained_chord, _ in chords.shortcut_to_expansion {
 		current_pos := 0
 		for {
@@ -365,7 +292,7 @@ dict_prefix_build :: proc(chords, prefixes: ^Dict_Data) -> Dict_Error {
 }
 
 validate_shortcut :: proc (
-	dict_data: ^Dict_Data,
+	dict: ^Dictionary,
 	orig_shortcut: string,
 	as_chords: bool,
 	chain_buffer: ^Chord_Chain_Buffer,
@@ -378,21 +305,27 @@ validate_shortcut :: proc (
 		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
 	}
 
-	_, lookup_err := dict_data_lookup(dict_data, shortcut)
+	_, lookup_err := dict_lookup(dict, shortcut)
 	if lookup_err == .None do return "", .Shortcut_Exists
 	if lookup_err == .Not_Found do return shortcut, .None  // Available
 	return "", lookup_err  // Unexpected error
 }
 
 register_shortcut :: proc (
-	dict_data: ^Dict_Data,
+	dict: ^Dictionary,
 	orig_shortcut, expansion: string,
 	as_chords: bool,
 	chain_buffer: ^Chord_Chain_Buffer,
 ) -> Dict_Error {
-	shortcut := validate_shortcut(dict_data, orig_shortcut, as_chords, chain_buffer) or_return
+	shortcut := validate_shortcut(
+		dict,
+		orig_shortcut,
+		as_chords,
+		chain_buffer,
+	) or_return
+
 	raw_chord := orig_shortcut if as_chords else ""
-	return dict_data_add(dict_data, shortcut, expansion, raw_chord)
+	return dict_add(dict, shortcut, expansion, raw_chord)
 }
 
 dict_file_edit :: proc(
