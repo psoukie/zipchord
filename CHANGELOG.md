@@ -1,5 +1,16 @@
 # ZipChord Changelog
 
+## ZipChord 2.12 (unreleased changes in progress)
+
+**New Features**
+
+- For chained chords starting with chords that do not have their own standalone expansion, ZipChord displays a temporary ellipsis (`…`) while waiting for the next chord in the chain. (This also allows completion of such chained chords when "Delete mistyped chords" is enabled.) (#220)
+
+**Fixes**
+
+- Fixed a bug where when the first chord causes a preceding shorthand to expand, the chained chord output would get lost. (#297)
+- Fixed replacement of expansions containing single-character brace expressions such as {~}`, `{^}`, and `{{}` in chained chords. (#296)
+
 ## ZipChord 2.11
 
 This release makes it easier to manage the shortcuts assigned to any output text in a redesigned "Add or Edit Shortcut" window, now called "Assign Shortcuts."
