@@ -18,11 +18,11 @@ Instead of learning full stenography, you can start with just a few shortcuts fo
 
 - Simultaneous chord recognition (also known as chorded entry or chording)
 - Sequential shorthands that expand typed abbreviations to full words or phrases
-- Separate customizable dictionaries for chords and shorthands
+- Customizable dictionaries for chords and shorthands
 - Real-time hints in an on-screen display or tooltips
 - Smart spaces and automatic capitalization around shortcuts and punctuation
 - Two chord-detection modes: minimum held duration or relative overlap of keys
-- Automatic switching with the active Windows keyboard layout, with per-layout key mapping and dictionaries
+- Automatic switching of key mapping and dictionaries with the active Windows keyboard layout
 - Native UI and command menu for common actions and assigning shortcuts
 
 ## Example
@@ -33,10 +33,9 @@ Instead of learning full stenography, you can start with just a few shortcuts fo
 
 ## Get Started
 
-- **Download:** [Latest release](https://github.com/psoukie/zipchord/releases)
-- **Install:** [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation)
-- **Learn:** [How to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord)
-- **Keyboard layouts and language settings:** [Keyboard and language settings](https://github.com/psoukie/zipchord/wiki/Keyboard-and-language-settings)
+- Download: [Latest release](https://github.com/psoukie/zipchord/releases)
+- Install: [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation)
+- Learn: [How to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord)
 
 ## Installation
 
@@ -56,7 +55,7 @@ ZipChord adheres to strict privacy and security principles. It does not send you
 
 ## Development
 
-The first version of ZipChord was released in 2021. It is primarily written in [AutoHotkey](https://www.autohotkey.com/), with components gradually being reimplemented in [Odin](https://odin-lang.org/) as part of ongoing work toward cross-platform support.
+ZipChord was first released in 2021. It is primarily written in [AutoHotkey](https://www.autohotkey.com/), with components gradually being reimplemented in [Odin](https://odin-lang.org/) as part of ongoing work toward cross-platform support.
 
 Design and implementation are done by the maintainer, with generative AI used for code review, troubleshooting, technical recommendations, and documentation.
 
