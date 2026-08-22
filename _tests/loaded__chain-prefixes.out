@@ -1,0 +1,100 @@
+*Interrupt*
+~g
+~c
+{Backspace 2}
+{Text}test
+{S}
+{}}
+{{}
+{Text} braces
+{Space}
+~g
+~c
+{Backspace 17}
+{Text}chained chord
+{Space}
+~.
+{Backspace 2}
+~.
+{Space}
+~m
+~w
+{Backspace 2}
+{Text}…
+~h
+~t
+{Backspace 3}
+{Text}Chained pre-
+~g
+~a
+~m
+~e
+~.
+{Space}
+~Enter
+~c
+~r
+{Backspace 2}
+{Text}…
+~l
+~r
+{Backspace 3}
+{Text}…
+~f
+~g
+{Backspace 3}
+{Text}Long chained chord
+{Space}
+~c
+~g
+{Backspace 2}
+{Text}test
+{S}
+{}}
+{{}
+{Text} braces
+{Space}
+~c
+~r
+{Backspace 2}
+{Text}…
+~r
+~c
+{Backspace 2}
+{Text} …
+~Enter
+~f
+{Backspace 1}
+{Text}F
+~r
+~m
+~c
+~g
+{Backspace 5}
+{Text}From
+{Text} test
+{S}
+{}}
+{{}
+{Text} braces
+{Space}
+~c
+~g
+{Backspace 18}
+{Text} chained chord
+{Space}
+~.
+{Backspace 2}
+~.
+{Space}
+~m
+~w
+~z
+~v
+{Backspace 4}
+~w
+~m
+{Backspace 2}
+{Text}…
+~v
+*Interrupt*
