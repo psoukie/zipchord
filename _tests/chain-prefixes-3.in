@@ -1,43 +1,58 @@
-0	~Space
-63	~Space Up
-2219	~m
-2219	~w
-2375	~m Up
-2391	~w Up
-3469	~z
-3485	~x
-3625	~x Up
-3657	~z Up
-4657	~Space
-4766	~Space Up
-5688	~m
-5688	~w
-5829	~m Up
-5829	~w Up
-6829	~Backspace
-9219	~o
-9219	~u
-9360	~o Up
-9375	~u Up
-10250	~Space
-10329	~Space Up
-11297	~w
-11313	~m
-11438	~w Up
-11454	~m Up
-12750	~^Backspace
-15110	~o
-15125	~u
-15266	~o Up
-15282	~u Up
-15829	~Space
-15938	~Space Up
-16672	~w
-16704	~m
-16844	~m Up
-16860	~w Up
-17625	~.
-17735	~. Up
-18547	~x
-18610	~x Up
-22500	*Interrupt*
+0	*Interrupt*
+1343	*Interrupt*
+5703	*Interrupt*
+7484	~Space
+7547	~Space Up
+9859	~m
+9875	~w
+10000	~w Up
+10000	~m Up
+11015	~x
+11031	~z
+11156	~x Up
+11172	~z Up
+12031	~Space
+12125	~Space Up
+13265	~m
+13281	~w
+13437	~m Up
+13437	~w Up
+14562	~Backspace
+15843	~o
+15843	~u
+16015	~u Up
+16062	~o Up
+16875	~Space
+16953	~Space Up
+17859	~m
+17875	~w
+18047	~m Up
+18062	~w Up
+20422	~^Backspace
+22343	~o
+22359	~u
+22484	~o Up
+22500	~u Up
+24297	~Space
+24406	~Space Up
+25718	~m
+25734	~w
+25843	~w Up
+25859	~m Up
+26640	~.
+26765	~. Up
+27797	~x
+27890	~x Up
+28797	~Space
+28906	~Space Up
+30578	~j
+30593	~k
+30718	~j Up
+30750	~k Up
+31718	~a
+31781	~a Up
+34672	~h
+34672	~t
+34781	~h Up
+34781	~t Up
+39828	*Interrupt*

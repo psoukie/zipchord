@@ -594,6 +594,8 @@ Class TestingClass {
                     this.Write("`n Enter", "")
                 Case "Backspace":
                     this.Write("`n Backspace", "")
+                Case "^Backspace":
+                    this.Write("`n Interrupt", "")
                 Case "Shift*":
                     this.Write("`n Shift", "")
                 Default:
@@ -619,7 +621,10 @@ Class TestingClass {
                 ; --- tilde-prefixed keys (~...) ---
                 if (ch = "~") {
                     i++
-                    if (SubStr(line,i,1) = "+") {                   ; ~+x
+                    if (SubStr(line, i, 10) = "^Backspace") {
+                        out .= "`n*interrupted*`n"
+                        i += 10
+                    } else if (SubStr(line,i,1) = "+") {            ; ~+x
                         out .= _GetShiftedChar(SubStr(line,i+1,1))
                         i += 2
                     } else {                                        ; ~Name or ~x

@@ -246,3 +246,4 @@ mw|th	chained pre-~
 gc	test{S}{}}{{} braces
 gc|gc	chained chord
 cr|rl|fg	long chained chord
+jk|a|th	how about this

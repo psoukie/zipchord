@@ -749,6 +749,11 @@ Class clsIOrepresentation {
             }
         }
 
+        ; Check whether a single key continues a pending chain
+        if (this.pending_chain_id && this.TryChordModule()) {
+            return tokens_to_ignore
+        }
+
         ; Clean up chord-related matters
         token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
         tokens_to_ignore := 0
