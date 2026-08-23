@@ -527,20 +527,20 @@ Class clsIOrepresentation {
     }
 
     ShortenTokenWindow() {
+        if (this.pending_chain.token_id > 0) {
+            return
+        }
+
         items_to_remove := LastTokenId() - this.SEQUENCE_WINDOW
         if (items_to_remove < 1) {
             return
         }
+
         io_tokens.RemoveAt(1, items_to_remove)
-        this.pending_chain.token_id -= items_to_remove
-        if (this.pending_chain.token_id < 1) {
-            this.CancelPendingChain()
-        }
-        return
     }
 
     TombstonePendingChain() {
-        io_tokens[this.pending_chain.token_id].attribs := TokenAttribs.TOMBSTONED
+        io_tokens[this.pending_chain.token_id].attribs |= TokenAttribs.TOMBSTONED
         this.pending_chain.status := PendingStatus.NOT_PENDING
         this.pending_chain.token_id := 0
     }
@@ -599,11 +599,15 @@ Class clsIOrepresentation {
     }
 
     Backspace(with_ctrl := false) {
+        if (with_ctrl) {
+                this.ClearTokens("*Interrupt*")
+                return
+        }
+
         if (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD) {
             this.CancelPendingChain()
         } else if (LastTokenId() < 2
-                || LastToken().type == TokenType.EXPANSION
-                || with_ctrl ) {
+                || LastToken().type == TokenType.EXPANSION) {
             this.ClearTokens("*Interrupt*")
             return
         }
@@ -730,6 +734,9 @@ Class clsIOrepresentation {
             this.pending_chain.status := PendingStatus.PREVIOUS_CHORD
         }
 
+        DebugTokens()
+        Debug(Format("`nPending status: {} at {}", this.pending_chain.status, this.pending_chain.token_id))
+
         io_chord := new clsChordCandidate  ; reset io_chord
 
         first_modified := this._FindFirstModifiedToken()
@@ -753,9 +760,11 @@ Class clsIOrepresentation {
             tokens_to_ignore := io_chord.token_count - 1
             if (this.TryChordModule()) {
                 token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
+                if (is_pending) {
+                    this.pending_chain.status := PendingStatus.THIS_CHORD
+                    this.pending_chain.token_id := A_Index
+                }
                 return tokens_to_ignore
-            } else {
-                this.CancelPendingChain()
             }
 
             token.input := backup_input
@@ -932,28 +941,41 @@ Class clsIOrepresentation {
                     && this.pending_chain.token_id < A_Index) {
                 this.TombstonePendingChain()
             }
+
+            is_pending := false
             if (!expanded) {
                 if (chords.IsChainPrefix(candidate)) {
-                    this.pending_chain.status := PendingStatus.THIS_CHORD
-                    this.pending_chain.token_id := A_Index
+                    is_pending := true
                     expanded := "…"
                 }
             }
-            if (expanded) {
-                if (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD
-                        && this.pending_chain.token_id == A_Index) {
+            if (!expanded) {
+                continue
+            }
+
+            consumes_pending := (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD)
+                    && (this.pending_chain.token_id == A_Index)
+
+            replace_id := A_Index
+            ; check whether chord is used to complete typing of a shorthand
+            if (this._TryShorthandsAndHints()) {
+                replace_id := LastTokenId()
+            }
+
+            replace_ok := this._ExpandChord(replace_id, expanded, is_pending)
+            if (replace_ok) {
+                if (is_pending) {
+                    this.pending_chain.status := PendingStatus.THIS_CHORD
+                    this.pending_chain.token_id := replace_id
+                } else if (consumes_pending) {
                     this.CancelPendingChain()
                 }
-                ; check whether chord is used to complete typing of a shorthand
-                if (this._TryShorthandsAndHints()) {
-                    return this._ExpandChord(LastTokenId(), expanded)
-                }
-                return this._ExpandChord(A_Index, expanded)
             }
+            return replace_ok
         }
     }
 
-    _ExpandChord(token_id, expanded) {
+    _ExpandChord(token_id, expanded, is_pending) {
         global hint_delay
         mark_as_capitalized := false
         add_leading_space := true
@@ -1025,7 +1047,7 @@ Class clsIOrepresentation {
             io_tokens[tb_replaced_id].attribs |= TokenAttribs.CAPITALIZES_NEXT
         }
 
-        if (this.pending_chain.status == PendingStatus.THIS_CHORD) {
+        if (is_pending) {
             return true ; so pending marker does not add smart space or score as a chord
         }
 
