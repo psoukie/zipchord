@@ -80,7 +80,7 @@ Shift_key() {
     global io
     Critical
 
-    if (A_PriorHotkey != "~Shift") {
+    if (A_ThisHotkey != "~Shift Up" || A_PriorHotkey != "~Shift") {
         Critical Off
         return
     }
