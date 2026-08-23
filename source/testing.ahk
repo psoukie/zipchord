@@ -211,13 +211,13 @@ Class TestingClass {
             if (this._input == TEST_DEST_CONSOLE)
                 this.Write("IN: " . timestamp . "`t" . event)
             else
-                this._input_obj.Write(timestamp . "`t" . event . "`n")
+                this._input_obj.Write(timestamp . "`t" . event . "`r`n")
         }
         if (this._output && !is_input) {
             if (this._output == TEST_DEST_CONSOLE)
                 this.Write("OUT: " . event)
             else
-                this._output_obj.Write(event . "`n")
+                this._output_obj.Write(event . "`r`n")
         }
     }
     Play(cfg:="", in_file:="") {
