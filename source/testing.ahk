@@ -251,6 +251,8 @@ Class TestingClass {
                     Enter_key()
                 Case "~Backspace":
                     Backspace_key()
+                Case "~^Backspace":
+                    Ctrl_Backspace_key()
                 Default:
                     if (SubStr(test_key, -2)==" Up")
                         KeyUp()
