@@ -1,6 +1,6 @@
 # ZipChord Changelog
 
-## ZipChord 2.12 (unreleased changes in progress)
+## ZipChord 2.12
 
 **New Features**
 
@@ -9,7 +9,7 @@
 **Fixes**
 
 - Fixed a bug where when the first chord causes a preceding shorthand to expand, the chained chord output would get lost. (#297)
-- Fixed replacement of expansions containing single-character brace expressions such as {~}`, `{^}`, and `{{}` in chained chords. (#296)
+- Fixed replacement of expansions containing single-character brace expressions such as `{~}`, `{^}`, and `{{}` in chained chords. (#296)
 
 ## ZipChord 2.11
 
