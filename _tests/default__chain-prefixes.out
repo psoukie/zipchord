@@ -60,8 +60,8 @@
 {Text}…
 ~r
 ~c
-{Backspace 2}
-{Text} …
+{Backspace 3}
+{Text}…
 ~Enter
 ~f
 ~r

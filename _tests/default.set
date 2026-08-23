@@ -21,3 +21,5 @@ default__special-expansions.out
 default__capitalized_within.out
 default__multiword_hint.out
 default__chain-prefixes.out
+default__chain-prefixes-2.out
+default__chain-prefixes-3.out
