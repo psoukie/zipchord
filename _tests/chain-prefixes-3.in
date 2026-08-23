@@ -1,45 +1,43 @@
-0	*Interrupt*
-1562	*Interrupt*
-3953	~Space
-4047	~Space Up
-5172	~m
-5187	~w
-5297	~w Up
-5312	~m Up
-6516	~x
-6516	~z
-6641	~x Up
-6672	~z Up
-8547	~Space
-8656	~Space Up
-9562	~m
-9562	~w
-9703	~w Up
-9734	~m Up
-10687	~Backspace
-11984	~u
-12000	~o
-12125	~o Up
-12141	~u Up
-13234	~Space
-13328	~Space Up
-14250	~w
-14266	~m
-14406	~m Up
-14406	~w Up
-15469	*Shift*
-17766	~o
-17766	~u
-17875	~o Up
-17891	~u Up
-18937	~Space
-19062	~Space Up
-19844	~m
-19844	~w
-19984	~m Up
-20000	~w Up
-20781	~.
-20875	~. Up
-21687	~x
-21750	~x Up
-24219	*Interrupt*
+0	~Space
+63	~Space Up
+2219	~m
+2219	~w
+2375	~m Up
+2391	~w Up
+3469	~z
+3485	~x
+3625	~x Up
+3657	~z Up
+4657	~Space
+4766	~Space Up
+5688	~m
+5688	~w
+5829	~m Up
+5829	~w Up
+6829	~Backspace
+9219	~o
+9219	~u
+9360	~o Up
+9375	~u Up
+10250	~Space
+10329	~Space Up
+11297	~w
+11313	~m
+11438	~w Up
+11454	~m Up
+12750	~^Backspace
+15110	~o
+15125	~u
+15266	~o Up
+15282	~u Up
+15829	~Space
+15938	~Space Up
+16672	~w
+16704	~m
+16844	~m Up
+16860	~w Up
+17625	~.
+17735	~. Up
+18547	~x
+18610	~x Up
+22500	*Interrupt*
