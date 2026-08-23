@@ -1,10 +1,13 @@
+*Interrupt*
+*Interrupt*
+*Interrupt*
 ~Space
 ~m
 ~w
 {Backspace 2}
 {Text}…
-~z
 ~x
+~z
 {Backspace 3}
 ~Space
 ~m
@@ -20,8 +23,8 @@
 ~Space
 {Backspace 2}
 {Space}
-~w
 ~m
+~w
 {Backspace 2}
 {Text}…
 ~^Backspace
@@ -33,8 +36,8 @@
 ~Space
 {Backspace 2}
 {Space}
-~w
 ~m
+~w
 {Backspace 2}
 {Text}…
 ~.
@@ -44,4 +47,17 @@
 ~x
 {Backspace 1}
 {Text}X
+~Space
+~j
+~k
+{Backspace 2}
+{Text}…
+~a
+{Backspace 2}
+{Text}…
+~h
+~t
+{Backspace 3}
+{Text}how about this
+{Space}
 *Interrupt*
