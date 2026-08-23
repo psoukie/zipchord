@@ -10,6 +10,7 @@
 
 - Fixed a bug where when the first chord causes a preceding shorthand to expand, the chained chord output would get lost. (#297)
 - Fixed replacement of expansions containing single-character brace expressions such as `{~}`, `{^}`, and `{{}` in chained chords. (#296)
+- The "pre-Shift" function now cannot activate repeatedly when Shift key is held down.
 
 ## ZipChord 2.11
 
