@@ -754,6 +754,8 @@ Class clsIOrepresentation {
             if (this.TryChordModule()) {
                 token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
                 return tokens_to_ignore
+            } else {
+                this.CancelPendingChain()
             }
 
             token.input := backup_input
