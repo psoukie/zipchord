@@ -33,8 +33,7 @@ Class clsTokenAttribsBitSet {
     REMOVES_SM_SPACE := 32
     SM_SPACE_AFTER   := 64
     CAPITALIZING_KEY := 128
-    PENDING_CHAIN    := 256
-    TOMBSTONED       := 512
+    TOMBSTONED       := 256
 }
 
 Class clsAffixBitSet {
@@ -57,9 +56,16 @@ Class clsChordCandidate {
     with_shift  := false
 }
 
+Class clsPendingChainStatus {
+    NOT_PENDING    := 0
+    THIS_CHORD     := 1
+    PREVIOUS_CHORD := 2
+}
+
 global TokenType := new clsTokenTypeEnum
 global TokenAttribs := new clsTokenAttribsBitSet
 global AffixPos := new clsAffixBitSet
+global PendingStatus := new clsPendingChainStatus
 
 global io_events := []         ; window of overlapping key events
 global io_events_index := {}   ; indexes _buffer:  _events_index[{key}] points to that key's record in _buffer
@@ -241,7 +247,8 @@ Class clsIOrepresentation {
     SEQUENCE_WINDOW := 11
     pre_shifted := false
     expansion_in_last_get := false
-
+    pending_chain := { status: PendingStatus.NOT_PENDING
+                     , token_id: 0}
 
     IOEventsReset() {
         global first_lift
@@ -503,6 +510,7 @@ Class clsIOrepresentation {
     }
 
     ClearTokens(type) {
+        this.CancelPendingChain()
         this.IOEventsReset()
         io_tokens := []
         new_token := new clsToken
@@ -524,7 +532,22 @@ Class clsIOrepresentation {
             return
         }
         io_tokens.RemoveAt(1, items_to_remove)
+        this.pending_chain.token_id -= items_to_remove
+        if (this.pending_chain.token_id < 1) {
+            this.CancelPendingChain()
+        }
         return
+    }
+
+    TombstonePendingChain() {
+        io_tokens[this.pending_chain.token_id].attribs := TokenAttribs.TOMBSTONED
+        this.pending_chain.status := PendingStatus.NOT_PENDING
+        this.pending_chain.token_id := 0
+    }
+
+    CancelPendingChain() {
+        this.pending_chain.status := PendingStatus.NOT_PENDING
+        this.pending_chain.token_id := 0
     }
 
     Replace(new_output, start := 1, end := -1) {
@@ -576,10 +599,15 @@ Class clsIOrepresentation {
     }
 
     Backspace(with_ctrl := false) {
-        if ( LastTokenId() < 2 || LastToken().type == TokenType.EXPANSION || with_ctrl ) {
+        if (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD) {
+            this.CancelPendingChain()
+        } else if (LastTokenId() < 2
+                || LastToken().type == TokenType.EXPANSION
+                || with_ctrl ) {
             this.ClearTokens("*Interrupt*")
             return
         }
+
         while (LastToken().attribs & TokenAttribs.TOMBSTONED) {
             io_tokens.Pop()
         }
@@ -694,6 +722,14 @@ Class clsIOrepresentation {
             io_new_tokens.RemoveAt(1)
             tokens_to_ignore := this.ProcessLastToken()
         }
+
+        switch this.pending_chain.status {
+        case PendingStatus.PREVIOUS_CHORD:
+            this.TombstonePendingChain()
+        case PendingStatus.THIS_CHORD:
+            this.pending_chain.status := PendingStatus.PREVIOUS_CHORD
+        }
+
         io_chord := new clsChordCandidate  ; reset io_chord
 
         first_modified := this._FindFirstModifiedToken()
@@ -727,8 +763,12 @@ Class clsIOrepresentation {
             }
         }
 
+        ; Clean up chord-related matters
         token.attribs &= ~TokenAttribs.FIRST_IN_CHORD
         tokens_to_ignore := 0
+        if (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD) {
+            this.TombstonePendingChain()
+        }
 
         ; Process a char
         this._CapitalizeTypingAsNeeded(token)
@@ -884,22 +924,34 @@ Class clsIOrepresentation {
             }
             candidate := StrReplace(candidate, "||", "|")
             expanded := chords.LookUp(candidate)
-            is_pending_chain := false
-            if (!expanded && chords.IsChainPrefix(candidate)) {
-                is_pending_chain := true
-                expanded := "…"
+
+            ; If we went past a pending chain, we tombstone it
+            if (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD
+                    && this.pending_chain.token_id < A_Index) {
+                this.TombstonePendingChain()
+            }
+            if (!expanded) {
+                if (chords.IsChainPrefix(candidate)) {
+                    this.pending_chain.status := PendingStatus.THIS_CHORD
+                    this.pending_chain.token_id := A_Index
+                    expanded := "…"
+                }
             }
             if (expanded) {
+                if (this.pending_chain.status == PendingStatus.PREVIOUS_CHORD
+                        && this.pending_chain.token_id == A_Index) {
+                    this.CancelPendingChain()
+                }
                 ; check whether chord is used to complete typing of a shorthand
                 if (this._TryShorthandsAndHints()) {
-                    return this._ExpandChord(LastTokenId(), expanded, is_pending_chain)
+                    return this._ExpandChord(LastTokenId(), expanded)
                 }
-                return this._ExpandChord(A_Index, expanded, is_pending_chain)
+                return this._ExpandChord(A_Index, expanded)
             }
         }
     }
 
-    _ExpandChord(token_id, expanded, is_pending_chain) {
+    _ExpandChord(token_id, expanded) {
         global hint_delay
         mark_as_capitalized := false
         add_leading_space := true
@@ -971,10 +1023,7 @@ Class clsIOrepresentation {
             io_tokens[tb_replaced_id].attribs |= TokenAttribs.CAPITALIZES_NEXT
         }
 
-        if (! is_pending_chain) {
-            io_tokens[tb_replaced_id].attribs &= ~TokenAttribs.PENDING_CHAIN
-        } else {
-            io_tokens[tb_replaced_id].attribs |= TokenAttribs.PENDING_CHAIN
+        if (this.pending_chain.status == PendingStatus.THIS_CHORD) {
             return true ; so pending marker does not add smart space or score as a chord
         }
 
