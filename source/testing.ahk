@@ -1,7 +1,7 @@
 ﻿/*
 This file is part of ZipChord.
 Copyright (c) 2023-2026 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
+Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 */
 
 global TEST_OFF := 0
@@ -26,8 +26,8 @@ Class TestingClass {
     _path_backup := ""
     _prompt_fn := ObjBindMethod(this, "_Prompt")
     mode {
-        get { 
-            return this._mode 
+        get {
+            return this._mode
         }
     }
     Init() {
@@ -42,7 +42,8 @@ Class TestingClass {
             this._stdout := FileOpen("*", "w `n", "UTF-8")
         }
         this.Stop(true)
-        this.Write(Format("ZipChord Test Console [Version {}]", zc_version))
+        dll_indicator := dll.available ? "with Odin library" : "AHK only"
+        this.Write(Format("ZipChord Test Console`nVersion {} {}", zc_version, dll_indicator))
         this.Write("`nCopyright (c) 2023-" . zc_year . " Pavel Soukenik")
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
         this.Write("This is free software, and you are welcome to redistribute it")
@@ -88,7 +89,7 @@ Class TestingClass {
                 this.Help(ObjFnName(A_ThisFunc))
                 return
             Case "":
-                
+
             Default:
                 this._MessageTryHelp(A_ThisFunc)
                 return
@@ -111,7 +112,7 @@ Class TestingClass {
                 this.Write( Format("ZipChord output is logged to {}.", this._DestinationName(this._output) ) )
             Case "input", "output":
                 target_var := "_" . what
-                extension := what=="input" ? "in" : "out" 
+                extension := what=="input" ? "in" : "out"
                 Switch destination {
                     Case "console":
                         this[target_var] := TEST_DEST_CONSOLE
@@ -210,13 +211,13 @@ Class TestingClass {
             if (this._input == TEST_DEST_CONSOLE)
                 this.Write("IN: " . timestamp . "`t" . event)
             else
-                this._input_obj.Write(timestamp . "`t" . event . "`n")
+                this._input_obj.Write(timestamp . "`t" . event . "`r`n")
         }
         if (this._output && !is_input) {
             if (this._output == TEST_DEST_CONSOLE)
                 this.Write("OUT: " . event)
             else
-                this._output_obj.Write(event . "`n")
+                this._output_obj.Write(event . "`r`n")
         }
     }
     Play(cfg:="", in_file:="") {
@@ -250,6 +251,8 @@ Class TestingClass {
                     Enter_key()
                 Case "~Backspace":
                     Backspace_key()
+                Case "~^Backspace":
+                    Ctrl_Backspace_key()
                 Default:
                     if (SubStr(test_key, -2)==" Up")
                         KeyUp()
@@ -435,7 +438,7 @@ Class TestingClass {
                 txt_output.Write(output)
                 txt_output.Close()
             Default:
-                RunWait %ComSpec% /c type %file%       
+                RunWait %ComSpec% /c type %file%
         }
     }
     _Batch(testset:="") {
@@ -643,12 +646,24 @@ Class TestingClass {
 
                 ; --- brace tokens {...} ---
                 if (ch = "{") {
+                    if (SubStr(line, i, 3) == "{}}") {
+                        out .= "}"
+                        i += 3
+                        continue
+                    }
+
                     close := InStr(line, "}", false, i+1)
                     if (!close) {
                         out .= SubStr(line,i), i := len+1
                         break
                     }
                     name := SubStr(line, i+1, close-i-1)
+
+                    if (close == i + 2) {  ; Any one-character brace sequence like `{~}`
+                        out .= name
+                        i := close + 1
+                        continue
+                    }
 
                     if (name = "Space") {
                         out .= " "
@@ -733,7 +748,7 @@ Adds a specified existing test case to a test set.
 add <testcase> <testset>
 
   <testcase>    The name of an existing test case file to add.
-  <testset>     The name of the test set the case will be added to. 
+  <testset>     The name of the test set the case will be added to.
 )")
             Case "compare":
                 this.Write("
@@ -750,14 +765,14 @@ compare <output1> <output2>
 (
 Creates a test case from the specified configuration and input files.
 If you don't specify the output file, the result is saved in an
-automatically named test case file.  
+automatically named test case file.
 
 compose <configfile> <inputfile> [<outputfile>]
 
   <configfile>    The settings to be applied for creation of this test.
   <inputfile>     The input to be played to generate the test's output.
   <outputfile>    The output file with the result of the test. If omitted,
-                  saves a test case as '<configfile>__<inputfile>.out'. 
+                  saves a test case as '<configfile>__<inputfile>.out'.
 )")
             Case "config":
                 this.Write("
@@ -781,7 +796,7 @@ Deletes the specified file.
 
 delete <filename>
 
-  <filename>    The file name, including extension, of the file to delete. 
+  <filename>    The file name, including extension, of the file to delete.
 )")
             Case "exit":
                 this.Write("
@@ -809,13 +824,13 @@ ZipChord is paused whenever the Test Automation prompt is available.
 Use this command to make changes in ZipChord user interface or to monitor
 or capture ZipChord's input and output using this console.
 
-Press Ctrl+X to pause ZipChord and return to the console.  
+Press Ctrl+X to pause ZipChord and return to the console.
 )")
             Case "license":
                 this.Write("
 (
 Shows the license for this product in a text file, or (if the license file
-is unavailable) opens the text on website. 
+is unavailable) opens the text on website.
 )")
             Case "list":
                 this.Write("
@@ -828,7 +843,7 @@ list [<type>]
             The <type> can be one of the following:
                cases      test case files
                configs    configuration files
-               inputs     input files 
+               inputs     input files
                outputs    output files (execept test cases)
                sets       test set files
 )")
@@ -861,7 +876,7 @@ path [show | restore | set <path>]
 
    show       Shows the current working folder.
    set        Sets the path for ZipChord's working folder.
-   restore    Restores the working path to the original folder. 
+   restore    Restores the working path to the original folder.
    <path>     Absolute or relative path to an existing folder.
 )")
             Case "play":
@@ -916,7 +931,7 @@ the 'raw' option.
 show [raw] <filename>
 
   <filename>    The name (including extension) of the file to show.
-  raw           Forces raw output for input, output and test case files.  
+  raw           Forces raw output for input, output and test case files.
 )")
             Case "test":
                 this.Write("
@@ -948,7 +963,7 @@ Shows the version of ZipChord and ZipChord Test Console.
 Available commands:
 
 add         Adds an existing test case to a test set.
-compare     Shows differences between two output files.     
+compare     Shows differences between two output files.
 compose     Creates a test case from a given configuration and input file.
 config      Shows, saves or loads app configuration and keyboard settings.
 delete      Deletes the specified file.
@@ -960,7 +975,7 @@ license     Shows the license information.
 list        Lists all files (or files of a type) in the testing folder.
 monitor     Directs the input or output of ZipChord to console or a file.
 play        Sends recorded input to ZipChord for processing.
-recompose   Recreates and overwrites all test cases. 
+recompose   Recreates and overwrites all test cases.
 record      Records input and/or output of your interaction to a file.
 show        Shows the contents of a file.
 test        Runs and compares results of a test case or a set of cases.
@@ -970,7 +985,7 @@ For all commands:
    Including file extensions in file names is optional except in
    commands 'show' and 'delete'.
    File and folder names that contain spaces must be enclosed in
-   double quotes. 
+   double quotes.
 
 For more information on a specific command, type 'help <command>'.
 )")

@@ -242,3 +242,7 @@ sp3	{Backspace 2}ed
 prg	Prague
 ls	El Salvador
 pst	Prostějov
+mw|th	chained pre-~
+gc	test{S}{}}{{} braces
+gc|gc	chained chord
+cr|rl|fg	long chained chord

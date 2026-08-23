@@ -48,6 +48,7 @@ Class clsDllBindings {
     _add_chord_fn := 0
     _register_shortcut_fn := 0
     _validate_shortcut_fn := 0
+    _prefix_has_fn := 0
 
     __New() {
         global dll_buffer
@@ -103,10 +104,11 @@ Class clsDllBindings {
         this._get_saved_string_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_get_saved_string", "Ptr")
         this._normalize_chord_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_normalize_chord", "Ptr")
         this._edit_dict_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_dict_edit", "Ptr")
+        this._prefix_has_fn := DllCall("GetProcAddress", "Ptr", hZC, "AStr", "zc_dict_prefix_has", "Ptr")
 
         if (this._init_fn && this._destroy_fn && this._load_dictionary_fn && this._lookup_fn && this._reverse_lookup_fn
                 && this._register_shortcut_fn && this._validate_shortcut_fn && this._get_saved_string_fn
-                && this._normalize_chord_fn && this._edit_dict_fn) {
+                && this._normalize_chord_fn && this._edit_dict_fn && this._prefix_has_fn) {
             return true
         }
         return false
@@ -180,6 +182,17 @@ Class clsDllBindings {
 
         if (result == 0) {
             return StrGet(&dll_buffer, "UTF-8")
+        }
+        return false
+    }
+
+    PrefixHas(chord_candidate) {
+        chord_cand_ptr := this._StringToPtr(chord_candidate, chord_cand_buf)
+        result := DllCall(this._prefix_has_fn
+                , "Ptr", chord_cand_ptr
+                , "Cdecl Int")
+        if (result == 0) {
+            return true
         }
         return false
     }
