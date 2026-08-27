@@ -9,7 +9,7 @@ import "core:thread"
 import "core:sync"
 import "base:runtime"
 
-Key_State :: enum {
+Key_State_Flags :: enum {
 	Is_Key_Up,
 	Is_E0,
 	Is_E1,
@@ -17,25 +17,76 @@ Key_State :: enum {
 
 Physical_Key :: struct {
 	key_code: u16,
-	state: bit_set[Key_State; u16],
+	flags: bit_set[Key_State_Flags; u16],
 }
+
+key_q := Physical_Key{key_code = 0x2D}  // TK - for experiment
 
 Key_Event :: struct {
 	using physical_key: Physical_Key,
 	timestamp: i32,
 }
 
+WINDOWS_CLASS_NAME :: "ZipChordSpike"
 KEY_BUFFER_LENGTH :: 128
 
-app_start_time: time.Tick
-key_buffer: [KEY_BUFFER_LENGTH]Key_Event
-key_events: queue.Queue(Key_Event)
-log_file: ^os.File
-key_buffer_mutex: sync.Mutex
-worker_running := true
-worker_sema: sync.Sema
+Key_Reader :: struct {
+	_buffer: [KEY_BUFFER_LENGTH]Key_Event,
+	_worker: ^thread.Thread,
+	start_time: time.Tick,
+	events: queue.Queue(Key_Event),
+	sema: sync.Sema,
+	running: bool,
+	mutex: sync.Mutex
+}
 
-key_q := Physical_Key{key_code = 0x2D}
+key_reader: Key_Reader
+log_file: ^os.File
+
+key_reader_init :: proc(reader: ^Key_Reader) -> bool {
+	reader.start_time = time.tick_now()
+	queue.init_from_slice(&reader.events, reader._buffer[:])
+	reader.running = true
+	reader._worker = thread.create_and_start_with_poly_data(
+		reader,
+		worker_write_event_to_file,
+	)
+	return reader._worker != nil
+}
+
+key_reader_event_add :: proc(reader: ^Key_Reader, event: Key_Event) -> bool {
+	sync.mutex_lock(&reader.mutex)
+	ok, err := queue.push(&reader.events, event)
+	sync.mutex_unlock(&reader.mutex)
+	if ok && err == .None {
+		sync.sema_post(&reader.sema)
+		return true
+	}
+
+	return false
+}
+
+key_reader_stop :: proc(reader: ^Key_Reader) {
+	sync.mutex_lock(&reader.mutex)
+	reader.running = false
+	sync.mutex_unlock(&reader.mutex)
+	sync.sema_post(&reader.sema)
+}
+
+physical_key_from_raw :: proc(raw_key: win32.RAWKEYBOARD) ->
+	(key: Physical_Key) {
+	key.key_code = raw_key.MakeCode
+	if raw_key.Flags & win32.RI_KEY_BREAK != 0 {
+		key.flags |= {.Is_Key_Up}
+	}
+	if raw_key.Flags & win32.RI_KEY_E0 != 0 {
+		key.flags |= {.Is_E0}
+	}
+	if raw_key.Flags & win32.RI_KEY_E1 != 0 {
+		key.flags |= {.Is_E1}
+	}
+	return key
+}
 
 window_proc :: proc "system" (
 	hwnd: win32.HWND,
@@ -46,7 +97,7 @@ window_proc :: proc "system" (
 	context = runtime.default_context()
 	switch message {
 	case win32.WM_INPUT:
-		timestamp := time.tick_diff(app_start_time, time.tick_now())
+		timestamp := time.tick_diff(key_reader.start_time, time.tick_now())
 
 		raw: win32.RAWINPUT
 		raw_size := win32.UINT(size_of(raw))
@@ -59,32 +110,17 @@ window_proc :: proc "system" (
 			win32.UINT(size_of(win32.RAWINPUTHEADER)),
 		)
 
-		if bytes_read != ~win32.UINT(0) && raw.header.dwType == win32.RIM_TYPEKEYBOARD {
+		if bytes_read != ~win32.UINT(0) &&
+				raw.header.dwType == win32.RIM_TYPEKEYBOARD {
 			raw_key := raw.data.keyboard
-			timestamp_ms :=i32(u64(time.duration_milliseconds(timestamp)))
-
-			key_ev: Key_Event
-			key_ev.timestamp = timestamp_ms
-			key_ev.key_code = raw_key.MakeCode
-			if raw_key.Flags & win32.RI_KEY_BREAK != 0 {
-				key_ev.state |= {.Is_Key_Up}
-			}
-			if raw_key.Flags & win32.RI_KEY_E0 != 0 {
-				key_ev.state |= {.Is_E0}
-			}
-			if raw_key.Flags & win32.RI_KEY_E1 != 0 {
-				key_ev.state |= {.Is_E1}
+			key_ev := Key_Event {
+				physical_key = physical_key_from_raw(raw_key),
+				timestamp = i32(u64(time.duration_milliseconds(timestamp))),
 			}
 
-			sync.mutex_lock(&key_buffer_mutex)
-			ok, err := queue.push(&key_events, key_ev)
-			sync.mutex_unlock(&key_buffer_mutex)
-
-			if !ok || err == .None {
-				sync.sema_post(&worker_sema)
-			} else {
-				// Buffer full
-				// we exit
+			ok := key_reader_event_add(&key_reader, key_ev)
+			if !ok {
+				// Buffer full, we exit
 				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
 			}
 
@@ -114,7 +150,7 @@ window_proc :: proc "system" (
 
 main :: proc() {
 	instance := win32.HINSTANCE(win32.GetModuleHandleW(nil))
-	class_name := cstring16(win32.L("OdinHiddenWindowSpike"))
+	class_name := cstring16(win32.L(WINDOWS_CLASS_NAME))
 
 	window_class := win32.WNDCLASSEXW {
 		cbSize        = win32.UINT(size_of(win32.WNDCLASSEXW)),
@@ -145,20 +181,13 @@ main :: proc() {
 	log_file, e = os.create("output.txt")
 	if e != os.General_Error.None do return
 
-	app_start_time = time.tick_now()
-
-	queue.init_from_slice(&key_events, key_buffer[:])
-
-	worker := thread.create_and_start(worker_write_event_to_file)
-	if worker == nil do return
-
+	if ! key_reader_init(&key_reader) {
+		return
+	}
 
 	defer {
-		sync.mutex_lock(&key_buffer_mutex)
-		worker_running = false
-		sync.mutex_unlock(&key_buffer_mutex)
-		sync.sema_post(&worker_sema)
-		thread.destroy(worker)
+		key_reader_stop(&key_reader)
+		thread.destroy(key_reader._worker)
 		os.write_string(log_file, "\nlog closed ok\n")
 		os.flush(log_file)
 		os.close(log_file)
@@ -180,8 +209,10 @@ main :: proc() {
 		return
 	}
 
-	_, e = os.write_string(log_file, "time (ms)\tMakeCode\tKey up?\tExtended?\n")
+	_, e = os.write_string(log_file, "Time\tCode\tKey Up?\tExtended?\n")
 	if e != os.General_Error.None do return
+
+	fmt.printfln("Ready...")
 
 	message: win32.MSG
 	for {
@@ -202,29 +233,30 @@ main :: proc() {
 	}
 }
 
-worker_write_event_to_file :: proc() {
+worker_write_event_to_file :: proc(reader: ^Key_Reader) {
 	for {
-		sync.sema_wait(&worker_sema)
-		sync.mutex_lock(&key_buffer_mutex)
-		continue_running := worker_running
-		key_ev, ok := queue.pop_front_safe(&key_events)
-		sync.mutex_unlock(&key_buffer_mutex)
+		sync.sema_wait(&reader.sema)
+
+		sync.mutex_lock(&reader.mutex)
+		running := reader.running
+		key_ev, ok := queue.pop_front_safe(&reader.events)
+		sync.mutex_unlock(&reader.mutex)
 
 		if !ok {
-			if continue_running {
+			if running {
 				continue
 			} else {
 				return
 			}
 		}
 
-		is_extended := .Is_E0 in key_ev.state || .Is_E1 in key_ev.state
+		is_extended := .Is_E0 in key_ev.flags || .Is_E1 in key_ev.flags
 		fmt.fprintfln(
 			log_file,
 			"%v\t0x%X\t%v\t%v",
 			key_ev.timestamp,
 			key_ev.key_code,
-			.Is_Key_Up in key_ev.state,
+			.Is_Key_Up in key_ev.flags,
 			is_extended
 		)
 	}
