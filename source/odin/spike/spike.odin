@@ -4,10 +4,38 @@ import win32 "core:sys/windows"
 import "core:os"
 import "core:time"
 import "core:fmt"
-import "core:strings"
+import "core:container/queue"
+import "core:thread"
+import "core:sync"
 import "base:runtime"
 
+Key_State :: enum {
+	Is_Key_Up,
+	Is_E0,
+	Is_E1,
+}
+
+Physical_Key :: struct {
+	key_code: u16,
+	state: bit_set[Key_State; u16],
+}
+
+Key_Event :: struct {
+	using physical_key: Physical_Key,
+	timestamp: i32,
+}
+
+KEY_BUFFER_LENGTH :: 128
+
 app_start_time: time.Tick
+key_buffer: [KEY_BUFFER_LENGTH]Key_Event
+key_events: queue.Queue(Key_Event)
+log_file: ^os.File
+key_buffer_mutex: sync.Mutex
+worker_running := true
+worker_sema: sync.Sema
+
+key_q := Physical_Key{key_code = 0x2D}
 
 window_proc :: proc "system" (
 	hwnd: win32.HWND,
@@ -18,8 +46,7 @@ window_proc :: proc "system" (
 	context = runtime.default_context()
 	switch message {
 	case win32.WM_INPUT:
-		timestamp := time.tick_now()
-		to_first_key := time.tick_diff(app_start_time, timestamp)
+		timestamp := time.tick_diff(app_start_time, time.tick_now())
 
 		raw: win32.RAWINPUT
 		raw_size := win32.UINT(size_of(raw))
@@ -33,25 +60,38 @@ window_proc :: proc "system" (
 		)
 
 		if bytes_read != ~win32.UINT(0) && raw.header.dwType == win32.RIM_TYPEKEYBOARD {
-			key := raw.data.keyboard
+			raw_key := raw.data.keyboard
+			timestamp_ms :=i32(u64(time.duration_milliseconds(timestamp)))
 
-			is_key_up := (key.Flags & win32.RI_KEY_BREAK) != 0
-			is_e0 := (key.Flags & win32.RI_KEY_E0) != 0
-			is_e1 := (key.Flags & win32.RI_KEY_E1) != 0
+			key_ev: Key_Event
+			key_ev.timestamp = timestamp_ms
+			key_ev.key_code = raw_key.MakeCode
+			if raw_key.Flags & win32.RI_KEY_BREAK != 0 {
+				key_ev.state |= {.Is_Key_Up}
+			}
+			if raw_key.Flags & win32.RI_KEY_E0 != 0 {
+				key_ev.state |= {.Is_E0}
+			}
+			if raw_key.Flags & win32.RI_KEY_E1 != 0 {
+				key_ev.state |= {.Is_E1}
+			}
 
-			buf := strings.builder_make()
-			defer strings.builder_destroy(&buf)
+			sync.mutex_lock(&key_buffer_mutex)
+			ok, err := queue.push(&key_events, key_ev)
+			sync.mutex_unlock(&key_buffer_mutex)
 
-			microseconds := time.duration_microseconds(to_first_key)
-			time_string := fmt.sbprintf(
-				&buf, "time (ms): %v, MakeCode: %v, Flags: %v, VKey: %v",
-				microseconds,
-				key.MakeCode, key.Flags, key.VKey,
-			)
-			_ = os.write_entire_file("output.txt", time_string)
+			if !ok || err == .None {
+				sync.sema_post(&worker_sema)
+			} else {
+				// Buffer full
+				// we exit
+				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
+			}
 
-			// and exit immediatelly
-			win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
+			// We test until 'Q' is pressed
+			if key_ev == key_q {
+				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
+			}
 		}
 
 		// Required for appropriate Raw Input cleanup.
@@ -101,6 +141,29 @@ main :: proc() {
 		return
 	}
 
+	e: os.Error
+	log_file, e = os.create("output.txt")
+	if e != os.General_Error.None do return
+
+	app_start_time = time.tick_now()
+
+	queue.init_from_slice(&key_events, key_buffer[:])
+
+	worker := thread.create_and_start(worker_write_event_to_file)
+	if worker == nil do return
+
+
+	defer {
+		sync.mutex_lock(&key_buffer_mutex)
+		worker_running = false
+		sync.mutex_unlock(&key_buffer_mutex)
+		sync.sema_post(&worker_sema)
+		thread.destroy(worker)
+		os.write_string(log_file, "\nlog closed ok\n")
+		os.flush(log_file)
+		os.close(log_file)
+	}
+
 	raw_keyboard := win32.RAWINPUTDEVICE {
 		usUsagePage = 0x01, // Generic Desktop Controls
 		usUsage     = 0x06, // Keyboard
@@ -113,13 +176,12 @@ main :: proc() {
 		1,
 		win32.UINT(size_of(win32.RAWINPUTDEVICE)),
 	) {
-	   _ = os.write_entire_file("output.txt", "not ok")
+		os.write_string(log_file, "registering keyboard hook failed")
 		return
 	}
 
-	_ = os.write_entire_file("output.txt", "ok")
-
-	app_start_time = time.tick_now()
+	_, e = os.write_string(log_file, "time (ms)\tMakeCode\tKey up?\tExtended?\n")
+	if e != os.General_Error.None do return
 
 	message: win32.MSG
 	for {
@@ -137,5 +199,33 @@ main :: proc() {
 
 		win32.TranslateMessage(&message)
 		win32.DispatchMessageW(&message)
+	}
+}
+
+worker_write_event_to_file :: proc() {
+	for {
+		sync.sema_wait(&worker_sema)
+		sync.mutex_lock(&key_buffer_mutex)
+		continue_running := worker_running
+		key_ev, ok := queue.pop_front_safe(&key_events)
+		sync.mutex_unlock(&key_buffer_mutex)
+
+		if !ok {
+			if continue_running {
+				continue
+			} else {
+				return
+			}
+		}
+
+		is_extended := .Is_E0 in key_ev.state || .Is_E1 in key_ev.state
+		fmt.fprintfln(
+			log_file,
+			"%v\t0x%X\t%v\t%v",
+			key_ev.timestamp,
+			key_ev.key_code,
+			.Is_Key_Up in key_ev.state,
+			is_extended
+		)
 	}
 }
