@@ -57,151 +57,215 @@ Key_Special :: enum u8 {
 	Delete, // called "Delete Forward" in HID
 }
 
-Key_Physical :: union {
+Key_ZC :: union {
 	Key_Printable,
 	Key_Modifier,
 	Key_Special,
 }
 
-// TK: need to add listening for mouse button events
-
-Windows_Scan_ID :: distinct u16
-
-WINDOWS_KEY_PRINTABLE_TO_SCAN := [Key_Printable]Windows_Scan_ID {
-	.Grave = 0x029,
-	.Num_1 = 0x002,
-	.Num_2 = 0x003,
-	.Num_3 = 0x004,
-	.Num_4 = 0x005,
-	.Num_5 = 0x006,
-	.Num_6 = 0x007,
-	.Num_7 = 0x008,
-	.Num_8 = 0x009,
-	.Num_9 = 0x00A,
-	.Num_0 = 0x00B,
-	.Dash = 0x00C,
-	.Equals = 0x00D,
-	.Q = 0x010,
-	.W = 0x011,
-	.E = 0x012,
-	.R = 0x013,
-	.T = 0x014,
-	.Y = 0x015,
-	.U = 0x016,
-	.I = 0x017,
-	.O = 0x018,
-	.P = 0x019,
-	.Left_Brace = 0x01A,
-	.Right_Brace = 0x01B,
-	.Backslash = 0x02B,
-	.A = 0x01E,
-	.S = 0x01F,
-	.D = 0x020,
-	.F = 0x021,
-	.G = 0x022,
-	.H = 0x023,
-	.J = 0x024,
-	.K = 0x025,
-	.L = 0x026,
-	.Semicolon = 0x027,
-	.Apostrophe = 0x028,
-	.Z = 0x02C,
-	.X = 0x02D,
-	.C = 0x02E,
-	.V = 0x02F,
-	.B = 0x030,
-	.N = 0x031,
-	.M = 0x032,
-	.Comma = 0x033,
-	.Period = 0x034,
-	.Forward_Slash = 0x035,
-	.Spacebar = 0x039,
-
-	.Pad_Forward_Slash = 0x135,
-	.Pad_Star = 0x037,
-	.Pad_7 = 0x047,
-	.Pad_8 = 0x048,
-	.Pad_9 = 0x049,
-	.Pad_Dash = 0x04A,
-	.Pad_4 = 0x04B,
-	.Pad_5 = 0x04C,
-	.Pad_6 = 0x04D,
-	.Pad_Plus = 0x04E,
-	.Pad_1 = 0x04F,
-	.Pad_2 = 0x050,
-	.Pad_3 = 0x051,
-	.Pad_0 = 0x052,
-	.Pad_Period = 0x053,
-}
-
-WINDOWS_KEY_MODIFIER_TO_SCAN := [Key_Modifier]Windows_Scan_ID {
-	.Left_Shift = 0x02A,
-	.Right_Shift = 0x036,
-	.Left_Control = 0x01D,
-	.Right_Control = 0x11D,
-	.Left_Alt = 0x038,
-	.Right_Alt = 0x138,
-	.Left_GUI = 0x15B,
-	.Right_GUI = 0x15C,
-}
-
-WINDOWS_KEY_SPECIAL_TO_SCAN := [Key_Special]Windows_Scan_ID {
-	.Enter = 0x01C,
-	.Pad_Enter = 0x11C,
-	.Backspace = 0x00E,
-	.Tab = 0x00F,
-	.Escape = 0x001,
-	.Left = 0x14B,
-	.Right = 0x14D,
-	.Up = 0x148,
-	.Down = 0x150,
-	.Home = 0x147,
-	.End = 0x14F,
-	.Page_Up = 0x149,
-	.Page_Down = 0x151,
-	.Insert = 0x152,
-	.Delete = 0x153,
-}
-
 Key_Event :: struct {
 	timestamp: i32,
-	key: Key_Physical,
+	key: Key_ZC,
 	is_up: bool,
 }
 
-WINDOWS_SCAN_TO_KEY_PHYSICAL: [0x200]Key_Physical
-
-windows_key__init_scan_to_key :: proc() {
-	populate_scan_to_key :: proc(array: [$T]Windows_Scan_ID) {
-		for code, key in array {
-			assert(
-				code > 0 && code < len(WINDOWS_SCAN_TO_KEY_PHYSICAL),
-				"Invalid scan code",
-			)
-			assert(
-				WINDOWS_SCAN_TO_KEY_PHYSICAL[code] == nil,
-				"Scan code double assigned",
-			)
-			WINDOWS_SCAN_TO_KEY_PHYSICAL[code] = key
-		}
-	}
-	populate_scan_to_key(WINDOWS_KEY_PRINTABLE_TO_SCAN)
-	populate_scan_to_key(WINDOWS_KEY_MODIFIER_TO_SCAN)
-	populate_scan_to_key(WINDOWS_KEY_SPECIAL_TO_SCAN)
+Keys_Down :: struct {
+	printable: bit_set[Key_Printable],
+	modifiers: bit_set[Key_Modifier],
+	special: bit_set[Key_Special],
 }
 
-windows_key__get_scan_code :: proc(key: Key_Physical) ->
-	(scan: Windows_Scan_ID, is_extended: bool) {
+// TK: need to add listening for mouse button events
+
+SCAN_CODE_MAX :: 0x200
+
+Scan_ID :: distinct u16
+
+Key_Map :: struct {
+	zc_printable_to_scan: [Key_Printable]Scan_ID,
+	zc_modifier_to_scan: [Key_Modifier]Scan_ID,
+	zc_special_to_scan: [Key_Special]Scan_ID,
+	scan_to_key_zc: [SCAN_CODE_MAX]Key_ZC
+}
+
+key_map: Key_Map
+keys_down: Keys_Down
+
+key_map_init :: proc(key_map: ^Key_Map) {
+	key_map^ = {}
+
+	key_map.zc_printable_to_scan = {
+		.Grave = 0x029,
+		.Num_1 = 0x002,
+		.Num_2 = 0x003,
+		.Num_3 = 0x004,
+		.Num_4 = 0x005,
+		.Num_5 = 0x006,
+		.Num_6 = 0x007,
+		.Num_7 = 0x008,
+		.Num_8 = 0x009,
+		.Num_9 = 0x00A,
+		.Num_0 = 0x00B,
+		.Dash = 0x00C,
+		.Equals = 0x00D,
+		.Q = 0x010,
+		.W = 0x011,
+		.E = 0x012,
+		.R = 0x013,
+		.T = 0x014,
+		.Y = 0x015,
+		.U = 0x016,
+		.I = 0x017,
+		.O = 0x018,
+		.P = 0x019,
+		.Left_Brace = 0x01A,
+		.Right_Brace = 0x01B,
+		.Backslash = 0x02B,
+		.A = 0x01E,
+		.S = 0x01F,
+		.D = 0x020,
+		.F = 0x021,
+		.G = 0x022,
+		.H = 0x023,
+		.J = 0x024,
+		.K = 0x025,
+		.L = 0x026,
+		.Semicolon = 0x027,
+		.Apostrophe = 0x028,
+		.Z = 0x02C,
+		.X = 0x02D,
+		.C = 0x02E,
+		.V = 0x02F,
+		.B = 0x030,
+		.N = 0x031,
+		.M = 0x032,
+		.Comma = 0x033,
+		.Period = 0x034,
+		.Forward_Slash = 0x035,
+		.Spacebar = 0x039,
+
+		.Pad_Forward_Slash = 0x135,
+		.Pad_Star = 0x037,
+		.Pad_7 = 0x047,
+		.Pad_8 = 0x048,
+		.Pad_9 = 0x049,
+		.Pad_Dash = 0x04A,
+		.Pad_4 = 0x04B,
+		.Pad_5 = 0x04C,
+		.Pad_6 = 0x04D,
+		.Pad_Plus = 0x04E,
+		.Pad_1 = 0x04F,
+		.Pad_2 = 0x050,
+		.Pad_3 = 0x051,
+		.Pad_0 = 0x052,
+		.Pad_Period = 0x053,
+	}
+
+	key_map.zc_modifier_to_scan = {
+		.Left_Shift = 0x02A,
+		.Right_Shift = 0x036,
+		.Left_Control = 0x01D,
+		.Right_Control = 0x11D,
+		.Left_Alt = 0x038,
+		.Right_Alt = 0x138,
+		.Left_GUI = 0x15B,
+		.Right_GUI = 0x15C,
+	}
+
+	key_map.zc_special_to_scan = {
+		.Enter = 0x01C,
+		.Pad_Enter = 0x11C,
+		.Backspace = 0x00E,
+		.Tab = 0x00F,
+		.Escape = 0x001,
+		.Left = 0x14B,
+		.Right = 0x14D,
+		.Up = 0x148,
+		.Down = 0x150,
+		.Home = 0x147,
+		.End = 0x14F,
+		.Page_Up = 0x149,
+		.Page_Down = 0x151,
+		.Insert = 0x152,
+		.Delete = 0x153,
+	}
+
+	populate_reverse :: proc(
+		key_zc_to_scan: [$T]Scan_ID,
+		scan_to_key_zc: ^[SCAN_CODE_MAX]Key_ZC)
+	{
+		for scan, key in key_zc_to_scan {
+			assert(
+				scan > 0 && scan < SCAN_CODE_MAX,
+				"Scan code out of range",
+			)
+			assert(
+				scan_to_key_zc[scan] == nil,
+				"Scan code is double assigned",
+			)
+			scan_to_key_zc[scan] = key
+		}
+	}
+
+	populate_reverse(key_map.zc_printable_to_scan, &key_map.scan_to_key_zc)
+	populate_reverse(key_map.zc_modifier_to_scan, &key_map.scan_to_key_zc)
+	populate_reverse(key_map.zc_special_to_scan, &key_map.scan_to_key_zc)
+}
+
+key_scan_code_from_key_zc :: proc(key_map: Key_Map, key: Key_ZC) ->
+	(scan: Scan_ID, is_extended: bool) {
 	switch k in key {
 	case Key_Printable:
-		scan = WINDOWS_KEY_PRINTABLE_TO_SCAN[k]
+		scan = key_map.zc_printable_to_scan[k]
 	case Key_Modifier:
-		scan = WINDOWS_KEY_MODIFIER_TO_SCAN[k]
+		scan = key_map.zc_modifier_to_scan[k]
 	case Key_Special:
-		scan = WINDOWS_KEY_SPECIAL_TO_SCAN[k]
+		scan = key_map.zc_special_to_scan[k]
 	}
 	is_extended = (scan & 0x100 != 0)
 	return scan & 0xff, is_extended
+}
+
+key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
+	(key: Key_ZC, is_up: bool) {
+	if raw_key.Flags & win32.RI_KEY_E1 != 0 {
+		return key, is_up   // We don't support key(s) with E1
+	}
+	scan := raw_key.MakeCode
+	is_up = (raw_key.Flags & win32.RI_KEY_BREAK != 0)
+	if raw_key.Flags & win32.RI_KEY_E0 != 0 {
+		scan += 0x100
+	}
+	assert(scan < SCAN_CODE_MAX, "Legal scan code must fit in the table")
+	return key_map.scan_to_key_zc[scan], is_up
+}
+
+keys_down_update :: proc(
+	keys_list: ^Keys_Down,
+	key: Key_ZC,
+	is_up: bool,
+) -> (has_changed: bool) {
+	key_down_update :: proc(set: ^$S, key: $K, is_up: bool) -> bool {
+		was_down := key in set^
+		if was_down == !is_up do return false
+
+		if is_up {
+			set^ -= {key}
+		} else {
+			set^ += {key}
+		}
+		return true
+	}
+
+	switch k in key {
+	case Key_Printable:
+		has_changed = key_down_update(&keys_list.printable, k, is_up)
+	case Key_Modifier:
+		has_changed = key_down_update(&keys_list.modifiers, k, is_up)
+	case Key_Special:
+		has_changed = key_down_update(&keys_list.special, k, is_up)
+	}
+	return has_changed
 }
 
 WINDOWS_CLASS_NAME :: "ZipChordSpike"
@@ -250,20 +314,6 @@ key_reader_stop :: proc(reader: ^Key_Reader) {
 	sync.sema_post(&reader.sema)
 }
 
-key_get_physical_key :: proc(raw_key: win32.RAWKEYBOARD) ->
-	(key: Key_Physical, is_up: bool) {
-	if raw_key.Flags & win32.RI_KEY_E1 != 0 {
-		return key, is_up   // We don't support key(s) with E1
-	}
-	key_code := raw_key.MakeCode
-	is_up = (raw_key.Flags & win32.RI_KEY_BREAK != 0)
-	if raw_key.Flags & win32.RI_KEY_E0 != 0 {
-		key_code += 0x100
-	}
-	assert(key_code < len(WINDOWS_SCAN_TO_KEY_PHYSICAL), "Legal scan code must fit in the table")
-	return WINDOWS_SCAN_TO_KEY_PHYSICAL[key_code], is_up
-}
-
 window_proc :: proc "system" (
 	hwnd: win32.HWND,
 	message: win32.UINT,
@@ -289,9 +339,13 @@ window_proc :: proc "system" (
 		if bytes_read != ~win32.UINT(0) &&
 				raw.header.dwType == win32.RIM_TYPEKEYBOARD {
 			raw_key := raw.data.keyboard
-			key, is_up := key_get_physical_key(raw_key)
+			key, is_up := key_zc_from_key_raw(key_map, raw_key)
 			if key == nil {
 				// ignore untracked keys
+				return win32.DefWindowProcW(hwnd, message, wparam, lparam)
+			}
+
+			if !keys_down_update(&keys_down, key, is_up) {
 				return win32.DefWindowProcW(hwnd, message, wparam, lparam)
 			}
 
@@ -364,7 +418,7 @@ main :: proc() {
 	log_file, e = os.create("output.txt")
 	if e != os.General_Error.None do return
 
-	windows_key__init_scan_to_key()
+	key_map_init(&key_map)
 
 	if ! key_reader_init(&key_reader) {
 		return
@@ -394,10 +448,7 @@ main :: proc() {
 		return
 	}
 
-	_, e = os.write_string(log_file, "Time\tCode\tKey Up?\tScan\tExtended?\n")
-	if e != os.General_Error.None do return
-
-	fmt.printfln("Ready...")
+	fmt.printfln("Ready...")  //TK: spike only
 
 	message: win32.MSG
 	for {
@@ -435,15 +486,15 @@ worker_write_event_to_file :: proc(reader: ^Key_Reader) {
 			}
 		}
 
-		scan_code, is_extended := windows_key__get_scan_code(key_ev.key)
+		scan_code, is_extended := key_scan_code_from_key_zc(key_map, key_ev.key)
 		fmt.fprintfln(
 			log_file,
-			"%v\t%v\t%v\t0x%X\t%v",
+			"%v\t0x%X\t%v\t%v\t%v",
 			key_ev.timestamp,
-			key_ev.key,
-			key_ev.is_up,
 			scan_code,
 			is_extended,
+			"Up" if key_ev.is_up else "Down",
+			key_ev.key,
 		)
 	}
 }
