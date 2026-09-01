@@ -1,13 +1,55 @@
 package main
 
 import win32 "core:sys/windows"
+foreign import user32 "system:User32.lib"
 import "core:os"
 import "core:time"
 import "core:fmt"
 import "core:container/queue"
 import "core:thread"
 import "core:sync"
+import "core:unicode/utf16"
 import "base:runtime"
+
+HKL :: distinct win32.HANDLE
+
+GUI_Thread_Info :: struct {
+	cb_size: win32.DWORD,
+	flags: win32.DWORD,
+	hwnd_active: win32.HWND,
+	hwnd_focus: win32.HWND,
+	hwnd_capture: win32.HWND,
+	hwnd_menu_owner: win32.HWND,
+	hwnd_move_size: win32.HWND,
+	hwnd_caret: win32.HWND,
+	rc_caret: win32.RECT,
+}
+
+#assert(size_of(GUI_Thread_Info) == 8 + 6 * size_of(win32.HWND) + size_of(win32.RECT))
+
+foreign user32 {
+	GetGUIThreadInfo :: proc "system" (
+		thread_id: win32.DWORD,
+		gui_thread_info: ^GUI_Thread_Info,
+	) -> win32.BOOL ---
+	GetKeyboardLayout :: proc "system" (
+		thread_id: win32.DWORD
+	) -> HKL ---
+	MapVirtualKeyExW :: proc "system" (
+		code: win32.UINT,
+		map_type: win32.UINT,
+		keyboard_layout: HKL,
+	) -> win32.UINT ---
+	ToUnicodeEx :: proc "system" (
+		virtual_key: win32.UINT,
+		scan_code: win32.UINT,
+		key_state: ^win32.BYTE,
+		buffer: win32.LPWSTR,
+		buffer_length: win32.INT,
+		flags: win32.UINT,
+		keyboard_layout: HKL,
+	) -> win32.INT ---
+}
 
 Key_Printable :: enum u8 {
 	Grave,
@@ -18,9 +60,9 @@ Key_Printable :: enum u8 {
 	A, S, D, F, G, H, J, K, L,
 	Semicolon, Apostrophe,
 	Z, X, C, V, B, N, M,
-	Comma, Period, Forward_Slash,
+	Comma, Period, Slash,
 	Spacebar,
-	Pad_Forward_Slash, Pad_Star,
+	Pad_Slash, Pad_Star,
 	Pad_7, Pad_8, Pad_9, Pad_Dash,
 	Pad_4, Pad_5, Pad_6, Pad_Plus,
 	Pad_1, Pad_2, Pad_3, Pad_0, Pad_Period,
@@ -77,15 +119,23 @@ Keys_Down :: struct {
 
 // TK: need to add listening for mouse button events
 
-SCAN_CODE_MAX :: 0x200
+SCAN_TABLE_SIZE :: 0x200
 
 Scan_ID :: distinct u16
+
+Key_Typed_Char :: struct {
+	plain: rune,
+	with_shift: rune,
+}
 
 Key_Map :: struct {
 	zc_printable_to_scan: [Key_Printable]Scan_ID,
 	zc_modifier_to_scan: [Key_Modifier]Scan_ID,
 	zc_special_to_scan: [Key_Special]Scan_ID,
-	scan_to_key_zc: [SCAN_CODE_MAX]Key_ZC
+	scan_to_key_zc: [SCAN_TABLE_SIZE]Key_ZC,
+	printable_to_symbol: [Key_Printable]rune,
+	symbol_to_printable: map[rune]Key_Printable,
+	printable_to_typed_char: [Key_Printable]Key_Typed_Char,
 }
 
 key_map: Key_Map
@@ -141,10 +191,10 @@ key_map_init :: proc(key_map: ^Key_Map) {
 		.M = 0x032,
 		.Comma = 0x033,
 		.Period = 0x034,
-		.Forward_Slash = 0x035,
+		.Slash = 0x035,
 		.Spacebar = 0x039,
 
-		.Pad_Forward_Slash = 0x135,
+		.Pad_Slash = 0x135,
 		.Pad_Star = 0x037,
 		.Pad_7 = 0x047,
 		.Pad_8 = 0x048,
@@ -192,11 +242,11 @@ key_map_init :: proc(key_map: ^Key_Map) {
 
 	populate_reverse :: proc(
 		key_zc_to_scan: [$T]Scan_ID,
-		scan_to_key_zc: ^[SCAN_CODE_MAX]Key_ZC)
+		scan_to_key_zc: ^[SCAN_TABLE_SIZE]Key_ZC)
 	{
 		for scan, key in key_zc_to_scan {
 			assert(
-				scan > 0 && scan < SCAN_CODE_MAX,
+				scan > 0 && scan < SCAN_TABLE_SIZE,
 				"Scan code out of range",
 			)
 			assert(
@@ -210,6 +260,156 @@ key_map_init :: proc(key_map: ^Key_Map) {
 	populate_reverse(key_map.zc_printable_to_scan, &key_map.scan_to_key_zc)
 	populate_reverse(key_map.zc_modifier_to_scan, &key_map.scan_to_key_zc)
 	populate_reverse(key_map.zc_special_to_scan, &key_map.scan_to_key_zc)
+}
+
+key_hkl_from_foreground :: proc() -> HKL {
+	foreground_hwnd := win32.GetForegroundWindow()
+	if foreground_hwnd == nil do return nil
+
+	foreground_thread_id := win32.GetWindowThreadProcessId(foreground_hwnd, nil)
+	if foreground_thread_id == 0 do return nil
+
+	// Some applications give keyboard focus to a window owned by another thread.
+	gui_info := GUI_Thread_Info {
+		cb_size = size_of(GUI_Thread_Info),
+	}
+	if GetGUIThreadInfo(foreground_thread_id, &gui_info) != win32.FALSE &&
+			gui_info.hwnd_focus != nil {
+		focus_thread_id := win32.GetWindowThreadProcessId(gui_info.hwnd_focus, nil)
+		if focus_thread_id != 0 {
+			focus_hkl := GetKeyboardLayout(focus_thread_id)
+			if focus_hkl != nil {
+				return focus_hkl
+			}
+		}
+	}
+
+	return GetKeyboardLayout(foreground_thread_id)
+}
+
+key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool {
+	// Supported since Windows 10 1607; avoids leaving ToUnicodeEx's internal
+	// dead-key state changed while we probe a layout.
+	TO_UNICODE_NO_STATE_CHANGE :: win32.UINT(1 << 2)
+
+	translate_scan_to_symbol :: proc(
+		hkl: HKL,
+		scan: Scan_ID,
+		with_shift: bool,
+	) -> rune {
+		windows_scan := win32.UINT(scan)
+		virtual_key := MapVirtualKeyExW(
+			windows_scan,
+			win32.MAPVK_VSC_TO_VK_EX,
+			hkl,
+		)
+		if virtual_key == 0 do return 0
+
+		key_state: [256]win32.BYTE
+		if with_shift {
+			key_state[win32.VK_SHIFT] = 0x80
+		}
+		buffer: [8]u16
+		count := ToUnicodeEx(
+			virtual_key,
+			win32.UINT(scan),
+			&key_state[0],
+			&buffer[0],
+			len(buffer),
+			TO_UNICODE_NO_STATE_CHANGE,
+			hkl,
+		)
+		if count <= 0 do return 0
+
+		// A Key_Typed_Char entry represents exactly one Unicode code point.
+		// Reject a layout translation that produces a multi-rune string.
+		symbol, width := utf16.decode_rune_in_string(string16(buffer[:count]))
+		if width != int(count) do return 0
+		return symbol
+	}
+
+	hkl := key_hkl_from_foreground()
+	if hkl == nil {
+		hkl = GetKeyboardLayout(0)
+	}
+	if hkl == nil do return false
+
+	key_map.printable_to_symbol = {}
+	key_map.printable_to_typed_char = {}
+	clear(&key_map.symbol_to_printable)
+	err := reserve(&key_map.symbol_to_printable, len(Key_Printable))
+	if err != .None {
+		panic("Could not allocate key symbol map")
+	}
+
+	for printable in Key_Printable {
+		// Numeric-pad keys use layout-independent dictionary symbols so they
+		// remain distinct from their main-keyboard counterparts.
+		symbol: rune
+		typed_char: Key_Typed_Char
+		num: rune
+		#partial switch printable {
+		case .Pad_Slash:  symbol, num = '⊘', '/'
+		case .Pad_Star:   symbol, num = '⊗', '*'
+		case .Pad_7:      symbol, num = '⑦', '7'
+		case .Pad_8:      symbol, num = '⑧', '8'
+		case .Pad_9:      symbol, num = '⑨', '9'
+		case .Pad_Dash:   symbol, num = '⊖', '-'
+		case .Pad_4:      symbol, num = '④', '4'
+		case .Pad_5:      symbol, num = '⑤', '5'
+		case .Pad_6:      symbol, num = '⑥', '6'
+		case .Pad_Plus:   symbol, num = '⊕', '+'
+		case .Pad_1:      symbol, num = '①', '1'
+		case .Pad_2:      symbol, num = '②', '2'
+		case .Pad_3:      symbol, num = '③', '3'
+		case .Pad_0:      symbol, num = '⓪', '0'
+		case .Pad_Period: symbol, num = '⊙', '.'
+		case:
+			scan, _ := key_scan_code_from_key_zc(key_map^, printable)
+			symbol = translate_scan_to_symbol(hkl, scan, false)
+			typed_char.plain = symbol
+			typed_char.with_shift = translate_scan_to_symbol(hkl, scan, true)
+		}
+
+		if num != 0 {
+			typed_char.plain = num
+			typed_char.with_shift = num
+		}
+		key_map.printable_to_typed_char[printable] = typed_char
+		if symbol != 0 {
+			key_map.printable_to_symbol[printable] = symbol
+			key_map.symbol_to_printable[symbol] = printable
+		}
+	}
+	return true
+}
+
+key_symbol_map_delete :: proc(key_map: ^Key_Map) {
+	delete(key_map.symbol_to_printable)
+}
+
+key_printable_from_symbol :: proc(key_map: ^Key_Map, symbol: rune) ->
+	(printable: Key_Printable, ok: bool)
+{
+	return key_map.symbol_to_printable[symbol]
+}
+
+key_symbol_from_printable :: proc(
+	key_map: ^Key_Map,
+	printable: Key_Printable,
+) -> (symbol: rune, ok: bool) {
+	symbol = key_map.printable_to_symbol[printable]
+	return symbol, symbol != 0
+}
+
+key_typed_char_from_printable :: proc(
+	key_map: ^Key_Map,
+	printable: Key_Printable,
+	with_shift := false,
+) -> (typed_char: rune, ok: bool) {
+	typed_chars := key_map.printable_to_typed_char[printable]
+	typed_char = typed_chars.with_shift if with_shift else typed_chars.plain
+	return typed_char, typed_char != 0
 }
 
 key_scan_code_from_key_zc :: proc(key_map: Key_Map, key: Key_ZC) ->
@@ -236,7 +436,7 @@ key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
 	if raw_key.Flags & win32.RI_KEY_E0 != 0 {
 		scan += 0x100
 	}
-	assert(scan < SCAN_CODE_MAX, "Legal scan code must fit in the table")
+	assert(scan < SCAN_TABLE_SIZE, "Legal scan code must fit in the table")
 	return key_map.scan_to_key_zc[scan], is_up
 }
 
@@ -419,6 +619,23 @@ main :: proc() {
 	if e != os.General_Error.None do return
 
 	key_map_init(&key_map)
+	if !key_symbol_map_populate(&key_map) {
+		return
+	}
+	defer key_symbol_map_delete(&key_map)
+
+	for printable in Key_Printable {
+		symbol, _ := key_symbol_from_printable(&key_map, printable)
+		typed_char, _ := key_typed_char_from_printable(&key_map, printable)
+		typed_char_with_shift, _ := key_typed_char_from_printable(&key_map, printable, true)
+		fmt.printfln(
+			"%v %v: %v / %v",
+			printable,
+			symbol,
+			typed_char,
+			typed_char_with_shift,
+		)
+	}
 
 	if ! key_reader_init(&key_reader) {
 		return
