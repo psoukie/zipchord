@@ -1,11 +1,8 @@
-package main
+package zipchord
 
 import win32 "core:sys/windows"
 foreign import user32 "system:User32.lib"
-import "core:os"
 import "core:time"
-import "core:fmt"
-import "core:thread"
 import "core:unicode/utf16"
 import "base:runtime"
 
@@ -331,6 +328,8 @@ window_proc :: proc "system" (
 	lparam: win32.LPARAM,
 ) -> win32.LRESULT {
 	context = runtime.default_context()
+	context.logger = app_logger
+
 	switch message {
 	case win32.WM_INPUT:
 		timestamp := time.tick_diff(key_reader.start_time, time.tick_now())
@@ -395,19 +394,17 @@ window_proc :: proc "system" (
 	return win32.DefWindowProcW(hwnd, message, wparam, lparam)
 }
 
-main :: proc() {
+os_window_init :: proc() -> rawptr {
 	instance := win32.HINSTANCE(win32.GetModuleHandleW(nil))
 	class_name := cstring16(win32.L(WINDOWS_CLASS_NAME))
-
 	window_class := win32.WNDCLASSEXW {
 		cbSize        = win32.UINT(size_of(win32.WNDCLASSEXW)),
 		lpfnWndProc   = window_proc,
 		hInstance     = instance,
 		lpszClassName = class_name,
 	}
-
 	if win32.RegisterClassExW(&window_class) == 0 {
-		return
+		return nil
 	}
 
 	hwnd := win32.CreateWindowExW(
@@ -420,63 +417,27 @@ main :: proc() {
 		instance,
 		nil,
 	)
-	if hwnd == nil {
-		return
-	}
+	return rawptr(hwnd)
+}
 
-	e: os.Error
-	log_file, e = os.create("output.txt")
-	if e != os.General_Error.None do return
 
-	key_map_init(&key_map)
-	if !key_symbol_map_populate(&key_map) {
-		return
-	}
-	defer key_symbol_map_delete(&key_map)
-
-	for printable in Key_Printable {
-		symbol, _ := key_symbol_from_printable(&key_map, printable)
-		typed_char, _ := key_typed_char_from_printable(&key_map, printable)
-		typed_char_with_shift, _ := key_typed_char_from_printable(&key_map, printable, true)
-		fmt.printfln(
-			"%v %v: %v / %v",
-			printable,
-			symbol,
-			typed_char,
-			typed_char_with_shift,
-		)
-	}
-
-	if ! key_reader_init(&key_reader) {
-		return
-	}
-
-	defer {
-		key_reader_stop(&key_reader)
-		thread.destroy(key_reader._worker)
-		os.write_string(log_file, "\nlog closed ok\n")
-		os.flush(log_file)
-		os.close(log_file)
-	}
-
+register_keyboard_hook :: proc(hwnd: rawptr) -> bool {
 	raw_keyboard := win32.RAWINPUTDEVICE {
 		usUsagePage = 0x01, // Generic Desktop Controls
 		usUsage     = 0x06, // Keyboard
 		dwFlags     = win32.RIDEV_INPUTSINK,
-		hwndTarget  = hwnd,
+		hwndTarget  = win32.HWND(hwnd),
 	}
 
-	if ! win32.RegisterRawInputDevices(
+	ok := win32.RegisterRawInputDevices(
 		&raw_keyboard,
 		1,
 		win32.UINT(size_of(win32.RAWINPUTDEVICE)),
-	) {
-		os.write_string(log_file, "registering keyboard hook failed")
-		return
-	}
+	)
+	return bool(ok)
+}
 
-	fmt.printfln("Ready...")  //TK: spike only
-
+main_loop :: proc() {
 	message: win32.MSG
 	for {
 		result := win32.GetMessageW(&message, nil, 0, 0)

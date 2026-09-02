@@ -1,14 +1,10 @@
-package main
+package zipchord
 
-import win32 "core:sys/windows"
-foreign import user32 "system:User32.lib"
-import "core:os"
 import "core:time"
-import "core:fmt"
+import "core:log"
 import "core:container/queue"
 import "core:thread"
 import "core:sync"
-import "core:unicode/utf16"
 import "base:runtime"
 
 Key_Printable :: enum u8 {
@@ -99,6 +95,8 @@ Key_Map :: struct {
 key_map: Key_Map
 keys_down: Keys_Down
 
+app_logger: log.Logger
+
 key_symbol_map_delete :: proc(key_map: ^Key_Map) {
 	delete(key_map.symbol_to_printable)
 }
@@ -168,7 +166,6 @@ Key_Reader :: struct {
 }
 
 key_reader: Key_Reader
-log_file: ^os.File
 
 key_reader_init :: proc(reader: ^Key_Reader) -> bool {
 	reader.start_time = time.tick_now()
@@ -176,12 +173,13 @@ key_reader_init :: proc(reader: ^Key_Reader) -> bool {
 	reader.running = true
 	reader._worker = thread.create_and_start_with_poly_data(
 		reader,
-		worker_write_event_to_file,
+		io_worker,
 	)
 	return reader._worker != nil
 }
 
 key_reader_event_add :: proc(reader: ^Key_Reader, event: Key_Event) -> bool {
+	log.info("Adding an event...")
 	sync.mutex_lock(&reader.mutex)
 	ok, err := queue.push(&reader.events, event)
 	sync.mutex_unlock(&reader.mutex)
@@ -200,7 +198,8 @@ key_reader_stop :: proc(reader: ^Key_Reader) {
 	sync.sema_post(&reader.sema)
 }
 
-worker_write_event_to_file :: proc(reader: ^Key_Reader) {
+io_worker :: proc(reader: ^Key_Reader) {
+	context.logger = app_logger
 	for {
 		sync.sema_wait(&reader.sema)
 
@@ -217,15 +216,12 @@ worker_write_event_to_file :: proc(reader: ^Key_Reader) {
 			}
 		}
 
-		scan_code, is_extended := key_scan_code_from_key_zc(key_map, key_ev.key)
-		fmt.fprintfln(
-			log_file,
-			"%v\t0x%X\t%v\t%v\t%v",
+		log.infof(
+			"%v\t%v\t%v",
 			key_ev.timestamp,
-			scan_code,
-			is_extended,
 			"Up" if key_ev.is_up else "Down",
 			key_ev.key,
 		)
 	}
 }
+
