@@ -1,4 +1,4 @@
-package zipchord_library
+package zipchord
 
 /*
 This file is part of ZipChord.
@@ -9,29 +9,31 @@ Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
 import "base:runtime"
 import "core:os"
 import "core:strings"
-import "core:slice"
 import "core:mem/virtual"
-import "core:unicode/utf8"
 
 Dict_Error :: enum i32 {
-    None             =  0,
-    Not_Found        = -1,
-    Shortcut_Exists  = -2,
-    Repeated_Key     = -3,
-	Empty_Chord      = -4,
-	Fewer_Than_Two   = -5,
-    Bad_Argument     = -6,
-    Buffer_Too_Small = -7,
-    Allocation_Error = -8,
-	File_IO_Error    = -9,
-    Internal_Error   = -10,
-	Version_Mismatch = -11,
-	Chain_Ends_In_Single_Key = -12,
+    None,
+    Not_Found,
+    Shortcut_Exists,
+    Repeated_Key,
+	Empty_Chord,
+	Fewer_Than_Two,
+    Bad_Argument,
+    Buffer_Too_Small,
+    Allocation_Error,
+	File_IO_Error,
+    Internal_Error,
+	Version_Mismatch,
+	Chain_Ends_In_Single_Key,
+	Undefined_Key_Symbol,
+	Unsupported_Chain,
 }
 
-MAX_CHORD_RUNES :: 40
-MAX_CHORD_BYTES :: MAX_CHORD_RUNES * utf8.UTF_MAX
-MAX_CHAIN_BYTES :: 5 * MAX_CHORD_BYTES
+Chord :: distinct bit_set[Key_Printable]
+Chord_Notation :: distinct string    // chord as defined in the dictionary
+Shorthand :: distinct string
+Expansion :: distinct string
+
 STRING_BUFFER_BYTES :: 1024
 
 Fixed_Buffer :: struct($CAP: int) {
@@ -39,293 +41,357 @@ Fixed_Buffer :: struct($CAP: int) {
 	len:   int,
 }
 
-Chord_Buffer       :: Fixed_Buffer(MAX_CHORD_BYTES)
-Chord_Chain_Buffer :: Fixed_Buffer(MAX_CHAIN_BYTES)
-
-copy_string_to_buffer :: proc(str: string, buf_ptr: rawptr, buf_capacity: i32) -> Dict_Error {
-	out := slice.bytes_from_ptr(buf_ptr, int(buf_capacity))
-	str_len := len(str)
-	if str_len + 1 > len(out) {
-		out[0] = 0
-		return .Buffer_Too_Small
+clone_text :: proc (
+	text: $T,
+	alloc:= context.allocator,
+) -> (own_text: T, err: Dict_Error) where
+	T == Shorthand || T == Expansion || T == Chord_Notation {
+	cloned_string, alloc_err := strings.clone(string(text), alloc)
+	if alloc_err != .None {
+		return own_text, .Allocation_Error
 	}
-    copy(out[:str_len], str)
-	out[str_len] = 0
-	return .None
+
+	return T(cloned_string), .None
 }
 
-_normalize_chord :: proc(raw_chord: string, chord_buf: ^Chord_Buffer) -> (normalized: string, err: Dict_Error) {
-	chord_buf.len = 0
-
-	rune_buf: [MAX_CHORD_RUNES]rune
-	rune_count := 0
-
-	if len(raw_chord)  <= MAX_CHORD_RUNES {
-		// fast path without checking
-		for r in raw_chord {
-			rune_buf[rune_count] = r
-			rune_count += 1
-		}
-	} else {
-		for r in raw_chord {
-			if rune_count >= MAX_CHORD_RUNES {
-				return "", .Buffer_Too_Small
-			}
-			rune_buf[rune_count] = r
-			rune_count += 1
-		}
+clone_expansion_to_lower :: proc (exp: Expansion, alloc:= context.allocator) ->
+(Expansion, Dict_Error) {
+	cloned_string, alloc_err := strings.to_lower(string(exp), alloc)
+	if alloc_err != .None {
+		return {}, .Allocation_Error
 	}
 
-	runes := rune_buf[:rune_count]
-	slice.sort(runes)
-
-	for r, i in runes {
-		if i > 0 && r == runes[i-1] {
-			return "", .Repeated_Key
-		}
-		encoded, n := utf8.encode_rune(r)
-		copy(chord_buf.bytes[chord_buf.len:chord_buf.len+n], encoded[:n])
-		chord_buf.len += n
-	}
-
-	return string(chord_buf.bytes[:chord_buf.len]), .None
+	return Expansion(cloned_string), .None
 }
 
-normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
-	chain_buf.len = 0
-	raw_shortcut := raw_shortcut
 
-	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
-		return "", .Buffer_Too_Small
-	}
+// normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
+// 	chain_buf.len = 0
+// 	raw_shortcut := raw_shortcut
 
-	chord_buf: Chord_Buffer
+// 	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
+// 		return "", .Buffer_Too_Small
+// 	}
 
-	rune_count: int
-	segments := 0
-	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
-		segments += 1
-		n := len(raw_chord)
-		if n == 0 do return "", .Empty_Chord
+// 	chord_buf: Chord_Buffer
 
-		if chain_buf.len > 0 {
-			chain_buf.bytes[chain_buf.len] = u8('|')
-			chain_buf.len += 1
-		}
-		normalized := _normalize_chord(raw_chord, &chord_buf) or_return
-		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
-		chain_buf.len += n
-		rune_count = utf8.rune_count(raw_chord)
-	}
+// 	rune_count: int
+// 	segments := 0
+// 	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
+// 		segments += 1
+// 		n := len(raw_chord)
+// 		if n == 0 do return "", .Empty_Chord
 
-	if segments > 1 && rune_count < 2 do return "", .Chain_Ends_In_Single_Key
+// 		if chain_buf.len > 0 {
+// 			chain_buf.bytes[chain_buf.len] = u8('|')
+// 			chain_buf.len += 1
+// 		}
+// 		normalized := _normalize_chord(raw_chord, &chord_buf) or_return
+// 		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
+// 		chain_buf.len += n
+// 		rune_count = utf8.rune_count(raw_chord)
+// 	}
 
-	return string(chain_buf.bytes[:chain_buf.len]), .None
-}
+// 	if segments > 1 && rune_count < 2 do return "", .Chain_Ends_In_Single_Key
 
-Dictionary :: struct {
-    arena_memory:          virtual.Arena,      // owns cloned key/value string bytes
+// 	return string(chain_buf.bytes[:chain_buf.len]), .None
+// }
+
+Dict_Shorthand :: struct {
+    arena_memory:           virtual.Arena,      // owns cloned key/value string bytes
 	// map internals allocated with context.allocator
-	shortcut_to_expansion: map[string]string,
-    expansion_to_shortcut: map[string]string,
+	shorthand_to_expansion: map[Shorthand]Expansion,
+    expansion_to_shorthand: map[Expansion]Shorthand,
+}
+
+
+Dict_Chord :: struct {
+    arena_memory:       virtual.Arena,      // owns cloned key/value string bytes
+	// map internals allocated with context.allocator
+	chord_to_expansion: map[Chord]Expansion,
+    expansion_to_chord_notation: map[Expansion]Chord_Notation,
 }
 
 // global variable for dictionaries
 dicts: struct {
-	chord:      Dictionary,
-	shorthand:  Dictionary,
-	prefix:     Dictionary,  // Chord chain prefixes without standalone chord entries
+	chord:      Dict_Chord,
+	prefix:     Dict_Chord,  // Chord chain prefixes without standalone chord entries
+	shorthand:  Dict_Shorthand,
 }
 
 string_buf:     Fixed_Buffer(STRING_BUFFER_BYTES)
 
-dict_init :: proc(dict: ^Dictionary) -> (err: Dict_Error ) {
+dict_chord_init :: proc(dict: ^Dict_Chord) -> (err: Dict_Error ) {
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
-    if alloc_err != .None {
-    	return .Allocation_Error
-    }
+    if alloc_err != .None do return .Allocation_Error
 
-	//Uses normal allocator, so resizing can free old buckets
-	dict.shortcut_to_expansion = make(map[string]string, context.allocator)
-    dict.expansion_to_shortcut = make(map[string]string, context.allocator)
+	dict.chord_to_expansion = make(map[Chord]Expansion, context.allocator)
+	dict.expansion_to_chord_notation = make(map[Expansion]Chord_Notation, context.allocator)
     return .None
 }
 
-dict_destroy :: proc(dict: ^Dictionary) {
-    delete(dict.shortcut_to_expansion)          // free map internals
-    delete(dict.expansion_to_shortcut)
+dict_shorthand_init :: proc(dict: ^Dict_Shorthand) -> (err: Dict_Error ) {
+	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
+    if alloc_err != .None do return .Allocation_Error
+
+	dict.shorthand_to_expansion = make(map[Shorthand]Expansion, context.allocator)
+	dict.expansion_to_shorthand = make(map[Expansion]Shorthand, context.allocator)
+    return .None
+}
+
+dict_init :: proc {
+	dict_chord_init,
+	dict_shorthand_init,
+}
+
+dict_chord_destroy :: proc(dict: ^Dict_Chord) {
+    delete(dict.chord_to_expansion)          // free map internals
+    delete(dict.expansion_to_chord_notation)
     virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
     dict^ = {}
 }
 
-dict_add :: proc (
-	dict: ^Dictionary,
-	shortcut: string,
-	expansion: string,
-	raw_chord := "",
-) -> (err: Dict_Error ) {
+dict_shorthand_destroy :: proc(dict: ^Dict_Shorthand) {
+    delete(dict.shorthand_to_expansion)          // free map internals
+    delete(dict.expansion_to_shorthand)
+    virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
+    dict^ = {}
+}
 
-	alloc_err: runtime.Allocator_Error
-	own_shortcut,
-	own_lcase_expansion,
-	own_expansion,
-	own_raw_chord: string
+dict_destroy :: proc {
+	dict_chord_destroy,
+	dict_shorthand_destroy,
+}
 
+dict_chord_add :: proc (
+	dict: ^Dict_Chord,
+	chord: Chord,
+	expansion: Expansion,
+	chord_notation: Chord_Notation,
+) -> (err: Dict_Error) {
+
+	// uses the arena for 'owned' strings
 	alloc := virtual.arena_allocator(&dict.arena_memory)
-
-	// uses an arena allocator for 'owned' strings
-	own_shortcut, alloc_err = strings.clone(shortcut, alloc)
-	if alloc_err != .None {
-		return .Allocation_Error
-	}
-
-	own_lcase_expansion, alloc_err = strings.to_lower(expansion, alloc)
-	if alloc_err != .None {
-		return .Allocation_Error
-	}
+	own_chord_notation := clone_text(chord_notation, alloc) or_return
+	own_expansion_lower := clone_expansion_to_lower(expansion, alloc) or_return
 
 	// if the lowercase is different, store also the original version
-	if expansion != own_lcase_expansion {
-		own_expansion, alloc_err = strings.clone(expansion, alloc)
-		if alloc_err != .None {
-			return .Allocation_Error
-		}
-		dict.shortcut_to_expansion[own_shortcut] = own_expansion
-	} else {
-		dict.shortcut_to_expansion[own_shortcut] = own_lcase_expansion
+	own_expansion := own_expansion_lower
+	if expansion != own_expansion_lower {
+		own_expansion = clone_text(expansion, alloc) or_return
 	}
 
-	if raw_chord != "" && raw_chord != shortcut {
-		own_raw_chord, alloc_err = strings.clone(raw_chord, alloc)
-		if alloc_err != .None {
-			return .Allocation_Error
-		}
-		dict.expansion_to_shortcut[own_lcase_expansion] = own_raw_chord
-	} else {
-		dict.expansion_to_shortcut[own_lcase_expansion] = own_shortcut
-	}
+	dict.chord_to_expansion[chord] = own_expansion
+	dict.expansion_to_chord_notation[own_expansion_lower] = own_chord_notation
 	return .None
 }
 
-dict_lookup :: proc(dict: ^Dictionary, shortcut: string) -> (expansion: string, err: Dict_Error ) {
+dict_shorthand_add :: proc (
+	dict: ^Dict_Shorthand,
+	shorthand: Shorthand,
+	expansion: Expansion,
+) -> (err: Dict_Error) {
+
+	// uses the arena for 'owned' strings
+	alloc := virtual.arena_allocator(&dict.arena_memory)
+	own_shorthand := clone_text(shorthand, alloc) or_return
+
+	own_expansion_lower := clone_expansion_to_lower(expansion, alloc) or_return
+
+	// if the lowercase is different, store also the original version
+	own_expansion := own_expansion_lower
+	if expansion != own_expansion_lower {
+		own_expansion = clone_text(expansion, alloc) or_return
+	}
+
+	dict.shorthand_to_expansion[own_shorthand] = own_expansion
+	dict.expansion_to_shorthand[own_expansion_lower] = own_shorthand
+	return .None
+}
+
+dict_chord_lookup :: proc(dict: ^Dict_Chord, chord: Chord) ->
+	(expansion: Expansion, err: Dict_Error ) {
 	ok: bool
-	if expansion, ok = dict.shortcut_to_expansion[shortcut]; !ok {
-		return "", .Not_Found
+	if expansion, ok = dict.chord_to_expansion[chord]; !ok {
+		return {}, .Not_Found
 	}
 	return expansion, .None
 }
 
-dict_reverse_lookup :: proc(dict: ^Dictionary, expansion: string) -> (shortcut: string, err: Dict_Error ) {
+dict_shorthand_lookup :: proc(dict: ^Dict_Shorthand, shorthand: Shorthand) ->
+	(expansion: Expansion, err: Dict_Error ) {
 	ok: bool
-	if shortcut, ok = dict.expansion_to_shortcut[expansion]; !ok {
-		return "", .Not_Found
+	if expansion, ok := dict.shorthand_to_expansion[shorthand]; !ok {
+		return {}, .Not_Found
 	}
-	return shortcut, .None
+	return expansion, .None
 }
 
-dict_load_file :: proc(
-	filepath: string,
-	dict: ^Dictionary,
-	as_chords: bool,
-	shortcuts_loaded_ptr: ^i32,
-) -> (err: Dict_Error) {
-	// re-initialize the dictionary
-	shortcuts_loaded_ptr^ = 0
+dict_lookup :: proc {
+	dict_chord_lookup,
+	dict_shorthand_lookup,
+}
 
+dict_chord_reverse_lookup :: proc(dict: ^Dict_Chord, expansion: Expansion) ->
+	(chord_notation: Chord_Notation, err: Dict_Error ) {
+	ok: bool
+	if chord_notation, ok = dict.expansion_to_chord_notation[expansion]; !ok {
+		return {}, .Not_Found
+	}
+	return chord_notation, .None
+}
+
+dict_shorthand_reverse_lookup :: proc(dict: ^Dict_Shorthand, expansion: Expansion) ->
+	(shorthand: Shorthand, err: Dict_Error ) {
+	ok: bool
+	if shorthand, ok := dict.expansion_to_shorthand[expansion]; !ok {
+		return {}, .Not_Found
+	}
+	return shorthand, .None
+}
+
+dict_reverse_lookup :: proc {
+	dict_chord_reverse_lookup,
+	dict_shorthand_reverse_lookup,
+}
+
+dict_line_parse :: proc(raw_line: string, $T: typeid) ->
+(shortcut: T, expansion: Expansion, ok: bool) where
+T == Chord_Notation || T == Shorthand {
+	line := strings.trim_right(raw_line, "\r")
+	shortcut_string := strings.split_iterator(&line, "\t") or_return
+
+	if shortcut_string == "" do return
+
+	exp_string := strings.split_iterator(&line, "\t") or_return
+
+	return T(shortcut_string), Expansion(exp_string), true
+}
+
+Dict_Load_Diagnostic :: struct {
+	invalid_shortcut: union {
+		Chord_Notation,
+		Shorthand,
+	},
+	line_number: uint,
+}
+
+dict_chord_load_file :: proc(
+	dict: ^Dict_Chord,
+	key_map: Key_Map,
+	filepath: string,
+	diagnostic_alloc := context.temp_allocator,
+) -> (
+	diagnostic: Dict_Load_Diagnostic,
+	err: Dict_Error,
+) {
+	// re-initialize the dictionary
 	dict_destroy(dict)
 	dict_init(dict) or_return
 
 	// Treat an empty path as clearing the dictionary
-	if filepath == "" {
-		return .None
-	}
+	if filepath == "" do return {}, .None
 
 	file_data, file_err := os.read_entire_file(filepath, context.allocator)
 	defer delete(file_data, context.allocator)
-	if file_err != nil {
-		return .File_IO_Error
-	}
+	if file_err != nil do return {}, .File_IO_Error
 
-	file_text := string(file_data)
-	file_text = remove_bom(file_text)
+	file_text := remove_bom(string(file_data))
 
-	chain_buf: Chord_Chain_Buffer
-	for raw_line in strings.split_iterator(&file_text, "\n") {
-		// Extract a tabbed pair if available
-		line := strings.trim_right(raw_line, "\r")
-		shortcut := strings.split_iterator(&line, "\t") or_continue
-		if shortcut == "" do continue
-		expansion := strings.split_iterator(&line, "\t") or_continue
+	for line in strings.split_iterator(&file_text, "\n") {
+		diagnostic.line_number += 1
+		chord_notation, expansion, ok := dict_line_parse(line, Chord_Notation)
+		if !ok do continue
 
-		result := register_shortcut(dict, shortcut, expansion, as_chords, &chain_buf)
+		chord, result := chord_compile(chord_notation, key_map)
 		if result != .None {
-			string_buf.len = 0
-			copy_string_to_buffer(shortcut, &string_buf.bytes, len(string_buf.bytes)) or_return
-			string_buf.len = len(shortcut)
-			shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
-			return result
+			alloc_err: Dict_Error
+			diagnostic.invalid_shortcut, alloc_err = clone_text(
+					chord_notation,
+					diagnostic_alloc,
+			)
+			if alloc_err != .None do return diagnostic, alloc_err
+
+			return diagnostic, result
 		}
 	}
-	shortcuts_loaded_ptr^ = i32(len(dict.shortcut_to_expansion))
-	return  .None
+	return diagnostic, .None
 }
 
 // inconsistent name on purpose -- should converge on convention with context_subject_operation proc naming
-dict_prefix_build :: proc(chords, prefixes: ^Dictionary) -> Dict_Error {
-	dict_destroy(prefixes)
-	dict_init(prefixes) or_return
-	for chained_chord, _ in chords.shortcut_to_expansion {
-		current_pos := 0
-		for {
-			delimiter_pos := strings.index(chained_chord[current_pos:], "|")
-			if delimiter_pos == -1 do break
+// dict_prefix_build :: proc(chords, prefixes: ^Dictionary) -> Dict_Error {
+// 	dict_destroy(prefixes)
+// 	dict_init(prefixes) or_return
+// 	for chained_chord, _ in chords.shortcut_to_expansion {
+// 		current_pos := 0
+// 		for {
+// 			delimiter_pos := strings.index(chained_chord[current_pos:], "|")
+// 			if delimiter_pos == -1 do break
 
-			current_pos += delimiter_pos
-			_, result := dict_lookup(chords, chained_chord[:current_pos])
-			if result == .Not_Found {
-				dict_add(prefixes, chained_chord[:current_pos], "-") or_return
-			}
-			current_pos += 1
-		}
+// 			current_pos += delimiter_pos
+// 			_, result := dict_lookup(chords, chained_chord[:current_pos])
+// 			if result == .Not_Found {
+// 				dict_add(prefixes, chained_chord[:current_pos], "-") or_return
+// 			}
+// 			current_pos += 1
+// 		}
+// 	}
+// 	return .None
+// }
+
+// validate_shortcut :: proc (
+// 	dict: ^Dictionary,
+// 	orig_shortcut: string,
+// 	as_chords: bool,
+// 	chain_buffer: ^Chord_Chain_Buffer,
+// ) -> (shortcut: string, err: Dict_Error) {
+// 	shortcut = orig_shortcut
+
+// 	if utf8.rune_count(shortcut) < 2 do return "", .Fewer_Than_Two
+
+// 	if as_chords {
+// 		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
+// 	}
+
+// 	_, lookup_err := dict_lookup(dict, shortcut)
+// 	if lookup_err == .None do return "", .Shortcut_Exists
+
+// 	if lookup_err == .Not_Found do return shortcut, .None  // Available
+
+// 	return "", lookup_err  // Unexpected error
+// }
+
+// register_shorthand :: proc (
+// 	dict: ^Dictionary,
+// 	orig_shortcut, expansion: string,
+// 	chain_buffer: ^Chord_Chain_Buffer,
+// ) -> Dict_Error {
+// 	shortcut := validate_shortcut(
+// 		dict,
+// 		orig_shortcut,
+// 		false,
+// 		chain_buffer,
+// 	) or_return
+
+// 	return dict_add(dict, shortcut, expansion, "")
+// }
+
+chord_compile :: proc (
+	chord_notation: Chord_Notation,
+	key_map: Key_Map,
+) -> (chord: Chord, err: Dict_Error) {
+	for key_symbol in string(chord_notation) {
+		if key_symbol == '|' do return {}, .Unsupported_Chain
+
+		key, ok := key_printable_from_symbol(key_map, key_symbol)
+		if !ok do return {}, .Undefined_Key_Symbol
+
+		if key in chord do return {}, .Repeated_Key
+		chord += {key}
 	}
-	return .None
-}
+	if card(chord) < 2 do return {}, .Fewer_Than_Two
 
-validate_shortcut :: proc (
-	dict: ^Dictionary,
-	orig_shortcut: string,
-	as_chords: bool,
-	chain_buffer: ^Chord_Chain_Buffer,
-) -> (shortcut: string, err: Dict_Error) {
-	shortcut = orig_shortcut
-
-	if utf8.rune_count(shortcut) < 2 do return "", .Fewer_Than_Two
-
-	if as_chords {
-		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
-	}
-
-	_, lookup_err := dict_lookup(dict, shortcut)
-	if lookup_err == .None do return "", .Shortcut_Exists
-	if lookup_err == .Not_Found do return shortcut, .None  // Available
-	return "", lookup_err  // Unexpected error
-}
-
-register_shortcut :: proc (
-	dict: ^Dictionary,
-	orig_shortcut, expansion: string,
-	as_chords: bool,
-	chain_buffer: ^Chord_Chain_Buffer,
-) -> Dict_Error {
-	shortcut := validate_shortcut(
-		dict,
-		orig_shortcut,
-		as_chords,
-		chain_buffer,
-	) or_return
-
-	raw_chord := orig_shortcut if as_chords else ""
-	return dict_add(dict, shortcut, expansion, raw_chord)
+	return chord, .None
 }
 
 dict_file_edit :: proc(

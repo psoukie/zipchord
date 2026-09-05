@@ -21,9 +21,9 @@ main :: proc() {
 	defer key_symbol_map_delete(&key_map)
 
 	for printable in Key_Printable {
-		symbol, _ := key_symbol_from_printable(&key_map, printable)
-		typed_char, _ := key_typed_char_from_printable(&key_map, printable)
-		typed_char_with_shift, _ := key_typed_char_from_printable(&key_map, printable, true)
+		symbol, _ := key_symbol_from_printable(key_map, printable)
+		typed_char, _ := key_typed_char_from_printable(key_map, printable)
+		typed_char_with_shift, _ := key_typed_char_from_printable(key_map, printable, true)
 		log.infof(
 			"%v %v: %v / %v",
 			printable,

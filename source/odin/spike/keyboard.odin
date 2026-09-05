@@ -101,14 +101,14 @@ key_symbol_map_delete :: proc(key_map: ^Key_Map) {
 	delete(key_map.symbol_to_printable)
 }
 
-key_printable_from_symbol :: proc(key_map: ^Key_Map, symbol: rune) ->
+key_printable_from_symbol :: proc(key_map: Key_Map, symbol: rune) ->
 	(printable: Key_Printable, ok: bool)
 {
 	return key_map.symbol_to_printable[symbol]
 }
 
 key_symbol_from_printable :: proc(
-	key_map: ^Key_Map,
+	key_map: Key_Map,
 	printable: Key_Printable,
 ) -> (symbol: rune, ok: bool) {
 	symbol = key_map.printable_to_symbol[printable]
@@ -116,7 +116,7 @@ key_symbol_from_printable :: proc(
 }
 
 key_typed_char_from_printable :: proc(
-	key_map: ^Key_Map,
+	key_map: Key_Map,
 	printable: Key_Printable,
 	with_shift := false,
 ) -> (typed_char: rune, ok: bool) {
