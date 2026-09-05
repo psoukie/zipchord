@@ -92,11 +92,6 @@ Key_Map :: struct {
 	printable_to_typed_char: [Key_Printable]Key_Typed_Char,
 }
 
-key_map: Key_Map
-keys_down: Keys_Down
-
-app_logger: log.Logger
-
 key_symbol_map_delete :: proc(key_map: ^Key_Map) {
 	delete(key_map.symbol_to_printable)
 }
@@ -162,12 +157,12 @@ Key_Reader :: struct {
 	events: queue.Queue(Key_Event),
 	sema: sync.Sema,
 	running: bool,
-	mutex: sync.Mutex
+	mutex: sync.Mutex,
+	logger: log.Logger,
 }
 
-key_reader: Key_Reader
-
-key_reader_init :: proc(reader: ^Key_Reader) -> bool {
+key_reader_init :: proc(reader: ^Key_Reader, logger: log.Logger) -> bool {
+	reader.logger = logger
 	reader.start_time = time.tick_now()
 	queue.init_from_slice(&reader.events, reader._buffer[:])
 	reader.running = true
@@ -179,7 +174,6 @@ key_reader_init :: proc(reader: ^Key_Reader) -> bool {
 }
 
 key_reader_event_add :: proc(reader: ^Key_Reader, event: Key_Event) -> bool {
-	log.info("Adding an event...")
 	sync.mutex_lock(&reader.mutex)
 	ok, err := queue.push(&reader.events, event)
 	sync.mutex_unlock(&reader.mutex)
@@ -199,7 +193,7 @@ key_reader_stop :: proc(reader: ^Key_Reader) {
 }
 
 io_worker :: proc(reader: ^Key_Reader) {
-	context.logger = app_logger
+	context.logger = reader.logger
 	for {
 		sync.sema_wait(&reader.sema)
 

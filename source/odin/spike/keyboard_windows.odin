@@ -328,11 +328,38 @@ window_proc :: proc "system" (
 	lparam: win32.LPARAM,
 ) -> win32.LRESULT {
 	context = runtime.default_context()
-	context.logger = app_logger
+
+	app: ^App_State
+	if message == win32.WM_NCCREATE {
+		create_struct := cast(^win32.CREATESTRUCTW)(uintptr(lparam))
+		app = cast(^App_State)(create_struct.lpCreateParams)
+		if app == nil {
+			return 0
+		}
+
+		win32.SetLastError(0)
+		previous := win32.SetWindowLongPtrW(
+			hwnd,
+			win32.GWLP_USERDATA,
+			win32.LONG_PTR(uintptr(app)),
+		)
+		if previous == 0 && win32.GetLastError() != 0 {
+			return 0
+		}
+	} else {
+		stored := win32.GetWindowLongPtrW(hwnd, win32.GWLP_USERDATA)
+		app = cast(^App_State)(uintptr(stored))
+		if app == nil {
+			// Expected before WM_NCCREATE and after destruction
+			return win32.DefWindowProcW(hwnd, message, wparam, lparam)
+		}
+	}
+
+	context.logger = app.logger
 
 	switch message {
 	case win32.WM_INPUT:
-		timestamp := time.tick_diff(key_reader.start_time, time.tick_now())
+		timestamp := time.tick_diff(app.key_reader.start_time, time.tick_now())
 
 		raw: win32.RAWINPUT
 		raw_size := win32.UINT(size_of(raw))
@@ -345,17 +372,17 @@ window_proc :: proc "system" (
 			win32.UINT(size_of(win32.RAWINPUTHEADER)),
 		)
 
-		if bytes_read != ~win32.UINT(0) &&
+		outer: if bytes_read != ~win32.UINT(0) &&
 				raw.header.dwType == win32.RIM_TYPEKEYBOARD {
 			raw_key := raw.data.keyboard
-			key, is_up := key_zc_from_key_raw(key_map, raw_key)
+			key, is_up := key_zc_from_key_raw(app.key_map, raw_key)
 			if key == nil {
 				// ignore untracked keys
-				return win32.DefWindowProcW(hwnd, message, wparam, lparam)
+				break outer
 			}
 
-			if !keys_down_update(&keys_down, key, is_up) {
-				return win32.DefWindowProcW(hwnd, message, wparam, lparam)
+			if !keys_down_update(&app.keys_down, key, is_up) {
+				break outer
 			}
 
 			key_ev := Key_Event {
@@ -364,7 +391,7 @@ window_proc :: proc "system" (
 				is_up = is_up,
 			}
 
-			ok := key_reader_event_add(&key_reader, key_ev)
+			ok := key_reader_event_add(&app.key_reader, key_ev)
 			if !ok {
 				// Buffer full, we exit
 				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
@@ -375,16 +402,21 @@ window_proc :: proc "system" (
 				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
 			}
 		}
-
-		// Required for appropriate Raw Input cleanup.
+		// Continue exec to final return for an apprpriate Raw Input cleanup.
 		// Unless we call
 		// input_code := win32.GET_RAWINPUT_CODE_WPARAM(wparam)
 		// and call DefWindowProcW only for RIM_INPUT
-		return win32.DefWindowProcW(hwnd, message, wparam, lparam)
 
 	case win32.WM_CLOSE:
 		win32.DestroyWindow(hwnd)
 		return 0
+
+	case win32.WM_NCDESTROY:
+		win32.SetWindowLongPtrW(
+			hwnd,
+			win32.GWLP_USERDATA,
+			0,
+		)
 
 	case win32.WM_DESTROY:
 		win32.PostQuitMessage(0)
@@ -394,7 +426,7 @@ window_proc :: proc "system" (
 	return win32.DefWindowProcW(hwnd, message, wparam, lparam)
 }
 
-os_window_init :: proc() -> rawptr {
+os_window_init :: proc(app_state: ^App_State) -> rawptr {
 	instance := win32.HINSTANCE(win32.GetModuleHandleW(nil))
 	class_name := cstring16(win32.L(WINDOWS_CLASS_NAME))
 	window_class := win32.WNDCLASSEXW {
@@ -415,7 +447,7 @@ os_window_init :: proc() -> rawptr {
 		0, 0, 0, 0,
 		nil, nil,
 		instance,
-		nil,
+		app_state,
 	)
 	return rawptr(hwnd)
 }
