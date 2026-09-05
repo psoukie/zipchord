@@ -36,8 +36,7 @@ key_map_ititialization :: proc(t: ^tst.T) {
 @(test)
 chord_compiling :: proc(t: ^tst.T) {
     key_map: z.Key_Map
-    notation: z.Chord_Notation
-    test_chord:= z.Chord{.K, .J}  // Corresponds to 't' and 'h' on Dvorak keyboard
+    test_chord := z.Chord{.K, .J}  // Corresponds to 't' and 'h' on Dvorak keyboard
 
     z.key_map_init(&key_map)
     ok_pop := z.key_symbol_map_populate(&key_map)
@@ -45,7 +44,6 @@ chord_compiling :: proc(t: ^tst.T) {
     tst.expect_value(t, ok_pop, true)
 
     chord, err := z.chord_compile("th", key_map)
-    // shortcut, err = zc.validate_shortcut(&dict_data, "ba|cd", true, &buf)
     tst.expect_value(t, err, None)
     tst.expect_value(t, chord, test_chord)
 }
@@ -75,6 +73,7 @@ load_dict :: proc(t: ^tst.T) {
     defer os.remove(dict_file)
     tst.expect(t, err_f == nil, "Error writing dictionary file")
     result, err := z.dict_chord_load_file(&dict, key_map, dict_file)
+    defer z.dict_destroy(&dict)
     defer free_all(context.temp_allocator)
 	tst.expect_value(t, result.line_number, 3)
     tst.expect_value(t, err, z.Dict_Error.Repeated_Key)
@@ -93,4 +92,9 @@ load_dict :: proc(t: ^tst.T) {
     result, err = z.dict_chord_load_file(&dict, key_map, dict_file)
 	tst.expect_value(t, result.line_number, 4)
     tst.expect_value(t, err, None)
+
+    test_chord := z.Chord{.K, .J}  // Corresponds to 't' and 'h' on Dvorak keyboard
+    exp, e_lookup := z.dict_lookup(dict, test_chord)
+    tst.expect_value(t, e_lookup, None)
+    tst.expect_value(t, exp, "the")
 }

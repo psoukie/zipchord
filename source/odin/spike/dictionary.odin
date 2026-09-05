@@ -169,6 +169,8 @@ dict_chord_add :: proc (
 	expansion: Expansion,
 	chord_notation: Chord_Notation,
 ) -> (err: Dict_Error) {
+	_, lookup_err := dict_lookup(dict^, chord)
+	if lookup_err == .None do return .Shortcut_Exists
 
 	// uses the arena for 'owned' strings
 	alloc := virtual.arena_allocator(&dict.arena_memory)
@@ -191,6 +193,8 @@ dict_shorthand_add :: proc (
 	shorthand: Shorthand,
 	expansion: Expansion,
 ) -> (err: Dict_Error) {
+	_, lookup_err := dict_lookup(dict^, shorthand)
+	if lookup_err == .None do return .Shortcut_Exists
 
 	// uses the arena for 'owned' strings
 	alloc := virtual.arena_allocator(&dict.arena_memory)
@@ -209,7 +213,7 @@ dict_shorthand_add :: proc (
 	return .None
 }
 
-dict_chord_lookup :: proc(dict: ^Dict_Chord, chord: Chord) ->
+dict_chord_lookup :: proc(dict: Dict_Chord, chord: Chord) ->
 	(expansion: Expansion, err: Dict_Error ) {
 	ok: bool
 	if expansion, ok = dict.chord_to_expansion[chord]; !ok {
@@ -218,7 +222,7 @@ dict_chord_lookup :: proc(dict: ^Dict_Chord, chord: Chord) ->
 	return expansion, .None
 }
 
-dict_shorthand_lookup :: proc(dict: ^Dict_Shorthand, shorthand: Shorthand) ->
+dict_shorthand_lookup :: proc(dict: Dict_Shorthand, shorthand: Shorthand) ->
 	(expansion: Expansion, err: Dict_Error ) {
 	ok: bool
 	if expansion, ok := dict.shorthand_to_expansion[shorthand]; !ok {
@@ -292,9 +296,9 @@ dict_chord_load_file :: proc(
 	// Treat an empty path as clearing the dictionary
 	if filepath == "" do return {}, .None
 
-	file_data, file_err := os.read_entire_file(filepath, context.allocator)
+	file_data, err_file := os.read_entire_file(filepath, context.allocator)
 	defer delete(file_data, context.allocator)
-	if file_err != nil do return {}, .File_IO_Error
+	if err_file != nil do return {}, .File_IO_Error
 
 	file_text := remove_bom(string(file_data))
 
@@ -303,22 +307,21 @@ dict_chord_load_file :: proc(
 		chord_notation, expansion, ok := dict_line_parse(line, Chord_Notation)
 		if !ok do continue
 
-		chord, result := chord_compile(chord_notation, key_map)
-		if result != .None {
-			alloc_err: Dict_Error
-			diagnostic.invalid_shortcut, alloc_err = clone_text(
-					chord_notation,
-					diagnostic_alloc,
-			)
+		chord, error := chord_compile(chord_notation, key_map)
+		if error == .None {
+			error = dict_chord_add(dict, chord, expansion, chord_notation)
+		}
+		if error != .None {
+			shortcut, alloc_err := clone_text(chord_notation, diagnostic_alloc)
 			if alloc_err != .None do return diagnostic, alloc_err
 
-			return diagnostic, result
+			diagnostic.invalid_shortcut = shortcut
+			return diagnostic, error
 		}
 	}
 	return diagnostic, .None
 }
 
-// inconsistent name on purpose -- should converge on convention with context_subject_operation proc naming
 // dict_prefix_build :: proc(chords, prefixes: ^Dictionary) -> Dict_Error {
 // 	dict_destroy(prefixes)
 // 	dict_init(prefixes) or_return
@@ -339,42 +342,6 @@ dict_chord_load_file :: proc(
 // 	return .None
 // }
 
-// validate_shortcut :: proc (
-// 	dict: ^Dictionary,
-// 	orig_shortcut: string,
-// 	as_chords: bool,
-// 	chain_buffer: ^Chord_Chain_Buffer,
-// ) -> (shortcut: string, err: Dict_Error) {
-// 	shortcut = orig_shortcut
-
-// 	if utf8.rune_count(shortcut) < 2 do return "", .Fewer_Than_Two
-
-// 	if as_chords {
-// 		shortcut = normalize_chained_chords(shortcut, chain_buffer) or_return
-// 	}
-
-// 	_, lookup_err := dict_lookup(dict, shortcut)
-// 	if lookup_err == .None do return "", .Shortcut_Exists
-
-// 	if lookup_err == .Not_Found do return shortcut, .None  // Available
-
-// 	return "", lookup_err  // Unexpected error
-// }
-
-// register_shorthand :: proc (
-// 	dict: ^Dictionary,
-// 	orig_shortcut, expansion: string,
-// 	chain_buffer: ^Chord_Chain_Buffer,
-// ) -> Dict_Error {
-// 	shortcut := validate_shortcut(
-// 		dict,
-// 		orig_shortcut,
-// 		false,
-// 		chain_buffer,
-// 	) or_return
-
-// 	return dict_add(dict, shortcut, expansion, "")
-// }
 
 chord_compile :: proc (
 	chord_notation: Chord_Notation,
