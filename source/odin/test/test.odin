@@ -36,7 +36,6 @@ key_map_ititialization :: proc(t: ^tst.T) {
 @(test)
 chord_compiling :: proc(t: ^tst.T) {
     key_map: z.Key_Map
-    test_chord := z.Chord{.K, .J}  // Corresponds to 't' and 'h' on Dvorak keyboard
 
     z.key_map_init(&key_map)
     ok_pop := z.key_symbol_map_populate(&key_map)
@@ -44,8 +43,42 @@ chord_compiling :: proc(t: ^tst.T) {
     tst.expect_value(t, ok_pop, true)
 
     chord, err := z.chord_compile("th", key_map)
+    expected := z.Chord{.K, .J}  // Corresponds to 't' and 'h' on Dvorak keyboard
     tst.expect_value(t, err, None)
-    tst.expect_value(t, chord, test_chord)
+    tst.expect_value(t, chord, expected)
+
+    _, err = z.chord_compile("th$", key_map)
+    tst.expect_value(t, err, z.Dict_Error.Undefined_Key_Symbol)
+
+    _, err = z.chord_compile("ba|cd", key_map)
+    tst.expect_value(t, err, z.Dict_Error.Unsupported_Chain)
+
+    chord, err = z.chord_compile("bac", key_map)
+    expected = z.Chord{.A, .I, .N} // reordered Dvorak, but it's a bit_set anyway
+    tst.expect_value(t, err, z.Dict_Error.None)
+    tst.expect_value(t, chord, expected)
+
+    _, err = z.chord_compile("b", key_map)
+    tst.expect_value(t, err, z.Dict_Error.Fewer_Than_Two)
+
+    _, err = z.chord_compile("ž", key_map)
+    tst.expect_value(t, err, z.Dict_Error.Undefined_Key_Symbol)
+
+    // _, err = z.chord_compile("ab|z", key_map)
+    // tst.expect_value(t, err, z.Dict_Error.Chain_Ends_In_Single_Key)
+
+    // _, err = z.chord_compile("xa|b|cd", key_map)
+    // tst.expect_value(t, err, z.Dict_Error.None)
+    // tst.expect_value(t, shortcut, "ax|b|cd")
+
+    // _, err = z.chord_compile("xa|cd|b", key_map)
+    // tst.expect_value(t, err, z.Dict_Error.Chain_Ends_In_Single_Key)
+
+    // _, err = z.chord_compile("a|xax", key_map)
+    // tst.expect_value(t, err, z.Dict_Error.Repeated_Key)
+
+    // _, err = z.chord_compile("a||b", key_map)
+    // tst.expect_value(t, err, z.Dict_Error.Empty_Chord)
 }
 
 @(test)
