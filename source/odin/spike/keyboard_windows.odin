@@ -48,7 +48,8 @@ foreign user32 {
 
 SCAN_TABLE_SIZE :: 0x200
 
-key_map_init :: proc(key_map: ^Key_Map) {
+key_map_init :: proc(key_map: ^Key_Map)
+{
 	key_map^ = {}
 
 	key_map.zc_printable_to_scan = {
@@ -148,18 +149,12 @@ key_map_init :: proc(key_map: ^Key_Map) {
 	}
 
 	populate_reverse :: proc(
-		key_zc_to_scan: [$T]Scan_ID,
-		scan_to_key_zc: ^[SCAN_TABLE_SIZE]Key_ZC)
-	{
+			key_zc_to_scan: [$T]Scan_ID,
+			scan_to_key_zc: ^[SCAN_TABLE_SIZE]Key_ZC,
+	) {
 		for scan, key in key_zc_to_scan {
-			assert(
-				scan > 0 && scan < SCAN_TABLE_SIZE,
-				"Scan code out of range",
-			)
-			assert(
-				scan_to_key_zc[scan] == nil,
-				"Scan code is double assigned",
-			)
+			assert(scan > 0 && scan < SCAN_TABLE_SIZE, "Scan code out of range")
+			assert(scan_to_key_zc[scan] == nil, "Scan code is double assigned")
 			scan_to_key_zc[scan] = key
 		}
 	}
@@ -169,7 +164,8 @@ key_map_init :: proc(key_map: ^Key_Map) {
 	populate_reverse(key_map.zc_special_to_scan, &key_map.scan_to_key_zc)
 }
 
-key_hkl_from_foreground :: proc() -> HKL {
+key_hkl_from_foreground :: proc() -> HKL
+{
 	foreground_hwnd := win32.GetForegroundWindow()
 	if foreground_hwnd == nil do return nil
 
@@ -185,30 +181,29 @@ key_hkl_from_foreground :: proc() -> HKL {
 		focus_thread_id := win32.GetWindowThreadProcessId(gui_info.hwnd_focus, nil)
 		if focus_thread_id != 0 {
 			focus_hkl := GetKeyboardLayout(focus_thread_id)
-			if focus_hkl != nil {
-				return focus_hkl
-			}
+			if focus_hkl != nil do return focus_hkl
 		}
 	}
 
 	return GetKeyboardLayout(foreground_thread_id)
 }
 
-key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool {
+key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool
+{
 	// Supported since Windows 10 1607; avoids leaving ToUnicodeEx's internal
 	// dead-key state changed while we probe a layout.
 	TO_UNICODE_NO_STATE_CHANGE :: win32.UINT(1 << 2)
 
 	translate_scan_to_symbol :: proc(
-		hkl: HKL,
-		scan: Scan_ID,
-		with_shift: bool,
+			hkl: HKL,
+			scan: Scan_ID,
+			with_shift: bool,
 	) -> rune {
 		windows_scan := win32.UINT(scan)
 		virtual_key := MapVirtualKeyExW(
-			windows_scan,
-			win32.MAPVK_VSC_TO_VK_EX,
-			hkl,
+				windows_scan,
+				win32.MAPVK_VSC_TO_VK_EX,
+				hkl,
 		)
 		if virtual_key == 0 do return 0
 
@@ -218,13 +213,13 @@ key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool {
 		}
 		buffer: [8]u16
 		count := ToUnicodeEx(
-			virtual_key,
-			win32.UINT(scan),
-			&key_state[0],
-			&buffer[0],
-			len(buffer),
-			TO_UNICODE_NO_STATE_CHANGE,
-			hkl,
+				virtual_key,
+				win32.UINT(scan),
+				&key_state[0],
+				&buffer[0],
+				len(buffer),
+				TO_UNICODE_NO_STATE_CHANGE,
+				hkl,
 		)
 		if count <= 0 do return 0
 
@@ -232,6 +227,7 @@ key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool {
 		// Reject a layout translation that produces a multi-rune string.
 		symbol, width := utf16.decode_rune_in_string(string16(buffer[:count]))
 		if width != int(count) do return 0
+
 		return symbol
 	}
 
@@ -292,7 +288,8 @@ key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool {
 }
 
 key_scan_code_from_key_zc :: proc(key_map: Key_Map, key: Key_ZC) ->
-	(scan: Scan_ID, is_extended: bool) {
+		(scan: Scan_ID, is_extended: bool)
+{
 	switch k in key {
 	case Key_Printable:
 		scan = key_map.zc_printable_to_scan[k]
@@ -306,7 +303,8 @@ key_scan_code_from_key_zc :: proc(key_map: Key_Map, key: Key_ZC) ->
 }
 
 key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
-	(key: Key_ZC, is_up: bool) {
+		(key: Key_ZC, is_up: bool)
+{
 	if raw_key.Flags & win32.RI_KEY_E1 != 0 {
 		return key, is_up   // We don't support key(s) with E1
 	}
@@ -322,17 +320,18 @@ key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
 WINDOWS_CLASS_NAME :: "ZipChordSpike"
 
 window_proc :: proc "system" (
-	hwnd: win32.HWND,
-	message: win32.UINT,
-	wparam: win32.WPARAM,
-	lparam: win32.LPARAM,
-) -> win32.LRESULT {
+		hwnd: win32.HWND,
+		message: win32.UINT,
+		wparam: win32.WPARAM,
+		lparam: win32.LPARAM,
+) -> win32.LRESULT
+{
 	context = runtime.default_context()
 
 	app: ^App_State
 	if message == win32.WM_NCCREATE {
-		create_struct := cast(^win32.CREATESTRUCTW)(uintptr(lparam))
-		app = cast(^App_State)(create_struct.lpCreateParams)
+		create_struct := cast(^win32.CREATESTRUCTW)uintptr(lparam)
+		app = cast(^App_State)create_struct.lpCreateParams
 		if app == nil {
 			return 0
 		}
@@ -348,7 +347,7 @@ window_proc :: proc "system" (
 		}
 	} else {
 		stored := win32.GetWindowLongPtrW(hwnd, win32.GWLP_USERDATA)
-		app = cast(^App_State)(uintptr(stored))
+		app = cast(^App_State)uintptr(stored)
 		if app == nil {
 			// Expected before WM_NCCREATE and after destruction
 			return win32.DefWindowProcW(hwnd, message, wparam, lparam)
@@ -365,11 +364,11 @@ window_proc :: proc "system" (
 		raw_size := win32.UINT(size_of(raw))
 
 		bytes_read := win32.GetRawInputData(
-			win32.HRAWINPUT(lparam),
-			win32.RID_INPUT,
-			&raw,
-			&raw_size,
-			win32.UINT(size_of(win32.RAWINPUTHEADER)),
+				win32.HRAWINPUT(lparam),
+				win32.RID_INPUT,
+				&raw,
+				&raw_size,
+				win32.UINT(size_of(win32.RAWINPUTHEADER)),
 		)
 
 		outer: if bytes_read != ~win32.UINT(0) &&
@@ -412,11 +411,7 @@ window_proc :: proc "system" (
 		return 0
 
 	case win32.WM_NCDESTROY:
-		win32.SetWindowLongPtrW(
-			hwnd,
-			win32.GWLP_USERDATA,
-			0,
-		)
+		win32.SetWindowLongPtrW(hwnd, win32.GWLP_USERDATA, 0)
 
 	case win32.WM_DESTROY:
 		win32.PostQuitMessage(0)
@@ -426,7 +421,8 @@ window_proc :: proc "system" (
 	return win32.DefWindowProcW(hwnd, message, wparam, lparam)
 }
 
-os_window_init :: proc(app_state: ^App_State) -> rawptr {
+os_window_init :: proc(app_state: ^App_State) -> rawptr
+{
 	instance := win32.HINSTANCE(win32.GetModuleHandleW(nil))
 	class_name := cstring16(win32.L(WINDOWS_CLASS_NAME))
 	window_class := win32.WNDCLASSEXW {
@@ -435,25 +431,24 @@ os_window_init :: proc(app_state: ^App_State) -> rawptr {
 		hInstance     = instance,
 		lpszClassName = class_name,
 	}
-	if win32.RegisterClassExW(&window_class) == 0 {
-		return nil
-	}
+	if win32.RegisterClassExW(&window_class) == 0 do return nil
 
 	hwnd := win32.CreateWindowExW(
-		0,
-		class_name,
-		cstring16(win32.L("Odin hidden window")),
-		0,
-		0, 0, 0, 0,
-		nil, nil,
-		instance,
-		app_state,
+			0,
+			class_name,
+			cstring16(win32.L("Odin hidden window")),
+			0,
+			0, 0, 0, 0,
+			nil, nil,
+			instance,
+			app_state,
 	)
 	return rawptr(hwnd)
 }
 
 
-register_keyboard_hook :: proc(hwnd: rawptr) -> bool {
+register_keyboard_hook :: proc(hwnd: rawptr) -> bool
+{
 	raw_keyboard := win32.RAWINPUTDEVICE {
 		usUsagePage = 0x01, // Generic Desktop Controls
 		usUsage     = 0x06, // Keyboard
@@ -462,14 +457,15 @@ register_keyboard_hook :: proc(hwnd: rawptr) -> bool {
 	}
 
 	ok := win32.RegisterRawInputDevices(
-		&raw_keyboard,
-		1,
-		win32.UINT(size_of(win32.RAWINPUTDEVICE)),
+			&raw_keyboard,
+			1,
+			win32.UINT(size_of(win32.RAWINPUTDEVICE)),
 	)
 	return bool(ok)
 }
 
-main_loop :: proc() {
+main_loop :: proc()
+{
 	message: win32.MSG
 	for {
 		result := win32.GetMessageW(&message, nil, 0, 0)

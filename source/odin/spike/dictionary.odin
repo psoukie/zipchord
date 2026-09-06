@@ -41,25 +41,25 @@ Fixed_Buffer :: struct($CAP: int) {
 	len:   int,
 }
 
-clone_text :: proc (
-	text: $T,
-	alloc:= context.allocator,
-) -> (own_text: T, err: Dict_Error) where
-	T == Shorthand || T == Expansion || T == Chord_Notation {
+clone_text :: proc(
+		text: $T,
+		alloc:= context.allocator,
+) -> (own_text: T, err: Dict_Error)
+		where T == Shorthand || T == Expansion || T == Chord_Notation
+{
 	cloned_string, alloc_err := strings.clone(string(text), alloc)
-	if alloc_err != .None {
-		return own_text, .Allocation_Error
-	}
+	if alloc_err != .None do return own_text, .Allocation_Error
 
 	return T(cloned_string), .None
 }
 
-clone_expansion_to_lower :: proc (exp: Expansion, alloc:= context.allocator) ->
-(Expansion, Dict_Error) {
+clone_expansion_to_lower :: proc(
+		exp: Expansion,
+		alloc:= context.allocator,
+) -> (Expansion, Dict_Error)
+{
 	cloned_string, alloc_err := strings.to_lower(string(exp), alloc)
-	if alloc_err != .None {
-		return {}, .Allocation_Error
-	}
+	if alloc_err != .None do return {}, .Allocation_Error
 
 	return Expansion(cloned_string), .None
 }
@@ -121,7 +121,8 @@ dicts: struct {
 
 string_buf:     Fixed_Buffer(STRING_BUFFER_BYTES)
 
-dict_chord_init :: proc(dict: ^Dict_Chord) -> (err: Dict_Error ) {
+dict_chord_init :: proc(dict: ^Dict_Chord) -> (err: Dict_Error)
+{
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
     if alloc_err != .None do return .Allocation_Error
 
@@ -130,7 +131,8 @@ dict_chord_init :: proc(dict: ^Dict_Chord) -> (err: Dict_Error ) {
     return .None
 }
 
-dict_shorthand_init :: proc(dict: ^Dict_Shorthand) -> (err: Dict_Error ) {
+dict_shorthand_init :: proc(dict: ^Dict_Shorthand) -> (err: Dict_Error)
+{
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
     if alloc_err != .None do return .Allocation_Error
 
@@ -144,31 +146,35 @@ dict_init :: proc {
 	dict_shorthand_init,
 }
 
-dict_chord_destroy :: proc(dict: ^Dict_Chord) {
+dict_chord_destroy :: proc(dict: ^Dict_Chord)
+{
     delete(dict.chord_to_expansion)          // free map internals
     delete(dict.expansion_to_chord_notation)
     virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
     dict^ = {}
 }
 
-dict_shorthand_destroy :: proc(dict: ^Dict_Shorthand) {
+dict_shorthand_destroy :: proc(dict: ^Dict_Shorthand)
+{
     delete(dict.shorthand_to_expansion)          // free map internals
     delete(dict.expansion_to_shorthand)
     virtual.arena_destroy(&dict.arena_memory)   // free cloned strings
     dict^ = {}
 }
 
-dict_destroy :: proc {
+dict_destroy :: proc
+{
 	dict_chord_destroy,
 	dict_shorthand_destroy,
 }
 
-dict_chord_add :: proc (
-	dict: ^Dict_Chord,
-	chord: Chord,
-	expansion: Expansion,
-	chord_notation: Chord_Notation,
-) -> (err: Dict_Error) {
+dict_chord_add :: proc(
+		dict: ^Dict_Chord,
+		chord: Chord,
+		expansion: Expansion,
+		chord_notation: Chord_Notation,
+) -> (err: Dict_Error)
+{
 	_, lookup_err := dict_lookup(dict^, chord)
 	if lookup_err == .None do return .Shortcut_Exists
 
@@ -188,11 +194,12 @@ dict_chord_add :: proc (
 	return .None
 }
 
-dict_shorthand_add :: proc (
-	dict: ^Dict_Shorthand,
-	shorthand: Shorthand,
-	expansion: Expansion,
-) -> (err: Dict_Error) {
+dict_shorthand_add :: proc(
+		dict: ^Dict_Shorthand,
+		shorthand: Shorthand,
+		expansion: Expansion,
+) -> (err: Dict_Error)
+{
 	_, lookup_err := dict_lookup(dict^, shorthand)
 	if lookup_err == .None do return .Shortcut_Exists
 
@@ -213,21 +220,29 @@ dict_shorthand_add :: proc (
 	return .None
 }
 
-dict_chord_lookup :: proc(dict: Dict_Chord, chord: Chord) ->
-	(expansion: Expansion, err: Dict_Error ) {
+dict_chord_lookup :: proc(
+		dict: Dict_Chord,
+		chord: Chord,
+) -> (expansion: Expansion, err: Dict_Error)
+{
 	ok: bool
 	if expansion, ok = dict.chord_to_expansion[chord]; !ok {
 		return {}, .Not_Found
 	}
+
 	return expansion, .None
 }
 
-dict_shorthand_lookup :: proc(dict: Dict_Shorthand, shorthand: Shorthand) ->
-	(expansion: Expansion, err: Dict_Error ) {
+dict_shorthand_lookup :: proc(
+		dict: Dict_Shorthand,
+		shorthand: Shorthand,
+) -> (expansion: Expansion, err: Dict_Error)
+{
 	ok: bool
 	if expansion, ok := dict.shorthand_to_expansion[shorthand]; !ok {
 		return {}, .Not_Found
 	}
+
 	return expansion, .None
 }
 
@@ -236,21 +251,29 @@ dict_lookup :: proc {
 	dict_shorthand_lookup,
 }
 
-dict_chord_reverse_lookup :: proc(dict: ^Dict_Chord, expansion: Expansion) ->
-	(chord_notation: Chord_Notation, err: Dict_Error ) {
+dict_chord_reverse_lookup :: proc(
+		dict: ^Dict_Chord,
+		expansion: Expansion,
+) -> (chord_notation: Chord_Notation, err: Dict_Error)
+{
 	ok: bool
 	if chord_notation, ok = dict.expansion_to_chord_notation[expansion]; !ok {
 		return {}, .Not_Found
 	}
+
 	return chord_notation, .None
 }
 
-dict_shorthand_reverse_lookup :: proc(dict: ^Dict_Shorthand, expansion: Expansion) ->
-	(shorthand: Shorthand, err: Dict_Error ) {
+dict_shorthand_reverse_lookup :: proc(
+		dict: ^Dict_Shorthand,
+		expansion: Expansion,
+) -> (shorthand: Shorthand, err: Dict_Error)
+{
 	ok: bool
 	if shorthand, ok := dict.expansion_to_shorthand[expansion]; !ok {
 		return {}, .Not_Found
 	}
+
 	return shorthand, .None
 }
 
@@ -259,9 +282,12 @@ dict_reverse_lookup :: proc {
 	dict_shorthand_reverse_lookup,
 }
 
-dict_line_parse :: proc(raw_line: string, $T: typeid) ->
-(shortcut: T, expansion: Expansion, ok: bool) where
-T == Chord_Notation || T == Shorthand {
+dict_line_parse :: proc(
+		raw_line: string,
+		$T: typeid,
+) -> (shortcut: T, expansion: Expansion, ok: bool)
+		where T == Chord_Notation || T == Shorthand
+{
 	line := strings.trim_right(raw_line, "\r")
 	shortcut_string := strings.split_iterator(&line, "\t") or_return
 
@@ -281,14 +307,12 @@ Dict_Load_Diagnostic :: struct {
 }
 
 dict_chord_load_file :: proc(
-	dict: ^Dict_Chord,
-	key_map: Key_Map,
-	filepath: string,
-	diagnostic_alloc := context.temp_allocator,
-) -> (
-	diagnostic: Dict_Load_Diagnostic,
-	err: Dict_Error,
-) {
+		dict: ^Dict_Chord,
+		key_map: Key_Map,
+		filepath: string,
+		diagnostic_alloc := context.temp_allocator,
+) -> (diagnostic: Dict_Load_Diagnostic, err: Dict_Error)
+{
 	// re-initialize the dictionary
 	dict_destroy(dict)
 	dict_init(dict) or_return
@@ -343,10 +367,11 @@ dict_chord_load_file :: proc(
 // }
 
 
-chord_compile :: proc (
-	chord_notation: Chord_Notation,
-	key_map: Key_Map,
-) -> (chord: Chord, err: Dict_Error) {
+chord_compile :: proc(
+		chord_notation: Chord_Notation,
+		key_map: Key_Map,
+) -> (chord: Chord, err: Dict_Error)
+{
 	for key_symbol in string(chord_notation) {
 		if key_symbol == '|' do return {}, .Unsupported_Chain
 
@@ -354,6 +379,7 @@ chord_compile :: proc (
 		if !ok do return {}, .Undefined_Key_Symbol
 
 		if key in chord do return {}, .Repeated_Key
+
 		chord += {key}
 	}
 	if card(chord) < 2 do return {}, .Fewer_Than_Two
@@ -362,11 +388,12 @@ chord_compile :: proc (
 }
 
 dict_file_edit :: proc(
-	filepath: string,
-	old_shortcut:= "",
-	new_shortcut := "",
-	expansion := "",
-) -> (err: Dict_Error) {
+		filepath: string,
+		old_shortcut := "",
+		new_shortcut := "",
+		expansion := "",
+) -> (err: Dict_Error)
+{
 	/* Calling convention based on which parameters are defined:
 	   - new_shortcut && expansion -- add a shortcut
        - new_shortcut && old_shortuct -- change the assigned shortcut
@@ -385,30 +412,33 @@ dict_file_edit :: proc(
 
 	// Determine the operation; we do not flag invalid combinations
 	switch {
-		case filepath == "":
-			return .Bad_Argument
-		case new_shortcut != "" && expansion != "":
-			operation = .Add
-		case new_shortcut != "" && old_shortcut != "":
-			operation = .Change
-		case old_shortcut != "":
-			operation = .Delete
-		case:
-			return .Bad_Argument
+	case filepath == "":
+		return .Bad_Argument
+	case new_shortcut != "" && expansion != "":
+		operation = .Add
+	case new_shortcut != "" && old_shortcut != "":
+		operation = .Change
+	case old_shortcut != "":
+		operation = .Delete
+	case:
+		return .Bad_Argument
 	}
 
 	// Load the file as text
 	file_data, file_err := os.read_entire_file(filepath, context.temp_allocator)
 	if file_err != nil do return .File_IO_Error
+
 	file_text := string(file_data)
 
 	// Create a new file
-	temp_filepath := strings.concatenate({filepath, ".tmp"},
-			context.temp_allocator)
+	temp_filepath := strings.concatenate({filepath, ".tmp"}, context.temp_allocator)
 	temp_file, create_err := os.create(temp_filepath)
 	if create_err != nil do return .File_IO_Error
+
 	defer {
-		if temp_file != nil do os.close(temp_file)
+		if temp_file != nil {
+			os.close(temp_file)
+		}
 		if os.exists(temp_filepath) {
 			os.remove(temp_filepath)
 		}
@@ -434,18 +464,11 @@ dict_file_edit :: proc(
 			}
 		}
 
-		replacement = strings.concatenate({
-					opening_new_line,
-					new_shortcut,
-					"\t",
-					expansion,
-					ending_new_line,
-				}, context.temp_allocator)
-
-		// Write into the file
-		_, write_err = os.write_strings(temp_file,
-					file_text,
-					replacement)
+		replacement = strings.concatenate(
+				{opening_new_line, new_shortcut, "\t", expansion, ending_new_line},
+				context.temp_allocator,
+		)
+		_, write_err = os.write_strings(temp_file, file_text, replacement)
 	} else {
 		// For non-adding edits, find the strating position
 		needle := strings.concatenate({"\n", old_shortcut, "\t"}, context.temp_allocator)
@@ -480,26 +503,29 @@ dict_file_edit :: proc(
 			replacement = new_shortcut
 			end_pos = start_pos + len(old_shortcut)
 		}
-
-		// Write into the file
-		_, write_err = os.write_strings(temp_file,
-					file_text[:start_pos],
-					replacement,
-					file_text[end_pos:])
+		_, write_err = os.write_strings(
+				temp_file,
+				file_text[:start_pos],
+				replacement,
+				file_text[end_pos:],
+		)
 	}
 	if write_err != nil do return .File_IO_Error
 
 	// Sync & close temp file and rename it to the original dictionary
 	if os.sync(temp_file) != nil do return .File_IO_Error
+
 	close_err := os.close(temp_file)
 	temp_file = nil
 	if close_err != nil do return .File_IO_Error
+
 	if os.rename(temp_filepath, filepath) != nil do return .File_IO_Error
 
 	return .None
 }
 
-remove_bom :: proc(text: string) -> string {
+remove_bom :: proc(text: string) -> string
+{
     // The UTF-8 BOM is represented by the rune '\ufeff' (3 bytes)
     return strings.trim_prefix(text, "\ufeff")
 }

@@ -24,7 +24,7 @@ Key_Printable :: enum u8 {
 	Pad_1, Pad_2, Pad_3, Pad_0, Pad_Period,
 }
 
-#assert(len(Key_Printable) <= 64)  // to fit into a u64 bitset
+#assert(len(Key_Printable) <= 64) // to fit into a u64 bitset
 
 Key_Modifier :: enum u8 {
 	Left_Shift,
@@ -92,39 +92,45 @@ Key_Map :: struct {
 	printable_to_typed_char: [Key_Printable]Key_Typed_Char,
 }
 
-key_symbol_map_delete :: proc(key_map: ^Key_Map) {
+key_symbol_map_delete :: proc(key_map: ^Key_Map)
+{
 	delete(key_map.symbol_to_printable)
 }
 
-key_printable_from_symbol :: proc(key_map: Key_Map, symbol: rune) ->
-	(printable: Key_Printable, ok: bool)
+key_printable_from_symbol :: proc(
+		key_map: Key_Map,
+		symbol: rune,
+) -> (printable: Key_Printable, ok: bool)
 {
 	return key_map.symbol_to_printable[symbol]
 }
 
 key_symbol_from_printable :: proc(
-	key_map: Key_Map,
-	printable: Key_Printable,
-) -> (symbol: rune, ok: bool) {
+		key_map: Key_Map,
+		printable: Key_Printable,
+) -> (symbol: rune, ok: bool)
+{
 	symbol = key_map.printable_to_symbol[printable]
 	return symbol, symbol != 0
 }
 
 key_typed_char_from_printable :: proc(
-	key_map: Key_Map,
-	printable: Key_Printable,
-	with_shift := false,
-) -> (typed_char: rune, ok: bool) {
+		key_map: Key_Map,
+		printable: Key_Printable,
+		with_shift := false,
+) -> (typed_char: rune, ok: bool)
+{
 	typed_chars := key_map.printable_to_typed_char[printable]
 	typed_char = typed_chars.with_shift if with_shift else typed_chars.plain
 	return typed_char, typed_char != 0
 }
 
 keys_down_update :: proc(
-	keys_list: ^Keys_Down,
-	key: Key_ZC,
-	is_up: bool,
-) -> (has_changed: bool) {
+		keys_list: ^Keys_Down,
+		key: Key_ZC,
+		is_up: bool,
+) -> (has_changed: bool)
+{
 	key_down_update :: proc(set: ^$S, key: $K, is_up: bool) -> bool {
 		was_down := key in set^
 		if was_down == !is_up do return false
@@ -161,19 +167,27 @@ Key_Reader :: struct {
 	logger: log.Logger,
 }
 
-key_reader_init :: proc(reader: ^Key_Reader, logger: log.Logger) -> bool {
+key_reader_init :: proc(
+		reader: ^Key_Reader,
+		logger: log.Logger,
+) -> bool
+{
 	reader.logger = logger
 	reader.start_time = time.tick_now()
 	queue.init_from_slice(&reader.events, reader._buffer[:])
 	reader.running = true
 	reader._worker = thread.create_and_start_with_poly_data(
-		reader,
-		io_worker,
+			reader,
+			io_worker,
 	)
 	return reader._worker != nil
 }
 
-key_reader_event_add :: proc(reader: ^Key_Reader, event: Key_Event) -> bool {
+key_reader_event_add :: proc(
+		reader: ^Key_Reader,
+		event: Key_Event,
+) -> bool
+{
 	sync.mutex_lock(&reader.mutex)
 	ok, err := queue.push(&reader.events, event)
 	sync.mutex_unlock(&reader.mutex)
@@ -185,14 +199,16 @@ key_reader_event_add :: proc(reader: ^Key_Reader, event: Key_Event) -> bool {
 	return true
 }
 
-key_reader_stop :: proc(reader: ^Key_Reader) {
+key_reader_stop :: proc(reader: ^Key_Reader)
+{
 	sync.mutex_lock(&reader.mutex)
 	reader.running = false
 	sync.mutex_unlock(&reader.mutex)
 	sync.sema_post(&reader.sema)
 }
 
-io_worker :: proc(reader: ^Key_Reader) {
+io_worker :: proc(reader: ^Key_Reader)
+{
 	context.logger = reader.logger
 	for {
 		sync.sema_wait(&reader.sema)

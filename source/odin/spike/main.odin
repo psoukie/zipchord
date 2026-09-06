@@ -10,7 +10,8 @@ App_State :: struct {
 	key_reader: Key_Reader,
 }
 
-main :: proc() {
+main :: proc()
+{
 	app: App_State
 	app.logger = log.create_console_logger()
 	context.logger = app.logger
@@ -21,9 +22,7 @@ main :: proc() {
 	if hwnd == nil do return
 
 	key_map_init(&app.key_map)
-	if !key_symbol_map_populate(&app.key_map) {
-		return
-	}
+	if !key_symbol_map_populate(&app.key_map) do return
 
 	defer key_symbol_map_delete(&app.key_map)
 
@@ -40,7 +39,7 @@ main :: proc() {
 		)
 	}
 
-	if ! key_reader_init(&app.key_reader, app.logger) do return
+	if !key_reader_init(&app.key_reader, app.logger) do return
 
 	defer {
 		key_reader_stop(&app.key_reader)
@@ -52,7 +51,6 @@ main :: proc() {
 		return
 	}
 
-	log.info("Ready...")  //TK: spike only
-
+	log.info("Ready...")
 	main_loop()
 }
