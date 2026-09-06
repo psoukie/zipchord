@@ -48,7 +48,7 @@ foreign user32 {
 
 SCAN_TABLE_SIZE :: 0x200
 
-key_map_init :: proc(key_map: ^Key_Map)
+key_map_scan_codes_init :: proc(key_map: ^Key_Map)
 {
 	key_map^ = {}
 
@@ -164,31 +164,43 @@ key_map_init :: proc(key_map: ^Key_Map)
 	populate_reverse(key_map.zc_special_to_scan, &key_map.scan_to_key_zc)
 }
 
-key_hkl_from_foreground :: proc() -> HKL
+key_hkl_from_foreground :: proc() -> (hkl: HKL, ok: bool)
 {
 	foreground_hwnd := win32.GetForegroundWindow()
-	if foreground_hwnd == nil do return nil
+	if foreground_hwnd == nil do return
 
 	foreground_thread_id := win32.GetWindowThreadProcessId(foreground_hwnd, nil)
-	if foreground_thread_id == 0 do return nil
+	if foreground_thread_id == 0 do return
 
 	// Some applications give keyboard focus to a window owned by another thread.
-	gui_info := GUI_Thread_Info {
-		cb_size = size_of(GUI_Thread_Info),
-	}
+	gui_info := GUI_Thread_Info {cb_size = size_of(GUI_Thread_Info)}
 	if GetGUIThreadInfo(foreground_thread_id, &gui_info) != win32.FALSE &&
 			gui_info.hwnd_focus != nil {
 		focus_thread_id := win32.GetWindowThreadProcessId(gui_info.hwnd_focus, nil)
 		if focus_thread_id != 0 {
-			focus_hkl := GetKeyboardLayout(focus_thread_id)
-			if focus_hkl != nil do return focus_hkl
+			return GetKeyboardLayout(focus_thread_id), true
 		}
 	}
 
-	return GetKeyboardLayout(foreground_thread_id)
+	return GetKeyboardLayout(foreground_thread_id), true
 }
 
-key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool
+hkl_active_get :: proc() -> HKL
+{
+	hkl := key_hkl_from_foreground() or_else GetKeyboardLayout(0)
+	return hkl
+}
+
+key_map_populate_from_active_layout :: proc(key_map: ^Key_Map) -> bool
+{
+	hkl := hkl_active_get()
+	return key_map_populate_from_layout(key_map, hkl)
+}
+
+key_map_populate_from_layout :: proc(
+		key_map: ^Key_Map,
+		hkl: HKL,
+) -> bool
 {
 	// Supported since Windows 10 1607; avoids leaving ToUnicodeEx's internal
 	// dead-key state changed while we probe a layout.
@@ -231,19 +243,11 @@ key_symbol_map_populate :: proc(key_map: ^Key_Map) -> bool
 		return symbol
 	}
 
-	hkl := key_hkl_from_foreground()
-	if hkl == nil {
-		hkl = GetKeyboardLayout(0)
-	}
-	if hkl == nil do return false
-
 	key_map.printable_to_symbol = {}
 	key_map.printable_to_typed_char = {}
 	clear(&key_map.symbol_to_printable)
 	err := reserve(&key_map.symbol_to_printable, len(Key_Printable))
-	if err != .None {
-		panic("Could not allocate key symbol map")
-	}
+	if err != .None do return false
 
 	for printable in Key_Printable {
 		// Numeric-pad keys use layout-independent dictionary symbols so they

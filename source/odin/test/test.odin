@@ -21,8 +21,9 @@ utf8bom :: proc(t: ^tst.T) {
 @(test)
 key_map_ititialization :: proc(t: ^tst.T) {
     key_map: z.Key_Map
-    z.key_map_init(&key_map)
-    ok_pop := z.key_symbol_map_populate(&key_map)
+
+    z.key_map_scan_codes_init(&key_map)
+    ok_pop := z.key_map_populate_from_active_layout(&key_map)
 	defer z.key_symbol_map_delete(&key_map)
     tst.expect_value(t, ok_pop, true)
     a_key, ok := z.key_printable_from_symbol(key_map, 'a')
@@ -37,8 +38,8 @@ key_map_ititialization :: proc(t: ^tst.T) {
 chord_compiling :: proc(t: ^tst.T) {
     key_map: z.Key_Map
 
-    z.key_map_init(&key_map)
-    ok_pop := z.key_symbol_map_populate(&key_map)
+    z.key_map_scan_codes_init(&key_map)
+    ok_pop := z.key_map_populate_from_active_layout(&key_map)
 	defer z.key_symbol_map_delete(&key_map)
     tst.expect_value(t, ok_pop, true)
 
@@ -96,8 +97,8 @@ load_dict :: proc(t: ^tst.T) {
     dict: z.Dict_Chord
     key_map: z.Key_Map
 
-    z.key_map_init(&key_map)
-    ok_pop := z.key_symbol_map_populate(&key_map)
+    z.key_map_scan_codes_init(&key_map)
+    ok_pop := z.key_map_populate_from_active_layout(&key_map)
 	defer z.key_symbol_map_delete(&key_map)
     tst.expect_value(t, ok_pop, true)
 

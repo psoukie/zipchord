@@ -17,15 +17,15 @@ main :: proc()
 	context.logger = app.logger
 	defer log.destroy_console_logger(app.logger)
 
-	// Might eventually need to use `when ODIN_OS == .Windows {...}`
-	hwnd := os_window_init(&app)
-	if hwnd == nil do return
-
-	key_map_init(&app.key_map)
-	if !key_symbol_map_populate(&app.key_map) do return
+	key_map_scan_codes_init(&app.key_map)
+	if !key_map_populate_from_active_layout(&app.key_map) {
+		log.error("Could not allocate memory for key map.")
+		return
+	}
 
 	defer key_symbol_map_delete(&app.key_map)
 
+	// TK: Debug only
 	for printable in Key_Printable {
 		symbol, _ := key_symbol_from_printable(app.key_map, printable)
 		typed_char, _ := key_typed_char_from_printable(app.key_map, printable)
@@ -46,8 +46,15 @@ main :: proc()
 		thread.destroy(app.key_reader._worker)
 	}
 
+	// Might eventually need to use `when ODIN_OS == .Windows {...}`
+	hwnd := os_window_init(&app)
+	if hwnd == nil {
+		log.error("Could not create a window.")
+		return
+	}
+
 	if !register_keyboard_hook(hwnd) {
-		log.errorf("Registering keyboard hook failed.")
+		log.error("Registering keyboard hook failed.")
 		return
 	}
 
