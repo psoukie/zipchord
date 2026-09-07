@@ -382,8 +382,9 @@ window_proc :: proc "system" (
 				win32.UINT(size_of(win32.RAWINPUTHEADER)),
 		)
 
-		outer: if bytes_read != ~win32.UINT(0) &&
-				raw.header.dwType == win32.RIM_TYPEKEYBOARD {
+		outer: if bytes_read == ~win32.UINT(0) {
+			win32.PostQuitMessage(i32(App_Error.Windows_GetRawInput_Failed))
+		} else if raw.header.dwType == win32.RIM_TYPEKEYBOARD {
 			raw_key := raw.data.keyboard
 			key, is_up := key_zc_from_key_raw(app.key_map, raw_key)
 			if key == nil {
@@ -403,10 +404,10 @@ window_proc :: proc "system" (
 
 			if !key_reader_event_add(&app.key_reader, key_ev) {
 				// Key event buffer full, we exit
-				win32.PostQuitMessage(1)
+				win32.PostQuitMessage(i32(App_Error.Key_Event_Buffer_Full))
 			}
 		}
-		// Continue exec to final return for an apprpriate Raw Input cleanup.
+		// Continue exec to final return for an appropriate Raw Input cleanup.
 		// Unless we call
 		// input_code := win32.GET_RAWINPUT_CODE_WPARAM(wparam)
 		// and call DefWindowProcW only for RIM_INPUT
@@ -416,6 +417,7 @@ window_proc :: proc "system" (
 		return 0
 
 	case win32.WM_NCDESTROY:
+		app.os_state.hwnd = nil
 		win32.SetWindowLongPtrW(hwnd, win32.GWLP_USERDATA, 0)
 
 	case win32.WM_DESTROY:
@@ -429,6 +431,8 @@ window_proc :: proc "system" (
 os_init :: proc(app_state: ^App_State) -> bool
 {
 	instance := win32.HINSTANCE(win32.GetModuleHandleW(nil))
+	if instance == nil do return false
+
 	class_name := cstring16(win32.L(WINDOWS_CLASS_NAME))
 	window_class := win32.WNDCLASSEXW {
 		cbSize        = win32.UINT(size_of(win32.WNDCLASSEXW)),
@@ -461,8 +465,7 @@ os_destroy :: proc(os_state: ^OS_State)
 {
 	if os_state.hwnd == nil do return
 
-	win32.DestroyWindow(os_state.hwnd)
-	os_state.hwnd = nil
+	_ = win32.DestroyWindow(os_state.hwnd)  //TK: ignoring failure
 }
 
 keyboard_raw_register :: proc(hwnd: win32.HWND) -> bool
@@ -489,7 +492,7 @@ os_post_message :: proc(state: ^OS_State, message: App_Message) -> bool
 	return bool(ok)
 }
 
-os_main_loop :: proc() -> int
+os_main_loop :: proc() -> App_Error
 {
 	message: win32.MSG
 	for {
@@ -497,12 +500,12 @@ os_main_loop :: proc() -> int
 
 		if result == 0 {
 			// WM_QUIT
-			return int(message.wParam)
+			return App_Error(message.wParam)
 		}
 
 		if result == -1 {
 			// GetMessageW failed.
-			return 2
+			return App_Error.Windows_GetMessageW_Failed
 		}
 
 		win32.TranslateMessage(&message)
