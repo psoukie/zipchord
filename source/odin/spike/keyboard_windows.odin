@@ -366,8 +366,7 @@ window_proc :: proc "system" (
 
 	switch message {
 	case win32.WM_APP + u32(App_Message.Quit):
-		// only this one is
-		win32.DestroyWindow(hwnd)
+		win32.PostQuitMessage(0)
 		return 0
 	case win32.WM_INPUT:
 		timestamp := time.tick_diff(app.key_reader.start_time, time.tick_now())
@@ -402,10 +401,9 @@ window_proc :: proc "system" (
 				is_up = is_up,
 			}
 
-			ok := key_reader_event_add(&app.key_reader, key_ev)
-			if !ok {
-				// Buffer full, we exit
-				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
+			if !key_reader_event_add(&app.key_reader, key_ev) {
+				// Key event buffer full, we exit
+				win32.PostQuitMessage(1)
 			}
 		}
 		// Continue exec to final return for an apprpriate Raw Input cleanup.
@@ -414,7 +412,7 @@ window_proc :: proc "system" (
 		// and call DefWindowProcW only for RIM_INPUT
 
 	case win32.WM_CLOSE:
-		win32.DestroyWindow(hwnd)
+		win32.PostQuitMessage(0)
 		return 0
 
 	case win32.WM_NCDESTROY:
@@ -453,11 +451,18 @@ os_init :: proc(app_state: ^App_State) -> bool
 	if app_state.os_state.hwnd == nil do return false
 
 	if !keyboard_raw_register(app_state.os_state.hwnd) {
-		win32.DestroyWindow(app_state.os_state.hwnd)
-		app_state.os_state.hwnd = nil
+		os_destroy(&app_state.os_state)
 		return false
 	}
 	return true
+}
+
+os_destroy :: proc(os_state: ^OS_State)
+{
+	if os_state.hwnd == nil do return
+
+	win32.DestroyWindow(os_state.hwnd)
+	os_state.hwnd = nil
 }
 
 keyboard_raw_register :: proc(hwnd: win32.HWND) -> bool
@@ -484,7 +489,7 @@ os_post_message :: proc(state: ^OS_State, message: App_Message) -> bool
 	return bool(ok)
 }
 
-os_main_loop :: proc()
+os_main_loop :: proc() -> int
 {
 	message: win32.MSG
 	for {
@@ -492,12 +497,12 @@ os_main_loop :: proc()
 
 		if result == 0 {
 			// WM_QUIT
-			break
+			return int(message.wParam)
 		}
 
 		if result == -1 {
 			// GetMessageW failed.
-			break
+			return 2
 		}
 
 		win32.TranslateMessage(&message)

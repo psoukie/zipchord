@@ -171,9 +171,11 @@ Key_Reader :: struct {
 key_reader_init :: proc(
 		reader: ^Key_Reader,
 		logger: log.Logger,
+		os_state: ^OS_State,
 ) -> bool
 {
 	reader.logger = logger
+	reader.os_state = os_state
 	reader.start_time = time.tick_now()
 	queue.init_from_slice(&reader.events, reader._buffer[:])
 	reader.running = true
