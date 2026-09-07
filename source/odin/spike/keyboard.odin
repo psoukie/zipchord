@@ -165,6 +165,7 @@ Key_Reader :: struct {
 	running: bool,
 	mutex: sync.Mutex,
 	logger: log.Logger,
+	os_state: ^OS_State,
 }
 
 key_reader_init :: proc(
@@ -232,6 +233,13 @@ io_worker :: proc(reader: ^Key_Reader)
 			"Up" if key_ev.is_up else "Down",
 			key_ev.key,
 		)
+
+		// We test until 'X' is pressed
+		if key_ev.key == Key_Printable.X && !key_ev.is_up {
+			if !os_post_message(reader.os_state, .Quit) {
+				log.error("Could not post application quit message.")
+			}
+		}
 	}
 }
 

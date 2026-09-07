@@ -11,6 +11,11 @@ App_State :: struct {
 	os_state: OS_State,
 }
 
+App_Message :: enum {
+	Quit = 1,
+	Open_Command_Menu,
+}
+
 main :: proc()
 {
 	app: App_State
@@ -51,6 +56,8 @@ main :: proc()
 		log.error("Could not initialize the OS platform.")
 		return
 	}
+
+	app.key_reader.os_state = &app.os_state
 
 	log.info("Ready...")
 	os_main_loop()

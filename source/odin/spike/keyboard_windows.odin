@@ -325,7 +325,7 @@ key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
 	return key_map.scan_to_key_zc[scan], is_up
 }
 
-WINDOWS_CLASS_NAME :: "ZipChordSpike"
+WINDOWS_CLASS_NAME :: "ZipChord"
 
 window_proc :: proc "system" (
 		hwnd: win32.HWND,
@@ -365,6 +365,10 @@ window_proc :: proc "system" (
 	context.logger = app.logger
 
 	switch message {
+	case win32.WM_APP + u32(App_Message.Quit):
+		// only this one is
+		win32.DestroyWindow(hwnd)
+		return 0
 	case win32.WM_INPUT:
 		timestamp := time.tick_diff(app.key_reader.start_time, time.tick_now())
 
@@ -403,11 +407,6 @@ window_proc :: proc "system" (
 				// Buffer full, we exit
 				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
 			}
-
-			// We test until 'X' is pressed
-			if key_ev.key == Key_Printable.X {
-				win32.PostMessageW(hwnd, win32.WM_CLOSE, 0, 0)
-			}
 		}
 		// Continue exec to final return for an apprpriate Raw Input cleanup.
 		// Unless we call
@@ -444,7 +443,7 @@ os_init :: proc(app_state: ^App_State) -> bool
 	app_state.os_state.hwnd = win32.CreateWindowExW(
 			0,
 			class_name,
-			cstring16(win32.L("Odin hidden window")),
+			cstring16(win32.L("ZipChord")),
 			0,
 			0, 0, 0, 0,
 			nil, nil,
@@ -461,13 +460,13 @@ os_init :: proc(app_state: ^App_State) -> bool
 	return true
 }
 
-keyboard_raw_register :: proc(hwnd: rawptr) -> bool
+keyboard_raw_register :: proc(hwnd: win32.HWND) -> bool
 {
 	raw_keyboard := win32.RAWINPUTDEVICE {
 		usUsagePage = 0x01, // Generic Desktop Controls
 		usUsage     = 0x06, // Keyboard
 		dwFlags     = win32.RIDEV_INPUTSINK,
-		hwndTarget  = win32.HWND(hwnd),
+		hwndTarget  = hwnd,
 	}
 
 	ok := win32.RegisterRawInputDevices(
@@ -475,6 +474,13 @@ keyboard_raw_register :: proc(hwnd: rawptr) -> bool
 			1,
 			win32.UINT(size_of(win32.RAWINPUTDEVICE)),
 	)
+	return bool(ok)
+}
+
+os_post_message :: proc(state: ^OS_State, message: App_Message) -> bool
+{
+	message_value := u32(message) + win32.WM_APP
+	ok := win32.PostMessageW(state.hwnd, message_value, 0, 0)
 	return bool(ok)
 }
 
