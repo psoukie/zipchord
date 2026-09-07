@@ -6,8 +6,8 @@ build/
 *.exp
 *.zip
 tests/*.txt
-tests/temp.out
 !tests/*.chords.txt
 !tests/*.shorthands.txt
+tests/temp.out
 odin-env.bat
 .ignore
