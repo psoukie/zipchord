@@ -8,6 +8,7 @@ App_State :: struct {
 	key_map: Key_Map,
 	keys_down: Keys_Down,
 	key_reader: Key_Reader,
+	os_state: OS_State,
 }
 
 main :: proc()
@@ -46,18 +47,11 @@ main :: proc()
 		thread.destroy(app.key_reader._worker)
 	}
 
-	// Might eventually need to use `when ODIN_OS == .Windows {...}`
-	hwnd := os_window_init(&app)
-	if hwnd == nil {
-		log.error("Could not create a window.")
-		return
-	}
-
-	if !register_keyboard_hook(hwnd) {
-		log.error("Registering keyboard hook failed.")
+	if !os_init(&app) {
+		log.error("Could not initialize the OS platform.")
 		return
 	}
 
 	log.info("Ready...")
-	main_loop()
+	os_main_loop()
 }

@@ -6,6 +6,10 @@ import "core:time"
 import "core:unicode/utf16"
 import "base:runtime"
 
+OS_State :: struct {
+	hwnd: win32.HWND,
+}
+
 HKL :: distinct win32.HANDLE
 
 GUI_Thread_Info :: struct {
@@ -425,7 +429,7 @@ window_proc :: proc "system" (
 	return win32.DefWindowProcW(hwnd, message, wparam, lparam)
 }
 
-os_window_init :: proc(app_state: ^App_State) -> rawptr
+os_init :: proc(app_state: ^App_State) -> bool
 {
 	instance := win32.HINSTANCE(win32.GetModuleHandleW(nil))
 	class_name := cstring16(win32.L(WINDOWS_CLASS_NAME))
@@ -435,9 +439,9 @@ os_window_init :: proc(app_state: ^App_State) -> rawptr
 		hInstance     = instance,
 		lpszClassName = class_name,
 	}
-	if win32.RegisterClassExW(&window_class) == 0 do return nil
+	if win32.RegisterClassExW(&window_class) == 0 do return false
 
-	hwnd := win32.CreateWindowExW(
+	app_state.os_state.hwnd = win32.CreateWindowExW(
 			0,
 			class_name,
 			cstring16(win32.L("Odin hidden window")),
@@ -447,11 +451,17 @@ os_window_init :: proc(app_state: ^App_State) -> rawptr
 			instance,
 			app_state,
 	)
-	return rawptr(hwnd)
+	if app_state.os_state.hwnd == nil do return false
+
+	if !keyboard_raw_register(app_state.os_state.hwnd) {
+		win32.DestroyWindow(app_state.os_state.hwnd)
+		app_state.os_state.hwnd = nil
+		return false
+	}
+	return true
 }
 
-
-register_keyboard_hook :: proc(hwnd: rawptr) -> bool
+keyboard_raw_register :: proc(hwnd: rawptr) -> bool
 {
 	raw_keyboard := win32.RAWINPUTDEVICE {
 		usUsagePage = 0x01, // Generic Desktop Controls
@@ -468,7 +478,7 @@ register_keyboard_hook :: proc(hwnd: rawptr) -> bool
 	return bool(ok)
 }
 
-main_loop :: proc()
+os_main_loop :: proc()
 {
 	message: win32.MSG
 	for {
