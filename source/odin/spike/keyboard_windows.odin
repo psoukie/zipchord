@@ -369,7 +369,8 @@ window_proc :: proc "system" (
 		win32.PostQuitMessage(0)
 		return 0
 	case win32.WM_INPUT:
-		timestamp := time.tick_diff(app.key_reader.start_time, time.tick_now())
+		elapsed := time.tick_diff(app.key_reader.start_time, time.tick_now())
+		timestamp := Timestamp_MS(time.duration_milliseconds(elapsed))
 
 		raw: win32.RAWINPUT
 		raw_size := win32.UINT(size_of(raw))
@@ -397,7 +398,7 @@ window_proc :: proc "system" (
 			}
 
 			key_ev := Key_Event {
-				timestamp = i32(u64(time.duration_milliseconds(timestamp))),
+				timestamp = timestamp,
 				key = key,
 				is_up = is_up,
 			}

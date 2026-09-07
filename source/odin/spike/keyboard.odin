@@ -61,8 +61,10 @@ Key_ZC :: union {
 	Key_Special,
 }
 
+Timestamp_MS :: distinct u32
+
 Key_Event :: struct {
-	timestamp: i32,
+	timestamp: Timestamp_MS,
 	key: Key_ZC,
 	is_up: bool,
 }
