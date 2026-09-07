@@ -8,7 +8,7 @@ zipchord_dll := build_dir . "\zipchord-lib.dll"
 uninstall_exe := build_dir . "\uninstall.exe"
 installer_exe := build_dir . "\zipchord-install.exe"
 result_file := build_dir . "\result.txt"
-odin_version_file := A_ScriptDir . "\zipchord-lib\version.odin"
+odin_version_file := A_ScriptDir . "\..\native\zipchord-lib\version.odin"
 should_zip := (A_Args.Length() >= 1 && A_Args[1] = "zip")
 
 if ( ! InStr(FileExist(build_dir), "D"))
@@ -23,7 +23,7 @@ For _, artifact in build_artifacts {
 WriteOdinVersionFile(odin_version_file, zc_version)
 
 RunWait %ComSpec% /c ""%ahk_exe%" /in zipchord.ahk /out "%zipchord_exe%" /icon zipchord.ico > "%result_file%""
-RunWait %ComSpec% /c "call ..\odin-env.bat && %odin_exe% build zipchord-lib -build-mode:dll -o:speed -out:..\build\zipchord-lib.dll >> ..\build\result.txt 2>&1", %A_ScriptDir%
+RunWait %ComSpec% /c "call ..\odin-env.bat && %odin_exe% build ..\native\zipchord-lib -build-mode:dll -o:speed -out:..\build\zipchord-lib.dll >> ..\build\result.txt 2>&1", %A_ScriptDir%
 if !FileExist(zipchord_dll) {
     FileAppend, `r`nERROR: zipchord-lib.dll was not created at %zipchord_dll%.`r`n, % result_file
     FileRead, result, % result_file

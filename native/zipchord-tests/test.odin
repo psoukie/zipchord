@@ -2,7 +2,7 @@ package tests
 
 import tst "core:testing"
 import "core:os"
-import z "../spike"
+import z "../zipchord"
 
 None :: z.Dict_Error.None
 

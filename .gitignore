@@ -7,5 +7,7 @@ build/
 *.zip
 _tests/*.txt
 _tests/temp.out
+tests/*.txt
+tests/temp.out
 odin-env.bat
 .ignore
