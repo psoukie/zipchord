@@ -1,8 +1,5 @@
-﻿/*
-This file is part of ZipChord.
-Copyright (c) 2023-2026 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
-*/
+﻿; SPDX-FileCopyrightText: 2023-2026 Pavel Soukenik
+; SPDX-License-Identifier: BSD-3-Clause
 
 global TEST_OFF := 0
     , TEST_STANDBY := 1
@@ -48,9 +45,9 @@ Class TestingClass {
         this.Write("This program comes with ABSOLUTELY NO WARRANTY.")
         this.Write("This is free software, and you are welcome to redistribute it")
         this.Write("under certain conditions. Type 'license' for details.")
-        if InStr(FileExist(A_ScriptDir . "\..\_tests\"), "D") {
+        if InStr(FileExist(A_ScriptDir . "\..\tests\"), "D") {
             this.Write("`nDetected the default testing folder.")
-            this.Path("set", A_ScriptDir . "\..\_tests\")
+            this.Path("set", A_ScriptDir . "\..\tests\")
         }
         this.Write("`nType 'help' for a list of available commands.")
         this._Prompt()

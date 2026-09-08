@@ -1,5 +1,8 @@
 package tests
 
+// SPDX-FileCopyrightText: 2026 Pavel Soukenik
+// SPDX-License-Identifier: BSD-3-Clause
+
 import tst "core:testing"
 import zc "../zipchord-lib"
 import "core:os"
@@ -90,7 +93,7 @@ load_dict :: proc(t: ^tst.T) {
     loaded: i32
     zc.dict_init(&dict)
     defer zc.dict_destroy(&dict)
-	zc.dict_load_file("../../_tests/en-dvorak.chords.txt", &dict, true, &loaded)
+	zc.dict_load_file("../../tests/en-dvorak.chords.txt", &dict, true, &loaded)
 	tst.expect(t, loaded >  0, "dict load did not load any chords")
 	expansion, lookup_err := zc.dict_lookup(&dict, "ms")
 	tst.expect(t, expansion == "some", "dict after load did not find a chord")
@@ -106,10 +109,10 @@ load_dict_with_wrapper :: proc(t: ^tst.T) {
     buf := new([2048]u8)
     defer free(buf)
     loaded: i32
-    load_return := zc.zc_load_dictionary("../../_tests/en-dvorak.chords.txt", true, &loaded)
+    load_return := zc.zc_load_dictionary("../../tests/en-dvorak.chords.txt", true, &loaded)
     tst.expect_value(t, load_return, zc.Dict_Error.None)
 	tst.expect(t, loaded > 0, "Did not load chord dictionary.")
-    load_return = zc.zc_load_dictionary("../../_tests/english.shorthands.txt", false, &loaded)
+    load_return = zc.zc_load_dictionary("../../tests/english.shorthands.txt", false, &loaded)
     tst.expect_value(t, load_return, zc.Dict_Error.None)
 	tst.expect(t, loaded > 0, "Did not load shorthand dictionary.")
     expansion, lookup_err := zc.dict_lookup(&zc.dicts.shorthand, "tst")

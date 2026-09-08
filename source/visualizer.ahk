@@ -1,8 +1,5 @@
-﻿/*
-This file is part of ZipChord.
-Copyright (c) 2023-2024 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license. 
-*/
+﻿; SPDX-FileCopyrightText: 2023-2024 Pavel Soukenik
+; SPDX-License-Identifier: BSD-3-Clause
 
 ; Global variables that can be hooked up to AHK Gui
 global UI_monitor_slot1, UI_monitor_slot2, UI_monitor_slot3, UI_monitor_slot4, UI_monitor_slot5
