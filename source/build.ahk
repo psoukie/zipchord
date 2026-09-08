@@ -11,6 +11,8 @@ zipchord_dll := build_dir . "\zipchord-lib.dll"
 uninstall_exe := build_dir . "\uninstall.exe"
 installer_exe := build_dir . "\zipchord-install.exe"
 result_file := build_dir . "\result.txt"
+license_source := A_ScriptDir . "\..\LICENSE"
+license_file := build_dir . "\LICENSE.txt"
 odin_version_file := A_ScriptDir . "\..\native\zipchord-lib\version.odin"
 should_zip := (A_Args.Length() >= 1 && A_Args[1] = "zip")
 
@@ -18,7 +20,7 @@ if ( ! InStr(FileExist(build_dir), "D"))
     FileCreateDir, % build_dir
 
 build_artifacts := ["zipchord.exe", "zipchord-lib.dll", "uninstall.exe", "zipchord-install.exe", "result.txt"
-                  , "zipchord-exe-*.zip", "zipchord-install-*.zip", "zipchord-library-*.zip"]
+                  , "LICENSE.txt", "zipchord-exe-*.zip", "zipchord-install-*.zip", "zipchord-library-*.zip"]
 For _, artifact in build_artifacts {
     FileDelete, % build_dir . "\\" . artifact
 }
@@ -37,9 +39,18 @@ RunWait %ComSpec% /c ""%ahk_exe%" /in uninstall.ahk /out "%uninstall_exe%" /icon
 RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out "%installer_exe%" /icon zipchord.ico >> "%result_file%""
 
 if (should_zip) {
-    Zip(zipchord_exe, build_dir . "\zipchord-exe-" . zc_version . ".zip")
-    Zip(installer_exe, build_dir . "\zipchord-install-" . zc_version . ".zip")
-    Zip(zipchord_dll, build_dir . "\zipchord-library-" . zc_version . ".zip")
+    FileCopy, % license_source, % license_file, 1
+    if ErrorLevel {
+        FileAppend, `r`nERROR: LICENSE.txt could not be copied into the build folder.`r`n, % result_file
+        FileRead, result, % result_file
+        MsgBox, % result
+        ExitApp
+    }
+
+    ZipDistribution(zipchord_exe, license_file, build_dir . "\zipchord-exe-" . zc_version . ".zip")
+    ZipDistribution(installer_exe, license_file, build_dir . "\zipchord-install-" . zc_version . ".zip")
+    ZipDistribution(zipchord_dll, license_file, build_dir . "\zipchord-library-" . zc_version . ".zip")
+    FileDelete, % license_file
 }
 
 FileRead, result, % result_file
@@ -52,6 +63,11 @@ Requires: Autohotkey_L, Windows > XP
 URL: http://www.autohotkey.com/forum/viewtopic.php?t=65401
 Credits: Sean for original idea
 */
+
+ZipDistribution(file, license_file, archive) {
+    Zip(file, archive)
+    Zip(license_file, archive)
+}
 
 Zip(file,sZip) {
     If Not FileExist(sZip)
