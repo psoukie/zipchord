@@ -1,5 +1,8 @@
 package zipchord
 
+// SPDX-FileCopyrightText: 2026 Pavel Soukenik
+// SPDX-License-Identifier: BSD-3-Clause
+
 import win32 "core:sys/windows"
 foreign import user32 "system:User32.lib"
 import "core:time"

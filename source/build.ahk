@@ -1,4 +1,7 @@
-﻿#include version.ahk
+﻿; SPDX-FileCopyrightText: 2023-2026 Pavel Soukenik
+; SPDX-License-Identifier: BSD-3-Clause
+
+#include version.ahk
 
 ahk_exe := A_ProgramFiles . "\AutoHotkey\Compiler\Ahk2Exe.exe"
 odin_exe := "odin"

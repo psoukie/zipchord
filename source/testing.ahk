@@ -1,8 +1,5 @@
-﻿/*
-This file is part of ZipChord.
-Copyright (c) 2023-2026 Pavel Soukenik
-Refer to the LICENSE file in the root folder for the BSD-3-Clause license.
-*/
+﻿; SPDX-FileCopyrightText: 2023-2026 Pavel Soukenik
+; SPDX-License-Identifier: BSD-3-Clause
 
 global TEST_OFF := 0
     , TEST_STANDBY := 1

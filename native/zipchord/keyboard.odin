@@ -1,5 +1,8 @@
 package zipchord
 
+// SPDX-FileCopyrightText: 2026 Pavel Soukenik
+// SPDX-License-Identifier: BSD-3-Clause
+
 import "core:time"
 import "core:log"
 import "core:container/queue"

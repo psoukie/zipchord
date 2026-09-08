@@ -1,5 +1,8 @@
 package tests
 
+// SPDX-FileCopyrightText: 2026 Pavel Soukenik
+// SPDX-License-Identifier: BSD-3-Clause
+
 import tst "core:testing"
 import "core:os"
 import z "../zipchord"
