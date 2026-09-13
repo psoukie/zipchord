@@ -11,6 +11,7 @@ zipchord_dll := build_dir . "\zipchord-lib.dll"
 uninstall_exe := build_dir . "\uninstall.exe"
 installer_exe := build_dir . "\zipchord-install.exe"
 result_file := build_dir . "\result.txt"
+icon_file := FullPath(A_ScriptDir . "\..\assets\zipchord.ico")
 license_source := A_ScriptDir . "\..\LICENSE"
 license_file := build_dir . "\LICENSE.txt"
 odin_version_file := A_ScriptDir . "\..\native\zipchord-lib\version.odin"
@@ -27,7 +28,7 @@ For _, artifact in build_artifacts {
 
 WriteOdinVersionFile(odin_version_file, zc_version)
 
-RunWait %ComSpec% /c ""%ahk_exe%" /in zipchord.ahk /out "%zipchord_exe%" /icon zipchord.ico > "%result_file%""
+RunWait %ComSpec% /c ""%ahk_exe%" /in zipchord.ahk /out "%zipchord_exe%" /icon "%icon_file%" > "%result_file%""
 RunWait %ComSpec% /c "call ..\odin-env.bat && %odin_exe% build ..\native\zipchord-lib -build-mode:dll -o:speed -out:..\build\zipchord-lib.dll >> ..\build\result.txt 2>&1", %A_ScriptDir%
 if !FileExist(zipchord_dll) {
     FileAppend, `r`nERROR: zipchord-lib.dll was not created at %zipchord_dll%.`r`n, % result_file
@@ -36,7 +37,7 @@ if !FileExist(zipchord_dll) {
     ExitApp
 }
 RunWait %ComSpec% /c ""%ahk_exe%" /in uninstall.ahk /out "%uninstall_exe%" /icon shell32_271.ico >> "%result_file%""
-RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out "%installer_exe%" /icon zipchord.ico >> "%result_file%""
+RunWait %ComSpec% /c ""%ahk_exe%" /in installer.ahk /out "%installer_exe%" /icon "%icon_file%" >> "%result_file%""
 
 if (should_zip) {
     FileCopy, % license_source, % license_file, 1
