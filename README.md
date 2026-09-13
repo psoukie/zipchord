@@ -1,4 +1,13 @@
-# ZipChord
+<p align="center">
+  <img src="assets/zipchord_logo.svg" width="240" alt="ZipChord logo" />
+</p>
+
+<h1 align="center">ZipChord</h1>
+
+[Download](https://github.com/psoukie/zipchord/releases/latest) · [Documentation](https://github.com/psoukie/zipchord/wiki) · [Discussions](https://github.com/psoukie/zipchord/discussions)
+
+[![Latest release](https://img.shields.io/github/v/release/psoukie/zipchord)](https://github.com/psoukie/zipchord/releases/latest)
+[![License: BSD 3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
 <img align="right" src="https://raw.githubusercontent.com/wiki/psoukie/zipchord/images/zipchord-demo-border.gif" width="400" alt="ZipChord demo" />
 
@@ -25,25 +34,26 @@ Instead of learning full stenography, you can start with just a few shortcuts fo
 - Automatic switching of key mapping and dictionaries with the active Windows keyboard layout
 - Native UI and command menu for common actions and assigning shortcuts
 
-## Example
+## Examples
 
-- Press a chord such as `S` + `D` to output "should"
-- Type a shorthand such as "adrs" to expand to a "address"
-- Use hints while typing to discover or remember available shortcuts
+With the bundled English QWERTY chord and English shorthand dictionaries:
 
-## Get Started
+| Input | Output |
+| --- | --- |
+| Press `S` + `D` simultaneously | should |
+| Type `adrs`, then press Space | address |
 
-- Download: [Latest release](https://github.com/psoukie/zipchord/releases)
-- Install: [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation)
-- Learn: [How to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord)
+Use hints while typing to discover or remember available shortcuts. Smart capitalization adjusts the output to its context.
 
-## Installation
+## Quick Start
 
-Download **zipchord-install-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases), extract it, and run the included installer.
+**Requires Windows.**
 
-For other installation options that do not use the installer, see the [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation).
+1. Download **zipchord-install-_version_.zip** from the [latest release](https://github.com/psoukie/zipchord/releases/latest).
+2. Extract the archive and run the included installer.
+3. Follow [How to use ZipChord](https://github.com/psoukie/zipchord/wiki/How-to-use-ZipChord) to try your first chords and shorthands.
 
-ZipChord currently works on Windows only. A cross-platform version is under development.
+For installation options that do not use the installer, see the [Installation guide](https://github.com/psoukie/zipchord/wiki/Installation).
 
 ## Documentation
 
@@ -55,10 +65,17 @@ ZipChord adheres to strict privacy and security principles. It does not send you
 
 ## Development
 
-ZipChord was first released in 2021. It is primarily written in [AutoHotkey](https://www.autohotkey.com/), with components gradually being reimplemented in [Odin](https://odin-lang.org/) as part of ongoing work toward cross-platform support.
+ZipChord was first released in 2021. This repository contains two development tracks:
+
+- **ZipChord 2.x** is the supported Windows application, written in [AutoHotkey v1](https://www.autohotkey.com/) under [`source/`](source/), with an optional [Odin](https://odin-lang.org/) dictionary-acceleration library under [`native/zipchord-lib/`](native/zipchord-lib/).
+- **ZipChord 0** is an in-progress standalone, cross-platform implementation in Odin under [`native/zipchord/`](native/zipchord/). It initially targets Windows, with support for macOS and Linux as a longer-term goal. It is not yet a replacement for ZipChord 2.x.
 
 Design and implementation are done by the maintainer, with generative AI used for code review, troubleshooting, technical recommendations, and documentation.
 
 ## Feedback
 
 If you have any questions, feedback, or suggestions, please write a note in the [Discussions](https://github.com/psoukie/zipchord/discussions). You can also report a bug if you run across anything that seems broken or create a feature suggestion under [Issues](https://github.com/psoukie/zipchord/issues).
+
+## License
+
+ZipChord is released under the [BSD 3-Clause License](LICENSE).
