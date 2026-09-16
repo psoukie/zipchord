@@ -343,9 +343,7 @@ window_proc :: proc "system" (
 	if message == win32.WM_NCCREATE {
 		create_struct := cast(^win32.CREATESTRUCTW)uintptr(lparam)
 		app = cast(^App_State)create_struct.lpCreateParams
-		if app == nil {
-			return 0
-		}
+		if app == nil do return 0
 
 		win32.SetLastError(0)
 		previous := win32.SetWindowLongPtrW(
@@ -353,9 +351,8 @@ window_proc :: proc "system" (
 			win32.GWLP_USERDATA,
 			win32.LONG_PTR(uintptr(app)),
 		)
-		if previous == 0 && win32.GetLastError() != 0 {
-			return 0
-		}
+		if previous == 0 && win32.GetLastError() != 0 do return 0
+
 	} else {
 		stored := win32.GetWindowLongPtrW(hwnd, win32.GWLP_USERDATA)
 		app = cast(^App_State)uintptr(stored)
@@ -396,7 +393,7 @@ window_proc :: proc "system" (
 				break outer
 			}
 
-			if !keys_down_update(&app.keys_down, key, is_up) {
+			if !keys_down_update(&app.key_reader.keys_down, key, is_up) {
 				break outer
 			}
 
@@ -475,8 +472,8 @@ os_destroy :: proc(os_state: ^OS_State)
 keyboard_raw_register :: proc(hwnd: win32.HWND) -> bool
 {
 	raw_keyboard := win32.RAWINPUTDEVICE {
-		usUsagePage = 0x01, // Generic Desktop Controls
-		usUsage     = 0x06, // Keyboard
+		usUsagePage = 0x01,  // Generic Desktop Controls
+		usUsage     = 0x06,  // Keyboard
 		dwFlags     = win32.RIDEV_INPUTSINK,
 		hwndTarget  = hwnd,
 	}

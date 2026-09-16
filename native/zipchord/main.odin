@@ -10,8 +10,8 @@ import "core:os"
 App_State :: struct {
 	logger: log.Logger,
 	key_map: Key_Map,
-	keys_down: Keys_Down,
 	key_reader: Key_Reader,
+	input_engine: Input_Engine,
 	os_state: OS_State,
 }
 
@@ -23,6 +23,8 @@ App_Message :: enum {
 App_Error :: enum {
 	None,
 	Key_Event_Buffer_Full,
+	Input_Event_Buffer_Full,
+	Key_Up_Down_Mismatch,
 	Windows_GetMessageW_Failed,
 	Windows_GetRawInput_Failed,
 	Windows_Platform_Init_Failed,
@@ -44,7 +46,14 @@ run :: proc(logger: log.Logger) -> App_Error
 
 	defer os_destroy(&app.os_state)
 
-	if !key_reader_init(&app.key_reader, app.logger, &app.os_state) do return .Key_Reader_Init_Failed
+	if !io_worker_init(
+			&app.key_reader,
+			&app.input_engine,
+			app.logger,
+			&app.os_state,
+	) {
+		return .Key_Reader_Init_Failed
+	}
 
 	defer {
 		key_reader_stop(&app.key_reader)

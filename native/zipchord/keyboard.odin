@@ -92,9 +92,11 @@ Key_Map :: struct {
 	zc_modifier_to_scan: [Key_Modifier]Scan_ID,
 	zc_special_to_scan: [Key_Special]Scan_ID,
 	scan_to_key_zc: [SCAN_TABLE_SIZE]Key_ZC,
+
+	printable_to_typed_char: [Key_Printable]Key_Typed_Char,
+
 	printable_to_symbol: [Key_Printable]rune,
 	symbol_to_printable: map[rune]Key_Printable,
-	printable_to_typed_char: [Key_Printable]Key_Typed_Char,
 }
 
 key_symbol_map_delete :: proc(key_map: ^Key_Map)
@@ -119,7 +121,7 @@ key_symbol_from_printable :: proc(
 	return symbol, symbol != 0
 }
 
-key_typed_char_from_printable :: proc(
+typed_char_from_printable :: proc(
 		key_map: Key_Map,
 		printable: Key_Printable,
 		with_shift := false,
@@ -169,26 +171,9 @@ Key_Reader :: struct {
 	sema: sync.Sema,
 	running: bool,
 	mutex: sync.Mutex,
+	keys_down: Keys_Down,
 	logger: log.Logger,
 	os_state: ^OS_State,
-}
-
-key_reader_init :: proc(
-		reader: ^Key_Reader,
-		logger: log.Logger,
-		os_state: ^OS_State,
-) -> bool
-{
-	reader.logger = logger
-	reader.os_state = os_state
-	reader.start_time = time.tick_now()
-	queue.init_from_slice(&reader.events, reader._buffer[:])
-	reader.running = true
-	reader._worker = thread.create_and_start_with_poly_data(
-			reader,
-			io_worker,
-	)
-	return reader._worker != nil
 }
 
 key_reader_event_add :: proc(
@@ -199,9 +184,7 @@ key_reader_event_add :: proc(
 	sync.mutex_lock(&reader.mutex)
 	ok, err := queue.push(&reader.events, event)
 	sync.mutex_unlock(&reader.mutex)
-	if !ok || err != .None {
-		return false
-	}
+	if !ok || err != .None do return false
 
 	sync.sema_post(&reader.sema)
 	return true
@@ -213,40 +196,5 @@ key_reader_stop :: proc(reader: ^Key_Reader)
 	reader.running = false
 	sync.mutex_unlock(&reader.mutex)
 	sync.sema_post(&reader.sema)
-}
-
-io_worker :: proc(reader: ^Key_Reader)
-{
-	context.logger = reader.logger
-	for {
-		sync.sema_wait(&reader.sema)
-
-		sync.mutex_lock(&reader.mutex)
-		running := reader.running
-		key_ev, ok := queue.pop_front_safe(&reader.events)
-		sync.mutex_unlock(&reader.mutex)
-
-		if !ok {
-			if running {
-				continue
-			} else {
-				return
-			}
-		}
-
-		log.infof(
-			"%v\t%v\t%v",
-			key_ev.timestamp,
-			"Up" if key_ev.is_up else "Down",
-			key_ev.key,
-		)
-
-		// We test until 'X' is pressed
-		if key_ev.key == Key_Printable.X && !key_ev.is_up {
-			if !os_post_message(reader.os_state, .Quit) {
-				log.error("Could not post application quit message.")
-			}
-		}
-	}
 }
 
