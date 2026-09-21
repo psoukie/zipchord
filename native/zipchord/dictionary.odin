@@ -24,6 +24,9 @@ Dict_Error :: enum i32 {
 	Chain_Ends_In_Single_Key,
 	Undefined_Key_Symbol,
 	Unsupported_Chain,
+	Dictionary_Not_Initialized,
+	Dictionary_Already_Initialized,
+	Dictionary_Already_Populated,
 }
 
 Chord :: distinct bit_set[Key_Printable]
@@ -31,13 +34,13 @@ Chord_Notation :: distinct string    // chord as defined in the dictionary
 Shorthand :: distinct string
 Expansion :: distinct string
 
-STRING_BUFFER_BYTES :: 1024
-
-Fixed_Buffer :: struct($CAP: int) {
-	bytes: [CAP]u8,
-	len:   int,
+Dictionaries :: struct {
+	chord: Dict_Chord,
+	prefix: Dict_Chord,  // Chord chain prefixes without standalone chord entries
+	shorthand: Dict_Shorthand,
 }
 
+@(private="file")
 clone_text :: proc(
 		text: $T,
 		alloc:= context.allocator,
@@ -50,6 +53,7 @@ clone_text :: proc(
 	return T(cloned_string), .None
 }
 
+@(private="file")
 clone_expansion_to_lower :: proc(
 		exp: Expansion,
 		alloc:= context.allocator,
@@ -61,41 +65,15 @@ clone_expansion_to_lower :: proc(
 	return Expansion(cloned_string), .None
 }
 
-
-// normalize_chained_chords :: proc(raw_shortcut: string, chain_buf: ^Chord_Chain_Buffer) -> (shortcut: string, err: Dict_Error) {
-// 	chain_buf.len = 0
-// 	raw_shortcut := raw_shortcut
-
-// 	if len(raw_shortcut) >= MAX_CHAIN_BYTES {
-// 		return "", .Buffer_Too_Small
-// 	}
-
-// 	chord_buf: Chord_Buffer
-
-// 	rune_count: int
-// 	segments := 0
-// 	for raw_chord in strings.split_iterator(&raw_shortcut, "|") {
-// 		segments += 1
-// 		n := len(raw_chord)
-// 		if n == 0 do return "", .Empty_Chord
-
-// 		if chain_buf.len > 0 {
-// 			chain_buf.bytes[chain_buf.len] = u8('|')
-// 			chain_buf.len += 1
-// 		}
-// 		normalized := _normalize_chord(raw_chord, &chord_buf) or_return
-// 		copy(chain_buf.bytes[chain_buf.len:chain_buf.len+n], normalized[:])
-// 		chain_buf.len += n
-// 		rune_count = utf8.rune_count(raw_chord)
-// 	}
-
-// 	if segments > 1 && rune_count < 2 do return "", .Chain_Ends_In_Single_Key
-
-// 	return string(chain_buf.bytes[:chain_buf.len]), .None
-// }
+@(private="file")
+Dict_Status :: struct {
+	initialized: bool,
+	entries_count: int,
+}
 
 Dict_Shorthand :: struct {
-    arena_memory:           virtual.Arena,      // owns cloned key/value string bytes
+	using status: Dict_Status,
+    arena_memory: virtual.Arena,      // owns cloned key/value string bytes
 	// map internals allocated with context.allocator
 	shorthand_to_expansion: map[Shorthand]Expansion,
     expansion_to_shorthand: map[Expansion]Shorthand,
@@ -103,38 +81,38 @@ Dict_Shorthand :: struct {
 
 
 Dict_Chord :: struct {
-    arena_memory:       virtual.Arena,      // owns cloned key/value string bytes
+	using status: Dict_Status,
+    arena_memory: virtual.Arena,      // owns cloned key/value string bytes
 	// map internals allocated with context.allocator
 	chord_to_expansion: map[Chord]Expansion,
     expansion_to_chord_notation: map[Expansion]Chord_Notation,
 }
 
-// global variable for dictionaries
-dicts: struct {
-	chord:      Dict_Chord,
-	prefix:     Dict_Chord,  // Chord chain prefixes without standalone chord entries
-	shorthand:  Dict_Shorthand,
-}
-
-string_buf:     Fixed_Buffer(STRING_BUFFER_BYTES)
-
+@(private="file")
 dict_chord_init :: proc(dict: ^Dict_Chord) -> (err: Dict_Error)
 {
+	if dict.initialized do return .Dictionary_Already_Initialized
+
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
     if alloc_err != .None do return .Allocation_Error
 
 	dict.chord_to_expansion = make(map[Chord]Expansion, context.allocator)
 	dict.expansion_to_chord_notation = make(map[Expansion]Chord_Notation, context.allocator)
+	dict.initialized = true
     return .None
 }
 
+@(private="file")
 dict_shorthand_init :: proc(dict: ^Dict_Shorthand) -> (err: Dict_Error)
 {
+	if dict.initialized do return .Dictionary_Already_Initialized
+
 	alloc_err := virtual.arena_init_growing(&dict.arena_memory)
     if alloc_err != .None do return .Allocation_Error
 
 	dict.shorthand_to_expansion = make(map[Shorthand]Expansion, context.allocator)
 	dict.expansion_to_shorthand = make(map[Expansion]Shorthand, context.allocator)
+	dict.initialized = true
     return .None
 }
 
@@ -143,6 +121,7 @@ dict_init :: proc {
 	dict_shorthand_init,
 }
 
+@(private="file")
 dict_chord_destroy :: proc(dict: ^Dict_Chord)
 {
     delete(dict.chord_to_expansion)          // free map internals
@@ -151,6 +130,7 @@ dict_chord_destroy :: proc(dict: ^Dict_Chord)
     dict^ = {}
 }
 
+@(private="file")
 dict_shorthand_destroy :: proc(dict: ^Dict_Shorthand)
 {
     delete(dict.shorthand_to_expansion)          // free map internals
@@ -172,6 +152,8 @@ dict_chord_add :: proc(
 		chord_notation: Chord_Notation,
 ) -> (err: Dict_Error)
 {
+	if !dict.initialized do return .Dictionary_Not_Initialized
+
 	_, lookup_err := dict_lookup(dict^, chord)
 	if lookup_err == .None do return .Shortcut_Exists
 
@@ -188,6 +170,7 @@ dict_chord_add :: proc(
 
 	dict.chord_to_expansion[chord] = own_expansion
 	dict.expansion_to_chord_notation[own_expansion_lower] = own_chord_notation
+	dict.entries_count += 1
 	return .None
 }
 
@@ -197,6 +180,8 @@ dict_shorthand_add :: proc(
 		expansion: Expansion,
 ) -> (err: Dict_Error)
 {
+	if !dict.initialized do return .Dictionary_Not_Initialized
+
 	_, lookup_err := dict_lookup(dict^, shorthand)
 	if lookup_err == .None do return .Shortcut_Exists
 
@@ -214,14 +199,18 @@ dict_shorthand_add :: proc(
 
 	dict.shorthand_to_expansion[own_shorthand] = own_expansion
 	dict.expansion_to_shorthand[own_expansion_lower] = own_shorthand
+	dict.entries_count += 1
 	return .None
 }
 
+@(private="file")
 dict_chord_lookup :: proc(
 		dict: Dict_Chord,
 		chord: Chord,
 ) -> (expansion: Expansion, err: Dict_Error)
 {
+	if !dict.initialized do return "", .Dictionary_Not_Initialized
+
 	ok: bool
 	if expansion, ok = dict.chord_to_expansion[chord]; !ok {
 		return {}, .Not_Found
@@ -230,11 +219,14 @@ dict_chord_lookup :: proc(
 	return expansion, .None
 }
 
+@(private="file")
 dict_shorthand_lookup :: proc(
 		dict: Dict_Shorthand,
 		shorthand: Shorthand,
 ) -> (expansion: Expansion, err: Dict_Error)
 {
+	if !dict.initialized do return "", .Dictionary_Not_Initialized
+
 	ok: bool
 	if expansion, ok := dict.shorthand_to_expansion[shorthand]; !ok {
 		return {}, .Not_Found
@@ -248,11 +240,14 @@ dict_lookup :: proc {
 	dict_shorthand_lookup,
 }
 
+@(private="file")
 dict_chord_reverse_lookup :: proc(
 		dict: ^Dict_Chord,
 		expansion: Expansion,
 ) -> (chord_notation: Chord_Notation, err: Dict_Error)
 {
+	if !dict.initialized do return "", .Dictionary_Not_Initialized
+
 	ok: bool
 	if chord_notation, ok = dict.expansion_to_chord_notation[expansion]; !ok {
 		return {}, .Not_Found
@@ -261,11 +256,14 @@ dict_chord_reverse_lookup :: proc(
 	return chord_notation, .None
 }
 
+@(private="file")
 dict_shorthand_reverse_lookup :: proc(
 		dict: ^Dict_Shorthand,
 		expansion: Expansion,
 ) -> (shorthand: Shorthand, err: Dict_Error)
 {
+	if !dict.initialized do return "", .Dictionary_Not_Initialized
+
 	ok: bool
 	if shorthand, ok := dict.expansion_to_shorthand[expansion]; !ok {
 		return {}, .Not_Found
@@ -277,22 +275,6 @@ dict_shorthand_reverse_lookup :: proc(
 dict_reverse_lookup :: proc {
 	dict_chord_reverse_lookup,
 	dict_shorthand_reverse_lookup,
-}
-
-dict_line_parse :: proc(
-		raw_line: string,
-		$T: typeid,
-) -> (shortcut: T, expansion: Expansion, ok: bool)
-		where T == Chord_Notation || T == Shorthand
-{
-	line := strings.trim_right(raw_line, "\r")
-	shortcut_string := strings.split_iterator(&line, "\t") or_return
-
-	if shortcut_string == "" do return
-
-	exp_string := strings.split_iterator(&line, "\t") or_return
-
-	return T(shortcut_string), Expansion(exp_string), true
 }
 
 Dict_Load_Diagnostic :: struct {
@@ -310,9 +292,24 @@ dict_chord_load_file :: proc(
 		diagnostic_alloc := context.temp_allocator,
 ) -> (diagnostic: Dict_Load_Diagnostic, err: Dict_Error)
 {
-	// re-initialize the dictionary
-	dict_destroy(dict)
-	dict_init(dict) or_return
+	dict_line_parse :: proc(
+			raw_line: string,
+			$T: typeid,
+	) -> (shortcut: T, expansion: Expansion, ok: bool)
+			where T == Chord_Notation || T == Shorthand {
+		line := strings.trim_right(raw_line, "\r")
+		shortcut_string := strings.split_iterator(&line, "\t") or_return
+
+		if shortcut_string == "" do return
+
+		exp_string := strings.split_iterator(&line, "\t") or_return
+
+		return T(shortcut_string), Expansion(exp_string), true
+	}
+
+	if !dict.initialized do return diagnostic, .Dictionary_Not_Initialized
+
+	if dict.entries_count > 0 do return diagnostic, .Dictionary_Already_Populated
 
 	// Treat an empty path as clearing the dictionary
 	if filepath == "" do return {}, .None

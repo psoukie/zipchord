@@ -30,6 +30,8 @@ App_Error :: enum {
 	Windows_Platform_Init_Failed,
 	Key_Map_Alloc_Error,
 	Key_Reader_Init_Failed,
+	Unhandled_Dictionary_Error,
+	File_Read_Write_Error,
 }
 
 run :: proc(logger: log.Logger) -> App_Error
@@ -45,6 +47,16 @@ run :: proc(logger: log.Logger) -> App_Error
 	if !os_init(&app) do return .Windows_Platform_Init_Failed
 
 	defer os_destroy(&app.os_state)
+
+	dict_err := dict_init(&app.input_engine.dictionaries.chord)
+	if dict_err != .None do return .Unhandled_Dictionary_Error
+
+	defer dict_destroy(&app.input_engine.dictionaries.chord)
+
+	err := spike_dictionary_load(&app.input_engine.dictionaries.chord, app.key_map)
+	if err != .None do return .Unhandled_Dictionary_Error
+
+	log.infof("Loaded %v entries into the chord dictionary.", app.input_engine.dictionaries.chord.entries_count)
 
 	if !io_worker_init(
 			&app.key_reader,
@@ -78,4 +90,27 @@ main :: proc()
 	}
 
 	log.destroy_console_logger(logger)
+}
+
+spike_dictionary_load :: proc (
+		dict_chord: ^Dict_Chord,
+		key_map: Key_Map,
+) -> App_Error
+{
+	DICT :: "\uFEFFFirst line\r\n" +
+            "\r\n" +
+            "th\tthe\r\n" +
+            "uo\tyou\n"
+    dict_file :: "test_dictionary.txt"
+    err_f := os.write_entire_file_from_string(dict_file, DICT)
+    if err_f != os.General_Error.None do return .File_Read_Write_Error
+
+    defer os.remove(dict_file)
+
+    result, dict_err := dict_chord_load_file(dict_chord, key_map, dict_file)
+    if dict_err != .None {
+		log.errorf("ZipChord Error: %v - %v", dict_err, result)
+		return .Unhandled_Dictionary_Error
+    }
+    return .None
 }

@@ -1,6 +1,5 @@
 package zipchord
 
-import "core:rexcode/isa/x86/tablegen/generated"
 import "core:log"
 import "core:time"
 import "core:container/queue"
@@ -17,13 +16,20 @@ Input_Event :: struct {
 	timing: Input_Timing,
 }
 
-INPUT_BUFFER_LENGTH :: 128
+INPUT_BUFFER_LENGTH :: 256
 
 Input_Engine :: struct {
 	events: [INPUT_BUFFER_LENGTH]Input_Event,
-	event_next_id: int,
+	start: int,
+	length: int,
 	keys_active: bit_set[Key_Printable],
 	key_index: [Key_Printable]int,
+	dictionaries: Dictionaries,
+}
+
+input_engine_reset :: proc ()
+{
+
 }
 
 io_worker_init :: proc(
@@ -57,24 +63,25 @@ io_worker :: proc(reader: ^Key_Reader, io: ^Input_Engine)
 		if key_ev.is_up != record_as_up do return -1, .Key_Up_Down_Mismatch
 
 		if record_as_up {
-			ev_id := io.key_index[key]
-			io.events[ev_id].timing.end = key_ev.timestamp
+			ev_index := io.key_index[key]
+			io.events[ev_index].timing.end = key_ev.timestamp
 			io.keys_active -= {key}
-			return ev_id, .None
+			return ev_index, .None
 		}
 
-		// record as key down
-		if io.event_next_id == INPUT_BUFFER_LENGTH do return -1, .Input_Event_Buffer_Full
+		// record a key down
+		if io.length == INPUT_BUFFER_LENGTH do return -1, .Input_Event_Buffer_Full
 
 		input_ev: Input_Event
 		input_ev.key = key
 		input_ev.timing.start = key_ev.timestamp
 		io.keys_active += {key}
 
-		io.events[io.event_next_id] = input_ev
-		io.key_index[key] = io.event_next_id
-		io.event_next_id += 1
-		return io.event_next_id - 1, .None
+		write_index := (io.start + io.length) % INPUT_BUFFER_LENGTH
+		io.events[write_index] = input_ev
+		io.key_index[key] = write_index
+		io.length += 1
+		return write_index, .None
 	}
 
 	context.logger = reader.logger

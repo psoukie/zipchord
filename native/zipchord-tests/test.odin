@@ -109,6 +109,7 @@ load_dict :: proc(t: ^tst.T) {
     err_f := os.write_entire_file_from_string(dict_file, DIC1)
     defer os.remove(dict_file)
     tst.expect(t, err_f == nil, "Error writing dictionary file")
+    z.dict_init(&dict)
     result, err := z.dict_chord_load_file(&dict, key_map, dict_file)
     defer z.dict_destroy(&dict)
     defer free_all(context.temp_allocator)
@@ -116,16 +117,19 @@ load_dict :: proc(t: ^tst.T) {
     tst.expect_value(t, err, z.Dict_Error.Repeated_Key)
 
     err_f = os.write_entire_file_from_string(dict_file, DIC2)
+    z.dict_init(&dict)
     result, err = z.dict_chord_load_file(&dict, key_map, dict_file)
 	tst.expect_value(t, result.line_number, 1)
     tst.expect_value(t, err, z.Dict_Error.Unsupported_Chain)
 
     err_f = os.write_entire_file_from_string(dict_file, DIC3)
+    z.dict_init(&dict)
     result, err = z.dict_chord_load_file(&dict, key_map, dict_file)
 	tst.expect_value(t, result.line_number, 2)
     tst.expect_value(t, err, z.Dict_Error.Fewer_Than_Two)
 
     err_f = os.write_entire_file_from_string(dict_file, DIC4)
+    z.dict_init(&dict)
     result, err = z.dict_chord_load_file(&dict, key_map, dict_file)
 	tst.expect_value(t, result.line_number, 4)
     tst.expect_value(t, err, None)
