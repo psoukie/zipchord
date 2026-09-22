@@ -11,7 +11,7 @@ App_State :: struct {
 	logger: log.Logger,
 	key_map: Key_Map,
 	key_reader: Key_Reader,
-	input_engine: Input_Engine,
+	input_engine: IO_Engine,
 	os_state: OS_State,
 }
 

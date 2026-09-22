@@ -6,6 +6,9 @@ import "core:container/queue"
 import "core:thread"
 import "core:sync"
 
+INPUT_BUFFER_LENGTH :: 256
+CHORD_DETECTION_OVERLAP_PERCENTAGE :: .65
+
 Input_Timing :: struct {
 	start: Timestamp_MS,
 	end: Timestamp_MS,
@@ -16,25 +19,34 @@ Input_Event :: struct {
 	timing: Input_Timing,
 }
 
-INPUT_BUFFER_LENGTH :: 256
 
-Input_Engine :: struct {
+Input_Events :: struct {
 	events: [INPUT_BUFFER_LENGTH]Input_Event,
-	start: int,
+	offset: int,
 	length: int,
-	keys_active: bit_set[Key_Printable],
-	key_index: [Key_Printable]int,
-	dictionaries: Dictionaries,
+	classify_from: int,
 }
 
-input_engine_reset :: proc ()
+input_event_at :: proc(input_ev: ^Input_Events, rel_index: int) -> ^Input_Event
 {
+	abs_index := (rel_index + input_ev.offset) % INPUT_BUFFER_LENGTH
+	return &input_ev.events[abs_index]
+}
 
+Input_Classifier :: struct {
+	keys_active: bit_set[Key_Printable],
+	key_index: [Key_Printable]int,
+}
+
+IO_Engine :: struct {
+	classifier: Input_Classifier,
+	input: Input_Events,
+	dictionaries: Dictionaries,
 }
 
 io_worker_init :: proc(
 		reader: ^Key_Reader,
-		input_engine: ^Input_Engine,
+		input_engine: ^IO_Engine,
 		logger: log.Logger,
 		os_state: ^OS_State,
 ) -> bool
@@ -52,36 +64,37 @@ io_worker_init :: proc(
 	return reader._worker != nil
 }
 
-io_worker :: proc(reader: ^Key_Reader, io: ^Input_Engine)
+io_worker :: proc(reader: ^Key_Reader, io: ^IO_Engine)
 {
 	record_input_event :: proc(
-			io: ^Input_Engine,
+			io: ^IO_Engine,
 			key_ev: Key_Event,
 			key: Key_Printable,
 			record_as_up: bool,
-	) -> (event_id: int, err: App_Error) {
+	) -> (event_index: int, err: App_Error) {
 		if key_ev.is_up != record_as_up do return -1, .Key_Up_Down_Mismatch
 
+		input := &io.input
+
 		if record_as_up {
-			ev_index := io.key_index[key]
-			io.events[ev_index].timing.end = key_ev.timestamp
-			io.keys_active -= {key}
+			ev_index := io.classifier.key_index[key]
+			input_event_at(input, ev_index).timing.end = key_ev.timestamp
+			io.classifier.keys_active -= {key}
 			return ev_index, .None
 		}
 
 		// record a key down
-		if io.length == INPUT_BUFFER_LENGTH do return -1, .Input_Event_Buffer_Full
+		if input.length == INPUT_BUFFER_LENGTH do return -1, .Input_Event_Buffer_Full
 
 		input_ev: Input_Event
 		input_ev.key = key
 		input_ev.timing.start = key_ev.timestamp
-		io.keys_active += {key}
+		io.classifier.keys_active += {key}
 
-		write_index := (io.start + io.length) % INPUT_BUFFER_LENGTH
-		io.events[write_index] = input_ev
-		io.key_index[key] = write_index
-		io.length += 1
-		return write_index, .None
+		input_event_at(input, input.length)^ = input_ev
+		io.classifier.key_index[key] = input.length
+		input.length += 1
+		return input.length - 1, .None
 	}
 
 	context.logger = reader.logger
@@ -103,7 +116,7 @@ io_worker :: proc(reader: ^Key_Reader, io: ^Input_Engine)
 		case Key_Modifier:
 			// Do nothing yet
 		case Key_Printable:
-			record_as_up := key in io.keys_active
+			record_as_up := key in io.classifier.keys_active
 			ev_id, err := record_input_event(io, key_ev, key, record_as_up)
 			if err == .Input_Event_Buffer_Full {
 				log.error("Input buffer of IO engine is full.")
@@ -115,17 +128,36 @@ io_worker :: proc(reader: ^Key_Reader, io: ^Input_Engine)
 			if err == .Key_Up_Down_Mismatch do break
 
 			if record_as_up {
-				input_ev := &io.events[ev_id]
+				input_ev := input_event_at(&io.input, ev_id)
 				log.infof(
 						"%v\t%v\t%v",
 						input_ev.key,
 						input_ev.timing.start,
 						input_ev.timing.end,
 				)
+
+				if ev_id >= io.input.classify_from {
+					found, chord := io_classify(&io.input, ev_id)
+					if found {
+						log.infof("Found chord %v", chord)
+					}
+				}
 			}
 
 		case Key_Special:
-			// Do nothing yet
+			if key_ev.is_up do break
+
+			switch key {
+			case .Enter, .Pad_Enter:
+				io_input_reset(io)
+				// TK: should set the engine so that shorthand and capitalization are enabled
+			case .Backspace:
+				// TK: Backspace
+			case .Left, .Right, .Up, .Down, .Home, .End, .Page_Up, .Page_Down:
+				io_input_reset(io)
+			case .Tab, .Escape, .Insert, .Delete:
+				// do nothing
+			}
 		}
 
 
@@ -136,6 +168,45 @@ io_worker :: proc(reader: ^Key_Reader, io: ^Input_Engine)
 			}
 		}
 	}
+}
+
+io_input_reset :: proc(io: ^IO_Engine)
+{
+	io.input.offset = 0
+	io.input.length = 0
+	io.input.classify_from = 0
+	io.classifier = {}
+}
+
+io_classify :: proc(input: ^Input_Events, lifted_key_index: int) -> (detected_chord: bool, chord: Chord)
+{
+	last_event_index := input.length - 1
+	if input.classify_from == last_event_index {
+		// we're classifying a single key
+		input.classify_from = last_event_index + 1
+		return false, chord
+	}
+
+	start_of_last_ev := input_event_at(input, last_event_index).timing.start
+	end_of_lift_ev := input_event_at(input, lifted_key_index).timing.end
+	shortest_duration := end_of_lift_ev - start_of_last_ev
+
+	iter_until := min(lifted_key_index, last_event_index - 1)
+	for opening_index in input.classify_from..=iter_until {
+		start_of_opening_ev := input_event_at(input, opening_index).timing.start
+		duration := end_of_lift_ev - start_of_opening_ev
+		overlap_pct := f32(shortest_duration) / f32(duration) if duration > 0 else 0
+		if overlap_pct >= CHORD_DETECTION_OVERLAP_PERCENTAGE {
+			input.classify_from = input.length
+			for chord_index in opening_index..<input.length {
+				chord += {input_event_at(input, chord_index).key}
+			}
+			return true, chord
+		}
+	}
+
+	input.classify_from = lifted_key_index + 1
+	return false, chord
 }
 
 Token_Type :: enum {
