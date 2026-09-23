@@ -8,6 +8,7 @@ import "core:sync"
 
 INPUT_BUFFER_LENGTH :: 256
 CHORD_DETECTION_OVERLAP_PERCENTAGE :: .65
+EDIT_EVENT_BUFFER_LENGTH :: 256
 
 Input_Timing :: struct {
 	start: Timestamp_MS,
@@ -38,10 +39,23 @@ Input_Classifier :: struct {
 	key_index: [Key_Printable]int,
 }
 
+Edit_Delete :: distinct int
+Edit_Output_Key :: struct {
+	key: Key_Printable,
+	with_shift: bool,
+}
+
+Edit_Event :: union {
+	Edit_Delete,
+	Edit_Output_Key,
+	Expansion,
+}
+
 IO_Engine :: struct {
 	classifier: Input_Classifier,
 	input: Input_Events,
 	dictionaries: Dictionaries,
+	edits: [dynamic; EDIT_EVENT_BUFFER_LENGTH]Edit_Event,
 }
 
 io_worker_init :: proc(
@@ -127,21 +141,47 @@ io_worker :: proc(reader: ^Key_Reader, io: ^IO_Engine)
 			}
 			if err == .Key_Up_Down_Mismatch do break
 
-			if record_as_up {
-				input_ev := input_event_at(&io.input, ev_id)
-				log.infof(
-						"%v\t%v\t%v",
-						input_ev.key,
-						input_ev.timing.start,
-						input_ev.timing.end,
-				)
+			if !record_as_up do break
 
-				if ev_id >= io.input.classify_from {
-					found, chord := io_classify(&io.input, ev_id)
-					if found {
-						log.infof("Found chord %v", chord)
-					}
-				}
+			// Shift the input window offset when no keys are held and its safe
+			drop_count := INPUT_BUFFER_LENGTH / 4
+			if io.input.length > (INPUT_BUFFER_LENGTH / 2) &&
+					card(io.classifier.keys_active) == 0 &&
+					io.input.classify_from >= drop_count &&
+					ev_id >= drop_count {
+				io.input.offset = (io.input.offset + drop_count) % INPUT_BUFFER_LENGTH
+				io.input.length -= drop_count
+				io.input.classify_from -= drop_count
+				ev_id -= drop_count
+			}
+
+			// Ignore keys from already discarded potential chords
+			if ev_id < io.input.classify_from do break
+
+			found, chord := io_classify(&io.input, ev_id)
+
+
+			if !found do break
+
+			exp, dict_err := dict_lookup(io.dictionaries.chord, chord)
+			if dict_err == .Not_Found do break
+
+			if dict_err == .Dictionary_Not_Initialized {
+				log.warnf("Dictionary not initialized.")
+				break
+			}
+
+			// TK: This will eventually create an array of edits
+			clear(&io.edits)
+			chars_to_del := card(chord)
+			append(&io.edits, Edit_Delete(chars_to_del))
+			append(&io.edits, exp)
+			append(&io.edits, " ")
+
+			edit_err := edits_process(io.edits[:])
+			if edit_err != .None {
+				log.error("Error in processing edits")
+				break
 			}
 
 		case Key_Special:
@@ -155,16 +195,13 @@ io_worker :: proc(reader: ^Key_Reader, io: ^IO_Engine)
 				// TK: Backspace
 			case .Left, .Right, .Up, .Down, .Home, .End, .Page_Up, .Page_Down:
 				io_input_reset(io)
-			case .Tab, .Escape, .Insert, .Delete:
+			case .Tab, .Insert, .Delete:
 				// do nothing
-			}
-		}
-
-
-		// We test until 'X' is pressed
-		if key_ev.key == Key_Printable.X && !key_ev.is_up {
-			if !os_post_message(reader.os_state, .Quit) {
-				log.error("Could not post application quit message.")
+			case .Escape:
+				// TK: Provisional way to quit ZipChord
+				if !os_post_message(reader.os_state, .Quit) {
+					log.error("Could not post application quit message.")
+				}
 			}
 		}
 	}
@@ -178,7 +215,10 @@ io_input_reset :: proc(io: ^IO_Engine)
 	io.classifier = {}
 }
 
-io_classify :: proc(input: ^Input_Events, lifted_key_index: int) -> (detected_chord: bool, chord: Chord)
+io_classify :: proc(
+		input: ^Input_Events,
+		lifted_key_index: int,
+) -> (detected_chord: bool, chord: Chord)
 {
 	last_event_index := input.length - 1
 	if input.classify_from == last_event_index {
@@ -210,26 +250,26 @@ io_classify :: proc(input: ^Input_Events, lifted_key_index: int) -> (detected_ch
 }
 
 Token_Type :: enum {
-    Character,
-    Interrupt,
-    Enter,
-    Manual_Space,
-    Smart_Space,
-    Numeral,
-    Punctuation,
-    Expansion,
+	Character,
+	Interrupt,
+	Enter,
+	Manual_Space,
+	Smart_Space,
+	Numeral,
+	Punctuation,
+	Expansion,
 }
 
 Token_Attribute :: enum {
-    With_Shift,
-    Was_Capitalized,
-    Is_Prefix,
-    Capitalizes_Next,
-    First_In_Chord,
-    Removes_Smart_Space,
-    Smart_Space_After,
-    Capitalizing_Key,
-    Tombstoned,
+	With_Shift,
+	Was_Capitalized,
+	Is_Prefix,
+	Capitalizes_Next,
+	First_In_Chord,
+	Removes_Smart_Space,
+	Smart_Space_After,
+	Capitalizing_Key,
+	Tombstoned,
 }
 
 Token_Output :: union {
@@ -240,8 +280,30 @@ Token_Output :: union {
 Token :: struct {
 	timestamp: Timestamp_MS,
 	key: Key_ZC,
-    type: Token_Type,
-    attribs: bit_set[Token_Attribute],
-    output: Token_Output,
+	type: Token_Type,
+	attribs: bit_set[Token_Attribute],
+	output: Token_Output,
 }
 
+edits_process :: proc(edit_events: []Edit_Event) -> App_Error
+{
+	for edit in edit_events {
+		switch ed in edit {
+		case Edit_Delete:
+			err := key_send_backspaces(int(ed))
+			if err != .None {
+				log.errorf("ZipChord error while outputting events: %v", err)
+				return err
+			}
+		case Expansion:
+			err := key_send_expansion(ed)
+			if err != .None {
+				log.errorf("ZipChord error while outputting events: %v", err)
+				return err
+			}
+		case Edit_Output_Key:
+			// TK: tbd
+		}
+	}
+	return .None
+}

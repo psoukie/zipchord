@@ -8,6 +8,8 @@ foreign import user32 "system:User32.lib"
 import "core:time"
 import "core:unicode/utf16"
 import "base:runtime"
+import "core:mem/virtual"
+import "core:mem"
 
 OS_State :: struct {
 	hwnd: win32.HWND,
@@ -326,6 +328,81 @@ key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
 	}
 	assert(scan < SCAN_TABLE_SIZE, "Legal scan code must fit in the table")
 	return key_map.scan_to_key_zc[scan], is_up
+}
+
+key_send_expansion :: proc(exp: Expansion) -> App_Error
+{
+	KEYEVENTF_UNICODE :: 0x0004
+	KEYEVENTF_KEYUP   :: 0x0002
+
+	arena: virtual.Arena
+	alloc_err := virtual.arena_init_growing(&arena, 64 * mem.Kilobyte)
+	if alloc_err != .None do return .Memory_Allocation_Failed
+
+	defer virtual.arena_free_all(&arena)
+	alloc := virtual.arena_allocator(&arena)
+
+	text := string(exp)
+	units := win32.utf8_to_utf16(text, alloc)
+	if units == nil do return .Windows_SendInput_Failed
+
+	inputs := make([]win32.INPUT, 2 * len(units), alloc)
+
+	for unit, i in units {
+		down := &inputs[2 * i]
+		down.type = .KEYBOARD
+		down.ki.wVk = 0
+		down.ki.wScan = unit
+		down.ki.dwFlags = KEYEVENTF_UNICODE
+
+		up := &inputs[2 * i + 1]
+		up^ = down^
+		up.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+	}
+
+	sent := win32.SendInput(
+			win32.UINT(len(inputs)),
+			raw_data(inputs),
+			size_of(win32.INPUT),
+	)
+
+	if sent != win32.UINT(len(inputs)) {
+		return .Windows_SendInput_Failed
+	} else {
+		return .None
+	}
+}
+
+key_send_backspaces :: proc(count: int = 1) -> App_Error
+{
+	if count < 0 || count > 32 do return .Memory_Allocation_Failed
+
+	if count == 0 do return .None
+
+	KEYEVENTF_KEYUP :: 0x0002
+	inputs: [64]win32.INPUT
+
+	for i in 0..<count {
+		down := &inputs[2 * i]
+		down.type = .KEYBOARD
+		down.ki.wVk = win32.VK_BACK
+
+		up := &inputs[2 * i + 1]
+		up^ = down^
+		up.ki.dwFlags = KEYEVENTF_KEYUP
+	}
+
+	event_count := win32.UINT(2 * count)
+	result := win32.SendInput(
+			event_count,
+			raw_data(inputs[:]),
+			size_of(win32.INPUT),
+	)
+	if result != event_count {
+		return .Windows_SendInput_Failed
+	} else {
+		return .None
+	}
 }
 
 WINDOWS_CLASS_NAME :: "ZipChord"
