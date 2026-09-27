@@ -56,6 +56,7 @@ IO_Engine :: struct {
 	input: Input_Events,
 	dictionaries: Dictionaries,
 	edits: [dynamic; EDIT_EVENT_BUFFER_LENGTH]Edit_Event,
+	output: Keyboard_Output,
 }
 
 io_worker_init :: proc(
@@ -178,7 +179,7 @@ io_worker :: proc(reader: ^Key_Reader, io: ^IO_Engine)
 			append(&io.edits, exp)
 			append(&io.edits, " ")
 
-			edit_err := edits_process(io.edits[:])
+			edit_err := edits_process(&io.output, io.edits[:])
 			if edit_err != .None {
 				log.error("Error in processing edits")
 				break
@@ -285,18 +286,22 @@ Token :: struct {
 	output: Token_Output,
 }
 
-edits_process :: proc(edit_events: []Edit_Event) -> App_Error
+edits_process :: proc(
+		output: ^Keyboard_Output,
+		edit_events: []Edit_Event,
+) -> App_Error
 {
+	qpc_start := time.tick_now()
 	for edit in edit_events {
 		switch ed in edit {
 		case Edit_Delete:
-			err := key_send_backspaces(int(ed))
+			err := output_add_backspaces(output, int(ed))
 			if err != .None {
 				log.errorf("ZipChord error while outputting events: %v", err)
 				return err
 			}
 		case Expansion:
-			err := key_send_expansion(ed)
+			err := output_add_expansion(output, ed)
 			if err != .None {
 				log.errorf("ZipChord error while outputting events: %v", err)
 				return err
@@ -305,5 +310,16 @@ edits_process :: proc(edit_events: []Edit_Event) -> App_Error
 			// TK: tbd
 		}
 	}
+	err := output_send_keys(output)
+	clear(output)
+	if err != .None {
+		log.errorf("ZipChord error while outputting events: %v", err)
+		return err
+	}
+	elapsed_us := time.duration_microseconds(
+         time.tick_diff(qpc_start, time.tick_now()),
+	)
+	log.infof("Key-down to sent-and-cleared: %.2f us", elapsed_us)
+
 	return .None
 }

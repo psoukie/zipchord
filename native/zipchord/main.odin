@@ -24,6 +24,7 @@ App_Error :: enum {
 	None,
 	Key_Event_Buffer_Full,
 	Input_Event_Buffer_Full,
+	Output_Buffer_Full,
 	Key_Up_Down_Mismatch,
 	Windows_GetMessageW_Failed,
 	Windows_GetRawInput_Failed,
