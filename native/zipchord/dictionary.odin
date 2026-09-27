@@ -3,7 +3,6 @@ package zipchord
 // SPDX-FileCopyrightText: 2026 Pavel Soukenik
 // SPDX-License-Identifier: BSD-3-Clause
 
-import "base:runtime"
 import "core:os"
 import "core:strings"
 import "core:mem/virtual"
@@ -228,7 +227,7 @@ dict_shorthand_lookup :: proc(
 	if !dict.initialized do return "", .Dictionary_Not_Initialized
 
 	ok: bool
-	if expansion, ok := dict.shorthand_to_expansion[shorthand]; !ok {
+	if expansion, ok = dict.shorthand_to_expansion[shorthand]; !ok {
 		return {}, .Not_Found
 	}
 
@@ -265,7 +264,7 @@ dict_shorthand_reverse_lookup :: proc(
 	if !dict.initialized do return "", .Dictionary_Not_Initialized
 
 	ok: bool
-	if shorthand, ok := dict.expansion_to_shorthand[expansion]; !ok {
+	if shorthand, ok = dict.expansion_to_shorthand[expansion]; !ok {
 		return {}, .Not_Found
 	}
 
