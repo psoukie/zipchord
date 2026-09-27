@@ -8,7 +8,6 @@ import "core:log"
 import "core:container/queue"
 import "core:thread"
 import "core:sync"
-import "base:runtime"
 
 Key_Printable :: enum u8 {
 	Grave,
@@ -94,14 +93,18 @@ Key_Map :: struct {
 	scan_to_key_zc: [SCAN_TABLE_SIZE]Key_ZC,
 
 	printable_to_typed_char: [Key_Printable]Key_Typed_Char,
+	typed_char_with_shift_to_printable: map[rune]Key_Printable,
+	typed_char_plain_to_printable: map[rune]Key_Printable,
 
 	printable_to_symbol: [Key_Printable]rune,
 	symbol_to_printable: map[rune]Key_Printable,
 }
 
-key_symbol_map_delete :: proc(key_map: ^Key_Map)
+key_map_delete :: proc(key_map: ^Key_Map)
 {
 	delete(key_map.symbol_to_printable)
+	delete(key_map.typed_char_plain_to_printable)
+	delete(key_map.typed_char_with_shift_to_printable)
 }
 
 key_printable_from_symbol :: proc(
@@ -197,4 +200,3 @@ key_reader_stop :: proc(reader: ^Key_Reader)
 	sync.mutex_unlock(&reader.mutex)
 	sync.sema_post(&reader.sema)
 }
-

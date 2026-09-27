@@ -27,7 +27,7 @@ key_map_ititialization :: proc(t: ^tst.T) {
 
     z.key_map_scan_codes_init(&key_map)
     ok_pop := z.key_map_populate_from_active_layout(&key_map)
-	defer z.key_symbol_map_delete(&key_map)
+	defer z.key_map_delete(&key_map)
     tst.expect_value(t, ok_pop, true)
     a_key, ok := z.key_printable_from_symbol(key_map, 'a')
     tst.expect_value(t, ok, true)
@@ -43,7 +43,7 @@ chord_compiling :: proc(t: ^tst.T) {
 
     z.key_map_scan_codes_init(&key_map)
     ok_pop := z.key_map_populate_from_active_layout(&key_map)
-	defer z.key_symbol_map_delete(&key_map)
+	defer z.key_map_delete(&key_map)
     tst.expect_value(t, ok_pop, true)
 
     chord, err := z.chord_compile("th", key_map)
@@ -102,7 +102,7 @@ load_dict :: proc(t: ^tst.T) {
 
     z.key_map_scan_codes_init(&key_map)
     ok_pop := z.key_map_populate_from_active_layout(&key_map)
-	defer z.key_symbol_map_delete(&key_map)
+	defer z.key_map_delete(&key_map)
     tst.expect_value(t, ok_pop, true)
 
     dict_file :: "_test_dictionary.txt"

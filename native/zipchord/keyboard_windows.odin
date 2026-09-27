@@ -8,8 +8,13 @@ foreign import user32 "system:User32.lib"
 import "core:time"
 import "core:unicode/utf16"
 import "base:runtime"
-import "core:mem/virtual"
-import "core:mem"
+
+EXTENDED_SCAN_CODE_MARKER :: 0x100
+
+KEYEVENTF_EXTENDEDKEY :: 0x0001
+KEYEVENTF_KEYUP   :: 0x0002
+KEYEVENTF_UNICODE :: 0x0004
+KEYEVENTF_SCANCODE :: 0x0008
 
 OS_State :: struct {
 	hwnd: win32.HWND,
@@ -232,7 +237,7 @@ key_map_populate_from_layout :: proc(
 		if with_shift {
 			key_state[win32.VK_SHIFT] = 0x80
 		}
-		buffer: [8]u16
+		buffer: [8]win32.WCHAR
 		count := ToUnicodeEx(
 				virtual_key,
 				win32.UINT(scan),
@@ -255,6 +260,8 @@ key_map_populate_from_layout :: proc(
 	key_map.printable_to_symbol = {}
 	key_map.printable_to_typed_char = {}
 	clear(&key_map.symbol_to_printable)
+	clear(&key_map.typed_char_plain_to_printable)
+	clear(&key_map.typed_char_with_shift_to_printable)
 	err := reserve(&key_map.symbol_to_printable, len(Key_Printable))
 	if err != .None do return false
 
@@ -290,8 +297,18 @@ key_map_populate_from_layout :: proc(
 		if num != 0 {
 			typed_char.plain = num
 			typed_char.with_shift = num
+		} else {
+			// Store non-dead keys in reverse lookup (skipping Num Pad)
+			if typed_char.plain != 0 {
+				key_map.typed_char_plain_to_printable[typed_char.plain] = printable
+			}
+			if typed_char.with_shift != 0 {
+				key_map.typed_char_with_shift_to_printable[typed_char.with_shift] = printable
+			}
 		}
+
 		key_map.printable_to_typed_char[printable] = typed_char
+
 		if symbol != 0 {
 			key_map.printable_to_symbol[printable] = symbol
 			key_map.symbol_to_printable[symbol] = printable
@@ -311,7 +328,7 @@ key_scan_code_from_key_zc :: proc(key_map: Key_Map, key: Key_ZC) ->
 	case Key_Special:
 		scan = key_map.zc_special_to_scan[k]
 	}
-	is_extended = (scan & 0x100 != 0)
+	is_extended = (scan & EXTENDED_SCAN_CODE_MARKER != 0)
 	return scan & 0xff, is_extended
 }
 
@@ -324,7 +341,7 @@ key_zc_from_key_raw :: proc(key_map: Key_Map, raw_key: win32.RAWKEYBOARD) ->
 	scan := raw_key.MakeCode
 	is_up = (raw_key.Flags & win32.RI_KEY_BREAK != 0)
 	if raw_key.Flags & win32.RI_KEY_E0 != 0 {
-		scan += 0x100
+		scan += EXTENDED_SCAN_CODE_MARKER
 	}
 	assert(scan < SCAN_TABLE_SIZE, "Legal scan code must fit in the table")
 	return key_map.scan_to_key_zc[scan], is_up
@@ -334,52 +351,108 @@ KEYBOARD_OUTPUT_CAPACITY :: 128
 
 Keyboard_Output :: [dynamic; KEYBOARD_OUTPUT_CAPACITY]win32.INPUT
 
-output_add_expansion :: proc(
+output_add_scan_code :: proc(
 		output: ^Keyboard_Output,
-		exp: Expansion,
-	) -> App_Error
+		scan_code: Scan_ID,
+		is_up := false,
+) -> App_Error
 {
-	KEYEVENTF_UNICODE :: 0x0004
-	KEYEVENTF_KEYUP   :: 0x0002
-	MAX_EXPANSION_BYTES :: 512
+	input: win32.INPUT
+	input.type = .KEYBOARD
+	input.ki.wScan = win32.WORD(scan_code) & 0x00FF  // to clear high bits of extended keys
 
-	text := string(exp)
-	utf16_buffer: [MAX_EXPANSION_BYTES]u16
-	units := win32.utf8_to_utf16_buf(utf16_buffer[:], text)
-	if units == nil do return .Output_Buffer_Full
+	input.ki.dwFlags = KEYEVENTF_SCANCODE
+	if scan_code & EXTENDED_SCAN_CODE_MARKER != 0 {
+		input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY
+	}
+	if is_up {
+		input.ki.dwFlags |= KEYEVENTF_KEYUP
+	}
 
-	for unit in units {
-		down, up: win32.INPUT
+	if append(output, input) != 1 do return .Memory_Allocation_Failed
 
-		down.type = .KEYBOARD
-		down.ki.wVk = 0
-		down.ki.wScan = unit
-		down.ki.dwFlags = KEYEVENTF_UNICODE
+	return .None
+}
 
-		up = down
-		up.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+output_add_modifier :: proc(
+		output: ^Keyboard_Output,
+		key_map: ^Key_Map,
+		modifier_key: Key_Modifier,
+		is_up := false,
+) -> App_Error
+{
+	scan := key_map.zc_modifier_to_scan[modifier_key]
+	return output_add_scan_code(output,scan, is_up)
+}
 
-		appended := append(output, down)
-		if appended != 1 do return .Memory_Allocation_Failed
+output_add_key :: proc(
+		output: ^Keyboard_Output,
+		key_map: ^Key_Map,
+		output_key: Edit_Output_Key,
+) -> App_Error
+{
+	scan := key_map.zc_printable_to_scan[output_key.key]
 
-		appended = append(output, up)
-		if appended != 1 do return .Memory_Allocation_Failed
+	if output_key.with_shift {
+		output_add_modifier(output, key_map, .Left_Shift) or_return
+	}
+
+	output_add_scan_code(output, scan) or_return
+
+	output_add_scan_code(output, scan, true) or_return
+
+	if output_key.with_shift {
+		output_add_modifier(output, key_map, .Left_Shift, true) or_return
 	}
 
 	return .None
 }
 
-	// sent := win32.SendInput(
-	// 		win32.UINT(len(inputs)),
-	// 		raw_data(inputs),
-	// 		size_of(win32.INPUT),
-	// )
+output_add_unicode_char :: proc(
+		output: ^Keyboard_Output,
+		char: rune,
+	) -> App_Error
+{
+	units: [2]win32.WORD
+	unit_count := 1
 
-	// if sent != win32.UINT(len(inputs)) {
-	// 	return .Windows_SendInput_Failed
-	// } else {
-	// 	return .None
-	// }
+	if char <= 0xFFFF {
+		units[0] = win32.WORD(char)
+	} else {
+		high, low := utf16.encode_surrogate_pair(char)
+		units = {win32.WORD(high), win32.WORD(low)}
+		unit_count = 2
+	}
+
+	for unit in units[:unit_count] {
+		down, up: win32.INPUT
+
+		down.type = .KEYBOARD
+		down.ki.wScan = unit
+		down.ki.dwFlags = KEYEVENTF_UNICODE
+
+		up = down
+		up.ki.dwFlags |= KEYEVENTF_KEYUP
+
+		if append(output, down) != 1 do return .Memory_Allocation_Failed
+
+		if append(output, up) != 1 do return .Memory_Allocation_Failed
+	}
+
+	return .None
+}
+
+output_add_expansion :: proc(
+		output: ^Keyboard_Output,
+		exp: Expansion,
+	) -> App_Error
+{
+	for char in exp {
+		output_add_unicode_char(output, char) or_return
+	}
+
+	return .None
+}
 
 output_add_backspaces :: proc(
 		output: ^Keyboard_Output,
@@ -387,23 +460,14 @@ output_add_backspaces :: proc(
 ) -> App_Error
 {
 	if count == 0 do return .None
+	assert(count > 0, "Received negative number of Backspace edits")
 
-	KEYEVENTF_KEYUP :: 0x0002
+	BACKSPACE_SCAN :: 0x00E
 
-	for i in 0..<count {
-		down, up: win32.INPUT
+	for _ in 0..<count {
+		output_add_scan_code(output, BACKSPACE_SCAN) or_return
 
-		down.type = .KEYBOARD
-		down.ki.wVk = win32.VK_BACK
-
-		up = down
-		up.ki.dwFlags = KEYEVENTF_KEYUP
-
-		appended := append(output, down)
-		if appended != 1 do return .Memory_Allocation_Failed
-
-		appended = append(output, up)
-		if appended != 1 do return .Memory_Allocation_Failed
+		output_add_scan_code(output, BACKSPACE_SCAN, true) or_return
 	}
 
 	return .None

@@ -45,17 +45,25 @@ Edit_Output_Key :: struct {
 	with_shift: bool,
 }
 
+Smart_Space :: Edit_Output_Key {
+	key = .Spacebar,
+	with_shift = false,
+}
+
 Edit_Event :: union {
 	Edit_Delete,
 	Edit_Output_Key,
 	Expansion,
 }
 
+Edit_Buffer :: [dynamic; EDIT_EVENT_BUFFER_LENGTH]Edit_Event
+
 IO_Engine :: struct {
 	classifier: Input_Classifier,
 	input: Input_Events,
+	key_map: ^Key_Map,
 	dictionaries: Dictionaries,
-	edits: [dynamic; EDIT_EVENT_BUFFER_LENGTH]Edit_Event,
+	edits: Edit_Buffer,
 	output: Keyboard_Output,
 }
 
@@ -64,12 +72,14 @@ io_worker_init :: proc(
 		input_engine: ^IO_Engine,
 		logger: log.Logger,
 		os_state: ^OS_State,
+		key_map: ^Key_Map,
 ) -> bool
 {
 	reader.logger = logger
 	reader.os_state = os_state
 	reader.start_time = time.tick_now()
 	queue.init_from_slice(&reader.events, reader._buffer[:])
+	input_engine.key_map = key_map
 	reader.running = true
 	reader._worker = thread.create_and_start_with_poly_data2(
 			reader,
@@ -175,13 +185,16 @@ io_worker :: proc(reader: ^Key_Reader, io: ^IO_Engine)
 			// TK: This will eventually create an array of edits
 			clear(&io.edits)
 			chars_to_del := card(chord)
-			append(&io.edits, Edit_Delete(chars_to_del))
-			append(&io.edits, exp)
-			append(&io.edits, " ")
+			io_edits_append(&io.edits, Edit_Delete(chars_to_del)) or_break
 
-			edit_err := edits_process(&io.output, io.edits[:])
+			io_edits_append(&io.edits, exp) or_break
+
+			io_edits_append(&io.edits, Smart_Space) or_break
+
+			edit_err := edits_process(&io.output, io.key_map, io.edits[:])
 			if edit_err != .None {
 				log.error("Error in processing edits")
+				clear(&io.edits)
 				break
 			}
 
@@ -286,40 +299,54 @@ Token :: struct {
 	output: Token_Output,
 }
 
+io_edits_append :: proc(
+		edit_buf: ^Edit_Buffer,
+		edit: Edit_Event,
+	) -> App_Error
+{
+	if append(edit_buf, edit) == 0 {
+		log.error("Edit event buffer is full.")
+		clear(edit_buf)
+		return .Edit_Buffer_Full
+	}
+
+	return .None
+}
+
 edits_process :: proc(
 		output: ^Keyboard_Output,
+		key_map: ^Key_Map,
 		edit_events: []Edit_Event,
-) -> App_Error
+) -> (err: App_Error)
 {
-	qpc_start := time.tick_now()
+	defer clear(output)
+
 	for edit in edit_events {
 		switch ed in edit {
 		case Edit_Delete:
-			err := output_add_backspaces(output, int(ed))
-			if err != .None {
-				log.errorf("ZipChord error while outputting events: %v", err)
-				return err
-			}
+			err = output_add_backspaces(output, int(ed))
 		case Expansion:
-			err := output_add_expansion(output, ed)
-			if err != .None {
-				log.errorf("ZipChord error while outputting events: %v", err)
-				return err
-			}
+			err = output_add_expansion(output, ed)
 		case Edit_Output_Key:
-			// TK: tbd
+			err = output_add_key(output, key_map, ed)
+		}
+
+		if err != .None {
+			log.errorf("ZipChord error while preparing output events: %v", err)
+			return err
 		}
 	}
-	err := output_send_keys(output)
-	clear(output)
+
+	qpc_start := time.tick_now()
+
+	err = output_send_keys(output)
 	if err != .None {
 		log.errorf("ZipChord error while outputting events: %v", err)
 		return err
 	}
-	elapsed_us := time.duration_microseconds(
-         time.tick_diff(qpc_start, time.tick_now()),
-	)
-	log.infof("Key-down to sent-and-cleared: %.2f us", elapsed_us)
+
+	elapsed_us := time.duration_microseconds(time.tick_diff(qpc_start, time.tick_now()))
+	log.infof("QPC: %.2f us", elapsed_us)
 
 	return .None
 }

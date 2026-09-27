@@ -24,7 +24,7 @@ App_Error :: enum {
 	None,
 	Key_Event_Buffer_Full,
 	Input_Event_Buffer_Full,
-	Output_Buffer_Full,
+	Edit_Buffer_Full,
 	Key_Up_Down_Mismatch,
 	Windows_GetMessageW_Failed,
 	Windows_GetRawInput_Failed,
@@ -45,7 +45,7 @@ run :: proc(logger: log.Logger) -> App_Error
 	key_map_scan_codes_init(&app.key_map)
 	if !key_map_populate_from_active_layout(&app.key_map) do return .Key_Map_Alloc_Error
 
-	defer key_symbol_map_delete(&app.key_map)
+	defer key_map_delete(&app.key_map)
 
 	if !os_init(&app) do return .Windows_Platform_Init_Failed
 
@@ -70,6 +70,7 @@ run :: proc(logger: log.Logger) -> App_Error
 			&app.input_engine,
 			app.logger,
 			&app.os_state,
+			&app.key_map,
 	) {
 		return .Key_Reader_Init_Failed
 	}
